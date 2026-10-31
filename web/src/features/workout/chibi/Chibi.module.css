@@ -1,0 +1,83 @@
+/* Цвета персонажа берём из токенов --character-*; значения без токена помечены. */
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+.fSkin { fill: var(--character-skin-2); }
+.fSkinShade { fill: #b8865c; } /* нет токена: тень кожи */
+.fOutfit { fill: var(--character-outfit-1); }
+.fBlue { fill: var(--character-outfit-2); }
+.fOrange { fill: var(--character-outfit-3); }
+.fDark { fill: var(--ink-tint); }
+.fGear { fill: var(--hairline-strong); }
+.fSteel { fill: var(--steel); }
+.fPrimary { fill: var(--primary); }
+.fAccent { fill: var(--accent-500); }
+.fAccentSoft { fill: var(--accent-300); }
+.fDanger { fill: var(--danger); }
+.fHighlight { fill: var(--highlight); }
+.fHighlightSoft { fill: var(--highlight-soft); }
+.fInk { fill: var(--ink); }
+
+.sSkin { stroke: var(--character-skin-2); }
+.sOutfit { stroke: var(--character-outfit-1); }
+.sHighlight { stroke: var(--highlight); }
+.sAccent { stroke: var(--accent-500); }
+.sPrimary { stroke: var(--primary); }
+.sInk { stroke: var(--ink); }
+.sSkinShade { stroke: #b8865c; } /* нет токена */
+.sMouth { stroke: #7a3d2c; } /* нет токена: рот */
+
+.shadow { fill: var(--ink); opacity: 0.08; }
+
+/* Подсветка рабочих мышц: пульс 0.6 → 1 */
+.glow {
+  animation: glow calc(1.6s / var(--chibi-speed, 1)) ease-in-out infinite;
+}
+@keyframes glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Кольцо вокруг камеры */
+.ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ring calc(1.8s / var(--chibi-speed, 1)) ease-in-out infinite;
+}
+@keyframes ring {
+  0%, 100% { transform: scale(0.88); opacity: 0.7; }
+  50% { transform: scale(1.18); opacity: 0; }
+}
+
+/* Лёгкое движение головы: плейсхолдер до финальной анимации */
+.head {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.bob { animation: bob calc(1.6s / var(--chibi-speed, 1)) ease-in-out infinite; }
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+.tilt { animation: tilt calc(2.4s / var(--chibi-speed, 1)) ease-in-out infinite; }
+@keyframes tilt {
+  0%, 100% { transform: rotate(-12deg); }
+  50% { transform: rotate(12deg); }
+}
+
+/* Пауза в «Технике» */
+.svg[data-paused='true'] * {
+  animation-play-state: paused;
+}
+
+/* Без движения: мышцы горят ровно, кольцо камеры статично */
+@media (prefers-reduced-motion: reduce) {
+  .glow, .ring, .bob, .tilt { animation: none; }
+  .glow { opacity: 1; }
+  .ring { opacity: 0.5; }
+}

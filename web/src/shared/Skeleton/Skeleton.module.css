@@ -1,0 +1,5 @@
+.box {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+}

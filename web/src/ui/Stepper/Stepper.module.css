@@ -1,0 +1,64 @@
+.root {
+  display: flex;
+  align-items: center;
+  height: 64px; /* нет токена */
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  overflow: hidden;
+}
+.duration {
+  height: 72px; /* нет токена */
+}
+.invalid {
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 72px; /* нет токена */
+  padding: 0;
+  border: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px; /* нет токена */
+  font-weight: var(--set-value-weight);
+  cursor: pointer;
+}
+.duration .button {
+  width: 80px; /* нет токена */
+}
+.button:first-child {
+  border-right: 1px solid var(--hairline);
+}
+.button:last-child {
+  border-left: 1px solid var(--hairline);
+}
+.button:active {
+  background: var(--surface);
+}
+.button:disabled {
+  color: var(--muted);
+  background: var(--surface);
+  cursor: not-allowed;
+}
+/* Контейнер обрезает по overflow, поэтому кольцо фокуса рисуем внутри кнопки */
+.button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--canvas), inset 0 0 0 4px var(--primary);
+}
+
+.value {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 32px; /* нет токена */
+  line-height: 1;
+  font-weight: var(--set-value-weight);
+}
+.duration .value {
+  font-size: 40px; /* нет токена */
+  letter-spacing: -1px; /* нет токена */
+}

@@ -1,0 +1,128 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+@media (min-width: 768px) {
+  .card {
+    padding: var(--spacing-xl);
+    border: 1px solid var(--hairline-soft);
+    border-radius: var(--rounded-lg);
+    background: var(--canvas);
+  }
+}
+.count {
+  margin: 0;
+  font-size: var(--caption-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--steel);
+}
+.body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-xs);
+}
+.latest {
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  box-sizing: border-box;
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--surface);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.latestText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  min-width: 0;
+}
+.eyebrow {
+  margin: 0;
+  font-size: var(--micro-uppercase-size);
+  line-height: var(--micro-uppercase-line);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.name {
+  font-size: var(--body-md-medium-size);
+  font-weight: 500;
+}
+.desc {
+  font-size: var(--caption-size);
+  color: var(--slate);
+}
+.near {
+  flex: 2 1 380px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.ghost {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 2px dashed var(--hairline-strong);
+  border-radius: var(--rounded-full);
+  color: var(--slate);
+}
+.rowBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rowHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  font-size: var(--body-sm-size);
+}
+.rowName {
+  font-weight: 500;
+}
+.rowProgress {
+  font-variant-numeric: tabular-nums;
+  color: var(--slate);
+}
+.track {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--rounded-full);
+  background: var(--hairline);
+}
+.bar {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}

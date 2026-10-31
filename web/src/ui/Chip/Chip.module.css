@@ -1,0 +1,23 @@
+.chip {
+  min-width: 72px; /* нет токена */
+  height: var(--size-touch);
+  padding: 0 var(--spacing-md);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--button-md-size);
+  font-weight: var(--button-md-weight);
+  cursor: pointer;
+}
+.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.chip:disabled {
+  color: var(--muted);
+  border-color: var(--hairline);
+  cursor: not-allowed;
+}

@@ -1,0 +1,109 @@
+.strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--spacing-xxs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  padding: var(--spacing-xs) 0;
+}
+.weekday {
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+.today .weekday {
+  color: var(--ink);
+  font-weight: var(--caption-bold-weight);
+}
+.marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px; /* нет токена */
+  height: 28px;
+  border-radius: var(--rounded-full);
+  color: var(--ink);
+}
+.done {
+  background: var(--accent-300);
+}
+.planned {
+  border: 2px solid var(--primary);
+}
+.missed {
+  border: 2px dashed var(--hairline-strong);
+  color: var(--slate);
+}
+.todayMark {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.rest {
+  width: 6px;
+  height: 6px;
+  margin: 11px 0; /* высота маркера 28 px */
+  border-radius: var(--rounded-full);
+  background: var(--stone);
+}
+.status,
+.caption {
+  max-width: 100%;
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.status {
+  color: var(--slate);
+}
+.caption {
+  color: var(--ink);
+  font-weight: var(--caption-bold-weight);
+}
+
+.date {
+  font-size: var(--body-md-medium-size);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.moved {
+  border: 2px dashed var(--slate);
+  color: var(--slate);
+}
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: var(--spacing-xs) 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.cell:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+/* Выбор: рамка толще и primary, не только цвет — aria-pressed и утолщение */
+.selected {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}

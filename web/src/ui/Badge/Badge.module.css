@@ -1,0 +1,19 @@
+.badge {
+  display: inline-block;
+  padding: 2px var(--spacing-xs); /* 2 px: нет токена */
+  border-radius: var(--rounded-full);
+  color: var(--ink);
+  font-size: var(--caption-bold-size);
+  line-height: var(--caption-bold-line);
+  font-weight: var(--caption-bold-weight);
+  white-space: nowrap;
+}
+.accent {
+  background: var(--accent-300);
+}
+.neutral {
+  background: var(--hairline);
+}
+.highlight {
+  background: var(--highlight-soft);
+}

@@ -1,0 +1,33 @@
+.root {
+  position: relative;
+  flex: none;
+}
+.svg {
+  display: block;
+  /* старт сверху */
+  transform: rotate(-90deg);
+}
+.track {
+  stroke: var(--hairline);
+}
+.arc {
+  transition-property: stroke-dashoffset;
+  transition-timing-function: linear;
+}
+.primary {
+  stroke: var(--primary);
+}
+.accent {
+  stroke: var(--accent-500);
+}
+.muted {
+  stroke: var(--muted);
+}
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

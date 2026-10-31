@@ -1,0 +1,37 @@
+.root {
+  display: inline-flex;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Кольцо-кнопка: сбрасываем вид кнопки, фокус по кругу */
+.button {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.time {
+  font-size: 44px; /* нет токена */
+  line-height: 1;
+  font-weight: var(--timer-display-weight);
+  letter-spacing: var(--timer-display-tracking);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Пауза: время серое. steel, а не muted: muted не проходит контраст для крупного текста */
+.timePaused {
+  color: var(--steel);
+}

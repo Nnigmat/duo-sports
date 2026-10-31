@@ -1,0 +1,41 @@
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xxs) var(--spacing-sm);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-full);
+  font-family: var(--font-sans);
+  font-size: 12px; /* нет токена: чип 12/600 */
+  line-height: 1.4;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+}
+.done {
+  background: var(--accent-300);
+  color: var(--ink);
+}
+.next {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.future {
+  border-color: var(--hairline-strong);
+  color: var(--slate);
+}
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

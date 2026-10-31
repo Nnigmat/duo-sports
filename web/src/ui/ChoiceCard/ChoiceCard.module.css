@@ -1,0 +1,65 @@
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  box-sizing: border-box;
+  min-height: 56px; /* нет токена */
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  cursor: pointer;
+}
+.checked {
+  /* рамка 2 px: компенсируем padding, чтобы карточка не прыгала */
+  padding: calc(var(--spacing-sm) - 1px) calc(var(--spacing-md) - 1px);
+  border: 2px solid var(--primary);
+}
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.mark {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 2px solid var(--hairline-strong);
+  border-radius: var(--rounded-full);
+}
+.checked .mark {
+  border: 6px solid var(--primary);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.title {
+  font-size: var(--body-md-medium-size);
+  line-height: var(--body-md-medium-line);
+  font-weight: var(--body-md-medium-weight);
+}
+.description {
+  color: var(--slate);
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+}
+.card:has(.input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+.disabled {
+  color: var(--muted);
+  border-color: var(--hairline);
+  cursor: not-allowed;
+}
+.disabled .description {
+  color: var(--muted);
+}

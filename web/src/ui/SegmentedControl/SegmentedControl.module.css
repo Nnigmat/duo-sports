@@ -1,0 +1,26 @@
+.root {
+  display: flex;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+}
+
+.tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--size-touch);
+  padding: var(--spacing-xxs) var(--spacing-md);
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--button-md-size);
+  line-height: var(--button-md-line);
+  font-weight: var(--button-md-weight);
+  cursor: pointer;
+}
+.selected {
+  background: var(--ink);
+  color: var(--on-ink);
+}

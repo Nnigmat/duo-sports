@@ -1,0 +1,33 @@
+.root {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 320px; /* нет токена */
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  box-shadow: var(--elevation-2);
+  color: var(--ink);
+  text-align: center;
+}
+
+.line {
+  margin: var(--spacing-xxs) 0 0;
+  font-size: var(--set-value-size);
+  line-height: 1.3; /* нет токена */
+  font-weight: var(--set-value-weight);
+}
+
+/* Хвостик: повёрнутый квадрат с двумя видимыми сторонами рамки */
+.tail {
+  position: absolute;
+  left: 50%;
+  bottom: -7px; /* нет токена */
+  width: 12px; /* нет токена */
+  height: 12px; /* нет токена */
+  margin-left: -6px; /* нет токена */
+  border-right: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--canvas);
+  transform: rotate(45deg);
+}

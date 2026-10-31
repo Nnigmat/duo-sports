@@ -1,0 +1,124 @@
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xxs);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.mascot {
+  position: relative;
+  flex: none;
+  width: 128px; /* нет токена */
+  height: 128px; /* нет токена */
+}
+.disc {
+  position: absolute;
+  inset: 6px; /* нет токена */
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+}
+.chibi {
+  position: relative;
+}
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-xl) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.headline {
+  margin: 0;
+  font-weight: var(--body-md-medium-weight);
+}
+
+.work {
+  gap: var(--spacing-sm);
+}
+.workHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+.strong {
+  color: var(--ink);
+  font-weight: var(--caption-bold-weight);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* нет токена */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.number {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px; /* нет токена */
+  height: 28px; /* нет токена */
+  border: 1.5px solid var(--steel); /* 1,5 px: нет токена */
+  border-radius: var(--rounded-full);
+  font-size: var(--caption-size);
+  font-weight: var(--caption-bold-weight);
+}
+.itemName {
+  flex: 1 1 auto;
+  font-size: var(--body-sm-size);
+  font-weight: var(--body-sm-medium-weight);
+}
+.itemTarget {
+  white-space: nowrap;
+}
+
+.rule {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--hairline);
+}
+
+.video {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+}
+.videoIcon {
+  flex: none;
+  color: var(--primary);
+}
+.videoText {
+  color: var(--ink);
+}
+
+/* Кнопка внизу окна. Отрицательный отступ гасит нижний отступ Screen, так что в покое она стоит там же, где и без sticky */
+.cta {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  margin-bottom: calc(-1 * max(28px, env(safe-area-inset-bottom))); /* 28 px: нет токена, как в Screen */
+  padding: var(--spacing-md) 0 max(28px, env(safe-area-inset-bottom));
+  background: var(--canvas);
+}

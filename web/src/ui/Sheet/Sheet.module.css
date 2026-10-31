@@ -1,0 +1,103 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  animation: fade-in 160ms ease-out;
+}
+.scrim[data-state='closed'] {
+  animation: fade-out 120ms ease-in;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-height: calc(100dvh - 40px); /* нет токена */
+  max-width: 560px; /* нет токена */
+  margin: 0 auto;
+  padding: var(--spacing-xs) var(--spacing-md) max(28px, env(safe-area-inset-bottom)); /* 28 px: нет токена */
+  border-radius: var(--rounded-xl) var(--rounded-xl) 0 0;
+  background: var(--canvas);
+  box-shadow: var(--elevation-3);
+  animation: slide-up 200ms ease-out;
+}
+.sheet[data-state='closed'] {
+  animation: slide-down 140ms ease-in;
+}
+.sheet:focus {
+  outline: none;
+}
+
+.tall {
+  top: 40px; /* нет токена */
+  gap: var(--spacing-sm);
+}
+
+.handle {
+  align-self: center;
+  flex: none;
+  width: 40px; /* нет токена */
+  height: 4px; /* нет токена */
+  margin-top: var(--spacing-xxs);
+  border-radius: var(--rounded-full);
+  background: var(--hairline-strong);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  flex: none;
+}
+.back {
+  /* стрелка стоит вровень с левым краем содержимого */
+  margin-left: calc(-1 * var(--spacing-sm));
+}
+.titles {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  padding-top: var(--spacing-xxs);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  min-height: 0;
+  overflow-y: auto;
+  /* место под кольцо фокуса у краёв прокручиваемой области */
+  margin: calc(-1 * var(--spacing-xxs));
+  padding: var(--spacing-xxs);
+}
+.tall .body {
+  flex: 1 1 auto;
+  gap: var(--spacing-sm);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes slide-down {
+  to {
+    transform: translateY(100%);
+  }
+}

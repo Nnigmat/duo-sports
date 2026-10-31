@@ -1,0 +1,29 @@
+.input {
+  width: 100%;
+  height: var(--size-touch);
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* 16 px: iOS не приближает страницу при фокусе */
+  font-size: var(--body-md-size);
+}
+.input::placeholder {
+  color: var(--muted);
+}
+.input:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Ошибка: рамка danger толщиной 2 px (1 px + внутренняя) — рядом всегда иконка и текст */
+.invalid {
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+.invalid:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--danger), var(--focus-ring);
+}

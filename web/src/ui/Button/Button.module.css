@@ -1,0 +1,127 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  height: 52px; /* нет токена */
+  padding: 0 var(--spacing-lg);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-md);
+  font-family: var(--font-sans);
+  font-size: var(--body-md-medium-size);
+  line-height: var(--button-md-line);
+  font-weight: var(--body-md-medium-weight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+
+/* Макет: основная кнопка 16 px, compact — button-md 14 px */
+.compact {
+  height: var(--size-touch);
+  font-size: var(--button-md-size);
+  font-weight: var(--button-md-weight);
+}
+
+.full {
+  width: 100%;
+}
+
+.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.primary:hover {
+  background: var(--primary-deep);
+}
+
+.secondary {
+  background: var(--canvas);
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+}
+.secondary:hover {
+  background: var(--surface);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--primary);
+  padding: 0 var(--spacing-xxs);
+}
+.ghost:hover {
+  color: var(--primary-deep);
+}
+
+/* Токена danger-deep нет: нажатие — danger, затемнённый ink */
+.danger {
+  background: var(--danger);
+  color: var(--on-primary);
+}
+.danger:hover {
+  background: color-mix(in srgb, var(--danger) 85%, var(--ink));
+}
+
+.primary:active {
+  background: var(--primary-deep);
+}
+
+/* Состояние disabled/loading: заливка hairline, текст muted; у loading ещё и спиннер */
+.root:disabled,
+.root[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+.primary:disabled,
+.danger:disabled,
+.primary[aria-disabled='true'],
+.danger[aria-disabled='true'] {
+  background: var(--hairline);
+  color: var(--muted);
+}
+.secondary:disabled,
+.secondary[aria-disabled='true'] {
+  background: var(--canvas);
+  border-color: var(--hairline);
+  color: var(--muted);
+}
+.ghost:disabled,
+.ghost[aria-disabled='true'] {
+  color: var(--muted);
+}
+
+.loading,
+.loading:disabled {
+  cursor: progress;
+}
+/* При загрузке кнопка сохраняет вид, чтобы не мигать: сигнал — спиннер и aria-busy */
+.primary.loading:disabled {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.danger.loading:disabled {
+  background: var(--danger);
+  color: var(--on-primary);
+}
+.secondary.loading:disabled {
+  background: var(--canvas);
+  border-color: var(--hairline-strong);
+  color: var(--ink);
+}
+.ghost.loading:disabled {
+  color: var(--primary);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--rounded-full);
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

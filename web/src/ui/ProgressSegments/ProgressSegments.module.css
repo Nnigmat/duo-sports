@@ -1,0 +1,18 @@
+.root {
+  display: flex;
+  gap: var(--spacing-xxs);
+}
+.segment {
+  flex: 1 1 0;
+  height: 4px; /* нет токена */
+  border-radius: 2px; /* нет токена */
+}
+.done {
+  background: var(--primary);
+}
+.current {
+  background: var(--accent-500);
+}
+.next {
+  background: var(--hairline);
+}

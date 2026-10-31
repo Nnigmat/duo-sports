@@ -1,0 +1,47 @@
+.root {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--spacing-xxs);
+}
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  min-height: 64px; /* нет токена */
+  min-width: var(--size-touch);
+  padding: var(--spacing-xs) 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.checked {
+  padding: calc(var(--spacing-xs) - 1px) 0;
+  border: 2px solid var(--primary);
+}
+.day:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.weekday {
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+.num {
+  font-size: var(--set-value-size);
+  line-height: var(--set-value-line);
+  font-weight: var(--set-value-weight);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--rounded-full);
+}
+.busy {
+  background: var(--steel);
+}

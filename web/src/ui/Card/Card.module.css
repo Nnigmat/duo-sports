@@ -1,0 +1,30 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+  text-decoration: none;
+}
+.surface {
+  border-color: var(--hairline);
+  background: var(--surface);
+}
+.interactive {
+  cursor: pointer;
+}
+.interactive:hover {
+  box-shadow: var(--elevation-1);
+}
+.interactive:active {
+  background: var(--surface);
+}
+.interactive:focus-visible {
+  box-shadow: var(--focus-ring);
+}

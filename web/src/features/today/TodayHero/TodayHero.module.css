@@ -1,0 +1,125 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+.disk {
+  display: grid;
+  place-items: center;
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+}
+.eyebrow {
+  margin: 0;
+  font-size: var(--micro-uppercase-size);
+  line-height: var(--micro-uppercase-line);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.title {
+  margin: 0;
+  font-size: var(--heading-3-size);
+  line-height: var(--heading-3-line);
+  font-weight: var(--heading-3-weight);
+}
+.meta {
+  margin: 0;
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+  color: var(--slate);
+}
+.muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.exercises {
+  display: none;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hairline);
+}
+.exercises li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--body-sm-size);
+}
+.plan {
+  font-variant-numeric: tabular-nums;
+  color: var(--slate);
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.phoneOnly {
+  display: inline-flex;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+.stats div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+.stats dd {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--heading-4-size);
+  font-variant-numeric: tabular-nums;
+}
+.stats dt {
+  font-size: var(--caption-size);
+  color: var(--steel);
+}
+
+@media (min-width: 768px) {
+  .hero {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-xxl);
+  }
+  .card {
+    padding: var(--spacing-xl);
+  }
+  .exercises {
+    display: flex;
+  }
+  .actions {
+    flex-direction: row;
+  }
+  .phoneOnly {
+    display: none;
+  }
+}

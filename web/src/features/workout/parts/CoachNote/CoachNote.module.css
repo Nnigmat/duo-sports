@@ -1,0 +1,47 @@
+.root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* нет токена */
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px; /* нет токена */
+  padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs) 10px; /* 10 px: нет токена */
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  box-shadow: var(--elevation-2);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.root:hover {
+  background: var(--surface);
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: var(--spacing-xxs);
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.chevron {
+  flex: none;
+  color: var(--steel);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

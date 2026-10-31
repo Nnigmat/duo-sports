@@ -1,0 +1,14 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  padding: var(--spacing-xxs) var(--spacing-sm);
+  border-radius: var(--rounded-full);
+  background: var(--highlight-soft);
+  color: var(--ink);
+  font-size: var(--caption-bold-size);
+  line-height: var(--caption-bold-line);
+  font-weight: var(--caption-bold-weight);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

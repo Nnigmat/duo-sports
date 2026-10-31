@@ -1,0 +1,37 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: var(--size-touch);
+  cursor: pointer;
+}
+.disabled {
+  cursor: not-allowed;
+}
+
+.input {
+  flex: none;
+  width: 22px; /* нет токена */
+  height: 22px; /* нет токена */
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: inherit;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+}
+.label {
+  font-size: 15px; /* нет токена */
+  line-height: var(--body-sm-line);
+  font-weight: var(--body-sm-medium-weight);
+}
+.hint {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--steel);
+}
+.disabled .label {
+  color: var(--muted);
+}

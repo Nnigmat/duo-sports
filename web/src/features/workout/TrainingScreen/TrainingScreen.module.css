@@ -1,0 +1,94 @@
+/* Ровно высота окна: нижний ряд закреплён, при нехватке места прокручивается только сцена */
+.screen {
+  height: 100dvh;
+}
+
+.progress {
+  padding: 0 var(--spacing-xxs);
+}
+
+.bubble {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: none;
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+}
+
+/* Сцена: диск, чибик, боковые кнопки и нижняя группа лежат в одной рамке */
+.stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.disc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px; /* нет токена */
+  height: 280px; /* нет токена */
+  margin: -128px 0 0 -140px; /* нет токена: диск чуть выше центра */
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+}
+
+.stage .chibi {
+  position: relative;
+  width: auto;
+  max-width: 100%;
+  height: min(300px, 100%); /* нет токена: на низком экране чибик уменьшается */
+  aspect-ratio: 1;
+}
+
+.left,
+.right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.left {
+  left: 0;
+}
+.right {
+  right: 0;
+}
+
+.bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* Подсказка не кнопка: действие уже есть у камеры справа */
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: var(--spacing-xs) 14px; /* 14 px: нет токена */
+  border: 1px solid var(--primary);
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  color: var(--primary);
+  font-weight: var(--button-md-weight);
+  text-align: center;
+}
+
+.dot {
+  flex: none;
+  width: 8px; /* нет токена */
+  height: 8px; /* нет токена */
+  border-radius: var(--rounded-full);
+  background: var(--danger);
+}

@@ -1,0 +1,54 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  animation: fade-in 160ms ease-out;
+}
+.scrim[data-state='closed'] {
+  animation: fade-out 120ms ease-in;
+}
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: calc(100% - 2 * var(--spacing-md));
+  max-width: 400px; /* нет токена */
+  height: fit-content;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  border-radius: var(--rounded-xl);
+  background: var(--canvas);
+  box-shadow: var(--elevation-3);
+  animation: fade-in 160ms ease-out;
+}
+.dialog[data-state='closed'] {
+  animation: fade-out 120ms ease-in;
+}
+.dialog:focus {
+  outline: none;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}

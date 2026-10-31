@@ -1,0 +1,85 @@
+.display {
+  font-family: var(--font-serif);
+  font-size: var(--display-lg-size);
+  line-height: var(--display-lg-line);
+  font-weight: var(--display-lg-weight);
+  letter-spacing: var(--display-lg-tracking);
+}
+
+/* Макет (Main, h1) расходится с токеном heading-1 (44 px / 1.15): берём макет. */
+.h1 {
+  font-family: var(--font-serif);
+  font-size: 36px; /* нет токена */
+  line-height: 1.1; /* нет токена */
+  font-weight: var(--heading-1-weight);
+  letter-spacing: -0.5px; /* нет токена */
+}
+
+.h2 {
+  font-family: var(--font-sans);
+  font-size: var(--heading-2-size);
+  line-height: var(--heading-2-line);
+  font-weight: var(--heading-2-weight);
+  letter-spacing: var(--heading-2-tracking);
+}
+
+.h3 {
+  font-family: var(--font-sans);
+  font-size: var(--heading-3-size);
+  line-height: var(--heading-3-line);
+  font-weight: var(--heading-3-weight);
+}
+
+.h4 {
+  font-family: var(--font-sans);
+  font-size: var(--heading-4-size);
+  line-height: var(--heading-4-line);
+  font-weight: var(--heading-4-weight);
+}
+
+.h5 {
+  font-family: var(--font-sans);
+  font-size: var(--heading-5-size);
+  line-height: var(--heading-5-line);
+  font-weight: var(--heading-5-weight);
+}
+
+.body {
+  font-size: var(--body-md-size);
+  line-height: var(--body-md-line);
+  font-weight: var(--body-md-weight);
+}
+
+.body-sm {
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+  font-weight: var(--body-sm-weight);
+}
+
+.caption {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: var(--caption-weight);
+  color: var(--steel);
+}
+
+.eyebrow {
+  font-size: var(--micro-uppercase-size);
+  line-height: var(--micro-uppercase-line);
+  font-weight: var(--micro-uppercase-weight);
+  letter-spacing: var(--micro-uppercase-tracking);
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.ink {
+  color: var(--ink);
+}
+
+.slate {
+  color: var(--slate);
+}
+
+.steel {
+  color: var(--steel);
+}

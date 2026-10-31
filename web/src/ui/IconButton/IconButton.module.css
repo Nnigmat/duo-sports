@@ -1,0 +1,97 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: var(--set-value-weight);
+  text-decoration: none;
+  cursor: pointer;
+}
+.root:hover {
+  background: var(--surface);
+}
+
+.sm {
+  width: var(--size-stage-action);
+  height: var(--size-stage-action);
+}
+
+.md {
+  width: 56px; /* нет токена */
+  height: 56px; /* нет токена */
+}
+
+.lg {
+  width: var(--size-key-action);
+  height: var(--size-key-action);
+  gap: 2px; /* нет токена */
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.lg:hover {
+  background: var(--primary-deep);
+}
+
+.inner {
+  font-size: var(--button-md-size);
+  line-height: var(--button-md-line);
+  font-weight: var(--button-md-weight);
+}
+
+.bare {
+  width: var(--size-touch);
+  height: var(--size-touch);
+  border-color: transparent;
+  background: transparent;
+}
+.bare:hover {
+  background: var(--surface);
+}
+
+/* Активная: рамка 2 px primary + кольцо 4 px primary 12 % */
+.active {
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.root:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px; /* нет токена */
+  height: 14px; /* нет токена */
+  border: 2px solid var(--canvas);
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+}
+
+.wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xxs);
+}
+
+.caption {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--steel);
+  white-space: nowrap;
+}
+.captionActive {
+  font-weight: var(--caption-bold-weight);
+  color: var(--primary);
+}

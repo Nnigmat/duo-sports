@@ -1,0 +1,33 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* нет токена */
+}
+
+.label {
+  font-size: var(--caption-bold-size);
+  line-height: var(--caption-bold-line);
+  font-weight: var(--caption-bold-weight);
+  color: var(--slate);
+}
+
+.hint {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--steel);
+}
+
+/* Ошибка: текст ink, цвет danger только у иконки (и рамки контрола) */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--ink);
+}
+.errorIcon {
+  flex: none;
+  margin-top: -3px; /* нет токена */
+  color: var(--danger);
+}
