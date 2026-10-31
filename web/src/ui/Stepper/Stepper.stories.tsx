@@ -46,9 +46,9 @@ export const Weight: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: 'Больше' }));
-    await expect(c.getByRole('status')).toHaveTextContent('5');
+    await expect(c.getByRole('status')).toHaveTextContent(/^3$/);
     await userEvent.click(c.getByRole('button', { name: 'Больше' }));
-    await expect(c.getByRole('status')).toHaveTextContent('7,5');
+    await expect(c.getByRole('status')).toHaveTextContent(/^3,5$/);
   },
 };
 
