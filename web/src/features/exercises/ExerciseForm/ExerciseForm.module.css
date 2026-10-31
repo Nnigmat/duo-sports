@@ -1,0 +1,10 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}

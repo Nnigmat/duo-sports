@@ -1,0 +1,118 @@
+.root {
+  display: flex;
+  flex-direction: column;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xl);
+}
+.figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-height: 200px;
+  margin: 0;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-xl);
+  background: var(--surface);
+  color: var(--steel);
+}
+.caption {
+  font-size: var(--body-sm-size);
+  color: var(--slate);
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--primary);
+  font-size: var(--body-sm-medium-size);
+  font-weight: var(--body-sm-medium-weight);
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.wide > :first-child {
+  font-size: var(--heading-2-size);
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.sets {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-xl);
+}
+.set {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: var(--size-touch);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-variant-numeric: tabular-nums;
+}
+.set + .set {
+  border-top: 1px solid var(--hairline-soft);
+}
+.num {
+  width: 20px;
+  color: var(--steel);
+  font-size: var(--body-sm-size);
+}
+.main {
+  flex: none;
+  min-width: 96px;
+  font-size: var(--set-value-size);
+  font-weight: var(--set-value-weight);
+}
+.track {
+  flex: 1;
+  height: var(--size-progress);
+  border-radius: var(--rounded-full);
+  background: transparent;
+  overflow: hidden;
+}
+.track:has(.fill) {
+  background: var(--hairline-soft);
+}
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--rounded-full);
+  background: var(--accent-500);
+}
