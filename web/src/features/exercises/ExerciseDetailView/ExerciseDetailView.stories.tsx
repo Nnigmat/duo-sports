@@ -7,7 +7,7 @@ const meta = {
   title: 'Features/Exercises/ExerciseDetailView',
   component: ExerciseDetailView,
   args: { exercise: squat, onBack: fn(), onEdit: fn(), onOpenHistory: fn(), onAddVideo: fn() },
-  parameters: { bleed: true, docs: { description: { component: 'Артборды «Карточка»: вес × повторы, собственный вес, на время, без истории.' } } },
+  parameters: { docs: { description: { component: 'Артборды «Карточка»: вес × повторы, собственный вес, на время, без истории.' } } },
 } satisfies Meta<typeof ExerciseDetailView>;
 export default meta;
 type Story = StoryObj<typeof meta>;

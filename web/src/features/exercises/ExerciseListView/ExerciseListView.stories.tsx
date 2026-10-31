@@ -9,7 +9,7 @@ const meta = {
   title: 'Features/Exercises/ExerciseListView',
   component: ExerciseListView,
   args: { exercises: exerciseLibrary, query: '', group: 'all', onQueryChange: fn(), onGroupChange: fn(), onOpen: fn(), onCreate: fn() },
-  parameters: { bleed: true, docs: { description: { component: 'Артборд «Мобильная · Упражнения»: поиск, группы мышц, разделы со строками.' } } },
+  parameters: { docs: { description: { component: 'Артборд «Мобильная · Упражнения»: поиск, группы мышц, разделы со строками.' } } },
 } satisfies Meta<typeof ExerciseListView>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -23,6 +23,10 @@ export const Default: Story = {
     await userEvent.click(c.getByRole('button', { name: 'Своё упражнение' }));
     await expect(args.onCreate).toHaveBeenCalled();
   },
+};
+export const Desktop: Story = {
+  args: { layout: 'desktop' },
+  globals: { viewport: { value: 'desktop', isRotated: false } },
 };
 export const FilteredByGroup: Story = { args: { group: 'back' } };
 export const Searching: Story = { args: { query: 'гантел' } };

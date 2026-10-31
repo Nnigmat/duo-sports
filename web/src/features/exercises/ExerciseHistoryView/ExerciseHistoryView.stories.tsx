@@ -9,7 +9,7 @@ const meta = {
   title: 'Features/Exercises/ExerciseHistoryView',
   component: ExerciseHistoryView,
   args: { exercise: squat, sort: 'new', onSortChange: fn(), onBack: fn(), onShowMore: fn() },
-  parameters: { bleed: true, docs: { description: { component: 'Артборд «Мобильная · Все тренировки».' } } },
+  parameters: { docs: { description: { component: 'Артборд «Мобильная · Все тренировки».' } } },
 } satisfies Meta<typeof ExerciseHistoryView>;
 export default meta;
 type Story = StoryObj<typeof meta>;

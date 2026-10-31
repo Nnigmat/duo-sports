@@ -24,4 +24,14 @@ export const WithRecord: Story = { args: { meta: <span>Рекорд · 60 кг �
 export const New: Story = {
   args: { title: 'Болгарские выпады', meta: <><Badge tone="highlight">Новое</Badge><span>Ещё не выполнялось</span></> },
 };
+export const WithAside: Story = {
+  args: {
+    aside: (
+      <>
+        <span style={{ fontSize: 'var(--micro-uppercase-size)', color: 'var(--steel)', letterSpacing: '1px' }}>РЕКОРД</span>
+        <span>80 кг × 5</span>
+      </>
+    ),
+  },
+};
 export const AsLink: Story = { args: { onClick: undefined, href: '#detail' } };

@@ -5,7 +5,7 @@ import { ExercisesFlow } from './ExercisesFlow';
 const meta = {
   title: 'Features/Exercises/ExercisesFlow',
   component: ExercisesFlow,
-  parameters: { bleed: true, docs: { description: { component: 'Все мобильные экраны вкладки «Упражнения» в одном сценарии, данные в памяти.' } } },
+  parameters: { docs: { description: { component: 'Все мобильные экраны вкладки «Упражнения» в одном сценарии, данные в памяти.' } } },
 } satisfies Meta<typeof ExercisesFlow>;
 export default meta;
 type Story = StoryObj<typeof meta>;

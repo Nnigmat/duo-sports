@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xl);
+  padding: var(--spacing-xs) 0 var(--spacing-xl);
 }
 .titles {
   display: flex;
@@ -50,4 +50,10 @@
   border: 1px solid var(--hairline);
   font-size: var(--body-sm-size);
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 1024px) {
+  .root {
+    max-width: 720px;
+  }
 }

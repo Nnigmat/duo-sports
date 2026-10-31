@@ -56,3 +56,12 @@
   flex: none;
   color: var(--steel);
 }
+.aside {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

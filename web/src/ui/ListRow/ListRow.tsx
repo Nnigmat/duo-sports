@@ -10,6 +10,8 @@ type Common = {
   subtitle?: string;
   /** Строка меток под подзаголовком: Badge, «Рекорд · 60 кг × 10» */
   meta?: ReactNode;
+  /** Колонка справа перед шевроном: рекорд на широком экране */
+  aside?: ReactNode;
   /** С href — ссылка, иначе кнопка */
   href?: string;
   onClick?: () => void;
@@ -19,7 +21,7 @@ type Common = {
 type Props = Common;
 
 /** Строка списка: плитка с иконкой, название, подзаголовок, метки и шеврон. Кнопка или ссылка целиком. */
-export function ListRow({ icon, title, subtitle, meta, className, href, onClick }: Props) {
+export function ListRow({ icon, title, subtitle, meta, aside, className, href, onClick }: Props) {
   const content = (
     <>
       <span className={styles.tile}>
@@ -30,6 +32,7 @@ export function ListRow({ icon, title, subtitle, meta, className, href, onClick 
         {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
         {meta && <span className={styles.meta}>{meta}</span>}
       </span>
+      {aside && <span className={styles.aside}>{aside}</span>}
       <Icon name="chevronRight" className={styles.chevron} />
     </>
   );

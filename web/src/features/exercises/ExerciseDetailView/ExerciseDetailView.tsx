@@ -12,12 +12,14 @@ type Props = {
   onEdit: () => void;
   onOpenHistory: () => void;
   onAddVideo?: () => void;
+  /** Подпись кнопки назад; на десктопе «Все упражнения» */
+  backLabel?: string;
   /** Заменяет шапку, например при редактировании */
   topBar?: ReactNode;
 };
 
 /** Карточка упражнения: тип, мышцы, рекорд, последняя тренировка, видео и комментарии, график. */
-export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory, onAddVideo, topBar }: Props) {
+export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory, onAddVideo, backLabel = 'Упражнения', topBar }: Props) {
   const tiles = recordTiles(ex);
   const rows = lastSessionRows(ex);
   const note = barsNote(ex);
@@ -31,7 +33,7 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
     <div className={styles.root}>
       {topBar ?? (
         <TopBar
-          start={<Button variant="ghost" compact icon="back" onClick={onBack}>Упражнения</Button>}
+          start={<Button variant="ghost" compact icon="back" onClick={onBack}>{backLabel}</Button>}
           end={<Button variant="ghost" compact icon="pencil" onClick={onEdit}>Редактировать</Button>}
         />
       )}
@@ -49,6 +51,7 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
           )}
         </figure>
 
+        <div className={styles.info}>
         <div className={styles.head}>
           <Text variant="h3" tag="h1">{ex.name}</Text>
           <span className={styles.kind}>
@@ -139,6 +142,7 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
             <BarChart values={ex.trend} label={trend.aria} firstLabel={trend.first} lastLabel={trend.last} />
           </section>
         )}
+        </div>
       </div>
     </div>
   );

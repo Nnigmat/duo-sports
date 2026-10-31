@@ -1,4 +1,4 @@
-import { Badge, Chip, ChipGroup, EmptyState, IconButton, ListRow, SearchField, Button, Text } from '../../../ui';
+import { Badge, Button, Chip, ChipGroup, EmptyState, IconButton, ListRow, SearchField, Text } from '../../../ui';
 import { exerciseIcon, groupExercises, groupTabs, planShort, recordText, searchExercises, totalText, type GroupFilter } from '../library';
 import type { LibraryExercise } from '../types';
 import styles from './ExerciseListView.module.css';
@@ -11,23 +11,31 @@ type Props = {
   onGroupChange: (group: GroupFilter) => void;
   onOpen: (id: string) => void;
   onCreate: () => void;
+  /** desktop: заголовок с кнопкой «Новое упражнение» и колонка рекорда справа */
+  layout?: 'mobile' | 'desktop';
 };
 
 /** Список упражнений: поиск, фильтр по группе мышц и разделы. */
-export function ExerciseListView({ exercises, query, onQueryChange, group, onGroupChange, onOpen, onCreate }: Props) {
+export function ExerciseListView({ exercises, query, onQueryChange, group, onGroupChange, onOpen, onCreate, layout = 'mobile' }: Props) {
   const searched = searchExercises(exercises, query);
   const tabs = groupTabs(searched);
   const sections = groupExercises(searched, group);
+  const desktop = layout === 'desktop';
   const inPlan = exercises.filter((e) => e.plan).length;
 
   return (
     <div className={styles.root}>
       <header className={styles.header}>
         <div className={styles.titles}>
+          {desktop && <Text variant="eyebrow">Библиотека</Text>}
           <Text variant="h2" tag="h1">Упражнения</Text>
           <Text variant="body-sm" color="steel">{totalText(exercises.length, inPlan)}</Text>
         </div>
-        <IconButton icon="plus" aria-label="Своё упражнение" onClick={onCreate} />
+        {desktop ? (
+          <Button icon="plus" onClick={onCreate}>Новое упражнение</Button>
+        ) : (
+          <IconButton icon="plus" aria-label="Своё упражнение" onClick={onCreate} />
+        )}
       </header>
 
       <SearchField label="Поиск по названию или мышце" placeholder="Поиск: присед, ягодицы…" value={query} onValueChange={onQueryChange} />
@@ -53,10 +61,18 @@ export function ExerciseListView({ exercises, query, onQueryChange, group, onGro
                   icon={exerciseIcon(ex.kind, ex.equipment)}
                   title={ex.name}
                   subtitle={`${ex.muscles.join(', ')} · ${ex.equipment}`}
+                  aside={
+                    desktop ? (
+                      <>
+                        <Text variant="eyebrow">Рекорд</Text>
+                        <span>{ex.record ? recordText(ex) : '—'}</span>
+                      </>
+                    ) : undefined
+                  }
                   meta={
                     <>
                       {ex.record ? (
-                        <span>Рекорд · {recordText(ex)}</span>
+                        !desktop && <span>Рекорд · {recordText(ex)}</span>
                       ) : (
                         <>
                           <Badge tone="highlight">Новое</Badge>

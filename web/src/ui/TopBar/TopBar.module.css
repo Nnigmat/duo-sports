@@ -4,7 +4,7 @@
   justify-content: space-between;
   gap: var(--spacing-sm);
   min-height: 56px;
-  padding: 0 var(--spacing-xs);
+  margin: 0 calc(-1 * var(--spacing-xs)); /* текст ghost-кнопки встаёт в колонку страницы */
 }
 .slot {
   display: flex;

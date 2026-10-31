@@ -11,7 +11,7 @@ const meta = {
   title: 'Features/Exercises/ExerciseForm',
   component: ExerciseForm,
   args: { draft: emptyDraft(), onChange: fn() },
-  parameters: { bleed: true, docs: { description: { component: 'Поля формы упражнения и экраны «Новое упражнение» и «Редактирование». Артборды «Новое упражнение» (4 состояния) и «Карточка · Редактирование».' } } },
+  parameters: { docs: { description: { component: 'Поля формы упражнения и экраны «Новое упражнение» и «Редактирование». Артборды «Новое упражнение» (4 состояния) и «Карточка · Редактирование».' } } },
 } satisfies Meta<typeof ExerciseForm>;
 export default meta;
 type Story = StoryObj<typeof meta>;
