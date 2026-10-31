@@ -17,3 +17,7 @@
 .highlight {
   background: var(--highlight-soft);
 }
+.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}

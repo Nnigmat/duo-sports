@@ -130,3 +130,39 @@ export type ScheduleData = {
   sameWeek: (RescheduleTarget & { relative?: string }) | null;
   nextWeek: { rangeLabel: string; days: RescheduleTarget[] };
 };
+
+/** Цвет-метка типа тренировки в календаре; всегда рядом с названием */
+export type PlanTone = 'primary' | 'teal' | 'amber' | 'slate';
+
+export type PlanTemplate = {
+  id: string;
+  title: string;
+  /** Ориентировочная длительность */
+  minutes: number;
+  tone: PlanTone;
+  /** detail: «4 × 8 · 50 кг» */
+  exercises: Array<{ name: string; detail: string }>;
+};
+
+export type PlanEntryStatus = 'planned' | 'done' | 'skipped' | 'moved';
+
+/** Тренировка, стоящая в конкретный день */
+export type PlanEntry = {
+  templateId: string;
+  status: PlanEntryStatus;
+  /** Для status = moved: «31 октября» */
+  movedTo?: string;
+  /** Добавлена или скопирована вручную: её можно убрать */
+  custom?: boolean;
+};
+
+export type PlanData = {
+  /** «2026-10-31» */
+  today: string;
+  /** Границы календаря */
+  min: string;
+  max: string;
+  templates: PlanTemplate[];
+  /** Ключ — дата «2026-10-31» */
+  entries: Record<string, PlanEntry>;
+};

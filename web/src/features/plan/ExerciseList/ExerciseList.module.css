@@ -1,0 +1,25 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hairline);
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 10px 0; /* нет токена */
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+}
+.name {
+  min-width: 0;
+}
+.detail {
+  flex-shrink: 0;
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}

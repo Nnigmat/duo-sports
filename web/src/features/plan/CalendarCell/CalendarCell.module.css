@@ -1,0 +1,137 @@
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-xxs);
+  min-width: 0;
+  min-height: 100px; /* нет токена */
+  box-sizing: border-box;
+  padding: var(--spacing-xs);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.cell[data-view='week'] {
+  min-height: 180px; /* нет токена */
+}
+.cell[data-layout='mobile'] {
+  align-items: center;
+  min-height: 64px; /* нет токена */
+  padding: var(--spacing-xxs) 0;
+  gap: 2px;
+}
+.cell[data-layout='mobile'][data-view='week'] {
+  min-height: 88px; /* нет токена */
+}
+.filled {
+  background: var(--surface);
+}
+.selected {
+  padding: calc(var(--spacing-xs) - 1px);
+  border: 2px solid var(--primary);
+}
+.cell[data-layout='mobile'].selected {
+  padding: calc(var(--spacing-xxs) - 1px) 0;
+}
+.target {
+  padding: calc(var(--spacing-xs) - 1px);
+  border: 2px dashed var(--primary);
+}
+.cell[data-layout='mobile'].target {
+  padding: calc(var(--spacing-xxs) - 1px) 0;
+}
+.moved {
+  border: 1px dashed var(--hairline-strong);
+}
+.cell:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.outside {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+.num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: 26px; /* нет токена */
+  height: 26px;
+  border-radius: var(--rounded-full);
+  font-size: var(--caption-size);
+  font-weight: var(--caption-bold-weight);
+  font-variant-numeric: tabular-nums;
+}
+.cell[data-layout='mobile'] .num {
+  align-self: center;
+}
+.past {
+  color: var(--steel);
+}
+.faded {
+  color: var(--hairline-strong);
+}
+.today {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px; /* нет токена */
+  min-width: 0;
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: 500;
+}
+.dot {
+  margin-top: 5px; /* по центру первой строки */
+}
+.title {
+  min-width: 0;
+}
+.mutedTitle {
+  color: var(--steel);
+}
+.struck {
+  text-decoration: line-through;
+}
+.marks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.check {
+  color: var(--primary);
+  width: 16px;
+  height: 16px;
+}
+.meta {
+  color: var(--slate);
+  font-size: 12px; /* нет токена */
+  line-height: 1.35;
+}
+.status {
+  margin-top: auto;
+  color: var(--steel);
+  font-size: 12px; /* нет токена */
+  line-height: 1.3;
+}
+.accent {
+  color: var(--primary);
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

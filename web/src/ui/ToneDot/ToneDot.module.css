@@ -1,0 +1,19 @@
+.dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px; /* нет токена */
+  height: 8px;
+  border-radius: var(--rounded-full);
+}
+.primary {
+  background: var(--primary);
+}
+.teal {
+  background: var(--accent-500);
+}
+.amber {
+  background: var(--highlight);
+}
+.slate {
+  background: var(--slate);
+}

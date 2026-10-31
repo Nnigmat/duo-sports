@@ -1,0 +1,58 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+.root[data-layout='desktop'] {
+  gap: var(--spacing-xxl);
+  max-width: 1160px; /* нет токена: шире layout-content-max, чтобы календарь и карточка дня встали в ряд */
+  margin: 0 auto;
+  padding: var(--spacing-xxxl) var(--spacing-xxl) var(--spacing-section);
+}
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.title,
+.lead {
+  margin: 0;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.root[data-layout='desktop'] .body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-xl);
+}
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+.root[data-layout='desktop'] .calendar {
+  flex: 2 1 560px; /* нет токена */
+  padding: var(--spacing-xl);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  box-shadow: var(--elevation-2);
+}
+.panel {
+  min-width: 0;
+}
+.root[data-layout='desktop'] .panel {
+  flex: 1 1 300px;
+}

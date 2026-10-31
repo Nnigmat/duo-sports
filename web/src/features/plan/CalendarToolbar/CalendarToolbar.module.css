@@ -1,0 +1,22 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.nav,
+.tools {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.tools {
+  flex-wrap: wrap;
+}
+.title {
+  margin: 0 0 0 var(--spacing-xs);
+  font-size: var(--heading-4-size);
+  line-height: var(--heading-4-line);
+  font-weight: var(--heading-4-weight);
+}

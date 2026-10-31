@@ -4,7 +4,7 @@ import styles from './Badge.module.css';
 type Props = {
   /** Всегда слово («Новый», «Пропущен»): цвет сам смысла не несёт */
   children: string;
-  tone?: 'accent' | 'neutral' | 'highlight';
+  tone?: 'accent' | 'neutral' | 'highlight' | 'primary';
   className?: string;
 };
 

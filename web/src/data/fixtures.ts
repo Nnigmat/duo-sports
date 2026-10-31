@@ -1,5 +1,6 @@
 export { COMMENTS as workoutComments, TECHNIQUES as workoutTechniques, WORKOUT as workoutFixture } from '../features/workout/WorkoutFlow/mockWorkout';
-import type { AchievementsData, ScheduleData, TodayData, TodayState } from './types';
+import { addDays, parseIso } from '../features/plan/plan';
+import type { AchievementsData, PlanData, PlanEntry, PlanTemplate, ScheduleData, TodayData, TodayState } from './types';
 
 /** 12 недель по 7 дней; детерминированно, чтобы истории не мигали */
 function heatLevels(): Array<0 | 1 | 2 | 3> {
@@ -168,4 +169,73 @@ export const scheduleFixture: ScheduleData = {
     ],
   },
 };
+export const planTemplates: PlanTemplate[] = [
+  {
+    id: 'upper', title: 'Верх тела', minutes: 55, tone: 'primary',
+    exercises: [
+      { name: 'Жим лёжа', detail: '4 × 8 · 50 кг' },
+      { name: 'Тяга верхнего блока', detail: '3 × 10 · 55 кг' },
+      { name: 'Жим гантелей сидя', detail: '3 × 10 · 2 × 14 кг' },
+      { name: 'Тяга гантели в наклоне', detail: '3 × 10 · 20 кг' },
+      { name: 'Отжимания на брусьях', detail: '3 × 8' },
+      { name: 'Подъём на бицепс', detail: '3 × 12 · 2 × 10 кг' },
+    ],
+  },
+  {
+    id: 'cardio', title: 'Кардио и пресс', minutes: 45, tone: 'teal',
+    exercises: [
+      { name: 'Гребной тренажёр', detail: '10 мин' },
+      { name: 'Скручивания', detail: '3 × 15' },
+      { name: 'Планка', detail: '3 × 1:00' },
+      { name: 'Велосипед', detail: '3 × 20' },
+      { name: 'Берпи', detail: '3 × 10' },
+    ],
+  },
+  {
+    id: 'legs', title: 'Ноги и ягодицы', minutes: 50, tone: 'amber',
+    exercises: [
+      { name: 'Приседания со штангой', detail: '4 × 8 · 75 кг' },
+      { name: 'Румынская тяга', detail: '3 × 10 · 50 кг' },
+      { name: 'Выпады с гантелями', detail: '3 × 12 · 2 × 12 кг' },
+      { name: 'Ягодичный мост', detail: '3 × 15 · 40 кг' },
+      { name: 'Сгибание ног в тренажёре', detail: '3 × 12 · 30 кг' },
+    ],
+  },
+  {
+    id: 'full', title: 'Всё тело', minutes: 45, tone: 'slate',
+    exercises: [
+      { name: 'Становая тяга', detail: '3 × 6 · 70 кг' },
+      { name: 'Жим гантелей лёжа', detail: '3 × 10 · 2 × 18 кг' },
+      { name: 'Гоблет-присед', detail: '3 × 12 · 20 кг' },
+      { name: 'Тяга горизонтального блока', detail: '3 × 10 · 45 кг' },
+      { name: 'Махи гирей', detail: '3 × 15 · 16 кг' },
+      { name: 'Планка', detail: '3 × 1:00' },
+    ],
+  },
+];
+
+/** Недельный шаблон: пн — верх, ср — кардио, чт — ноги, вс — всё тело */
+function planEntries(today: string, min: string, max: string): Record<string, PlanEntry> {
+  const byDow: Record<number, string> = { 1: 'upper', 3: 'cardio', 4: 'legs', 0: 'full' };
+  const skipped = new Set(['2026-10-11', '2026-09-17']);
+  const out: Record<string, PlanEntry> = {};
+  for (let d = min; d <= max; d = addDays(d, 1)) {
+    const templateId = byDow[parseIso(d).getDay()];
+    if (!templateId) continue;
+    out[d] = { templateId, status: skipped.has(d) ? 'skipped' : d < today ? 'done' : 'planned' };
+  }
+  // Четверг перенесён на сегодня
+  out['2026-10-29'] = { templateId: 'legs', status: 'moved', movedTo: '31 октября' };
+  out['2026-10-31'] = { templateId: 'legs', status: 'planned' };
+  return out;
+}
+
+export const planFixture: PlanData = {
+  today: '2026-10-31',
+  min: '2026-09-01',
+  max: '2026-12-31',
+  templates: planTemplates,
+  entries: planEntries('2026-10-31', '2026-09-01', '2026-12-31'),
+};
+
 export { exerciseLibrary as exercisesFixture } from '../features/exercises/mock';

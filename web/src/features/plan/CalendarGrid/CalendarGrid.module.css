@@ -1,0 +1,37 @@
+.scroll {
+  overflow-x: auto;
+}
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* нет токена */
+  min-width: 560px; /* нет токена: меньше — клетки не читаются, сетка прокручивается */
+}
+.root[data-layout='mobile'] {
+  min-width: 0;
+  gap: var(--spacing-xxs);
+}
+.head,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.root[data-layout='mobile'] .head,
+.root[data-layout='mobile'] .grid {
+  gap: var(--spacing-xxs);
+}
+.head {
+  color: var(--steel);
+  font-size: 12px; /* нет токена */
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.head span {
+  padding: 0 var(--spacing-xs);
+}
+.root[data-layout='mobile'] .head span {
+  padding: 0;
+  text-align: center;
+}

@@ -1,0 +1,16 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--slate);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* нет токена */
+}
