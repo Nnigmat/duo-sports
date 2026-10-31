@@ -1,0 +1,45 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.section[data-layout='desktop'] {
+  gap: var(--spacing-md);
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+}
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.section[data-layout='desktop'] .titleRow {
+  justify-content: flex-start;
+}
+.titleRow h2,
+.note {
+  margin: 0;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.section[data-layout='desktop'] .list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+.item {
+  display: flex;
+}
+.item > * {
+  flex: 1;
+}

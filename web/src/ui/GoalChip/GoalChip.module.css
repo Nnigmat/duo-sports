@@ -1,0 +1,13 @@
+.chip {
+  display: inline-block;
+  min-width: 0;
+  padding: 3px var(--spacing-sm); /* 3 px: нет токена */
+  border: 1px dashed var(--tier-ring);
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  color: var(--tier-ink);
+  font-size: 12px; /* нет токена: чип 12/600 */
+  line-height: 1.4;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,61 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+}
+.card[data-layout='desktop'] {
+  padding: var(--spacing-lg);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.card[data-layout='desktop'] .head {
+  gap: 14px; /* нет токена */
+}
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.titles h3 {
+  margin: 0;
+}
+.description {
+  margin: 0;
+}
+.card[data-layout='desktop'] .description {
+  flex-grow: 1;
+}
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.card[data-layout='desktop'] .goal {
+  gap: 6px; /* нет токена */
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+.progress {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.maxed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* нет токена */
+}
+.check {
+  color: var(--success);
+}

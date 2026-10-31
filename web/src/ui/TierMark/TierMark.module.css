@@ -1,0 +1,15 @@
+.mark {
+  flex: none;
+  overflow: visible;
+}
+.mark path {
+  fill: var(--tier-fill);
+  stroke: var(--tier-ring);
+}
+.empty path {
+  fill: var(--canvas);
+  stroke: var(--hairline-strong);
+}
+.streak {
+  stroke: var(--highlight);
+}

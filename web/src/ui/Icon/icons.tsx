@@ -131,6 +131,13 @@ export const icons = {
       <path d="M12 11v5.5M12 7.5v.01" />
     </>
   ),
+  calendar: (
+    <>
+      <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4" />
+    </>
+  ),
+  bars: <path d="M4 20h16M7 16v-5M12 16V6M17 16v-8" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof icons;

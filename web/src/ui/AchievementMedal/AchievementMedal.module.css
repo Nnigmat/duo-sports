@@ -1,28 +1,17 @@
 .medal {
-  display: inline-flex;
+  position: relative;
+  display: inline-grid;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  border-radius: var(--rounded-full);
+  place-items: center;
+  color: var(--ink);
 }
-.tier0 {
-  background: var(--canvas);
-  border: 2px dashed var(--hairline-strong);
+.empty {
   color: var(--steel);
 }
-.tier1 {
-  background: var(--accent-300);
-  color: var(--ink);
+.mark {
+  position: absolute;
+  inset: 0;
 }
-.tier2 {
-  background: var(--accent-500);
-  color: var(--ink);
-}
-.tier3 {
-  background: var(--accent-700);
-  color: var(--on-primary);
-}
-.streak {
-  box-shadow: 0 0 0 3px var(--canvas), 0 0 0 5px var(--highlight);
+.icon {
+  position: relative;
 }

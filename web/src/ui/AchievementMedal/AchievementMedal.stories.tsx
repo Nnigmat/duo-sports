@@ -11,7 +11,7 @@ const meta = {
   argTypes: {
     icon: { control: 'select', options: Object.keys(icons) as IconName[] },
     tier: { control: 'inline-radio', options: [0, 1, 2, 3] },
-    size: { control: 'inline-radio', options: [40, 56, 72] },
+    size: { control: 'inline-radio', options: [40, 48, 56, 72] },
   },
 } satisfies Meta<typeof AchievementMedal>;
 export default meta;
@@ -33,7 +33,7 @@ export const Streak: Story = { args: { tier: 2, streak: true } };
 export const AllVariants: Story = {
   render: () => (
     <Stack>
-      {([40, 56, 72] as const).map((size) => (
+      {([40, 48, 56, 72] as const).map((size) => (
         <Row key={size} label={`${size} px`}>
           {([0, 1, 2, 3] as const).map((tier) => (
             <AchievementMedal key={tier} icon="trophy" tier={tier} size={size} label="Награда" />
@@ -47,7 +47,7 @@ export const AllVariants: Story = {
   ),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getAllByRole('img')).toHaveLength(21);
-    await expect(c.getAllByRole('img', { name: 'Серия, уровень III' })).toHaveLength(3);
+    await expect(c.getAllByRole('img')).toHaveLength(28);
+    await expect(c.getAllByRole('img', { name: 'Серия, уровень III' })).toHaveLength(4);
   },
 };

@@ -51,4 +51,5 @@ export const AllVariants: Story = {
 };
 
 export const WithCount: Story = { args: { children: 'Ноги', count: 8 } };
+export const FractionCount: Story = { args: { children: 'Регулярность', count: '2/6' } };
 export const PressedWithCount: Story = { args: { children: 'Ноги', count: 8, pressed: true } };

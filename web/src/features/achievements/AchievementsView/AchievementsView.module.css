@@ -1,0 +1,22 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+.root[data-layout='desktop'] {
+  max-width: 960px;
+  gap: var(--spacing-xxl);
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.title {
+  margin: 0;
+}
+.root[data-layout='desktop'] .title {
+  font-size: var(--heading-1-size);
+  line-height: var(--heading-1-line);
+  letter-spacing: 0;
+}

@@ -1,0 +1,16 @@
+.track {
+  height: var(--spacing-xs);
+  overflow: hidden;
+  border-radius: var(--rounded-full);
+  background: var(--hairline);
+}
+.fill {
+  height: 100%;
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fill {
+    transition: width 300ms ease-out;
+  }
+}

@@ -5,8 +5,8 @@ import styles from './Chip.module.css';
 type Props = Omit<ComponentProps<'button'>, 'aria-pressed'> & {
   /** Включён ли фильтр; уходит в aria-pressed */
   pressed: boolean;
-  /** Число рядом с названием: «Ноги 8» */
-  count?: number;
+  /** Число рядом с названием: «Ноги 8» или «5/8» */
+  count?: number | string;
 };
 
 export function Chip({ pressed, count, className, type = 'button', children, ...button }: Props) {
