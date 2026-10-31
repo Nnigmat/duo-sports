@@ -1,8 +1,8 @@
 /** Хуки данных. Вызывать только из *Page.tsx, вниз данные уходят пропсами. */
 import { useEffect, useState } from 'react';
 import type { LibraryExercise } from '../features/exercises/types';
-import { fetchAchievements, fetchExercises, fetchSchedule, fetchToday, fetchWorkout, type WorkoutData } from './api';
-import type { AchievementsData, ScheduleData, TodayData } from './types';
+import { fetchAchievements, fetchExercises, fetchPlan, fetchSchedule, fetchToday, fetchWorkout, type WorkoutData } from './api';
+import type { AchievementsData, PlanData, ScheduleData, TodayData } from './types';
 
 export type Resource<T> = { data: T | null; error: string | null };
 
@@ -26,3 +26,4 @@ export const useAchievements = (): Resource<AchievementsData> => useResource(fet
 export const useSchedule = (): Resource<ScheduleData> => useResource(fetchSchedule);
 export const useWorkout = (): Resource<WorkoutData> => useResource(fetchWorkout);
 export const useExercises = (): Resource<LibraryExercise[]> => useResource(fetchExercises);
+export const usePlan = (): Resource<PlanData> => useResource(fetchPlan);
