@@ -49,3 +49,6 @@ export const AllVariants: Story = {
     await expect(c.getByRole('button', { name: '0:45' })).toHaveAttribute('aria-pressed', 'false');
   },
 };
+
+export const WithCount: Story = { args: { children: 'Ноги', count: 8 } };
+export const PressedWithCount: Story = { args: { children: 'Ноги', count: 8, pressed: true } };

@@ -45,3 +45,5 @@ export const AllVariants: Story = {
     await expect(c.getByRole('radio', { name: /Только эту тренировку/ })).not.toBeChecked();
   },
 };
+
+export const WithIcon: Story = { args: { icon: 'kettlebell', title: 'Вес × повторы', description: 'Штанга, гантели, гири' } };

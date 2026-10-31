@@ -107,6 +107,24 @@ export const icons = {
       <path d="M12 15v2" />
     </>
   ),
+  barbell: <path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12" />,
+  dumbbell: <path d="M7 9v6M17 9v6M4 10.5v3M20 10.5v3M7 12h10" />,
+  machine: <path d="M5 3v18M19 3v18M5 7h14M9 11h6v8H9z" />,
+  body: <path d="M10 4a2 2 0 1 0 4 0 2 2 0 1 0-4 0M12 6v7M8 21l4-8 4 8M6 10h12" />,
+  timer: <path d="M4 14a8 8 0 1 0 16 0 8 8 0 1 0-16 0M12 10v4l3 2M9 2h6" />,
+  rope: <path d="M6 3v6M18 3v6M6 9c0 7 2 12 6 12s6-5 6-12" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 16V5M7.5 9.5L12 5l4.5 4.5" />
+      <path d="M5 19h14" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="9" />

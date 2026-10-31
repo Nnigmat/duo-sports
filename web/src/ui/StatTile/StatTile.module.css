@@ -1,0 +1,21 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-xl);
+  background: var(--canvas);
+}
+.value {
+  font-family: var(--font-serif);
+  font-size: var(--heading-3-size);
+  font-weight: var(--heading-3-weight);
+  line-height: var(--heading-3-line);
+  font-variant-numeric: tabular-nums;
+}
+.label {
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}

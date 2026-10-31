@@ -63,3 +63,7 @@
 .disabled .description {
   color: var(--muted);
 }
+.icon {
+  flex: none;
+  color: var(--primary);
+}

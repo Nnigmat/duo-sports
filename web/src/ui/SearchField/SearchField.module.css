@@ -1,0 +1,49 @@
+.root {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.icon {
+  position: absolute;
+  left: var(--spacing-sm);
+  color: var(--steel);
+  pointer-events: none;
+}
+.input {
+  width: 100%;
+  height: var(--size-touch);
+  padding: 0 var(--size-touch) 0 calc(var(--spacing-sm) + 24px + var(--spacing-xs));
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--body-md-size); /* 16 px: iOS не приближает страницу */
+  appearance: none;
+}
+.input::placeholder {
+  color: var(--muted);
+}
+.input::-webkit-search-cancel-button {
+  display: none;
+}
+.clear {
+  position: absolute;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  border: 0;
+  background: none;
+  color: var(--slate);
+  cursor: pointer;
+}

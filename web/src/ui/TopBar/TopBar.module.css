@@ -1,0 +1,15 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-height: 56px;
+  padding: 0 var(--spacing-xs);
+}
+.slot {
+  display: flex;
+  align-items: center;
+}
+.end {
+  justify-content: flex-end;
+}

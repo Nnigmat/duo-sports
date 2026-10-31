@@ -21,3 +21,11 @@
   border-color: var(--hairline);
   cursor: not-allowed;
 }
+.count {
+  margin-left: var(--spacing-xxs);
+  color: var(--steel);
+  font-variant-numeric: tabular-nums;
+}
+.on .count {
+  color: var(--on-ink);
+}

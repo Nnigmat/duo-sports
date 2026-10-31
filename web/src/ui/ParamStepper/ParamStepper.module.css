@@ -1,0 +1,62 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+.label {
+  font-size: var(--body-md-size);
+  color: var(--ink);
+}
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.button {
+  display: grid;
+  place-items: center;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  cursor: pointer;
+}
+.button:disabled {
+  color: var(--muted);
+  border-color: var(--hairline);
+  cursor: not-allowed;
+}
+.value,
+.field {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  min-width: 80px;
+  gap: var(--spacing-xxs);
+  font-variant-numeric: tabular-nums;
+}
+.value {
+  font-size: var(--set-value-size);
+  font-weight: var(--set-value-weight);
+}
+.input {
+  width: 56px;
+  height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--hairline-strong);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--set-value-size);
+  font-weight: var(--set-value-weight);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.unit {
+  color: var(--steel);
+  font-size: var(--body-sm-size);
+}

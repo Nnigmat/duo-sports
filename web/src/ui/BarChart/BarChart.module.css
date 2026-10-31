@@ -1,0 +1,26 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+  height: 96px;
+}
+.bar {
+  flex: 1;
+  border-radius: var(--rounded-xs) var(--rounded-xs) 0 0;
+  background: var(--accent-300);
+}
+.last {
+  background: var(--primary);
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--steel);
+  font-size: var(--caption-size);
+  font-variant-numeric: tabular-nums;
+}

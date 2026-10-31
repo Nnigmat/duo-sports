@@ -1,0 +1,13 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xl) var(--spacing-md);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--rounded-xl);
+  text-align: center;
+}
+.root > :last-child:not(p) {
+  margin-top: var(--spacing-xs);
+}
