@@ -14,11 +14,13 @@ type Props = {
   hint?: string;
   /** Текст ошибки; заменяет подсказку */
   error?: string;
+  /** Справа от лейбла, например ссылка «Забыли пароль?» */
+  labelAside?: ReactNode;
   children: (control: FieldControlProps & { labelId: string }) => ReactNode;
 };
 
 /** Лейбл сверху, контрол, подсказка или ошибка снизу. Связи label/aria-describedby выставляет сама. */
-export function Field({ label, hint, error, children }: Props) {
+export function Field({ label, hint, error, labelAside, children }: Props) {
   const uid = useId();
   const id = `${uid}-control`;
   const labelId = `${uid}-label`;
@@ -27,9 +29,12 @@ export function Field({ label, hint, error, children }: Props) {
 
   return (
     <div className={styles.root}>
-      <label id={labelId} htmlFor={id} className={styles.label}>
-        {label}
-      </label>
+      <div className={styles.labelRow}>
+        <label id={labelId} htmlFor={id} className={styles.label}>
+          {label}
+        </label>
+        {labelAside}
+      </div>
       {children({
         id,
         labelId,

@@ -5,8 +5,8 @@ import type { IconName } from '../Icon/icons';
 import styles from './Notice.module.css';
 
 type Props = {
-  /** warn — предупреждение, success — действие выполнено, info — подсказка */
-  tone?: 'info' | 'warn' | 'success';
+  /** warn — предупреждение, success — действие выполнено, error — не получилось (role="alert"), info — подсказка */
+  tone?: 'info' | 'warn' | 'success' | 'error';
   /** Свой знак; по умолчанию по тону */
   icon?: IconName;
   /** Кнопка справа или под текстом, например «Открыть день» */
@@ -15,12 +15,12 @@ type Props = {
   children: ReactNode;
 };
 
-const defaultIcon: Record<NonNullable<Props['tone']>, IconName> = { info: 'info', warn: 'warning', success: 'check' };
+const defaultIcon: Record<NonNullable<Props['tone']>, IconName> = { info: 'info', warn: 'warning', success: 'check', error: 'alert' };
 
 /** Короткое сообщение со знаком и текстом; тон не передаётся одним цветом. */
 export function Notice({ tone = 'info', icon, action, className, children }: Props) {
   return (
-    <div role="status" className={cx(styles.root, styles[tone], className)}>
+    <div role={tone === 'error' ? 'alert' : 'status'} className={cx(styles.root, styles[tone], className)}>
       <Icon name={icon ?? defaultIcon[tone]} size={20} className={styles.icon} />
       <span className={styles.text}>{children}</span>
       {action}

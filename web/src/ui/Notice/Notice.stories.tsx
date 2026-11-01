@@ -8,7 +8,7 @@ const meta = {
   title: 'UI/Notice',
   component: Notice,
   args: { tone: 'info', children: 'Копия появится: вторник, 3 ноября.' },
-  argTypes: { tone: { control: 'inline-radio', options: ['info', 'warn', 'success'] } },
+  argTypes: { tone: { control: 'inline-radio', options: ['info', 'warn', 'success', 'error'] } },
   parameters: { docs: { description: { component: `Артборд «Десктоп · План — копия тренировки» (предупреждение и плашка «скопирована»). ${ARTIFACT}` } } },
 } satisfies Meta<typeof Notice>;
 export default meta;
@@ -21,6 +21,12 @@ export const Info: Story = {
 };
 export const Warn: Story = {
   args: { tone: 'warn', children: 'На 3 ноября уже запланировано «Верх тела». Копия её заменит.' },
+};
+export const ErrorTone: Story = {
+  args: { tone: 'error', children: 'Неверный email или пароль. Проверьте раскладку и Caps Lock.' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('alert')).toHaveTextContent('Неверный email или пароль');
+  },
 };
 export const SuccessWithAction: Story = {
   args: {

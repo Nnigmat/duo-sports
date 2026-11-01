@@ -32,3 +32,10 @@
 .success .icon {
   color: var(--primary);
 }
+.error {
+  background: var(--canvas);
+  border-color: var(--danger);
+}
+.error .icon {
+  color: var(--danger);
+}

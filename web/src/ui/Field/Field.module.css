@@ -4,6 +4,13 @@
   gap: 6px; /* нет токена */
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
 .label {
   font-size: var(--caption-bold-size);
   line-height: var(--caption-bold-line);
