@@ -112,3 +112,17 @@ export interface Workout {
   title: string;
   blocks: Block[];
 }
+
+/** Роли: аккаунты создаёт админ, саморегистрации нет */
+export type Role = 'athlete' | 'trainer' | 'admin';
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  role: Role;
+  /** ISO-время последней смены пароля; null, если пароль ещё не менялся */
+  passwordChangedAt: string | null;
+}
+
+/** Ответ POST /api/auth/login при отказе */
+export type LoginFailure = { error: 'wrong_credentials' } | { error: 'locked'; retryAfterSec: number };

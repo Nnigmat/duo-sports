@@ -1,6 +1,8 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { authRouter } from './authRouter';
+import { openDb } from './db';
 import { videosRouter } from './videos';
 
 const app = express();
@@ -10,6 +12,8 @@ app.use(express.json());
 
 // Видео живут файлами в data/videos, в базе будет только путь
 const dataDir = path.resolve(process.env.DATA_DIR || 'data');
+const db = openDb(path.join(dataDir, 'app.db'));
+app.use('/api', authRouter(db));
 app.use('/api', videosRouter({ dir: path.join(dataDir, 'videos'), maxBytes: 300 * 1024 * 1024 }));
 
 app.get('/api/health', (_req, res) => {
