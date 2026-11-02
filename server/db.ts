@@ -130,6 +130,18 @@ CREATE TABLE IF NOT EXISTS plan_moves (
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, workout_id, from_date)
 );
+-- Подсказки тренера к упражнению ближайшего занятия: действуют до первого выполнения тренировки после записи
+CREATE TABLE IF NOT EXISTS workout_hints (
+  id INTEGER PRIMARY KEY,
+  athlete_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workout_id INTEGER NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
+  exercise_slug TEXT NOT NULL,
+  exercise_name TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS workout_hints_athlete ON workout_hints(athlete_id, workout_id);
 CREATE TABLE IF NOT EXISTS plan_entries (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
