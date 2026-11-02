@@ -115,6 +115,12 @@ CREATE TABLE IF NOT EXISTS videos (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS videos_session ON videos(session_id);
+-- Разбор тренировки тренером: записи нет — тренировка ждёт разбора
+CREATE TABLE IF NOT EXISTS reviews (
+  session_id INTEGER PRIMARY KEY REFERENCES sessions_done(id) ON DELETE CASCADE,
+  reviewer_id INTEGER NOT NULL REFERENCES users(id),
+  reviewed_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS plan_entries (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
