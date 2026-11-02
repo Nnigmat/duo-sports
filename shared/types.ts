@@ -418,6 +418,8 @@ export interface ReviewExercise {
   /** Ключ группы подходов: блок и id упражнения из структуры */
   id: string;
   name: string;
+  /** slug упражнения в библиотеке: по нему пишется ответ; null — упражнения нет в библиотеке */
+  slug: string | null;
   sets: ReviewSet[];
   /** Заметка спортсмена к упражнению, написанная до разбора («Ты написал») */
   note: string | null;

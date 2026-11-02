@@ -1,6 +1,9 @@
 /** Хуки данных. Вызывать только из *Page.tsx, вниз данные уходят пропсами. */
 import { useCallback, useEffect, useState } from 'react';
 import type { LibraryExercise } from '../features/exercises/types';
+import type { SessionReviewResponse, VideoReviewResponse } from '../../../shared/types';
+import { fetchSessionReview, fetchVideoReview } from '../features/review/api';
+import { toIso } from '../features/plan/plan';
 import { fetchAchievements, fetchExercises, fetchImport, fetchPlan, fetchWorkoutById, fetchSchedule, fetchToday, type WorkoutData } from './api';
 import type { AchievementsData, ImportData, PlanData, ScheduleData, TodayData } from './types';
 
@@ -28,3 +31,6 @@ export const useExercises = (): Resource<LibraryExercise[]> => useResource(fetch
 export const usePlan = (): Resource<PlanData> => useResource(fetchPlan);
 export const useImport = (): Resource<ImportData> => useResource(fetchImport);
 export const useWorkoutById = (id: string): Resource<WorkoutData> => useResource(useCallback(() => fetchWorkoutById(id), [id]));
+export const useSessionReview = (sessionId: number): Resource<SessionReviewResponse> =>
+  useResource(useCallback(() => fetchSessionReview(sessionId, toIso(new Date())), [sessionId]));
+export const useVideoReview = (videoId: string): Resource<VideoReviewResponse> => useResource(useCallback(() => fetchVideoReview(videoId), [videoId]));

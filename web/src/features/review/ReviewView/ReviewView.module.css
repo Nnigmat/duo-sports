@@ -1,0 +1,293 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) var(--spacing-xxs);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.headerTitle {
+  font-size: var(--body-md-size);
+  font-weight: 600;
+}
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-md) calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+}
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--surface);
+}
+.bannerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.bannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  min-width: 0;
+  font-size: var(--caption-size);
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}
+.bannerText strong {
+  color: var(--ink);
+  font-size: var(--body-md-size);
+  font-weight: 600;
+}
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+}
+.eyebrow {
+  font-size: var(--micro-uppercase-size);
+  line-height: var(--micro-uppercase-line);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--heading-2-size);
+  line-height: var(--heading-2-line);
+  font-weight: 400;
+}
+.meta {
+  font-size: var(--body-sm-size);
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}
+.exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.name {
+  flex-grow: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--body-md-size);
+  line-height: 1.35;
+  font-weight: 600;
+}
+.newBadge {
+  flex-shrink: 0;
+  padding: 3px 9px; /* нет токена */
+  border-radius: var(--rounded-full);
+  background: var(--highlight-soft);
+  font-size: var(--caption-bold-size);
+  font-weight: 600;
+}
+.sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px; /* нет токена */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.video {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px; /* нет токена */
+  background: var(--ink);
+  color: var(--on-ink);
+  overflow: hidden;
+  text-decoration: none;
+}
+.video:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.videoTag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 9px;
+  border-radius: var(--rounded-full);
+  background: rgba(255, 255, 255, 0.14);
+  font-size: var(--caption-size);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  color: var(--ink);
+}
+.videoFoot {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  font-size: var(--caption-size);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.videoCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* нет токена */
+}
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px; /* нет токена */
+  border-radius: 10px;
+  background: var(--surface);
+}
+.noteHead {
+  font-size: var(--caption-size);
+  font-weight: 600;
+  color: var(--steel);
+}
+.noteText {
+  font-size: var(--body-sm-size);
+  line-height: 1.5;
+  color: var(--slate);
+  white-space: pre-line;
+}
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.empty {
+  font-size: var(--caption-size);
+  color: var(--steel);
+}
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--surface);
+}
+.hintsHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.h2 {
+  margin: 0;
+  font-size: var(--heading-5-size);
+  line-height: var(--heading-5-line);
+  font-weight: 600;
+}
+.hintList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hint {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--canvas);
+}
+.hintName {
+  font-size: var(--caption-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hintText {
+  font-size: var(--body-sm-size);
+  line-height: 1.5;
+  color: var(--slate);
+}
+.planLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--size-touch);
+  color: var(--primary);
+  font-size: var(--body-sm-size);
+  font-weight: 500;
+  text-decoration: none;
+}
+.planLink:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

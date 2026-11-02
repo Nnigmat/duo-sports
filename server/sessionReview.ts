@@ -70,15 +70,16 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
   const groups = new Map<string, ReviewExercise & { stepIndexes: number[] }>();
   steps.forEach((st, i) => {
     const id = `${st.blockIndex}:${st.exerciseId}`;
-    const g = groups.get(id) ?? { id, name: st.exerciseName, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [] };
+    const g = groups.get(id) ?? { id, name: st.exerciseName, slug: null, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [] };
     const video = st.videoId ? videos.get(st.videoId) : undefined;
     g.sets.push({ n: g.sets.length + 1, label: setLabel(st), completed: st.completed, ...(video && { videoId: video.id, videoDurationSec: video.duration_sec }) });
     g.stepIndexes.push(i);
     groups.set(id, g);
   });
   const list = [...groups.values()];
-  const groupOfStep = (i: number) => list.find((g) => g.stepIndexes.includes(i));
   const library = libraryIndex(libraryOf(db));
+  for (const g of list) g.slug = library.get(key(g.name))?.slug ?? null;
+  const groupOfStep = (i: number) => list.find((g) => g.stepIndexes.includes(i));
   const groupOfSlug = (slug: string) => list.find((g) => library.get(key(g.name))?.slug === slug);
 
   const rows = db.prepare(`SELECT ${COMMENT_COLUMNS} FROM comments WHERE session_id = ? ORDER BY created_at, id`).all(sessionId) as CommentRow[];

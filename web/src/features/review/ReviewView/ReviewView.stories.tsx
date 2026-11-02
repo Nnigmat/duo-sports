@@ -1,0 +1,74 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { reviewFixture, reviewPendingFixture } from '../fixtures';
+import { ReviewView } from './ReviewView';
+
+const onReply = fn();
+
+const meta = {
+  title: 'Features/Review/ReviewView',
+  component: ReviewView,
+  args: {
+    review: reviewFixture,
+    onBack: fn(),
+    videoHref: (id: string, t?: number) => `/review/video/${id}${t === undefined ? '' : `?t=${t}`}`,
+    onOpenVideo: fn(),
+    onReply,
+    planHref: '/plan',
+    onOpenPlan: fn(),
+  },
+  beforeEach: () => {
+    onReply.mockReset().mockResolvedValue(undefined);
+  },
+  parameters: { docs: { description: { component: 'Разбор для ученика: комментарии по упражнениям, видео, ответы, подсказки. Артборд «Ученик · Разбор от тренера».' } } },
+} satisfies Meta<typeof ReviewView>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Тренер разобрал тренировку')).toBeVisible();
+    await expect(c.getByRole('heading', { level: 1, name: 'Ноги и ягодицы' })).toBeVisible();
+    await expect(c.getByText('Ты написал')).toBeVisible();
+    await expect(c.getByText('3 новых')).toBeVisible();
+    await expect(c.getByRole('heading', { name: 'Подсказки от тренера' })).toBeVisible();
+    await userEvent.click(c.getByRole('link', { name: /Подход 4 · 80.кг × 5.*Смотреть с комментариями/ }));
+    await expect(args.onOpenVideo).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
+    await userEvent.click(c.getAllByRole('button', { name: 'Перейти к 0:21' })[0]!);
+    await expect(args.onOpenVideo).toHaveBeenLastCalledWith('11111111-1111-4111-8111-111111111111', 21);
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
+  },
+};
+
+export const Reply: Story = {
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    const field = c.getByRole('textbox', { name: 'Ответ тренеру по упражнению «Приседания со штангой»' });
+    await userEvent.type(field, 'Спасибо, учту');
+    await userEvent.click(c.getAllByRole('button', { name: 'Отправить' })[0]!);
+    await waitFor(() => expect(args.onReply).toHaveBeenCalledTimes(1));
+    await expect(args.onReply).toHaveBeenCalledWith(expect.objectContaining({ slug: 'squat' }), 'Спасибо, учту');
+  },
+};
+
+export const ReplyFails: Story = {
+  beforeEach: () => {
+    onReply.mockReset().mockRejectedValue(new Error('Нет связи с сервером'));
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.type(c.getByRole('textbox', { name: /Приседания/ }), 'Привет');
+    await userEvent.click(c.getAllByRole('button', { name: 'Отправить' })[0]!);
+    await expect(await c.findByText('Нет связи с сервером')).toBeVisible();
+  },
+};
+
+export const NotReviewedYet: Story = {
+  args: { review: reviewPendingFixture },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Тренер ещё не разобрал тренировку')).toBeVisible();
+    await expect(c.getAllByText('Без комментариев тренера')).toHaveLength(3);
+  },
+};

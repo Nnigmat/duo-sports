@@ -52,6 +52,7 @@ describe('sessionReviewOf', () => {
     const r = view();
     expect(r).toMatchObject({ sessionId: sid, athleteId: athlete, title: 'Ноги', date: '2026-10-31', durationSec: 2880, volumeKg: 80 * 5 * 3 + 50 * 10, reviewedAt: null, trainerCommentCount: 0, hints: null });
     expect(r.exercises.map((e) => [e.name, e.sets.length])).toEqual([['Приседания со штангой', 4], ['Румынская тяга', 1]]);
+    expect(r.exercises.map((e) => e.slug)).toEqual(['squat', 'rdl']);
     expect(r.exercises[0]!.sets[3]).toEqual({ n: 4, label: `80${NB}кг × 5`, completed: true, videoId: V, videoDurationSec: 38 });
     expect(r.exercises[0]!.sets[2]!.completed).toBe(false);
   });
