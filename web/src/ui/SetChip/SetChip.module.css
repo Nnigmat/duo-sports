@@ -1,0 +1,36 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px; /* нет токена */
+  padding: 5px 10px; /* нет токена */
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--surface);
+  font-size: 13px; /* нет токена */
+  font-variant-numeric: tabular-nums;
+}
+.n {
+  color: var(--steel);
+}
+.video {
+  border-color: var(--primary);
+  background: var(--canvas);
+}
+.icon {
+  width: 14px; /* нет токена */
+  height: 14px;
+  color: var(--primary);
+}
+.skipped {
+  border-style: dashed;
+  background: var(--canvas);
+  color: var(--slate);
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
