@@ -204,3 +204,26 @@ describe('todayOf: пауза', () => {
     expect(streakWeeks('2026-11-04', entries, done, [{ from: '2026-10-26', to: '2026-11-01' }])).toBe(2);
   });
 });
+
+describe('todayOf: разбор тренера', () => {
+  it('без разборов: счётчик 0, карточки и строки ожидания нет', () => {
+    const t = todayOf(db, me, TODAY);
+    expect(t.unread).toBe(0);
+    expect(t).not.toHaveProperty('reviewNotice');
+    expect(t).not.toHaveProperty('awaitingReview');
+  });
+  it('видео отправлены, разбора нет — строка ожидания; после разбора — карточка и точка', async () => {
+    const coach = await createUser(db, 'coach@example.com', 'trenirovka7', 'trainer', clock);
+    const sid = Number(db.prepare("INSERT INTO sessions_done (user_id, title, date, finished_at, steps, videos) VALUES (?, 'Всё тело', '2026-11-03', 'x', '[]', 1)").run(me).lastInsertRowid);
+    db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, session_id, step_index, created_at) VALUES ('11111111-1111-4111-8111-111111111111', ?, 'x', 5, ?, 0, 'x')").run(me, sid);
+    expect(todayOf(db, me, TODAY).awaitingReview).toEqual({ sessionId: sid, title: 'Всё тело', whenLabel: 'вчера', videos: 1 });
+    const { linkAthlete } = await import('./trainerLinks');
+    const { markReviewed } = await import('./reviews');
+    linkAthlete(db, coach, me);
+    markReviewed(db, { id: coach, role: 'trainer' }, sid, clock);
+    const t = todayOf(db, me, TODAY);
+    expect(t).not.toHaveProperty('awaitingReview');
+    expect(t.unread).toBe(1);
+    expect(t.reviewNotice).toMatchObject({ sessionId: sid, title: 'Всё тело', commentCount: 0 });
+  });
+});

@@ -1,3 +1,4 @@
+import type { ReviewNotice } from '../shared/types';
 import type { Db } from './db';
 
 type Clock = () => Date;
@@ -22,19 +23,6 @@ export function markNotificationRead(db: Db, userId: number, id: number, clock: 
 export function dismissNotification(db: Db, userId: number, id: number, clock: Clock = now): boolean {
   const at = clock().toISOString();
   return db.prepare('UPDATE notifications SET dismissed_at = COALESCE(dismissed_at, ?), read_at = COALESCE(read_at, ?) WHERE id = ? AND user_id = ?').run(at, at, id, userId).changes === 1;
-}
-
-export interface ReviewNotice {
-  notificationId: number;
-  sessionId: number;
-  title: string;
-  /** ISO-время разбора */
-  reviewedAt: string;
-  /** Комментарии тренера к этой тренировке и из них — к видео */
-  commentCount: number;
-  videoCommentCount: number;
-  /** Для карточки: последний комментарий к видео, а без видео последний любой; null, если комментариев нет */
-  preview: { exerciseName: string; timecodeSec: number | null; text: string } | null;
 }
 
 /** Карточка последнего нескрытого разбора для «Сегодня»; null, если показывать нечего */

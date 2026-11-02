@@ -375,6 +375,11 @@ export interface TodayResponse {
   streakWeeks: number;
   /** Пауза, которая идёт сегодня или начнётся позже; нет — если плана на паузе нет */
   pause?: TodayPause;
+  /** Непрочитанные уведомления: точка на колокольчике */
+  unread: number;
+  /** Последний нескрытый разбор тренера */
+  reviewNotice?: ReviewNotice;
+  awaitingReview?: AwaitingReview;
 }
 
 /** Пауза плана: даты включительно */
@@ -383,6 +388,96 @@ export interface TodayPause {
   to: string;
   /** «до 9 ноября» */
   label: string;
+}
+
+// ── Разбор тренировки ─────────────────────────────────────
+
+/** Подход в разборе: label — «80 кг × 5», n — номер подхода в упражнении */
+export interface ReviewSet {
+  n: number;
+  label: string;
+  completed: boolean;
+  videoId?: string;
+  videoDurationSec?: number;
+}
+
+/** Комментарий в разборе; кто «ты», решает экран по роли зрителя */
+export interface ReviewComment {
+  id: string;
+  author: 'trainer' | 'athlete';
+  text: string;
+  /** Секунда видео; null — комментарий не привязан к моменту */
+  timecodeSec: number | null;
+  videoId: string | null;
+  createdAt: string;
+  /** Автор — другая сторона, и зритель ещё не открывал */
+  isNew: boolean;
+}
+
+export interface ReviewExercise {
+  /** Ключ группы подходов: блок и id упражнения из структуры */
+  id: string;
+  name: string;
+  sets: ReviewSet[];
+  /** Заметка спортсмена к упражнению, написанная до разбора («Ты написал») */
+  note: string | null;
+  /** Комментарии тренера и ответы по порядку времени */
+  thread: ReviewComment[];
+  newCount: number;
+}
+
+/** Подсказки тренера к следующему занятию */
+export interface ReviewHints {
+  date: string;
+  workoutId: number;
+  title: string;
+  hints: Array<{ exerciseName: string; detail?: string; text: string }>;
+}
+
+/** Ответ GET /api/sessions/:id/review?date=: выполненная тренировка с комментариями. date — сегодня у клиента. */
+export interface SessionReviewResponse {
+  sessionId: number;
+  athleteId: number;
+  title: string;
+  /** День тренировки «2026-10-31» */
+  date: string;
+  durationSec: number | null;
+  volumeKg: number;
+  /** ISO-время разбора; null — ждёт разбора */
+  reviewedAt: string | null;
+  /** Сколько комментариев написал тренер */
+  trainerCommentCount: number;
+  exercises: ReviewExercise[];
+  /** Комментарии ко всей тренировке */
+  general: ReviewComment[];
+  /** Только для спортсмена; null, если подсказок нет */
+  hints: ReviewHints | null;
+}
+
+/** Ответ GET /api/videos/:id/review: видео и комментарии к нему */
+export interface VideoReviewResponse {
+  video: { id: string; durationSec: number; exerciseName: string; /** «Подход 4 · 80 кг × 5» */ label: string; sessionId: number | null };
+  comments: ReviewComment[];
+}
+
+/** Карточка разбора на «Сегодня» */
+export interface ReviewNotice {
+  notificationId: number;
+  sessionId: number;
+  title: string;
+  reviewedAt: string;
+  commentCount: number;
+  videoCommentCount: number;
+  preview: { exerciseName: string; timecodeSec: number | null; text: string } | null;
+}
+
+/** «Видео отправлены, тренер ещё не посмотрел» */
+export interface AwaitingReview {
+  sessionId: number;
+  title: string;
+  /** «сегодня», «вчера» или «31 окт» */
+  whenLabel: string;
+  videos: number;
 }
 
 // ── Перенос тренировки ──

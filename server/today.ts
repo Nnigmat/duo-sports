@@ -1,6 +1,8 @@
 import type { Block, CommitBlock, SessionStepResult, TodayDay, TodayMissed, TodayPause, TodayResponse, TodayWorkoutCard } from '../shared/types';
 import type { Db } from './db';
+import { reviewNoticeOf, unreadCount } from './notifications';
 import { estimateMinutes } from './plan';
+import { awaitingReviewOf } from './sessionReview';
 
 const NBSP = ' ';
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
@@ -208,7 +210,10 @@ function pauseOf(input: TodayInput): { pause: TodayPause } | Record<string, neve
   return { pause: { ...p, label: `до ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}` } };
 }
 
-export function buildToday(input: TodayInput): TodayResponse {
+/** Часть ответа, которая считается из плана и истории; уведомления и разбор добавляет todayOf */
+export type TodayBase = Omit<TodayResponse, 'unread' | 'reviewNotice' | 'awaitingReview'>;
+
+export function buildToday(input: TodayInput): TodayBase {
   const { today } = input;
   const start = weekStart(today);
   const week = Array.from({ length: 7 }, (_, i) => weekDay(addDays(start, i), input));
@@ -262,5 +267,8 @@ export function todayOf(db: Db, userId: number, today: string): TodayResponse {
   }
   const skips = new Set((db.prepare('SELECT date, workout_id FROM plan_skips WHERE user_id = ?').all(userId) as Array<{ date: string; workout_id: number }>).map((r) => `${r.date}:${r.workout_id}`));
   const pauses = pausesOf(db, userId);
-  return buildToday({ today, userName: userNameOf(user?.email ?? ''), workouts, entries, sessions, skips, pauses, musclesOf: (n) => library.get(n.toLowerCase()) ?? [] });
+  const base = buildToday({ today, userName: userNameOf(user?.email ?? ''), workouts, entries, sessions, skips, pauses, musclesOf: (n) => library.get(n.toLowerCase()) ?? [] });
+  const reviewNotice = reviewNoticeOf(db, userId);
+  const awaitingReview = awaitingReviewOf(db, userId, today);
+  return { ...base, unread: unreadCount(db, userId), ...(reviewNotice && { reviewNotice }), ...(awaitingReview && { awaitingReview }) };
 }
