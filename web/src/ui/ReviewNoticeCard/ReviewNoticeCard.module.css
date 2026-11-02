@@ -1,0 +1,117 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* нет токена */
+  padding: var(--spacing-md);
+  border: 1px solid var(--primary);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  box-shadow: var(--elevation-1);
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px; /* нет токена */
+  height: 40px;
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.titles {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  min-width: 0;
+}
+.eyebrow {
+  color: var(--primary);
+  font-size: var(--caption-bold-size);
+  line-height: var(--caption-bold-line);
+  font-weight: var(--caption-bold-weight);
+  font-variant-numeric: tabular-nums;
+}
+.title {
+  margin: 0;
+  font-size: var(--heading-5-size);
+  line-height: var(--heading-5-line);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.counts {
+  color: var(--slate);
+  font-size: 13px; /* нет токена */
+  font-variant-numeric: tabular-nums;
+}
+.dismiss {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  margin: -10px -10px 0 0; /* кнопка 44 px уходит в поля карточки */
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-md);
+  background: transparent;
+  color: var(--steel);
+  cursor: pointer;
+}
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  padding: 10px var(--spacing-sm); /* нет токена */
+  border-radius: 10px;
+  background: var(--surface);
+}
+.previewHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--slate);
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.time {
+  padding: 1px 6px; /* нет токена */
+  border-radius: var(--rounded-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-variant-numeric: tabular-nums;
+}
+.previewText {
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px; /* как в макете, не меньше 44 */
+  border-radius: var(--rounded-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--body-md-medium-size);
+  font-weight: var(--body-md-medium-weight);
+  text-decoration: none;
+}
+.link:hover {
+  background: var(--primary-deep);
+}
+.dismiss:focus-visible,
+.link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

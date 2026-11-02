@@ -28,6 +28,7 @@ export { ParamStepper } from './ParamStepper/ParamStepper';
 export { ProgressBar } from './ProgressBar/ProgressBar';
 export { ProgressRing } from './ProgressRing/ProgressRing';
 export { ProgressSegments } from './ProgressSegments/ProgressSegments';
+export { ReviewNoticeCard } from './ReviewNoticeCard/ReviewNoticeCard';
 export { Screen } from './Screen/Screen';
 export { SearchField } from './SearchField/SearchField';
 export { SegmentedControl } from './SegmentedControl/SegmentedControl';
