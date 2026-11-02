@@ -9,6 +9,7 @@ export { Checkbox } from './Checkbox/Checkbox';
 export { Chip } from './Chip/Chip';
 export { ChipGroup } from './ChipGroup/ChipGroup';
 export { ChoiceCard } from './ChoiceCard/ChoiceCard';
+export { Comment } from './Comment/Comment';
 export { CommentBubble } from './CommentBubble/CommentBubble';
 export { DayPicker, type PickerDay } from './DayPicker/DayPicker';
 export { Dialog } from './Dialog/Dialog';

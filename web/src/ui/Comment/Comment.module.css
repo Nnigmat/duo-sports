@@ -1,0 +1,92 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  list-style: none;
+}
+.reply {
+  margin-left: 24px; /* нет токена */
+  background: var(--surface);
+}
+.active {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: var(--size-touch);
+  margin: -8px 0 -6px; /* кнопка 44 px не раздувает карточку */
+}
+.root:not(:has(.time)) .head {
+  min-height: 0;
+  margin: 0;
+}
+.author {
+  color: var(--primary);
+  font-size: var(--caption-bold-size);
+  line-height: var(--caption-bold-line);
+  font-weight: var(--caption-bold-weight);
+}
+.athlete {
+  color: var(--slate);
+}
+.time {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--size-touch);
+  min-height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-md);
+  background: transparent;
+  color: var(--on-primary);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  min-height: 28px; /* нет токена */
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--rounded-sm);
+  background: var(--primary);
+  font-size: var(--caption-bold-size);
+  font-weight: var(--caption-bold-weight);
+  font-variant-numeric: tabular-nums;
+}
+.playIcon {
+  width: 10px; /* нет токена */
+  height: 10px;
+  fill: currentColor;
+}
+.time:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.new {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  color: var(--ink);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+.dot {
+  width: 8px; /* нет токена */
+  height: 8px;
+  border-radius: var(--rounded-full);
+  background: var(--highlight);
+}
+.text {
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+  overflow-wrap: anywhere;
+}
