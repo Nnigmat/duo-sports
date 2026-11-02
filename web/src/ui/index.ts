@@ -45,5 +45,6 @@ export { TierLegend } from './TierLegend/TierLegend';
 export { TierMark } from './TierMark/TierMark';
 export { TierSteps, type TierStep } from './TierSteps/TierSteps';
 export { ToneDot, type Tone } from './ToneDot/ToneDot';
+export { VideoPlayer, type VideoPlayerHandle } from './VideoPlayer/VideoPlayer';
 export { WeekStrip, type WeekDay } from './WeekStrip/WeekStrip';
 export { icons, type IconName } from './Icon/icons';

@@ -1,0 +1,306 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  color: var(--ink);
+}
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px; /* нет токена */
+  aspect-ratio: 9 / 16;
+  max-height: 400px; /* высота видео в макете */
+  background: var(--ink);
+  overflow: hidden;
+}
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+  color: var(--on-ink);
+  font-size: var(--body-sm-size);
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  pointer-events: none;
+}
+.overlay button,
+.overlay a {
+  pointer-events: auto;
+}
+.top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+.titleBox {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  min-width: 0;
+  padding: var(--spacing-xxs) 10px; /* нет токена */
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  color: var(--on-ink);
+}
+.title {
+  font-size: var(--body-sm-medium-size);
+  line-height: var(--body-sm-medium-line);
+  font-weight: 600;
+}
+.subtitle {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-variant-numeric: tabular-nums;
+}
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+.play {
+  display: grid;
+  place-items: center;
+  width: 64px; /* нет токена */
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  color: var(--ink);
+  cursor: pointer;
+}
+.playGlyph {
+  fill: currentColor;
+}
+.skip {
+  min-width: var(--size-touch);
+  min-height: var(--size-touch);
+  padding: 0 var(--spacing-xs);
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  color: var(--on-ink);
+  font-family: var(--font-sans);
+  font-size: 13px; /* нет токена */
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.play:disabled,
+.skip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.play:focus-visible,
+.skip:focus-visible,
+.square:focus-visible,
+.speed:focus-visible,
+.marker:focus-visible,
+.range:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.live {
+  min-height: 0;
+}
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  padding: 10px var(--spacing-sm); /* нет токена */
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  color: var(--ink);
+  box-shadow: var(--elevation-2);
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* нет токена */
+  color: var(--primary);
+  font-size: var(--caption-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.whoIcon {
+  width: 14px; /* нет токена */
+  height: 14px;
+}
+.bubbleText {
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  padding: var(--spacing-xs) var(--spacing-md) 6px; /* нет токена */
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.scrub {
+  position: relative;
+  height: 32px; /* нет токена */
+}
+.track,
+.fill {
+  position: absolute;
+  top: 14px; /* нет токена */
+  left: 0;
+  height: 4px; /* нет токена */
+  border-radius: var(--rounded-full);
+}
+.track {
+  right: 0;
+  background: var(--hairline);
+}
+.fill {
+  width: var(--pct);
+  background: var(--primary);
+}
+.range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 32px; /* нет токена */
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.range::-webkit-slider-runnable-track {
+  height: 32px;
+  background: transparent;
+}
+.range::-moz-range-track {
+  height: 32px;
+  background: transparent;
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; /* нет токена */
+  height: 16px;
+  margin-top: 8px;
+  border: 2px solid var(--canvas);
+  border-radius: var(--rounded-full);
+  background: var(--ink);
+  box-shadow: var(--elevation-1);
+}
+.range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--canvas);
+  border-radius: var(--rounded-full);
+  background: var(--ink);
+}
+.range:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.marker {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; /* нет токена */
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: transparent;
+  cursor: pointer;
+}
+.dot {
+  display: block;
+  width: 10px; /* нет токена */
+  height: 10px;
+  border: 2px solid var(--canvas);
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+  outline: 1px solid var(--primary);
+}
+.dotOn {
+  width: 14px; /* нет токена */
+  height: 14px;
+}
+.marker:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+.time {
+  font-size: 13px; /* нет токена */
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.total {
+  color: var(--steel);
+  font-weight: 400;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+}
+.square,
+.speed {
+  display: grid;
+  place-items: center;
+  min-width: var(--size-touch);
+  min-height: var(--size-touch);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  cursor: pointer;
+}
+.speed {
+  min-width: 52px; /* нет токена */
+  padding: 0 10px; /* нет токена */
+  border-color: var(--primary);
+  color: var(--primary);
+  font-family: var(--font-sans);
+  font-size: 13px; /* нет токена */
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.square:disabled,
+.speed:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pos {
+  min-width: 52px; /* нет токена */
+  color: var(--slate);
+  font-size: 13px; /* нет токена */
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

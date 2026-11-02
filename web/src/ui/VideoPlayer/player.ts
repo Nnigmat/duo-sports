@@ -5,7 +5,8 @@ export interface PlayerComment {
   /** Секунда видео */
   timecodeSec: number;
   text: string;
-  author: 'trainer' | 'athlete';
+  /** Подпись автора для зрителя: «Тренер» или «Ты» */
+  author: string;
 }
 
 /** Сколько секунд после метки комментарий висит поверх видео */
