@@ -1,0 +1,131 @@
+- generic:
+  - generic:
+    - generic:
+      - main:
+        - generic:
+          - generic [aria-hidden]:
+            - generic:
+              - paragraph: Понедельник, 2 ноября
+              - heading [level=1]: Привет, Qa
+          - region [aria-hidden]:
+            - generic:
+              - paragraph: Сегодня
+              - heading [level=2]: Трицепс, пресс, ноги
+              - paragraph: 3 упражнения · ≈ 25 мин · По кругу
+              - list:
+                - listitem:
+                  - generic: трицепс
+                - listitem:
+                  - generic: пресс
+              - generic:
+                - button: Старт
+                - button: Упражнения
+                - button: Перенести
+          - region "Эта неделя":
+            - generic [aria-hidden]:
+              - heading [level=2]: Эта неделя
+              - generic: 0 из 4
+            - progressbar [aria-hidden]
+            - list [aria-hidden]:
+              - listitem:
+                - button [pressed]:
+                  - generic [aria-hidden]: пн
+                  - generic [aria-hidden]: "2"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: вт
+                  - generic [aria-hidden]: "3"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: ср
+                  - generic [aria-hidden]: "4"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: чт
+                  - generic [aria-hidden]: "5"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: пт
+                  - generic [aria-hidden]: "6"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: сб
+                  - generic [aria-hidden]: "7"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: вс
+                  - generic [aria-hidden]: "8"
+            - generic:
+              - generic:
+                - generic: Сегодня, 2 ноября · Запланировано
+                - generic: Трицепс, пресс, ноги
+                - generic: 3 упражнения · ≈ 25 мин
+              - button "Начать"
+            - list [aria-hidden]:
+              - listitem: Выполнена
+              - listitem: Запланирована
+              - listitem: Перенесена
+              - listitem: Отдых
+      - navigation [aria-hidden]:
+        - link:
+          - /url: /
+          - text: Сегодня
+        - link:
+          - /url: /plan
+          - text: План
+        - link:
+          - /url: /exercises
+          - text: Упражнения
+        - link:
+          - /url: /progress/achievements
+          - text: Прогресс
+        - link:
+          - /url: /profile
+          - text: Профиль
+  - dialog [ref=f7e135]:
+    - generic [ref=f7e137]:
+      - generic [ref=f7e138]:
+        - generic [ref=f7e139]: Трицепс, пресс, ноги · сегодня, пн 2 ноя
+        - heading "Перенести тренировку" [level=2] [ref=f7e140]
+      - button "Закрыть" [active] [ref=f7e141] [cursor=pointer]
+    - generic [ref=f7e145]:
+      - region [ref=f7e146]:
+        - heading "Эта неделя" [level=3] [ref=f7e147]
+        - generic [ref=f7e148] [cursor=pointer]:
+          - radio "пт, 6 ноября" [checked] [ref=f7e149]
+          - generic [ref=f7e151]: пт, 6 ноября
+      - region [ref=f7e153]:
+        - heading "Следующая неделя · 9–15 ноября" [level=3] [ref=f7e154]
+        - radiogroup "Новый день тренировки" [ref=f7e155]:
+          - radio "пн, 9 ноября" [ref=f7e156] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e157]: пн
+            - generic [aria-hidden] [ref=f7e158]: "9"
+          - radio "вт, 10 ноября" [ref=f7e160] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e161]: вт
+            - generic [aria-hidden] [ref=f7e162]: "10"
+          - radio "ср, 11 ноября" [ref=f7e164] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e165]: ср
+            - generic [aria-hidden] [ref=f7e166]: "11"
+          - radio "чт, 12 ноября" [ref=f7e168] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e169]: чт
+            - generic [aria-hidden] [ref=f7e170]: "12"
+          - radio "пт, 13 ноября" [ref=f7e172] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e173]: пт
+            - generic [aria-hidden] [ref=f7e174]: "13"
+          - radio "сб, 14 ноября" [ref=f7e176] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e177]: сб
+            - generic [aria-hidden] [ref=f7e178]: "14"
+          - radio "вс, 15 ноября" [ref=f7e180] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e181]: вс
+            - generic [aria-hidden] [ref=f7e182]: "15"
+        - paragraph [ref=f7e184]: в этот день уже есть тренировка
+      - status [ref=f7e186]: Серия «Без пропусков» сохранится.
+      - button "Перенести на пт, 6 ноября" [ref=f7e189] [cursor=pointer]
+      - list [ref=f7e190]:
+        - listitem [ref=f7e191]:
+          - button "Пропустить тренировку" [ref=f7e192] [cursor=pointer]
+        - listitem [ref=f7e199]:
+          - button "Поставить план на паузу Серия замораживается до возобновления" [ref=f7e200] [cursor=pointer]:
+            - generic [ref=f7e203]:
+              - generic [ref=f7e204]: Поставить план на паузу
+              - generic [ref=f7e205]: Серия замораживается до возобновления

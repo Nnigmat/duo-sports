@@ -1,0 +1,103 @@
+- generic [ref=f1e3]:
+  - main [ref=f1e4]:
+    - generic [ref=f1e6]:
+      - generic [ref=f1e7]:
+        - heading "Импорт тренировок" [level=1] [ref=f1e8]
+        - paragraph [ref=f1e9]: Вставьте план тренировок в формате YAML — хоть на несколько месяцев вперёд. Перед сохранением всё можно проверить.
+      - list "Шаги импорта" [ref=f1e10]:
+        - listitem [ref=f1e11]:
+          - generic [aria-hidden] [ref=f1e12]: "1"
+          - text: Источник
+        - listitem [ref=f1e13]:
+          - generic [aria-hidden] [ref=f1e14]: "2"
+          - text: Проверка
+        - listitem [ref=f1e15]:
+          - generic [aria-hidden] [ref=f1e16]: "3"
+          - text: План
+        - listitem [ref=f1e17]:
+          - generic [aria-hidden] [ref=f1e18]: "4"
+          - text: Готово
+      - generic [ref=f1e19]:
+        - region "Источник" [ref=f1e20]:
+          - generic [ref=f1e21]:
+            - generic [ref=f1e22]: Вставьте YAML
+            - generic [ref=f1e23]:
+              - button "Вставить пример" [ref=f1e24] [cursor=pointer]
+              - button "Очистить" [disabled] [ref=f1e25]
+          - textbox "Вставьте YAML" [ref=f1e26]:
+            - /placeholder: "version: 1"
+          - status [ref=f1e27]: Можно вставить сколько угодно тренировок сразу. Не знаете, с чего начать, — вставьте пример и поправьте его.
+        - complementary [ref=f1e28]:
+          - heading "Формат" [level=2] [ref=f1e29]
+          - paragraph [ref=f1e30]: Тренировки с датами и, если нужно, новые упражнения.
+          - generic "Скелет файла в формате YAML" [ref=f1e31]: "version: 1 exercises: [ … ] # необязательно workouts: - date: 2026-11-03 title: Трицепс, пресс blocks: [ … ]"
+          - link "Полное описание формата" [ref=f1e32] [cursor=pointer]:
+            - /url: /import/format
+      - region [ref=f1e33]:
+        - generic [ref=f1e34]:
+          - generic [ref=f1e35]:
+            - heading "Упражнения в библиотеке" [level=2] [ref=f1e36]
+            - paragraph [ref=f1e37]:
+              - text: Пишите в тренировке
+              - code [ref=f1e38]: name
+              - text: или
+              - code [ref=f1e39]: exercise_id
+              - text: отсюда — тогда упражнение найдётся без вопросов. Названия из
+              - code [ref=f1e40]: aliases
+              - text: тоже подходят.
+          - button "Копировать exercises.yaml" [ref=f1e41] [cursor=pointer]
+        - generic [ref=f1e45]:
+          - generic [ref=f1e46]: Поиск упражнения
+          - searchbox "Поиск упражнения" [ref=f1e47]
+        - group "Группа мышц" [ref=f1e48]:
+          - button "Все24" [pressed] [ref=f1e49] [cursor=pointer]
+          - button "Ноги8" [ref=f1e50] [cursor=pointer]
+          - button "Спина5" [ref=f1e51] [cursor=pointer]
+          - button "Грудь и плечи4" [ref=f1e52] [cursor=pointer]
+          - button "Руки3" [ref=f1e53] [cursor=pointer]
+          - button "Пресс3" [ref=f1e54] [cursor=pointer]
+          - button "Кардио1" [ref=f1e55] [cursor=pointer]
+        - status [ref=f1e56]: 24 упражнения
+        - generic "Упражнения в формате YAML" [ref=f1e57]: "exercises: - id: barbell-squat name: Приседания со штангой aliases: [присед] muscles: [квадрицепс, ягодицы] measure: weight - id: romanian-deadlift name: Румынская тяга aliases: [РДЛ] muscles: [бицепс бедра, ягодицы] measure: weight - id: leg-press name: Жим ногами muscles: [квадрицепс, ягодицы] measure: weight - id: dumbbell-lunge name: Выпады с гантелями aliases: [выпады] muscles: [квадрицепс, ягодицы] measure: weight - id: leg-curl name: Сгибания ног лёжа muscles: [бицепс бедра] measure: weight - id: calf-raise name: Подъёмы на носки muscles: [икры] measure: weight - id: deadlift name: Становая тяга aliases: [становая] muscles: [спина, бицепс бедра, ягодицы] measure: weight - id: glute-bridge name: Ягодичный мост aliases: [ягодичный мостик, мостик] muscles: [ягодицы] measure: weight - id: hyperextension name: Гиперэкстензия muscles: [поясница, ягодицы] measure: reps - id: lat-pulldown name: Тяга верхнего блока muscles: [широчайшие, бицепс] measure: weight - id: seated-row name: Тяга горизонтального блока muscles: [спина] measure: weight - id: pull-up name: Подтягивания muscles: [широчайшие, бицепс] measure: reps - id: barbell-row name: Тяга штанги в наклоне muscles: [спина] measure: weight - id: bench-press name: Жим лёжа aliases: [жим штанги лёжа] muscles: [грудь, трицепс] measure: weight - id: incline-press name: Жим на наклонной скамье muscles: [грудь, плечи] measure: weight - id: dumbbell-fly name: Разведения гантелей muscles: [грудь] measure: weight - id: push-up name: Отжимания muscles: [грудь, трицепс] measure: reps - id: dips name: Отжимания на брусьях aliases: [брусья] muscles: [трицепс, грудь] measure: reps - id: biceps-curl name: Сгибания на бицепс muscles: [бицепс] measure: weight - id: french-press name: Французский жим muscles: [трицепс] measure: weight - id: plank name: Планка muscles: [пресс, кор] measure: time - id: crunch name: Скручивания muscles: [пресс] measure: reps - id: leg-raise name: Подъём ног в висе muscles: [пресс] measure: reps - id: jump-rope name: Скакалка muscles: [выносливость] measure: time"
+        - generic [ref=f1e58]:
+          - heading "Как задать нагрузку" [level=3] [ref=f1e59]
+          - paragraph [ref=f1e60]:
+            - text: Поле
+            - code [ref=f1e61]: measure
+            - text: подсказывает, что писать в тренировке.
+          - generic [ref=f1e62]:
+            - generic [ref=f1e63]:
+              - term [ref=f1e64]:
+                - code [ref=f1e65]: weight
+              - definition [ref=f1e66]:
+                - code [ref=f1e67]: "do: \"4x8 @ 75\""
+            - generic [ref=f1e68]:
+              - term [ref=f1e69]:
+                - code [ref=f1e70]: reps
+              - definition [ref=f1e71]:
+                - code [ref=f1e72]: "do: \"3x12\""
+            - generic [ref=f1e73]:
+              - term [ref=f1e74]:
+                - code [ref=f1e75]: time
+              - definition [ref=f1e76]:
+                - code [ref=f1e77]: "time: 45s"
+            - generic [ref=f1e78]:
+              - term [ref=f1e79]:
+                - code [ref=f1e80]: distance
+              - definition [ref=f1e81]:
+                - code [ref=f1e82]: "distance: 2km"
+          - generic [ref=f1e83]: «# своё» — упражнения, которые вы создали сами.
+      - generic [ref=f1e84]:
+        - button "Отмена" [ref=f1e85] [cursor=pointer]
+        - button "Проверить" [disabled] [ref=f1e86]
+  - navigation "Основная навигация" [ref=f1e87]:
+    - link "Сегодня" [ref=f1e88] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f1e91] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f1e95] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f1e99] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f1e104] [cursor=pointer]:
+      - /url: /profile

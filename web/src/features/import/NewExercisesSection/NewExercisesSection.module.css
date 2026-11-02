@@ -1,0 +1,100 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  scroll-margin-top: var(--spacing-md);
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  max-width: 640px; /* нет токена */
+}
+.titles h3,
+.titles p {
+  margin: 0;
+}
+.bulk,
+.chips,
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+}
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--hairline);
+}
+.row:first-child {
+  border-top: 0;
+}
+/* Не создаём: строка отступает, но остаётся читаемой; смысл несёт плашка с текстом */
+.row[data-action='skip'] .name {
+  color: var(--slate);
+  text-decoration: line-through;
+}
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.name {
+  font-weight: var(--body-md-medium-weight);
+}
+.meta {
+  color: var(--slate);
+  font-size: var(--body-sm-size);
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  max-width: 280px; /* нет токена */
+}
+.groupLabel {
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.select {
+  height: var(--size-touch);
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+}
+@media (min-width: 1024px) {
+  .row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .info {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .options {
+    justify-content: flex-end;
+  }
+}

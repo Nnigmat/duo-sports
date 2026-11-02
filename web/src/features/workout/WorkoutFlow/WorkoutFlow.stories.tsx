@@ -31,8 +31,8 @@ function Demo(props: FlowProps) {
     <WorkoutFlow
       key={run}
       {...props}
-      onFinish={(s: FinishStats) => {
-        props.onFinish(s);
+      onFinish={(s: FinishStats, steps) => {
+        props.onFinish(s, steps);
         setResult(`Сохранено: ${s.setsDone} из ${s.setsTotal} подходов, видео ${s.videos}`);
       }}
       onExit={() => {
@@ -157,7 +157,11 @@ export const FullRun: Story = {
     await expect(body().getByText('11 из 12')).toBeVisible();
     await expect(body().getByText('видео записано')).toBeVisible();
     await click('Завершить');
-    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, rounds: 3, videos: 1 });
+    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, rounds: 3, videos: 1 }, expect.any(Array));
+    // Вместе с итогами уходит каждый подход: выполненные и пропущенная планка
+    const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean }>;
+    await expect(steps.some((x) => x.completed)).toBe(true);
+    await expect(steps.filter((x) => !x.completed).length).toBeGreaterThan(0);
   },
 };
 

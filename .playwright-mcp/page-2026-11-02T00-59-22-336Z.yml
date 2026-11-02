@@ -1,0 +1,110 @@
+- generic [ref=f1e3]:
+  - main [ref=f1e4]:
+    - generic [ref=f1e331]:
+      - list "Шаги импорта" [ref=f1e332]:
+        - listitem [ref=f1e333]:
+          - text: Источник
+          - generic [ref=f1e337]: ", пройден"
+        - listitem [ref=f1e338]:
+          - text: Проверка
+          - generic [ref=f1e342]: ", пройден"
+        - listitem [ref=f1e343]:
+          - text: План
+          - generic [ref=f1e347]: ", пройден"
+        - listitem [ref=f1e348]:
+          - generic [aria-hidden] [ref=f1e349]: "4"
+          - text: Готово
+      - region [ref=f1e350]:
+        - generic [ref=f1e351]: Сегодня в 01:59
+        - heading "Импорт завершён" [level=1] [ref=f1e352]
+        - status [ref=f1e353]: План в календаре с 3 ноября по 5 ноября. Новые упражнения — во вкладке «Упражнения».
+        - list "Итоги импорта" [ref=f1e354]:
+          - listitem [ref=f1e355]:
+            - generic [ref=f1e356]:
+              - generic [ref=f1e357]: "2"
+              - generic [ref=f1e358]: тренировки
+          - listitem [ref=f1e359]:
+            - generic [ref=f1e360]:
+              - generic [ref=f1e361]: "2"
+              - generic [ref=f1e362]: в календаре
+          - listitem [ref=f1e363]:
+            - generic [ref=f1e364]:
+              - generic [ref=f1e365]: "6"
+              - generic [ref=f1e366]: новых упражнений
+          - listitem [ref=f1e367]:
+            - generic [ref=f1e368]:
+              - generic [ref=f1e369]: "1"
+              - generic [ref=f1e370]: неделя
+        - generic [ref=f1e371]:
+          - link "К тренировкам" [ref=f1e372] [cursor=pointer]:
+            - /url: /
+          - link "Открыть план" [ref=f1e373] [cursor=pointer]:
+            - /url: /plan
+          - link "Импортировать ещё" [ref=f1e374] [cursor=pointer]:
+            - /url: /import
+      - region [ref=f1e375]:
+        - generic [ref=f1e376]:
+          - heading "Новые упражнения · 6" [level=2] [ref=f1e377]
+          - paragraph [ref=f1e378]: Созданы во вкладке «Упражнения» с видео и подсказками по технике из текста. Теперь их можно выбирать и в других тренировках.
+        - list [ref=f1e379]:
+          - listitem [ref=f1e380]:
+            - generic [ref=f1e381]:
+              - link "Обратные отжимания от лавочки" [ref=f1e382] [cursor=pointer]:
+                - /url: /exercises
+              - generic [ref=f1e383]: трицепс · видео
+            - generic [ref=f1e384]: Создано
+          - listitem [ref=f1e385]:
+            - generic [ref=f1e386]:
+              - link "Ножницы лёжа" [ref=f1e387] [cursor=pointer]:
+                - /url: /exercises
+              - generic [ref=f1e388]: пресс
+            - generic [ref=f1e389]: Создано
+          - listitem [ref=f1e390]:
+            - generic [ref=f1e391]:
+              - link "Выпады на месте" [ref=f1e392] [cursor=pointer]:
+                - /url: /exercises
+              - generic [ref=f1e393]: группа мышц не указана
+            - generic [ref=f1e394]: Создано
+          - listitem [ref=f1e395]:
+            - generic [ref=f1e396]:
+              - link "Отжимания с касанием предмета" [ref=f1e397] [cursor=pointer]:
+                - /url: /exercises
+              - generic [ref=f1e398]: группа мышц не указана
+            - generic [ref=f1e399]: Создано
+          - listitem [ref=f1e400]:
+            - generic [ref=f1e401]:
+              - link "Подтягивание колен в висе" [ref=f1e402] [cursor=pointer]:
+                - /url: /exercises
+              - generic [ref=f1e403]: группа мышц не указана
+            - generic [ref=f1e404]: Создано
+          - listitem [ref=f1e405]:
+            - generic [ref=f1e406]:
+              - link "Лодочка" [ref=f1e407] [cursor=pointer]:
+                - /url: /exercises
+              - generic [ref=f1e408]: группа мышц не указана
+            - generic [ref=f1e409]: Создано
+        - link "Все 6 во вкладке «Упражнения»" [ref=f1e410] [cursor=pointer]:
+          - /url: /exercises
+      - region [ref=f1e411]:
+        - heading "Обратите внимание" [level=2] [ref=f1e412]
+        - list [ref=f1e413]:
+          - listitem [ref=f1e414]:
+            - generic [ref=f1e417]:
+              - generic [ref=f1e418]: 5 упражнений без видео
+              - generic [ref=f1e419]: Ножницы лёжа, Выпады на месте и ещё 3 — видео можно добавить во вкладке «Упражнения»
+      - region [ref=f1e420]:
+        - generic [ref=f1e421]:
+          - heading "Передумали?" [level=2] [ref=f1e422]
+          - paragraph [ref=f1e423]: Вернём тренировки, упражнения и план к состоянию до 01:59. Отменить можно в течение 24 часов.
+        - button "Отменить импорт" [ref=f1e424] [cursor=pointer]
+  - navigation "Основная навигация" [ref=f1e87]:
+    - link "Сегодня" [ref=f1e88] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f1e91] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f1e95] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f1e99] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f1e104] [cursor=pointer]:
+      - /url: /profile

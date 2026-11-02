@@ -76,7 +76,7 @@ export function RescheduleSheet({ open, onOpenChange, data, onConfirm, onSkip, o
               id: 'pause',
               icon: 'pause',
               title: 'Поставить план на паузу',
-              description: 'Серия замораживается до возобновления',
+              description: 'Серия недель не прервётся',
               onSelect: onPause,
             },
           ]}

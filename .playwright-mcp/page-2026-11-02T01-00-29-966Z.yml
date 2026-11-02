@@ -1,0 +1,29 @@
+- generic [ref=f3e72]:
+  - banner [ref=f3e73]:
+    - button "Шаг назад" [ref=f3e74] [cursor=pointer]
+    - heading "Разминка" [level=1] [ref=f3e77]
+    - button "Закончить тренировку" [ref=f3e78] [cursor=pointer]
+  - progressbar "Прогресс блока" [ref=f3e81]
+  - generic [ref=f3e84]:
+    - text: Разминка · 1 из 1
+    - paragraph [ref=f3e85]: Разминка
+  - generic [ref=f3e87]:
+    - img "Персонаж стоит" [ref=f3e89]
+    - generic [ref=f3e111]:
+      - button "Техника" [ref=f3e112] [cursor=pointer]
+      - generic [aria-hidden] [ref=f3e116]: Техника
+    - generic [ref=f3e118]:
+      - button "Запись" [ref=f3e119] [cursor=pointer]
+      - generic [aria-hidden] [ref=f3e123]: Запись
+  - generic [ref=f3e124]:
+    - generic [ref=f3e126]:
+      - button "Пауза" [ref=f3e127] [cursor=pointer]
+      - generic [aria-hidden] [ref=f3e130]: Пауза
+    - button "Пауза, 07:00 осталось" [ref=f3e132] [cursor=pointer]:
+      - generic [ref=f3e133]: Пауза,
+      - generic [ref=f3e138]:
+        - generic [ref=f3e139]: 07:00
+        - generic [ref=f3e140]: осталось
+    - generic [ref=f3e142]:
+      - button "Пропустить" [ref=f3e143] [cursor=pointer]
+      - generic [aria-hidden] [ref=f3e146]: Пропустить

@@ -1,32 +1,46 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { addDays, toIso } from '../../plan/plan';
 import { useSchedule, useToday } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
-import { RescheduleSheet } from '../../schedule';
+import { PauseSheet, RescheduleSheet } from '../../schedule';
+import { moveWorkout, pausePlan, resumePlan, skipWorkout, unskipWorkout } from '../../schedule/api';
 import { TodayView } from '../TodayView/TodayView';
 
+/** После переноса страница монтируется заново по новому key: «Сегодня» и расписание читаются с сервера ещё раз */
 export function TodayPage() {
+  const [version, setVersion] = useState(0);
+  return <TodayContent key={version} onMoved={() => setVersion((v) => v + 1)} />;
+}
+
+function TodayContent({ onMoved }: { onMoved: () => void }) {
   const { data, error } = useToday();
-  const { data: schedule } = useSchedule();
-  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  /** День, тренировку которого переносим; null — панель закрыта */
+  const [moveFrom, setMoveFrom] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={320} />;
   const open = (path: string) => () => navigate(path);
-  const reschedule = () => setRescheduleOpen(true);
+  const reschedule = () => setMoveFrom(toIso(new Date()));
+  const start = () => navigate(data.state.kind === 'workout' ? `/workout/${data.state.workout.id}?date=${toIso(new Date())}` : '/workout');
   const onWeekDayAction = (index: number) => {
     const action = data.week[index]?.actionLabel;
-    if (action === 'Перенести') reschedule();
-    else if (action === 'Итоги') navigate('/workout/summary');
-    else navigate('/workout');
+    const day = data.week[index];
+    if (action === 'Перенести' && day?.iso) setMoveFrom(day.iso);
+    else if (action === 'Вернуть' && day?.iso) {
+      setActionError(null);
+      unskipWorkout(day.iso).then(onMoved, (e: Error) => setActionError(e.message));
+    } else if (action === 'Итоги') navigate('/workout/summary');
+    else start();
   };
 
   return (
     <>
       <TodayView
         data={data}
-        onStart={open('/workout')}
+        onStart={start}
         onReschedule={reschedule}
         onOpenExercises={open('/exercises')}
         onStretch={open('/workout/stretch')}
@@ -36,17 +50,53 @@ export function TodayPage() {
         onOpenLatestAchievement={open('/progress/achievements')}
         onOpenProgress={open('/progress')}
         onWeekDayAction={onWeekDayAction}
+        onMoveMissed={setMoveFrom}
+        onResume={() => {
+          setActionError(null);
+          resumePlan(toIso(new Date())).then(onMoved, (e: Error) => setActionError(e.message));
+        }}
       />
+      {actionError && <p role="alert">{actionError}</p>}
+      {moveFrom && <RescheduleSection from={moveFrom} onClose={() => setMoveFrom(null)} onMoved={onMoved} />}
+    </>
+  );
+}
+
+/** Монтируется только при открытой панели: расписание запрашиваем для выбранного дня, а не при каждой загрузке «Сегодня» */
+function RescheduleSection({ from, onClose, onMoved }: { from: string; onClose: () => void; onMoved: () => void }) {
+  const { data: schedule, error } = useSchedule(from);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [pausing, setPausing] = useState(false);
+  const message = moveError ?? error;
+  return (
+    <>
+      {message && <p role="alert">{message}</p>}
       {schedule && (
         <RescheduleSheet
-          open={rescheduleOpen}
-          onOpenChange={setRescheduleOpen}
+          open={!pausing}
+          onOpenChange={(open) => !open && onClose()}
           data={schedule}
-          onConfirm={() => setRescheduleOpen(false)}
-          onSkip={() => setRescheduleOpen(false)}
-          onPause={() => setRescheduleOpen(false)}
+          onConfirm={(to) => {
+            moveWorkout(toIso(new Date()), from, to).then(onMoved, (e: unknown) => setMoveError(e instanceof Error ? e.message : 'Не удалось перенести'));
+          }}
+          onSkip={() => {
+            skipWorkout(from).then(onMoved, (e: unknown) => setMoveError(e instanceof Error ? e.message : 'Не удалось пропустить'));
+          }}
+          onPause={() => setPausing(true)}
         />
       )}
+      <PauseSheet
+        open={pausing}
+        onOpenChange={(open) => !open && onClose()}
+        onBack={() => setPausing(false)}
+        onPick={(days) => {
+          const today = toIso(new Date());
+          pausePlan(today, addDays(today, days - 1)).then(onMoved, (e: unknown) => {
+            setPausing(false);
+            setMoveError(e instanceof Error ? e.message : 'Не удалось поставить на паузу');
+          });
+        }}
+      />
     </>
   );
 }

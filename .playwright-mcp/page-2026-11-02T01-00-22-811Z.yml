@@ -1,0 +1,42 @@
+- generic [ref=f3e3]:
+  - banner [ref=f3e4]:
+    - button "Шаг назад" [ref=f3e5] [cursor=pointer]
+    - heading "Понедельник, 2 ноября" [level=1] [ref=f3e8]
+  - generic [ref=f3e9]:
+    - generic [ref=f3e10]:
+      - generic [ref=f3e11]: Сегодня
+      - heading "Трицепс, пресс, ноги" [level=1] [ref=f3e12]
+      - paragraph [ref=f3e13]: 3 круга · 9 подходов
+    - img "Персонаж стоит" [ref=f3e16]
+  - list [ref=f3e37]:
+    - listitem [ref=f3e38]:
+      - generic [ref=f3e39]:
+        - generic [ref=f3e40]: Разминка
+        - paragraph [ref=f3e41]: 1 упражнение по 420 с
+        - paragraph [ref=f3e42]: Разогреться любым способом, ОРУ ~10 мин
+    - listitem [ref=f3e43]:
+      - generic [ref=f3e44]:
+        - generic [ref=f3e45]:
+          - generic [ref=f3e46]: По кругу с отдыхом
+          - generic [ref=f3e47]: 3 круга
+        - list [ref=f3e48]:
+          - listitem [ref=f3e49]:
+            - generic [aria-hidden] [ref=f3e50]: "1"
+            - generic [ref=f3e51]: Обратные отжимания от лавочки
+            - generic [ref=f3e52]: 18–20 повт
+          - listitem [ref=f3e53]:
+            - generic [aria-hidden] [ref=f3e54]: "2"
+            - generic [ref=f3e55]: Ножницы лёжа
+            - generic [ref=f3e56]: 30–34 повт
+          - listitem [ref=f3e57]:
+            - generic [aria-hidden] [ref=f3e58]: "3"
+            - generic [ref=f3e59]: Выпады на месте
+            - generic [ref=f3e60]: 14–16 повт
+        - separator [ref=f3e61]
+        - generic [ref=f3e62]: Отдых 60 с после каждого подхода
+    - listitem [ref=f3e63]:
+      - generic [ref=f3e64]:
+        - generic [ref=f3e65]: Заминка
+        - paragraph [ref=f3e66]: 1 упражнение по 300 с
+        - paragraph [ref=f3e67]: Растяжка, расслабление спины
+  - button "Начать тренировку" [ref=f3e69] [cursor=pointer]

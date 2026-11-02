@@ -1,6 +1,7 @@
 import type { ExerciseKind } from '../../../../shared/types';
 
-export type MuscleGroupId = 'legs' | 'back' | 'chest' | 'arms' | 'core' | 'cardio' | 'other';
+export type { MuscleGroupId } from '../../../../shared/types';
+import type { MuscleGroupId } from '../../../../shared/types';
 
 /** Один выполненный подход; заполнены только поля, которые нужны типу упражнения */
 export interface SetResult {
@@ -42,10 +43,16 @@ export interface ExerciseDefaults {
 export interface LibraryExercise {
   id: string;
   name: string;
+  /** Другие названия для импорта: «присед», «РДЛ» */
+  aliases?: string[];
   kind: ExerciseKind;
   group: MuscleGroupId;
   muscles: string[];
   equipment: string;
+  /** Как выполнять: шаги через \n */
+  notes?: string;
+  /** Ссылка на видео-пример */
+  video?: string;
   /** Гантели парой: вес показываем как «2 × 14 кг» */
   pair?: boolean;
   defaults: ExerciseDefaults;
@@ -67,5 +74,9 @@ export interface ExerciseDraft {
   kind: ExerciseKind;
   muscles: string[];
   equipment: string;
+  /** Как выполнять: один шаг на строку */
+  notes: string;
+  /** Ссылка на видео; пустая строка — нет */
+  video: string;
   params: ExerciseDefaults;
 }

@@ -1,0 +1,87 @@
+- generic [ref=f14e54]:
+  - main [ref=f14e55]:
+    - generic [ref=f14e191]:
+      - generic [ref=f14e193]:
+        - paragraph [ref=f14e194]: Понедельник, 2 ноября
+        - heading "Привет, Qa" [level=1] [ref=f14e195]
+      - region [ref=f14e196]:
+        - img "Персонаж машет рукой" [ref=f14e198]
+        - generic [ref=f14e220]:
+          - paragraph [ref=f14e221]: Сегодня
+          - heading "Трицепс, пресс, ноги" [level=2] [ref=f14e222]
+          - paragraph [ref=f14e223]: 3 упражнения · ≈ 25 мин · По кругу
+          - list [ref=f14e224]:
+            - listitem [ref=f14e225]:
+              - generic [ref=f14e226]: трицепс
+            - listitem [ref=f14e227]:
+              - generic [ref=f14e228]: пресс
+          - generic [ref=f14e229]:
+            - button "Старт" [ref=f14e230] [cursor=pointer]
+            - button "Упражнения" [ref=f14e233] [cursor=pointer]
+            - button "Перенести" [ref=f14e234] [cursor=pointer]
+      - region [ref=f14e235]:
+        - generic [ref=f14e236]:
+          - heading "Эта неделя" [level=2] [ref=f14e237]
+          - generic [ref=f14e238]: 0 из 5
+        - progressbar "Тренировки недели" [ref=f14e239]
+        - list [ref=f14e245]:
+          - listitem [ref=f14e246]:
+            - button "пн 2, сегодня, Запланировано, Трицепс, пресс, ноги" [pressed] [ref=f14e247] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e248]: пн
+              - generic [aria-hidden] [ref=f14e249]: "2"
+          - listitem [ref=f14e253]:
+            - button "вт 3, Запланировано, Трицепс, пресс, ноги" [ref=f14e254] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e255]: вт
+              - generic [aria-hidden] [ref=f14e256]: "3"
+          - listitem [ref=f14e258]:
+            - button "ср 4, Запланировано, Трицепс, пресс, ноги" [ref=f14e259] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e260]: ср
+              - generic [aria-hidden] [ref=f14e261]: "4"
+          - listitem [ref=f14e263]:
+            - button "чт 5, Запланировано, Грудь, кор, спина" [ref=f14e264] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e265]: чт
+              - generic [aria-hidden] [ref=f14e266]: "5"
+          - listitem [ref=f14e268]:
+            - button "пт 6, Запланировано, Трицепс, пресс, ноги" [ref=f14e269] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e270]: пт
+              - generic [aria-hidden] [ref=f14e271]: "6"
+          - listitem [ref=f14e273]:
+            - button "сб 7, Отдых" [ref=f14e274] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e275]: сб
+              - generic [aria-hidden] [ref=f14e276]: "7"
+          - listitem [ref=f14e278]:
+            - button "вс 8, Отдых" [ref=f14e279] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f14e280]: вс
+              - generic [aria-hidden] [ref=f14e281]: "8"
+        - generic [ref=f14e283]:
+          - generic [ref=f14e284]:
+            - generic [ref=f14e285]: Сегодня, 2 ноября · Запланировано
+            - generic [ref=f14e286]: Трицепс, пресс, ноги
+            - generic [ref=f14e287]: 3 упражнения · ≈ 25 мин
+          - button "Начать" [ref=f14e288] [cursor=pointer]
+        - list "Обозначения" [ref=f14e289]:
+          - listitem [ref=f14e290]: Выполнена
+          - listitem [ref=f14e292]: Запланирована
+          - listitem [ref=f14e294]: Перенесена
+          - listitem [ref=f14e296]: Отдых
+      - region [ref=f14e298]:
+        - generic [ref=f14e299]:
+          - heading "Пропущено" [level=2] [ref=f14e300]
+          - generic [ref=f14e301]: "1"
+        - list [ref=f14e302]:
+          - listitem [ref=f14e303]:
+            - generic [ref=f14e304]:
+              - generic [ref=f14e305]: Пятница, 30 октября
+              - generic [ref=f14e306]: Грудь, кор, спина
+            - 'button "Перенести: Грудь, кор, спина, Пятница, 30 октября" [ref=f14e307] [cursor=pointer]': Перенести
+  - navigation "Основная навигация" [ref=f14e169]:
+    - link "Сегодня" [ref=f14e170] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f14e173] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f14e177] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f14e181] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f14e186] [cursor=pointer]:
+      - /url: /profile

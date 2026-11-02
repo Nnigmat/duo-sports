@@ -1,5 +1,5 @@
 import { useReducer, useState, type Dispatch } from 'react';
-import type { CoachComment, Technique, Workout } from '../../../../../shared/types';
+import type { CoachComment, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
 import { poseFor } from '../chibi/poseFor';
 import {
@@ -10,6 +10,7 @@ import {
   editEyebrow,
   eyebrow,
   finishStats,
+  sessionSteps,
   followingNumbers,
   formatFollowing,
   hasNewComments,
@@ -44,8 +45,8 @@ type Props = {
   techniques: Record<string, Technique>;
   /** Загрузить видео подхода. Ошибка (reject) остаётся на экране записи, можно повторить. */
   onUploadVideo: (video: Blob, step: Step) => Promise<void>;
-  /** «Завершить» на финише */
-  onFinish: (stats: FinishStats) => void;
+  /** «Завершить» на финише: итоги и каждый подход с планом и отметкой «выполнен» */
+  onFinish: (stats: FinishStats, steps: SessionStepResult[]) => void;
   /** Выход с экрана старта и ✕ на финише */
   onExit: () => void;
   /** Секунд до начала записи после «Старт» */
@@ -86,7 +87,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onF
 
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    return <FinishScreen stats={stats} onFinish={() => onFinish(stats)} onClose={onExit} />;
+    return <FinishScreen stats={stats} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed))} onClose={onExit} />;
   }
 
   if (recording) {

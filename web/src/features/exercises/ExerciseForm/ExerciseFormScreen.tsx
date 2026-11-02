@@ -1,28 +1,51 @@
 import { useState } from 'react';
-import { Button, Icon, Text, TopBar } from '../../../ui';
-import { canSubmit, draftFromExercise, emptyDraft } from '../library';
+import { Button, Dialog, Icon, Notice, Text, TopBar } from '../../../ui';
+import { canSubmit, videoError, draftFromExercise, emptyDraft } from '../library';
 import type { ExerciseDraft, LibraryExercise } from '../types';
 import { ExerciseForm } from './ExerciseForm';
 import styles from './ExerciseFormScreen.module.css';
 
-type Props =
-  | { mode: 'create'; onCancel: () => void; onSubmit: (draft: ExerciseDraft) => void; exercise?: undefined }
-  | { mode: 'edit'; exercise: LibraryExercise; onCancel: () => void; onSubmit: (draft: ExerciseDraft) => void };
+/** Обработчик может быть асинхронным: пока он выполняется, кнопка занята, а отказ показывается на экране */
+type Submit = (draft: ExerciseDraft) => void | Promise<void>;
 
-/** Экран формы: «Новое упражнение» или «Редактирование упражнения». Хранит черновик у себя. */
+type Props =
+  | { mode: 'create'; onCancel: () => void; onSubmit: Submit; exercise?: undefined; onDelete?: undefined }
+  | { mode: 'edit'; exercise: LibraryExercise; onCancel: () => void; onSubmit: Submit; onDelete?: () => void | Promise<void> };
+
+function messageOf(e: unknown): string {
+  return e instanceof Error && e.message ? e.message : 'Не удалось сохранить. Попробуйте ещё раз';
+}
+
+/** Экран формы: «Новое упражнение» или «Редактирование упражнения». Хранит черновик у себя; при ошибке остаётся открытым. */
 export function ExerciseFormScreen(props: Props) {
   const { mode, onCancel, onSubmit } = props;
   const create = mode === 'create';
   const [draft, setDraft] = useState<ExerciseDraft>(() => (props.exercise ? draftFromExercise(props.exercise) : emptyDraft()));
-  const ok = canSubmit(draft);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const ok = canSubmit(draft) && !videoError(draft);
+
+  async function run(action: () => void | Promise<void>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+    } catch (e) {
+      setError(messageOf(e));
+      setConfirmDelete(false);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className={styles.root}>
       <TopBar
-        start={<Button variant="ghost" compact onClick={onCancel}>Отмена</Button>}
+        start={<Button variant="ghost" compact disabled={busy} onClick={onCancel}>Отмена</Button>}
         end={
-          <Button variant="ghost" compact disabled={!ok} onClick={() => onSubmit(draft)}>
-            {create ? 'Создать' : 'Сохранить'}
+          <Button variant="ghost" compact disabled={!ok} loading={busy} onClick={() => run(() => onSubmit(draft))}>
+            {busy ? 'Сохраняем' : create ? 'Создать' : 'Сохранить'}
           </Button>
         }
       />
@@ -35,6 +58,8 @@ export function ExerciseFormScreen(props: Props) {
         ) : (
           <Text variant="h3" tag="h1">Редактирование упражнения</Text>
         )}
+
+        {error && <Notice tone="error">{error}</Notice>}
 
         <div className={styles.video}>
           <Icon name="video" />
@@ -50,6 +75,24 @@ export function ExerciseFormScreen(props: Props) {
           kindChanged={!create && !!props.exercise && draft.kind !== props.exercise.kind}
           name={create ? 'new-kind' : 'edit-kind'}
         />
+
+        {props.onDelete && (
+          <>
+            <Button variant="danger" fullWidth disabled={busy} onClick={() => setConfirmDelete(true)}>
+              Удалить упражнение
+            </Button>
+            <Dialog
+              open={confirmDelete}
+              onOpenChange={(o) => !busy && setConfirmDelete(o)}
+              title="Удалить упражнение?"
+              description="Оно пропадёт из библиотеки для всех. Это нельзя отменить."
+              confirmLabel="Удалить"
+              danger
+              loading={busy}
+              onConfirm={() => run(props.onDelete!)}
+            />
+          </>
+        )}
       </div>
     </div>
   );

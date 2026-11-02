@@ -1,0 +1,122 @@
+- generic:
+  - generic [aria-hidden]:
+    - generic:
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - button: Отмена
+            - generic:
+              - button: Сохранить
+          - generic:
+            - heading [level=1]: Редактирование упражнения
+            - generic:
+              - paragraph: Видео техники
+              - generic: Необязательно, можно добавить позже
+              - button: Добавить видео
+            - generic:
+              - generic:
+                - generic: Название
+                - textbox:
+                  - /placeholder: Например, болгарские выпады
+                  - text: Болгарские выпады с гантелями
+              - generic:
+                - generic: Как выполнять
+                - textbox:
+                  - /placeholder: Встаньте прямо, стопы на ширине плеч
+                  - text: Задняя нога на скамье, корпус прямой Опускайтесь до угла 90 градусов в передней ноге Встаньте, толкаясь пяткой
+                - paragraph: Один шаг на строку
+              - generic:
+                - generic: Ссылка на видео
+                - textbox:
+                  - /placeholder: https://
+              - radiogroup:
+                - paragraph: Тип упражнения
+                - generic:
+                  - radio [checked]
+                  - generic:
+                    - generic: Вес × повторы
+                    - generic: Записываем вес и повторы
+                - generic:
+                  - radio
+                  - generic:
+                    - generic: Собственный вес
+                    - generic: Записываем только повторы
+                - generic:
+                  - radio
+                  - generic:
+                    - generic: На время
+                    - generic: Записываем время подхода
+              - group:
+                - generic:
+                  - paragraph: Параметры по умолчанию
+                  - text: Подставятся, когда упражнение добавят в тренировку. В самой тренировке их можно поменять.
+                - generic:
+                  - generic: Повторы
+                  - generic:
+                    - button
+                    - generic:
+                      - textbox: "10"
+                      - generic: повт.
+                    - button
+                - generic:
+                  - generic: Вес
+                  - generic:
+                    - button
+                    - generic:
+                      - textbox: "20"
+                      - generic: кг
+                    - button
+              - generic:
+                - paragraph [aria-hidden]: Мышцы · можно выбрать несколько
+                - group:
+                  - button [pressed]: Квадрицепс
+                  - button: Ягодицы
+                  - button: Бицепс бедра
+                  - button: Икры
+                  - button: Широчайшие
+                  - button: Ромбовидные
+                  - button: Спина
+                  - button: Грудь
+                  - button: Дельты
+                  - button: Бицепс
+                  - button: Трицепс
+                  - button: Пресс
+                  - button: Кор
+                  - button: Ноги
+                  - button: Всё тело
+                  - button: Выносливость
+              - generic:
+                - paragraph [aria-hidden]: Снаряд
+                - group:
+                  - button: Штанга
+                  - button: Гантели
+                  - button: Гиря
+                  - button: Тренажёр
+                  - button: Турник
+                  - button: Скакалка
+                  - button [pressed]: Без снаряда
+            - button: Удалить упражнение
+      - navigation:
+        - link:
+          - /url: /
+          - text: Сегодня
+        - link:
+          - /url: /plan
+          - text: План
+        - link:
+          - /url: /exercises
+          - text: Упражнения
+        - link:
+          - /url: /progress/achievements
+          - text: Прогресс
+        - link:
+          - /url: /profile
+          - text: Профиль
+  - dialog [ref=f19e140]:
+    - generic [ref=f19e141]:
+      - heading "Удалить упражнение?" [level=2] [ref=f19e142]
+      - paragraph [ref=f19e143]: Оно пропадёт из библиотеки для всех. Это нельзя отменить.
+    - generic [ref=f19e144]:
+      - button "Отмена" [active] [ref=f19e145] [cursor=pointer]
+      - button "Удалить" [ref=f19e146] [cursor=pointer]

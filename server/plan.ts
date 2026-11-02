@@ -1,0 +1,51 @@
+import type { CommitBlock, PlanEntry, PlanResponse, PlanTemplate, PlanTone } from '../shared/types';
+import type { Db } from './db';
+
+const TONES: PlanTone[] = ['primary', 'teal', 'amber', 'slate'];
+
+type WorkoutRow = { id: number; title: string; blocks: string };
+type EntryRow = { date: string; workout_id: number };
+
+/** Оценка длительности: десять минут на разминку и заминку и пять на упражнение, кратно пяти */
+export function estimateMinutes(exercises: number): number {
+  return Math.max(15, Math.round((10 + exercises * 5) / 5) * 5);
+}
+
+function template(w: WorkoutRow): PlanTemplate {
+  const blocks = JSON.parse(w.blocks) as CommitBlock[];
+  const exercises = blocks.flatMap((b) => b.items.map((i) => ({ name: i.name, detail: i.value })));
+  return { id: String(w.id), title: w.title, minutes: estimateMinutes(exercises.length), tone: TONES[(w.id - 1) % TONES.length]!, exercises };
+}
+
+/** Тренировки пользователя как шаблоны и записи плана по дням. В дне с двумя тренировками первая главная, остальные — в more. */
+export function planOf(db: Db, userId: number): PlanResponse {
+  const workouts = db.prepare('SELECT id, title, blocks FROM workouts WHERE user_id = ? ORDER BY id').all(userId) as WorkoutRow[];
+  const titles = new Map(workouts.map((w) => [w.id, w.title]));
+  const rows = db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as EntryRow[];
+  const done = new Set((db.prepare('SELECT workout_id, date FROM sessions_done WHERE user_id = ? AND workout_id IS NOT NULL').all(userId) as Array<{ workout_id: number; date: string }>).map((d) => `${d.date}:${d.workout_id}`));
+  const skipped = new Set((db.prepare('SELECT workout_id, date FROM plan_skips WHERE user_id = ?').all(userId) as Array<{ workout_id: number; date: string }>).map((d) => `${d.date}:${d.workout_id}`));
+  const statusOf = (r: EntryRow): PlanEntry['status'] => (done.has(`${r.date}:${r.workout_id}`) ? 'done' : skipped.has(`${r.date}:${r.workout_id}`) ? 'skipped' : 'planned');
+  const entries: Record<string, PlanEntry> = {};
+  for (const r of rows) {
+    const main = entries[r.date];
+    if (!main) entries[r.date] = { templateId: String(r.workout_id), status: statusOf(r), custom: true };
+    else (main.more ??= []).push(titles.get(r.workout_id) ?? '');
+  }
+  return { templates: workouts.map(template), entries };
+}
+
+export type DayResult = { ok: true } | { ok: false; error: 'not_found' };
+
+/** В этот день остаётся одна тренировка: «Добавить» и «Копировать» заменяют то, что стояло */
+export function setDay(db: Db, userId: number, date: string, workoutId: number): DayResult {
+  return db.transaction((): DayResult => {
+    if (!db.prepare('SELECT 1 FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, userId)) return { ok: false, error: 'not_found' };
+    db.prepare('DELETE FROM plan_entries WHERE user_id = ? AND date = ?').run(userId, date);
+    db.prepare('INSERT INTO plan_entries (user_id, date, workout_id, import_id) VALUES (?, ?, ?, NULL)').run(userId, date, workoutId);
+    return { ok: true };
+  })();
+}
+
+export function clearDay(db: Db, userId: number, date: string): void {
+  db.prepare('DELETE FROM plan_entries WHERE user_id = ? AND date = ?').run(userId, date);
+}

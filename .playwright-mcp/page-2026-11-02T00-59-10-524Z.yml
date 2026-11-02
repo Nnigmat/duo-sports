@@ -1,0 +1,176 @@
+- generic [ref=f1e3]:
+  - main [ref=f1e4]:
+    - generic [ref=f1e109]:
+      - generic [ref=f1e110]:
+        - heading "Проверьте, что загружаем" [level=1] [ref=f1e111]
+        - paragraph [ref=f1e112]: "Вставленный текст: 42 строки. Пока ничего не сохранено."
+      - list "Шаги импорта" [ref=f1e113]:
+        - listitem [ref=f1e114]:
+          - text: Источник
+          - generic [ref=f1e118]: ", пройден"
+        - listitem [ref=f1e119]:
+          - generic [aria-hidden] [ref=f1e120]: "2"
+          - text: Проверка
+        - listitem [ref=f1e121]:
+          - generic [aria-hidden] [ref=f1e122]: "3"
+          - text: План
+        - listitem [ref=f1e123]:
+          - generic [aria-hidden] [ref=f1e124]: "4"
+          - text: Готово
+      - list "Что найдено в тексте" [ref=f1e125]:
+        - listitem [ref=f1e126]:
+          - generic [ref=f1e127]:
+            - generic [ref=f1e128]: "2"
+            - generic [ref=f1e129]: тренировки · 1 неделя
+          - paragraph [ref=f1e130]: Вт · Чт3 нояб — 5 нояб
+        - listitem [ref=f1e131]:
+          - generic [ref=f1e132]:
+            - generic [ref=f1e133]: "0"
+            - generic [ref=f1e134]: упражнений нашлось в библиотеке
+        - listitem [ref=f1e135]:
+          - link "6 новых упражнений — решите ниже" [ref=f1e136] [cursor=pointer]:
+            - /url: "#new-ex"
+            - generic [ref=f1e137]:
+              - generic [ref=f1e138]: "6"
+              - generic [ref=f1e139]: новых упражнений — решите ниже
+      - region [ref=f1e140]:
+        - generic [ref=f1e141]:
+          - generic [ref=f1e142]:
+            - heading "Новые упражнения" [level=2] [ref=f1e143]
+            - paragraph [ref=f1e144]: "Этих упражнений нет во вкладке «Упражнения». Без вашего согласия ничего не создадим: выберите для каждого, что сделать."
+          - generic [ref=f1e145]:
+            - button "Создать все" [ref=f1e146] [cursor=pointer]
+            - button "Похожие — из библиотеки" [ref=f1e147] [cursor=pointer]
+        - group "Фильтр упражнений" [ref=f1e148]:
+          - button "Все6" [pressed] [ref=f1e149] [cursor=pointer]
+          - button "Есть похожее2" [ref=f1e150] [cursor=pointer]
+          - button "Без группы мышц4" [ref=f1e151] [cursor=pointer]
+        - status [ref=f1e152]: создать 6
+        - list [ref=f1e153]:
+          - listitem [ref=f1e154]:
+            - generic [ref=f1e155]:
+              - generic [ref=f1e156]: Обратные отжимания от лавочки
+              - generic [ref=f1e157]: в 1 тренировке · видео · трицепс
+            - group "Что сделать с «Обратные отжимания от лавочки»" [ref=f1e158]:
+              - button "Создать" [pressed] [ref=f1e159] [cursor=pointer]
+              - button "Использовать «Отжимания»" [ref=f1e160] [cursor=pointer]
+              - button "Не создавать" [ref=f1e161] [cursor=pointer]
+          - listitem [ref=f1e162]:
+            - generic [ref=f1e163]:
+              - generic [ref=f1e164]: Ножницы лёжа
+              - generic [ref=f1e165]: в 1 тренировке · пресс
+            - group "Что сделать с «Ножницы лёжа»" [ref=f1e166]:
+              - button "Создать" [pressed] [ref=f1e167] [cursor=pointer]
+              - button "Не создавать" [ref=f1e168] [cursor=pointer]
+          - listitem [ref=f1e169]:
+            - generic [ref=f1e170]:
+              - generic [ref=f1e171]: Выпады на месте
+              - generic [ref=f1e172]: в 1 тренировке · группа мышц не указана
+            - generic [ref=f1e173]:
+              - generic [ref=f1e174]: Группа мышц
+              - combobox "Группа мышц" [ref=f1e175]:
+                - option "Выбрать…" [selected]
+                - option "Пресс"
+                - option "Кор"
+                - option "Спина"
+                - option "Предплечья"
+                - option "Ноги"
+            - group "Что сделать с «Выпады на месте»" [ref=f1e176]:
+              - button "Создать" [pressed] [ref=f1e177] [cursor=pointer]
+              - button "Не создавать" [ref=f1e178] [cursor=pointer]
+          - listitem [ref=f1e179]:
+            - generic [ref=f1e180]:
+              - generic [ref=f1e181]: Отжимания с касанием предмета
+              - generic [ref=f1e182]: в 1 тренировке · группа мышц не указана
+            - generic [ref=f1e183]:
+              - generic [ref=f1e184]: Группа мышц
+              - combobox "Группа мышц" [ref=f1e185]:
+                - option "Выбрать…" [selected]
+                - option "Пресс"
+                - option "Кор"
+                - option "Спина"
+                - option "Предплечья"
+                - option "Ноги"
+            - group "Что сделать с «Отжимания с касанием предмета»" [ref=f1e186]:
+              - button "Создать" [pressed] [ref=f1e187] [cursor=pointer]
+              - button "Использовать «Отжимания»" [ref=f1e188] [cursor=pointer]
+              - button "Не создавать" [ref=f1e189] [cursor=pointer]
+          - listitem [ref=f1e190]:
+            - generic [ref=f1e191]:
+              - generic [ref=f1e192]: Подтягивание колен в висе
+              - generic [ref=f1e193]: в 1 тренировке · группа мышц не указана
+            - generic [ref=f1e194]:
+              - generic [ref=f1e195]: Группа мышц
+              - combobox "Группа мышц" [ref=f1e196]:
+                - option "Выбрать…" [selected]
+                - option "Пресс"
+                - option "Кор"
+                - option "Спина"
+                - option "Предплечья"
+                - option "Ноги"
+            - group "Что сделать с «Подтягивание колен в висе»" [ref=f1e197]:
+              - button "Создать" [pressed] [ref=f1e198] [cursor=pointer]
+              - button "Не создавать" [ref=f1e199] [cursor=pointer]
+          - listitem [ref=f1e200]:
+            - generic [ref=f1e201]:
+              - generic [ref=f1e202]: Лодочка
+              - generic [ref=f1e203]: в 1 тренировке · группа мышц не указана
+            - generic [ref=f1e204]:
+              - generic [ref=f1e205]: Группа мышц
+              - combobox "Группа мышц" [ref=f1e206]:
+                - option "Выбрать…" [selected]
+                - option "Пресс"
+                - option "Кор"
+                - option "Спина"
+                - option "Предплечья"
+                - option "Ноги"
+            - group "Что сделать с «Лодочка»" [ref=f1e207]:
+              - button "Создать" [pressed] [ref=f1e208] [cursor=pointer]
+              - button "Не создавать" [ref=f1e209] [cursor=pointer]
+      - region [ref=f1e210]:
+        - generic [ref=f1e211]:
+          - generic [ref=f1e212]:
+            - heading "Тренировки по неделям" [level=2] [ref=f1e213]
+            - paragraph [ref=f1e214]: Изменения — относительно того же дня прошлой недели.
+          - button "Развернуть все" [ref=f1e215] [cursor=pointer]
+        - list [ref=f1e216]:
+          - listitem [ref=f1e217]:
+            - button "Неделя 1 · 2 – 8 нояб Вт «Трицепс, пресс, ноги» · Чт «Грудь, кор, спина»" [expanded] [ref=f1e218] [cursor=pointer]:
+              - generic [ref=f1e221]:
+                - generic [ref=f1e222]: Неделя 1 · 2 – 8 нояб
+                - generic [ref=f1e223]: Вт «Трицепс, пресс, ноги» · Чт «Грудь, кор, спина»
+            - list [ref=f1e224]:
+              - listitem [ref=f1e225]:
+                - button "Вт, 3 нояб Трицепс, пресс, ноги Обратные отжимания от лавочки, Ножницы лёжа, Выпады на месте новая связка" [ref=f1e226] [cursor=pointer]:
+                  - generic [ref=f1e227]:
+                    - generic [ref=f1e228]: Вт, 3 нояб
+                    - generic [ref=f1e229]: Трицепс, пресс, ноги
+                    - generic [ref=f1e230]: Обратные отжимания от лавочки, Ножницы лёжа, Выпады на месте
+                  - generic [ref=f1e231]: новая связка
+              - listitem [ref=f1e234]:
+                - button "Чт, 5 нояб Грудь, кор, спина Отжимания с касанием предмета, Подтягивание колен в висе, Лодочка новая связка" [ref=f1e235] [cursor=pointer]:
+                  - generic [ref=f1e236]:
+                    - generic [ref=f1e237]: Чт, 5 нояб
+                    - generic [ref=f1e238]: Грудь, кор, спина
+                    - generic [ref=f1e239]: Отжимания с касанием предмета, Подтягивание колен в висе, Лодочка
+                  - generic [ref=f1e240]: новая связка
+      - generic [ref=f1e243]:
+        - generic [ref=f1e244]:
+          - paragraph [ref=f1e245]:
+            - generic [ref=f1e246]: 2 тренировки
+            - text: · 6 новых упражнений
+          - generic [ref=f1e247]: Упражнения появятся во вкладке «Упражнения» только после шага «Готово».
+        - generic [ref=f1e248]:
+          - button "Назад" [ref=f1e249] [cursor=pointer]
+          - 'button "Далее: план" [ref=f1e250] [cursor=pointer]'
+  - navigation "Основная навигация" [ref=f1e87]:
+    - link "Сегодня" [ref=f1e88] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f1e91] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f1e95] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f1e99] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f1e104] [cursor=pointer]:
+      - /url: /profile

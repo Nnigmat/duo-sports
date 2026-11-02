@@ -155,3 +155,13 @@ export const InteractiveCopy: Story = {
     await expect(c.queryByRole('group', { name: 'Копировать на другую дату' })).toBeNull();
   },
 };
+
+export const TwoWorkoutsInDay: Story = {
+  args: {
+    date: '2026-11-05',
+    data: { ...planFixture, entries: { ...planFixture.entries, '2026-11-05': { templateId: 'legs', status: 'planned', custom: true, more: ['Всё тело'] } } },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('Ещё в этот день: Всё тело')).toBeVisible();
+  },
+};

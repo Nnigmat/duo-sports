@@ -1,0 +1,108 @@
+- generic [ref=f16e3]:
+  - main [ref=f16e4]:
+    - generic [ref=f16e473]:
+      - generic [ref=f16e474]:
+        - button "Отмена" [ref=f16e476] [cursor=pointer]
+        - button "Создать" [ref=f16e478] [cursor=pointer]
+      - generic [ref=f16e479]:
+        - generic [ref=f16e480]:
+          - heading "Новое упражнение" [level=1] [ref=f16e481]
+          - paragraph [ref=f16e482]: Оно появится в списке и в выборе упражнений для тренировки.
+        - generic [ref=f16e483]:
+          - paragraph [ref=f16e487]: Видео техники
+          - generic [ref=f16e488]: Необязательно, можно добавить позже
+          - button "Добавить видео" [ref=f16e489] [cursor=pointer]
+        - generic [ref=f16e492]:
+          - generic [ref=f16e493]:
+            - generic [ref=f16e494]: Название
+            - textbox "Название" [ref=f16e496]:
+              - /placeholder: Например, болгарские выпады
+              - text: Болгарские выпады
+          - generic [ref=f16e497]:
+            - generic [ref=f16e498]: Как выполнять
+            - textbox "Как выполнять" [ref=f16e500]:
+              - /placeholder: Встаньте прямо, стопы на ширине плеч
+              - text: Задняя нога на скамье, корпус прямой Опускайтесь до угла 90 градусов в передней ноге Встаньте, толкаясь пяткой
+            - paragraph [ref=f16e501]: Один шаг на строку
+          - generic [ref=f16e502]:
+            - generic [ref=f16e503]: Ссылка на видео
+            - textbox "Ссылка на видео" [ref=f16e505]:
+              - /placeholder: https://
+          - radiogroup [ref=f16e506]:
+            - paragraph [ref=f16e507]: Тип упражнения
+            - generic [ref=f16e508] [cursor=pointer]:
+              - radio "Вес × повторы Записываем вес и повторы" [checked] [ref=f16e509]
+              - generic [ref=f16e513]:
+                - generic [ref=f16e514]: Вес × повторы
+                - generic [ref=f16e515]: Записываем вес и повторы
+            - generic [ref=f16e516] [cursor=pointer]:
+              - radio "Собственный вес Записываем только повторы" [ref=f16e517]
+              - generic [ref=f16e521]:
+                - generic [ref=f16e522]: Собственный вес
+                - generic [ref=f16e523]: Записываем только повторы
+            - generic [ref=f16e524] [cursor=pointer]:
+              - radio "На время Записываем время подхода" [ref=f16e525]
+              - generic [ref=f16e529]:
+                - generic [ref=f16e530]: На время
+                - generic [ref=f16e531]: Записываем время подхода
+          - group [ref=f16e532]:
+            - generic [ref=f16e533]:
+              - paragraph [ref=f16e534]: Параметры по умолчанию
+              - text: Подставятся, когда упражнение добавят в тренировку. В самой тренировке их можно поменять.
+            - generic [ref=f16e535]:
+              - generic [ref=f16e536]: Повторы
+              - generic [ref=f16e537]:
+                - 'button "Повторы: меньше" [ref=f16e538] [cursor=pointer]'
+                - generic [ref=f16e540]:
+                  - textbox "Повторы" [ref=f16e541]: "10"
+                  - generic [ref=f16e542]: повт.
+                - 'button "Повторы: больше" [ref=f16e543] [cursor=pointer]'
+            - generic [ref=f16e546]:
+              - generic [ref=f16e547]: Вес
+              - generic [ref=f16e548]:
+                - 'button "Вес: меньше" [ref=f16e549] [cursor=pointer]'
+                - generic [ref=f16e551]:
+                  - textbox "Вес" [ref=f16e552]: "20"
+                  - generic [ref=f16e553]: кг
+                - 'button "Вес: больше" [ref=f16e554] [cursor=pointer]'
+          - generic [ref=f16e557]:
+            - paragraph [aria-hidden] [ref=f16e558]: Мышцы · можно выбрать несколько
+            - group "Мышцы, можно выбрать несколько" [ref=f16e559]:
+              - button "Квадрицепс" [active] [pressed] [ref=f16e560] [cursor=pointer]
+              - button "Ягодицы" [ref=f16e561] [cursor=pointer]
+              - button "Бицепс бедра" [ref=f16e562] [cursor=pointer]
+              - button "Икры" [ref=f16e563] [cursor=pointer]
+              - button "Широчайшие" [ref=f16e564] [cursor=pointer]
+              - button "Ромбовидные" [ref=f16e565] [cursor=pointer]
+              - button "Спина" [ref=f16e566] [cursor=pointer]
+              - button "Грудь" [ref=f16e567] [cursor=pointer]
+              - button "Дельты" [ref=f16e568] [cursor=pointer]
+              - button "Бицепс" [ref=f16e569] [cursor=pointer]
+              - button "Трицепс" [ref=f16e570] [cursor=pointer]
+              - button "Пресс" [ref=f16e571] [cursor=pointer]
+              - button "Кор" [ref=f16e572] [cursor=pointer]
+              - button "Ноги" [ref=f16e573] [cursor=pointer]
+              - button "Всё тело" [ref=f16e574] [cursor=pointer]
+              - button "Выносливость" [ref=f16e575] [cursor=pointer]
+            - generic [ref=f16e576]: В списке упражнение окажется в разделе «Ноги и ягодицы».
+          - generic [ref=f16e577]:
+            - paragraph [aria-hidden] [ref=f16e578]: Снаряд
+            - group "Снаряд" [ref=f16e579]:
+              - button "Штанга" [ref=f16e580] [cursor=pointer]
+              - button "Гантели" [ref=f16e581] [cursor=pointer]
+              - button "Гиря" [ref=f16e582] [cursor=pointer]
+              - button "Тренажёр" [ref=f16e583] [cursor=pointer]
+              - button "Турник" [ref=f16e584] [cursor=pointer]
+              - button "Скакалка" [ref=f16e585] [cursor=pointer]
+              - button "Без снаряда" [ref=f16e586] [cursor=pointer]
+  - navigation "Основная навигация" [ref=f16e6]:
+    - link "Сегодня" [ref=f16e7] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f16e10] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f16e14] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f16e18] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f16e23] [cursor=pointer]:
+      - /url: /profile

@@ -101,3 +101,14 @@ describe('подписи панелей', () => {
     expect(editEyebrow(w[0])).toBe('Подход 1 из 5');
   });
 });
+
+describe('повторы без числа', () => {
+  it('«макс.» вместо нуля', () => {
+    expect(formatTarget('reps', { min: 0, max: 0 })).toBe('макс.');
+    expect(formatPlan('reps', { target: { min: 0, max: 0 } })).toBe('макс. повт');
+    expect(formatPlan('weight', { target: { min: 0, max: 0 }, weight: 60 })).toBe('60 кг × макс.');
+  });
+  it('время 0 остаётся временем', () => {
+    expect(formatTarget('time', { min: 0, max: 0 })).toBe('00:00');
+  });
+});

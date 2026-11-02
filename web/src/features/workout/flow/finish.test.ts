@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
-import { finishStats, formatFinishStats } from './finish';
+import { finishStats, formatFinishStats, sessionSteps } from './finish';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 const all = (steps: unknown[], v: boolean) => steps.map(() => v);
@@ -43,5 +43,30 @@ describe('formatFinishStats', () => {
   it('склонение кругов', () => {
     expect(formatFinishStats({ setsDone: 1, setsTotal: 1, rounds: 1, videos: 0 })[1]).toEqual({ value: '1', label: 'круг' });
     expect(formatFinishStats({ setsDone: 1, setsTotal: 1, rounds: 5, videos: 0 })[1]).toEqual({ value: '5', label: 'кругов' });
+  });
+});
+
+describe('sessionSteps', () => {
+  const steps = buildSteps([warmup, circuit]);
+  it('по записи на каждый шаг, с планом и отметкой выполнения', () => {
+    const completed = all(steps, true);
+    completed[2] = false;
+    const out = sessionSteps(steps, completed);
+    expect(out).toHaveLength(steps.length);
+    expect(out[0]).toMatchObject({ exerciseId: steps[0]!.exerciseId, blockIndex: 0, round: 1, completed: true });
+    expect(out[2]!.completed).toBe(false);
+    expect(out[3]).toEqual({
+      exerciseId: steps[3]!.exerciseId,
+      exerciseName: steps[3]!.exerciseName,
+      blockIndex: steps[3]!.blockIndex,
+      round: steps[3]!.round,
+      rounds: steps[3]!.rounds,
+      kind: steps[3]!.kind,
+      plan: steps[3]!.plan,
+      completed: true,
+    });
+  });
+  it('шаг без отметки считается невыполненным', () => {
+    expect(sessionSteps(steps, []).every((s) => !s.completed)).toBe(true);
   });
 });

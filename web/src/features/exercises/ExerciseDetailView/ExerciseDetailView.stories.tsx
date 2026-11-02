@@ -36,3 +36,21 @@ export const NeverPerformed: Story = {
     await expect(c.queryByRole('region', { name: 'График' })).toBeNull();
   },
 };
+
+export const WithNotesAndVideo: Story = {
+  args: { exercise: { ...squat, notes: 'Встаньте прямо\nОпуститесь до параллели\nВстаньте', video: 'https://youtu.be/abc' } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const region = c.getByRole('region', { name: 'Как выполнять' });
+    await expect(within(region).getAllByRole('listitem')).toHaveLength(3);
+    await expect(within(region).getByRole('link', { name: 'Видео-пример' })).toHaveAttribute('href', 'https://youtu.be/abc');
+  },
+};
+export const ReadOnly: Story = {
+  args: { onEdit: undefined },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.queryByRole('button', { name: 'Редактировать' })).toBeNull();
+    await expect(c.getByRole('heading', { level: 1 })).toBeVisible();
+  },
+};

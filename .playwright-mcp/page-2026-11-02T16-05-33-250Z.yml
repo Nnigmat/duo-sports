@@ -1,0 +1,82 @@
+- generic [ref=f15e3]:
+  - main [ref=f15e4]:
+    - generic [ref=f15e141]:
+      - generic [ref=f15e143]:
+        - paragraph [ref=f15e144]: Понедельник, 2 ноября
+        - heading "Привет, Qa" [level=1] [ref=f15e145]
+      - region [ref=f15e146]:
+        - generic [ref=f15e147]:
+          - heading "План на паузе" [level=2] [ref=f15e148]
+          - paragraph [ref=f15e149]: До 8 ноября. Серия недель не прервётся.
+        - button "Возобновить" [ref=f15e150] [cursor=pointer]
+      - region [ref=f15e151]:
+        - img "Персонаж сидит и пьёт воду" [ref=f15e153]
+        - generic [ref=f15e179]:
+          - paragraph [ref=f15e180]: Сегодня
+          - heading "День отдыха" [level=2] [ref=f15e181]
+          - generic [ref=f15e182]:
+            - button "Растяжка · 10 мин" [ref=f15e183] [cursor=pointer]
+            - button "Тренироваться сегодня" [ref=f15e184] [cursor=pointer]
+      - region [ref=f15e185]:
+        - generic [ref=f15e186]:
+          - heading "Эта неделя" [level=2] [ref=f15e187]
+          - generic [ref=f15e188]: 0 из 0
+        - list [ref=f15e189]:
+          - listitem [ref=f15e190]:
+            - button "пн 2, сегодня, Отдых, Трицепс, пресс, ноги" [pressed] [ref=f15e191] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e192]: пн
+              - generic [aria-hidden] [ref=f15e193]: "2"
+          - listitem [ref=f15e195]:
+            - button "вт 3, Отдых, Трицепс, пресс, ноги" [ref=f15e196] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e197]: вт
+              - generic [aria-hidden] [ref=f15e198]: "3"
+          - listitem [ref=f15e200]:
+            - button "ср 4, Отдых, Трицепс, пресс, ноги" [ref=f15e201] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e202]: ср
+              - generic [aria-hidden] [ref=f15e203]: "4"
+          - listitem [ref=f15e205]:
+            - button "чт 5, Отдых, Грудь, кор, спина" [ref=f15e206] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e207]: чт
+              - generic [aria-hidden] [ref=f15e208]: "5"
+          - listitem [ref=f15e210]:
+            - button "пт 6, Отдых, Трицепс, пресс, ноги" [ref=f15e211] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e212]: пт
+              - generic [aria-hidden] [ref=f15e213]: "6"
+          - listitem [ref=f15e215]:
+            - button "сб 7, Отдых" [ref=f15e216] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e217]: сб
+              - generic [aria-hidden] [ref=f15e218]: "7"
+          - listitem [ref=f15e220]:
+            - button "вс 8, Отдых" [ref=f15e221] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f15e222]: вс
+              - generic [aria-hidden] [ref=f15e223]: "8"
+        - generic [ref=f15e226]:
+          - generic [ref=f15e227]: Сегодня, 2 ноября · Отдых
+          - generic [ref=f15e228]: Трицепс, пресс, ноги
+          - generic [ref=f15e229]: План на паузе
+        - list "Обозначения" [ref=f15e230]:
+          - listitem [ref=f15e231]: Выполнена
+          - listitem [ref=f15e233]: Запланирована
+          - listitem [ref=f15e235]: Перенесена
+          - listitem [ref=f15e237]: Отдых
+      - region [ref=f15e239]:
+        - generic [ref=f15e240]:
+          - heading "Пропущено" [level=2] [ref=f15e241]
+          - generic [ref=f15e242]: "1"
+        - list [ref=f15e243]:
+          - listitem [ref=f15e244]:
+            - generic [ref=f15e245]:
+              - generic [ref=f15e246]: Пятница, 30 октября
+              - generic [ref=f15e247]: Грудь, кор, спина
+            - 'button "Перенести: Грудь, кор, спина, Пятница, 30 октября" [ref=f15e248] [cursor=pointer]': Перенести
+  - navigation "Основная навигация" [ref=f15e6]:
+    - link "Сегодня" [ref=f15e7] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f15e10] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f15e14] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f15e18] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f15e23] [cursor=pointer]:
+      - /url: /profile

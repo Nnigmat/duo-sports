@@ -1,0 +1,49 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: var(--size-touch);
+  color: var(--slate);
+  font-size: var(--body-sm-medium-size);
+  font-weight: var(--body-sm-medium-weight);
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; /* нет токена */
+  height: 28px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-full);
+  font-variant-numeric: tabular-nums;
+}
+/* Текущий — заливка и жирнее, пройденный — рамка primary и галочка: не только цветом */
+.step[data-state='current'] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.step[data-state='current'] .mark {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.step[data-state='done'] .mark {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

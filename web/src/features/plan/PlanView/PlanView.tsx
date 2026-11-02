@@ -5,7 +5,7 @@ import { CalendarGrid } from '../CalendarGrid/CalendarGrid';
 import { CalendarToolbar } from '../CalendarToolbar/CalendarToolbar';
 import { DayPanel } from '../DayPanel/DayPanel';
 import { ToneLegend } from '../ToneLegend/ToneLegend';
-import { canShift, rangeTitle, type PlanAction, type PlanState } from '../plan';
+import { calendarDays, canShift, rangeTitle, usedTemplates, type PlanAction, type PlanState } from '../plan';
 import styles from './PlanView.module.css';
 
 type Props = {
@@ -90,7 +90,7 @@ export function PlanView({
             layout={layout}
             onPick={(date) => dispatch({ type: 'pick', date, today })}
           />
-          <ToneLegend templates={templates} />
+          <ToneLegend templates={usedTemplates(templates, entries, calendarDays(view, anchor))} />
         </section>
 
         <div className={styles.panel}>

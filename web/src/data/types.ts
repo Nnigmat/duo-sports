@@ -1,3 +1,4 @@
+import type { TodayMissed, TodayPause } from '../../../shared/types';
 import type { IconName, WeekDay } from '../ui';
 
 export type WorkoutSummary = {
@@ -27,10 +28,12 @@ export type TodayWorkout = WorkoutSummary & {
 export type TodayState =
   | { kind: 'workout'; workout: TodayWorkout }
   | { kind: 'rest'; next: { whenLabel: string; title: string; minutes: number } | null }
-  | { kind: 'done'; summary: { title: string; minutes: number; volumeKg: number; records: number } };
+  | { kind: 'done'; summary: { title: string; volumeKg: number; minutes?: number; records?: number } };
 
 /** День недели со всем, что показывает карточка выбранного дня */
 export type TodayWeekDay = WeekDay & {
+  /** Дата дня «2026-11-03»: с сервера приходит всегда, в фикстурах историй может не быть */
+  iso?: string;
   /** «Суббота, 31 октября» */
   fullLabel: string;
   title: string;
@@ -46,6 +49,10 @@ export type TodayData = {
   userName: string;
   state: TodayState;
   week: TodayWeekDay[];
+  /** Пропущенное с прошлых недель; в историях может не быть */
+  missed?: TodayMissed[];
+  /** Идущая или будущая пауза плана */
+  pause?: TodayPause;
   streakWeeks: number;
   /** Блоки только для широкого экрана; без них страница показывает hero и неделю */
   insights?: TodayInsights;
@@ -131,30 +138,8 @@ export type ScheduleData = {
   nextWeek: { rangeLabel: string; days: RescheduleTarget[] };
 };
 
-/** Цвет-метка типа тренировки в календаре; всегда рядом с названием */
-export type PlanTone = 'primary' | 'teal' | 'amber' | 'slate';
-
-export type PlanTemplate = {
-  id: string;
-  title: string;
-  /** Ориентировочная длительность */
-  minutes: number;
-  tone: PlanTone;
-  /** detail: «4 × 8 · 50 кг» */
-  exercises: Array<{ name: string; detail: string }>;
-};
-
-export type PlanEntryStatus = 'planned' | 'done' | 'skipped' | 'moved';
-
-/** Тренировка, стоящая в конкретный день */
-export type PlanEntry = {
-  templateId: string;
-  status: PlanEntryStatus;
-  /** Для status = moved: «31 октября» */
-  movedTo?: string;
-  /** Добавлена или скопирована вручную: её можно убрать */
-  custom?: boolean;
-};
+export type { PlanEntry, PlanEntryStatus, PlanTemplate, PlanTone } from '../../../shared/types';
+import type { PlanEntry, PlanTemplate } from '../../../shared/types';
 
 export type PlanData = {
   /** «2026-10-31» */
@@ -166,3 +151,6 @@ export type PlanData = {
   /** Ключ — дата «2026-10-31» */
   entries: Record<string, PlanEntry>;
 };
+
+/** Что нужно импорту, чтобы разобрать текст: библиотека, сегодняшний день и уже стоящий план */
+export type ImportData = import('../features/import/parse').ParseContext;

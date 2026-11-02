@@ -113,6 +113,13 @@ export interface Workout {
   blocks: Block[];
 }
 
+/** Ответ GET /api/workouts/:id: тренировка, комментарии тренера и техника по id упражнений тренировки */
+export interface WorkoutResponse {
+  workout: Workout;
+  comments: CoachComment[];
+  techniques: Record<string, Technique>;
+}
+
 /** Роли: аккаунты создаёт админ, саморегистрации нет */
 export type Role = 'athlete' | 'trainer' | 'admin';
 
@@ -126,3 +133,277 @@ export interface AuthUser {
 
 /** Ответ POST /api/auth/login при отказе */
 export type LoginFailure = { error: 'wrong_credentials' } | { error: 'locked'; retryAfterSec: number };
+
+// ── Импорт тренировок ─────────────────────────────────────
+
+/** Группа мышц библиотеки */
+export type MuscleGroupId = 'legs' | 'back' | 'chest' | 'arms' | 'core' | 'cardio' | 'other';
+
+/** Упражнение библиотеки в том виде, что нужен импорту: найти по названию и показать в справочнике */
+export interface LibraryEntry {
+  id: string;
+  name: string;
+  aliases: string[];
+  kind: ExerciseKind;
+  group: MuscleGroupId;
+  muscles: string[];
+  /** Как выполнять: строки через \n */
+  notes?: string;
+  video?: string;
+}
+
+/**
+ * Тело POST /api/exercises и PATCH /api/exercises/:id (в PATCH все поля необязательны).
+ * Пустая строка в notes или video очищает поле. Писать могут только trainer и admin.
+ */
+export interface ExerciseInput {
+  name: string;
+  group: MuscleGroupId;
+  kind: ExerciseKind;
+  muscles: string[];
+  aliases: string[];
+  /** Как выполнять: шаги через \n */
+  notes?: string;
+  /** Ссылка на видео-пример */
+  video?: string;
+}
+
+/** Ответ GET /api/exercises: общая библиотека */
+export interface ExercisesResponse {
+  exercises: LibraryEntry[];
+}
+
+/** Ответ GET /api/import/context: библиотека и уже стоящий план. Сегодняшний день знает браузер. */
+export interface ImportContextResponse {
+  library: LibraryEntry[];
+  /** Дата → название тренировки в плане */
+  mine: Record<string, string>;
+}
+
+/** Упражнение, которое импорт создаёт в библиотеке */
+export interface CommitExercise {
+  /** id из файла; без него сервер придумает свой */
+  id?: string;
+  name: string;
+  aliases: string[];
+  muscles: string[];
+  kind: ExerciseKind;
+  group: MuscleGroupId;
+  video?: string;
+  notes?: string;
+}
+
+/** Одна строка блока: упражнение и нагрузка так, как их показывает проверка */
+export interface CommitItem {
+  name: string;
+  value: string;
+}
+
+export interface CommitBlock {
+  kind: 'warmup' | 'cooldown' | 'exercises';
+  heading: string;
+  text?: string;
+  items: CommitItem[];
+}
+
+export interface CommitWorkout {
+  /** id из файла: по нему повторный импорт обновляет тренировку */
+  id?: string;
+  title: string;
+  blocks: CommitBlock[];
+  /** Те же блоки для экрана тренировки; без них тренировку нельзя запустить */
+  structure?: Block[];
+}
+
+/**
+ * Результат шагов «Проверка» и «План» — то, что нужно записать. Браузер сам разобрал текст и применил
+ * выбор пользователя; сервер проверяет форму и пределы, а не повторяет разбор.
+ */
+export interface ImportCommit {
+  exercises: CommitExercise[];
+  workouts: CommitWorkout[];
+  /** Тренировки в календаре: дата и номер тренировки в workouts */
+  entries: Array<{ date: string; workout: number }>;
+  /** Даты, где свои тренировки заменяются: «Заменить» на шаге «План» */
+  replaceDates: string[];
+}
+
+export interface ImportSummary {
+  workouts: number;
+  inCalendar: number;
+  created: number;
+  updated: number;
+}
+
+/** Ответ POST /api/imports и действий над импортом */
+export interface ImportRecord {
+  id: number;
+  /** ISO-время импорта */
+  createdAt: string;
+  /** Отменён; null — действует */
+  undoneAt: string | null;
+  /** До какого времени можно отменить */
+  undoUntil: string;
+  summary: ImportSummary;
+}
+
+// ── План ──────────────────────────────────────────────────
+
+/** Цвет-метка типа тренировки в календаре; всегда рядом с названием */
+export type PlanTone = 'primary' | 'teal' | 'amber' | 'slate';
+
+export interface PlanTemplate {
+  id: string;
+  title: string;
+  /** Ориентировочная длительность: оценка по числу упражнений, пока тренировки не знают своей */
+  minutes: number;
+  tone: PlanTone;
+  /** detail: «4 × 8 · 50 кг» */
+  exercises: Array<{ name: string; detail: string }>;
+}
+
+export type PlanEntryStatus = 'planned' | 'done' | 'skipped' | 'moved';
+
+/** Тренировка, стоящая в конкретный день */
+export interface PlanEntry {
+  templateId: string;
+  status: PlanEntryStatus;
+  /** Для status = moved: «31 октября» */
+  movedTo?: string;
+  /** Добавлена или скопирована вручную: её можно убрать */
+  custom?: boolean;
+  /** Названия других тренировок в этот же день («Оставить обе» при импорте) */
+  more?: string[];
+}
+
+/** Ответ GET /api/plan. Сегодня и границы календаря знает браузер. */
+export interface PlanResponse {
+  templates: PlanTemplate[];
+  /** Ключ — дата «2026-10-31» */
+  entries: Record<string, PlanEntry>;
+}
+
+// ── Выполнение тренировки ─────────────────────────────────
+
+/** Один подход тренировки: что было в плане и сделан ли он */
+export interface SessionStepResult {
+  exerciseId: string;
+  exerciseName: string;
+  blockIndex: number;
+  /** Круг или номер подхода */
+  round: number;
+  rounds: number;
+  kind: ExerciseKind;
+  /** План подхода с учётом правок «Изменить» */
+  plan: SetPlan;
+  completed: boolean;
+}
+
+/** Итог выполненной тренировки: POST /api/workouts/:id/sessions */
+export interface SessionResult {
+  /** День плана, «2026-11-03» */
+  date: string;
+  steps: SessionStepResult[];
+  videos: number;
+  /** Сколько секунд прошло от открытия тренировки до «Завершить», по часам браузера; старые клиенты не шлют */
+  durationSec?: number;
+}
+
+// ── «Сегодня» ─────────────────────────────────────────────
+
+export interface TodayWorkoutCard {
+  id: string;
+  title: string;
+  /** «сегодня, сб 31 окт» */
+  whenLabel: string;
+  exerciseCount: number;
+  minutes: number;
+  /** «Подходами + круг»; пусто, если структура неизвестна */
+  modeLabel: string;
+  muscles: string[];
+  exercises: Array<{ name: string; plan: string }>;
+}
+
+export interface TodayDay {
+  weekday: string;
+  /** Число месяца для подписи; полная дата — в iso */
+  date: string;
+  /** Дата дня вида 2026-11-03: по ней переносим тренировку */
+  iso: string;
+  status: 'done' | 'planned' | 'missed' | 'moved' | 'rest';
+  today?: boolean;
+  caption?: string;
+  fullLabel: string;
+  title: string;
+  meta: string;
+  actionLabel?: string;
+}
+
+/** Невыполненная тренировка с прошлых недель: её можно перенести вперёд */
+export interface TodayMissed {
+  /** Дата, на которую она стояла: «2026-10-30» */
+  iso: string;
+  /** «Пятница, 30 октября» */
+  label: string;
+  title: string;
+}
+
+/** Ответ GET /api/today?date=2026-11-03. Дату знает браузер. Минуты и рекорды пока не считаются: данных для них нет. */
+export interface TodayResponse {
+  dateLabel: string;
+  userName: string;
+  state:
+    | { kind: 'workout'; workout: TodayWorkoutCard }
+    | { kind: 'rest'; next: { whenLabel: string; title: string; minutes: number } | null }
+    | { kind: 'done'; summary: { title: string; volumeKg: number; minutes?: number; records?: number } };
+  week: TodayDay[];
+  /** Пропущенное до начала этой недели, свежие первыми; пропуски текущей недели видны в week */
+  missed: TodayMissed[];
+  streakWeeks: number;
+  /** Пауза, которая идёт сегодня или начнётся позже; нет — если плана на паузе нет */
+  pause?: TodayPause;
+}
+
+/** Пауза плана: даты включительно */
+export interface TodayPause {
+  from: string;
+  to: string;
+  /** «до 9 ноября» */
+  label: string;
+}
+
+// ── Перенос тренировки ──
+
+export type ScheduleTarget = { date: string; weekday: string; day: string; busy?: string };
+export type ScheduleResponse = {
+  /** Дата, с которой переносим */
+  from: string;
+  workout: { id: string; title: string; whenLabel: string };
+  /** Ближайший свободный (иначе ближайший) день этой недели; null, если неделя закончилась */
+  sameWeek: (ScheduleTarget & { relative?: string }) | null;
+  nextWeek: { rangeLabel: string; days: ScheduleTarget[] };
+};
+
+// ── «Достижения» ──────────────────────────────────────────
+
+export interface AchievementItem {
+  id: string;
+  name: string;
+  /** Имя иконки из web/src/ui/Icon */
+  icon: string;
+  description: string;
+  /** 0 — не получена, 1 — бронза, 2 — серебро, 3 — золото */
+  tier: 0 | 1 | 2 | 3;
+  /** «26 окт»: даты получения уровней по порядку, длина равна tier */
+  earnedDates: string[];
+  secret?: boolean;
+  streak?: boolean;
+  levels?: [number, number, number];
+  levelLabels?: [string, string, string];
+  current?: number;
+  unit?: string;
+}
+
+export interface AchievementsResponse {
+  categories: Array<{ id: string; name: string; note?: string; items: AchievementItem[] }>;
+}

@@ -10,6 +10,8 @@ import {
   displayStatus,
   emptyDayTexts,
   initialPlanState,
+  planBounds,
+  usedTemplates,
   inRange,
   longDate,
   planReducer,
@@ -92,7 +94,9 @@ describe('статусы', () => {
   const planned: PlanEntry = { templateId: 'legs', status: 'planned' };
   it('запланированная на сегодня становится «сегодня»', () => {
     expect(displayStatus(TODAY, planned, TODAY)).toBe('today');
+    expect(displayStatus('2026-10-30', planned, TODAY)).toBe('skipped');
     expect(displayStatus('2026-11-01', planned, TODAY)).toBe('planned');
+    expect(displayStatus('2026-10-30', { ...planned, status: 'done' }, TODAY)).toBe('done');
     expect(displayStatus(TODAY, { ...planned, status: 'done' }, TODAY)).toBe('done');
   });
   it('слово в клетке: пусто для запланированной', () => {
@@ -212,5 +216,33 @@ describe('planReducer', () => {
   it('«Сегодня» возвращает выбор и якорь', () => {
     const s = planReducer({ ...start, sel: '2026-12-01', anchor: '2026-12-01' }, { type: 'today', today: TODAY });
     expect(s).toMatchObject({ sel: TODAY, anchor: TODAY });
+  });
+});
+
+describe('planBounds', () => {
+  it('без записей: два месяца назад и два вперёд от сегодняшнего', () => {
+    expect(planBounds('2026-11-02', [])).toEqual({ min: '2026-09-01', max: '2027-01-31' });
+  });
+  it('записи внутри границ их не меняют', () => {
+    expect(planBounds('2026-11-02', ['2026-10-05', '2026-12-20'])).toEqual({ min: '2026-09-01', max: '2027-01-31' });
+  });
+  it('далёкая запись расширяет календарь до конца её месяца', () => {
+    expect(planBounds('2026-11-02', ['2026-03-17', '2027-04-02'])).toEqual({ min: '2026-03-01', max: '2027-04-30' });
+  });
+  it('границы в январе переходят через год', () => {
+    expect(planBounds('2027-01-10', [])).toEqual({ min: '2026-11-01', max: '2027-03-31' });
+  });
+});
+
+describe('usedTemplates', () => {
+  const t = (id: string) => ({ id, title: id, minutes: 30, tone: 'primary' as const, exercises: [] });
+  const templates = [t('a'), t('b'), t('c')];
+  const e = (templateId: string) => ({ templateId, status: 'planned' as const });
+  it('только стоящие в показанных днях, по порядку появления, без повторов', () => {
+    const entries = { '2026-11-02': e('c'), '2026-11-03': e('a'), '2026-11-04': e('c'), '2026-12-01': e('b') };
+    expect(usedTemplates(templates, entries, ['2026-11-02', '2026-11-03', '2026-11-04']).map((x) => x.id)).toEqual(['c', 'a']);
+  });
+  it('пустые дни и неизвестные шаблоны пропускаются', () => {
+    expect(usedTemplates(templates, { '2026-11-02': e('zzz') }, ['2026-11-01', '2026-11-02'])).toEqual([]);
   });
 });

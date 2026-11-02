@@ -10,7 +10,8 @@ type Props = {
   group: GroupFilter;
   onGroupChange: (group: GroupFilter) => void;
   onOpen: (id: string) => void;
-  onCreate: () => void;
+  /** Нет — кнопок создания нет (только чтение) */
+  onCreate?: () => void;
   /** desktop: заголовок с кнопкой «Новое упражнение» и колонка рекорда справа */
   layout?: 'mobile' | 'desktop';
 };
@@ -31,11 +32,12 @@ export function ExerciseListView({ exercises, query, onQueryChange, group, onGro
           <Text variant="h2" tag="h1">Упражнения</Text>
           <Text variant="body-sm" color="steel">{totalText(exercises.length, inPlan)}</Text>
         </div>
-        {desktop ? (
-          <Button icon="plus" onClick={onCreate}>Новое упражнение</Button>
-        ) : (
-          <IconButton icon="plus" aria-label="Своё упражнение" onClick={onCreate} />
-        )}
+        {onCreate &&
+          (desktop ? (
+            <Button icon="plus" onClick={onCreate}>Новое упражнение</Button>
+          ) : (
+            <IconButton icon="plus" aria-label="Своё упражнение" onClick={onCreate} />
+          ))}
       </header>
 
       <SearchField label="Поиск по названию или мышце" placeholder="Поиск: присед, ягодицы…" value={query} onValueChange={onQueryChange} />

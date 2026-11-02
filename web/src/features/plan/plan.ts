@@ -84,9 +84,10 @@ export function canShift(view: CalendarView, anchor: string, dir: -1 | 1, min: s
   return dir < 0 ? addDays(`${anchor.slice(0, 7)}-01`, -1) >= min : `${next.slice(0, 7)}-01` <= max;
 }
 
-/** Статус для показа: плановая тренировка сегодняшнего дня — «сегодня» */
+/** Статус для показа: плановая тренировка сегодня — «сегодня», в прошедший день без выполнения — «пропущена» */
 export function displayStatus(date: string, entry: PlanEntry, today: string): DisplayStatus {
-  return entry.status === 'planned' && date === today ? 'today' : entry.status;
+  if (entry.status !== 'planned') return entry.status;
+  return date === today ? 'today' : date < today ? 'skipped' : 'planned';
 }
 
 const STATUS_WORD: Record<DisplayStatus, string> = {
@@ -257,4 +258,34 @@ export function planReducer(s: PlanState, a: PlanAction): PlanState {
     case 'openCopied':
       return s.notice ? { ...s, sel: s.notice.to, anchor: s.notice.to, notice: null } : s;
   }
+}
+
+/** Границы календаря: месяцы вокруг сегодняшнего дня (два назад, два вперёд) и все дни с записями, даже далёкие */
+export function planBounds(today: string, dates: string[]): { min: string; max: string } {
+  const t = parseIso(today);
+  const sorted = [...dates].sort();
+  const lo = toIso(new Date(t.getFullYear(), t.getMonth() - 2, 1));
+  const hi = toIso(new Date(t.getFullYear(), t.getMonth() + 3, 0));
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const monthStart = (iso: string) => `${iso.slice(0, 7)}-01`;
+  const monthEnd = (iso: string) => {
+    const d = parseIso(iso);
+    return toIso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+  };
+  return {
+    min: first && first < lo ? monthStart(first) : lo,
+    max: last && last > hi ? monthEnd(last) : hi,
+  };
+}
+
+/** Шаблоны, которые стоят в показанных днях, по порядку первого появления: по ним подпись цветов под календарём */
+export function usedTemplates(templates: PlanTemplate[], entries: Record<string, PlanEntry>, days: string[]): PlanTemplate[] {
+  const ids = new Set<string>();
+  for (const d of days) {
+    const id = entries[d]?.templateId;
+    if (id) ids.add(id);
+  }
+  const byId = new Map(templates.map((t) => [t.id, t]));
+  return [...ids].flatMap((id) => byId.get(id) ?? []);
 }

@@ -1,4 +1,4 @@
-import type { ExerciseKind } from '../../../../shared/types';
+import type { ExerciseInput, ExerciseKind, Role } from '../../../../shared/types';
 import { plural } from '../workout/flow/ru';
 import type { IconName } from '../../ui';
 import type {
@@ -123,7 +123,7 @@ export function groupExercises(
 }
 
 /** Фильтры над списком: «Все» и группы, в которых что-то есть (поиск уже применён к list) */
-export function groupTabs(list: LibraryExercise[]): Array<{ id: GroupFilter; name: string; count: number }> {
+export function groupTabs(list: Array<{ group: MuscleGroupId }>): Array<{ id: GroupFilter; name: string; count: number }> {
   const tabs = GROUPS.map((g) => ({ id: g.id as GroupFilter, name: g.short, count: list.filter((e) => e.group === g.id).length }));
   return [{ id: 'all', name: 'Все', count: list.length }, ...tabs.filter((t) => t.id !== 'other' || t.count > 0)];
 }
@@ -287,11 +287,11 @@ export function paramFields(kind: ExerciseKind): ParamField[] {
 }
 
 export function emptyDraft(): ExerciseDraft {
-  return { name: '', kind: 'weight', muscles: [], equipment: '', params: { ...DEFAULT_PARAMS } };
+  return { name: '', kind: 'weight', muscles: [], equipment: '', notes: '', video: '', params: { ...DEFAULT_PARAMS } };
 }
 
 export function draftFromExercise(ex: LibraryExercise): ExerciseDraft {
-  return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: ex.equipment, params: { ...ex.defaults } };
+  return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: ex.equipment, notes: ex.notes ?? '', video: ex.video ?? '', params: { ...ex.defaults } };
 }
 
 export function canSubmit(draft: ExerciseDraft): boolean {
@@ -321,6 +321,8 @@ export function applyDraft(ex: LibraryExercise, draft: ExerciseDraft): LibraryEx
     kind: draft.kind,
     muscles: draft.muscles.length ? draft.muscles : ex.muscles,
     equipment: draft.equipment,
+    notes: draft.notes.trim() || undefined,
+    video: draft.video.trim() || undefined,
     defaults: { ...draft.params },
   };
 }
@@ -333,9 +335,63 @@ export function createExercise(draft: ExerciseDraft, id: string): LibraryExercis
     group: groupForMuscles(draft.muscles),
     muscles: draft.muscles.length ? draft.muscles : ['Всё тело'],
     equipment: draft.equipment || 'Без снаряда',
+    notes: draft.notes.trim() || undefined,
+    video: draft.video.trim() || undefined,
     defaults: { ...draft.params },
     sessionsTotal: 0,
     sessions: [],
     trend: [],
   };
+}
+
+// ── Права и запись на сервер ─────────────────────────────
+
+/** Библиотеку меняют тренер и админ; спортсмен только читает */
+export function canManageExercises(role: Role | null | undefined): boolean {
+  return role === 'trainer' || role === 'admin';
+}
+
+/** Шаги «Как выполнять»: непустые строки без пробелов по краям */
+export function noteSteps(notes: string | undefined): string[] {
+  return (notes ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+}
+
+/** Ссылку на видео открываем только если это http(s) */
+export function isVideoUrl(value: string): boolean {
+  try {
+    const u = new URL(value.trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/** Ссылка пустая или корректная — иначе показываем ошибку в форме */
+export function videoError(draft: ExerciseDraft): string | undefined {
+  const v = draft.video.trim();
+  return v && !isVideoUrl(v) ? 'Нужна ссылка, начинающаяся с http:// или https://' : undefined;
+}
+
+/** Тело POST: полное упражнение. Раздел берётся по первой мышце. */
+export function toExerciseInput(draft: ExerciseDraft): ExerciseInput {
+  return {
+    name: draft.name.trim(),
+    group: groupForMuscles(draft.muscles),
+    kind: draft.kind,
+    muscles: draft.muscles.length ? draft.muscles : ['Всё тело'],
+    aliases: [],
+    notes: draft.notes.trim(),
+    video: draft.video.trim(),
+  };
+}
+
+/** Тело PATCH: раздел и мышцы уходят, только если мышцы поменяли; псевдонимы не трогаем */
+export function toExercisePatch(draft: ExerciseDraft, ex: LibraryExercise): Partial<ExerciseInput> {
+  const { aliases: _aliases, ...input } = toExerciseInput(draft);
+  const patch: Partial<ExerciseInput> = { ...input, name: input.name || ex.name };
+  if (draft.muscles.length === 0 || draft.muscles.join('|') === ex.muscles.join('|')) {
+    delete patch.muscles;
+    delete patch.group;
+  }
+  return patch;
 }

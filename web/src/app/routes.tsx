@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { LoginPage, ProfilePage } from '../features/auth';
 import { AchievementsPage } from '../features/achievements';
 import { ExercisesPage } from '../features/exercises';
+import { ImportPage } from '../features/import';
 import { PlanPage } from '../features/plan';
 import { TodayPage } from '../features/today';
 import { WorkoutPage } from '../features/workout';
@@ -16,12 +17,14 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route index element={<TodayPage />} />
           <Route path="plan" element={<PlanPage />} />
+          <Route path="import/*" element={<ImportPage />} />
           <Route path="exercises/*" element={<ExercisesPage />} />
           <Route path="progress/achievements" element={<AchievementsPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
         {/* Тренировка на весь экран, без навигации */}
         <Route path="workout" element={<WorkoutPage />} />
+        <Route path="workout/:id" element={<WorkoutPage />} />
       </Route>
     </Routes>
   );

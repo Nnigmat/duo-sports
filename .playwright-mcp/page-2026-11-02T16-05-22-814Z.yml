@@ -1,0 +1,108 @@
+- generic:
+  - generic:
+    - generic:
+      - main:
+        - generic:
+          - generic [aria-hidden]:
+            - generic:
+              - paragraph: Понедельник, 2 ноября
+              - heading [level=1]: Привет, Qa
+          - region [aria-hidden]:
+            - generic:
+              - paragraph: Сегодня
+              - heading [level=2]: Трицепс, пресс, ноги
+              - paragraph: 3 упражнения · ≈ 25 мин · По кругу
+              - list:
+                - listitem:
+                  - generic: трицепс
+                - listitem:
+                  - generic: пресс
+              - generic:
+                - button: Старт
+                - button: Упражнения
+                - button: Перенести
+          - region "Эта неделя":
+            - generic [aria-hidden]:
+              - heading [level=2]: Эта неделя
+              - generic: 0 из 5
+            - progressbar [aria-hidden]
+            - list [aria-hidden]:
+              - listitem:
+                - button [pressed]:
+                  - generic [aria-hidden]: пн
+                  - generic [aria-hidden]: "2"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: вт
+                  - generic [aria-hidden]: "3"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: ср
+                  - generic [aria-hidden]: "4"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: чт
+                  - generic [aria-hidden]: "5"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: пт
+                  - generic [aria-hidden]: "6"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: сб
+                  - generic [aria-hidden]: "7"
+              - listitem:
+                - button:
+                  - generic [aria-hidden]: вс
+                  - generic [aria-hidden]: "8"
+            - generic:
+              - generic:
+                - generic: Сегодня, 2 ноября · Запланировано
+                - generic: Трицепс, пресс, ноги
+                - generic: 3 упражнения · ≈ 25 мин
+              - button "Начать"
+            - list [aria-hidden]:
+              - listitem: Выполнена
+              - listitem: Запланирована
+              - listitem: Перенесена
+              - listitem: Отдых
+          - region [aria-hidden]:
+            - generic:
+              - heading [level=2]: Пропущено
+              - generic: "1"
+            - list:
+              - listitem:
+                - generic:
+                  - generic: Пятница, 30 октября
+                  - generic: Грудь, кор, спина
+                - button: Перенести
+      - navigation [aria-hidden]:
+        - link:
+          - /url: /
+          - text: Сегодня
+        - link:
+          - /url: /plan
+          - text: План
+        - link:
+          - /url: /exercises
+          - text: Упражнения
+        - link:
+          - /url: /progress/achievements
+          - text: Прогресс
+        - link:
+          - /url: /profile
+          - text: Профиль
+  - dialog [ref=f15e103]:
+    - generic [ref=f15e105]:
+      - button "Назад" [active] [ref=f15e106] [cursor=pointer]
+      - generic [ref=f15e109]:
+        - generic [ref=f15e110]: Серия не прервётся
+        - heading "Поставить план на паузу" [level=2] [ref=f15e111]
+      - button "Закрыть" [ref=f15e112] [cursor=pointer]
+    - list [ref=f15e116]:
+      - listitem [ref=f15e117]:
+        - button "На неделю" [ref=f15e118] [cursor=pointer]
+      - listitem [ref=f15e125]:
+        - button "На 2 недели" [ref=f15e126] [cursor=pointer]
+      - listitem [ref=f15e133]:
+        - button "На месяц" [ref=f15e134] [cursor=pointer]

@@ -20,3 +20,12 @@ export const Default: Story = {
   },
 };
 export const TwoTypes: Story = { args: { templates: planTemplates.slice(0, 2) } };
+
+export const ManyTypes: Story = {
+  args: { templates: Array.from({ length: 12 }, (_, i) => ({ ...planTemplates[i % 4]!, id: `w${i}`, title: `Тренировка ${i + 1}` })) },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getAllByRole('listitem')).toHaveLength(7);
+    await expect(c.getByText('и ещё 6')).toBeVisible();
+  },
+};

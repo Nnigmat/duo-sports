@@ -1,0 +1,20 @@
+- main [ref=f14e4]:
+  - generic [ref=f14e5]:
+    - generic [ref=f14e6]: Workout Tracker
+    - generic [ref=f14e31]:
+      - heading "Вход" [level=1] [ref=f14e32]
+      - paragraph [ref=f14e33]: Рады видеть снова. Войдите, чтобы продолжить тренировки.
+    - form "Вход" [ref=f14e34]:
+      - generic [ref=f14e35]:
+        - generic [ref=f14e36]: Email
+        - textbox "Email" [ref=f14e38]:
+          - /placeholder: name@mail.ru
+      - generic [ref=f14e39]:
+        - generic [ref=f14e40]: Пароль
+        - generic [ref=f14e42]:
+          - textbox "Пароль" [ref=f14e43]
+          - button "Показать пароль" [ref=f14e44] [cursor=pointer]
+      - generic [ref=f14e49] [cursor=pointer]:
+        - checkbox "Запомнить меня" [checked] [ref=f14e50]
+        - generic [ref=f14e51]: Запомнить меня
+      - button "Войти" [ref=f14e53] [cursor=pointer]

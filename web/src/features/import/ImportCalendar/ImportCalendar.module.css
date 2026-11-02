@@ -1,0 +1,140 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.head h2,
+.head p {
+  margin: 0;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--slate);
+  font-size: var(--caption-size);
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* нет токена */
+}
+.swatch {
+  width: 20px;
+  height: 14px;
+  border-radius: var(--rounded-xs);
+  border: 1px solid var(--hairline);
+}
+.scroll {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  min-width: 720px; /* нет токена: восемь столбцов не должны сжиматься */
+  border-collapse: separate;
+  border-spacing: 4px;
+  table-layout: fixed;
+}
+.table th:first-child,
+.table td:first-child {
+  width: 76px; /* нет токена */
+}
+.dow {
+  color: var(--steel);
+  font-size: var(--caption-size);
+  font-weight: 600;
+  text-align: left;
+  padding: 0 var(--spacing-xs);
+}
+.week {
+  display: flex;
+  flex-direction: column;
+  padding: 6px var(--spacing-xs);
+  color: var(--slate);
+  font-size: var(--caption-size);
+  font-weight: 600;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.range {
+  color: var(--steel);
+  font-weight: 400;
+}
+.cell {
+  height: 64px;
+  padding: 6px var(--spacing-xs);
+  vertical-align: top;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-md);
+  background: var(--canvas);
+  font-size: var(--caption-size);
+  line-height: 1.3;
+  font-weight: 500;
+  overflow: hidden;
+}
+.cell > * {
+  display: block;
+}
+.date {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--steel);
+  font-variant-numeric: tabular-nums;
+}
+.warn {
+  color: var(--ink);
+  margin: -2px 0;
+}
+.title {
+  color: var(--ink);
+}
+.strike {
+  color: var(--steel);
+  font-weight: 400;
+}
+/* Формы рамок: сплошная акцентная — из файла, серая — уже в плане, пунктир — конфликт и пропуск */
+.cell[data-kind='import'],
+.swatch[data-kind='import'] {
+  border: 1px solid var(--accent-500);
+  background: var(--canvas);
+}
+.cell[data-kind='mine'],
+.swatch[data-kind='mine'] {
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+}
+.cell[data-kind='mine'] .title {
+  color: var(--slate);
+}
+.cell[data-kind='conflict'],
+.swatch[data-kind='conflict'] {
+  border: 2px dashed var(--highlight);
+  background: var(--canvas);
+}
+.cell[data-kind='skipped'],
+.swatch[data-kind='skipped'] {
+  border: 1px dashed var(--stone);
+  background: var(--canvas);
+}
+.cell[data-kind='skipped'] .title {
+  color: var(--slate);
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

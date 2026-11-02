@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { exerciseLibrary } from '../mock';
 import { ExercisesFlow } from './ExercisesFlow';
 
 const meta = {
   title: 'Features/Exercises/ExercisesFlow',
   component: ExercisesFlow,
+  args: { initial: exerciseLibrary },
   parameters: { docs: { description: { component: 'Все мобильные экраны вкладки «Упражнения» в одном сценарии, данные в памяти.' } } },
 } satisfies Meta<typeof ExercisesFlow>;
 export default meta;
@@ -40,5 +42,52 @@ export const FullJourney: Story = {
     await userEvent.click(c.getByRole('button', { name: 'Создать' }));
     await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Скручивания на пресс');
     await expect(c.getByText('Ещё не выполнялось')).toBeVisible();
+  },
+};
+
+export const ReadOnly: Story = {
+  args: { canManage: false },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.queryByRole('button', { name: 'Своё упражнение' })).toBeNull();
+    await userEvent.click(c.getByRole('button', { name: /Подтягивания/ }));
+    await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Подтягивания');
+    await expect(c.queryByRole('button', { name: 'Редактировать' })).toBeNull();
+  },
+};
+
+export const CreateFails: Story = {
+  args: { initialScreen: 'create', onCreate: fn(async () => { throw new Error('Упражнение с таким названием уже есть'); }) },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await userEvent.type(c.getByLabelText('Название'), 'Мост');
+    await userEvent.click(c.getByRole('button', { name: 'Создать' }));
+    await expect(await c.findByRole('alert')).toHaveTextContent('Упражнение с таким названием уже есть');
+    await expect(args.onCreate).toHaveBeenCalledTimes(1);
+    await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Новое упражнение');
+  },
+};
+
+export const SaveAndDelete: Story = {
+  args: {
+    initialScreen: 'edit',
+    initialSelected: 'squat',
+    onUpdate: fn(async (ex, draft) => ({ ...ex, name: draft.name })),
+    onDelete: fn(async () => {}),
+  },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    const name = c.getByLabelText('Название');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Присед');
+    await userEvent.click(c.getByRole('button', { name: 'Сохранить' }));
+    await expect(await c.findByRole('heading', { level: 1 })).toHaveTextContent('Присед');
+    await userEvent.click(c.getByRole('button', { name: 'Редактировать' }));
+    await userEvent.click(c.getByRole('button', { name: 'Удалить упражнение' }));
+    const dialog = await within(document.body).findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+    await waitFor(() => expect(args.onDelete).toHaveBeenCalledWith('squat'));
+    await expect(await c.findByRole('heading', { level: 1 })).toHaveTextContent('Упражнения');
+    await expect(c.queryByText('Присед')).toBeNull();
   },
 };

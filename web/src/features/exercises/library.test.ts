@@ -3,8 +3,10 @@ import {
   applyDraft, barsNote, canSubmit, createExercise, draftFromExercise, emptyDraft, exerciseIcon, formatKg,
   formatReps, formatTime, groupExercises, groupForMuscles, groupHint, groupTabs, hiddenSessions, lastSessionRows,
   latestMedia, mediaCountText, paramFields, recordText, recordTiles, searchExercises, sessionSummary, sortSessions,
-  planShort, toggleItem, totalText, trendInfo,
+  planShort, toggleItem, totalText, trendInfo, canManageExercises, noteSteps, isVideoUrl, videoError,
+  toExerciseInput, toExercisePatch,
 } from './library';
+import { exerciseLibrary } from './mock';
 import type { LibraryExercise } from './types';
 
 const plain = (s: string) => s.replaceAll(' ', ' ');
@@ -176,5 +178,38 @@ describe('форма', () => {
     const next = applyDraft(squat, draft);
     expect(next).toMatchObject({ name: squat.name, kind: 'reps', muscles: squat.muscles, equipment: 'Гантели', group: 'legs' });
     expect(next.sessions).toBe(squat.sessions);
+  });
+});
+
+describe('права и запись', () => {
+  const base = (exerciseLibrary.find((e) => e.id === 'squat') ?? exerciseLibrary[0]) as LibraryExercise;
+  it('canManageExercises: только тренер и админ', () => {
+    expect(canManageExercises('trainer')).toBe(true);
+    expect(canManageExercises('admin')).toBe(true);
+    expect(canManageExercises('athlete')).toBe(false);
+    expect(canManageExercises(null)).toBe(false);
+    expect(canManageExercises(undefined)).toBe(false);
+  });
+
+  it('noteSteps делит по строкам и убирает пустые', () => {
+    expect(noteSteps(' Раз \n\n Два\n')).toEqual(['Раз', 'Два']);
+    expect(noteSteps(undefined)).toEqual([]);
+  });
+
+  it('isVideoUrl и videoError принимают только http(s)', () => {
+    expect(isVideoUrl('https://youtu.be/x')).toBe(true);
+    expect(isVideoUrl('javascript:alert(1)')).toBe(false);
+    expect(isVideoUrl('просто текст')).toBe(false);
+    expect(videoError({ ...emptyDraft(), video: '' })).toBeUndefined();
+    expect(videoError({ ...emptyDraft(), video: 'ftp://x' })).toBeDefined();
+  });
+
+  it('toExerciseInput и toExercisePatch', () => {
+    const draft = { ...emptyDraft(), name: ' Мост ', muscles: ['Спина'], notes: ' шаг ' };
+    expect(toExerciseInput(draft)).toMatchObject({ name: 'Мост', group: 'back', muscles: ['Спина'], aliases: [], notes: 'шаг', video: '' });
+    const ex = { ...base, muscles: ['Спина'] };
+    expect(toExercisePatch(draft, ex)).not.toHaveProperty('group');
+    expect(toExercisePatch({ ...draft, muscles: ['Грудь'] }, ex)).toMatchObject({ group: 'chest', muscles: ['Грудь'] });
+    expect(toExercisePatch(draft, ex)).not.toHaveProperty('aliases');
   });
 });

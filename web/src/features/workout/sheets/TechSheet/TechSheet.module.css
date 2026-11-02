@@ -127,3 +127,16 @@
   margin-top: 2px; /* нет токена */
   color: var(--warning);
 }
+
+/* Пустое состояние: у упражнения нет ни шагов, ни видео */
+.blank {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg) var(--spacing-md);
+  border: 1px dashed var(--hairline);
+  border-radius: var(--rounded-lg);
+  text-align: center;
+}

@@ -1,3 +1,4 @@
+import type { SessionStepResult } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 import { plural } from './ru';
 
@@ -20,6 +21,20 @@ export function finishStats(steps: Step[], completed: boolean[], videos: number)
     rounds: [...circuitRounds.values()].reduce((a, b) => a + b, 0),
     videos,
   };
+}
+
+/** Каждый подход тренировки с планом (после правок «Изменить») и отметкой, выполнен ли он */
+export function sessionSteps(steps: Step[], completed: boolean[]): SessionStepResult[] {
+  return steps.map((s, i) => ({
+    exerciseId: s.exerciseId,
+    exerciseName: s.exerciseName,
+    blockIndex: s.blockIndex,
+    round: s.round,
+    rounds: s.rounds,
+    kind: s.kind,
+    plan: s.plan,
+    completed: completed[i] ?? false,
+  }));
 }
 
 export interface FinishStat {

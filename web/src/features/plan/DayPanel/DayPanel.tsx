@@ -109,6 +109,11 @@ export function DayPanel({
         <Text variant="body-sm" color="slate" tag="p" className={styles.meta}>
           {templateMeta(template)}
         </Text>
+        {entry.more && entry.more.length > 0 && (
+          <Text variant="caption" color="slate" tag="p" className={styles.meta}>
+            Ещё в этот день: {entry.more.join(', ')}
+          </Text>
+        )}
       </header>
 
       <ExerciseList exercises={template.exercises} label={`Упражнения: ${template.title}`} />

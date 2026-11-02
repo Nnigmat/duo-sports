@@ -1,0 +1,40 @@
+- generic [ref=f16e3]:
+  - main [ref=f16e4]:
+    - generic [ref=f16e587]:
+      - generic [ref=f16e588]:
+        - button "Упражнения" [ref=f16e590] [cursor=pointer]
+        - button "Редактировать" [ref=f16e594] [cursor=pointer]
+      - generic [ref=f16e598]:
+        - figure "Видео техники не добавлено" [ref=f16e599]
+        - generic [ref=f16e604]:
+          - generic [ref=f16e605]:
+            - heading "Болгарские выпады" [level=1] [ref=f16e606]
+            - generic [ref=f16e607]: Вес × повторы
+            - list "Мышцы и снаряд" [ref=f16e610]:
+              - listitem [ref=f16e611]:
+                - generic [ref=f16e612]: Квадрицепс
+              - listitem [ref=f16e613]:
+                - generic [ref=f16e614]: Без снаряда
+          - region [ref=f16e615]:
+            - heading "Как выполнять" [level=2] [ref=f16e616]
+            - list [ref=f16e617]:
+              - listitem [ref=f16e618]: Задняя нога на скамье, корпус прямой
+              - listitem [ref=f16e619]: Опускайтесь до угла 90 градусов в передней ноге
+              - listitem [ref=f16e620]: Встаньте, толкаясь пяткой
+          - generic [ref=f16e621]:
+            - paragraph [ref=f16e622]: Ещё не выполнялось
+            - paragraph [ref=f16e623]: Добавьте упражнение в тренировку. После первого подхода здесь появятся рекорд, подходы и график.
+          - region [ref=f16e624]:
+            - heading "Видео и комментарии" [level=2] [ref=f16e625]
+            - paragraph [ref=f16e626]: Пока нет видео и комментариев. Запишите подход на видео во время тренировки.
+  - navigation "Основная навигация" [ref=f16e6]:
+    - link "Сегодня" [ref=f16e7] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f16e10] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f16e14] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f16e18] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f16e23] [cursor=pointer]:
+      - /url: /profile

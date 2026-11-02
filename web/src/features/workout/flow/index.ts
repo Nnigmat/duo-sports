@@ -23,7 +23,8 @@ export {
   type EditDraft,
 } from './editPlan';
 export { pickMimeType } from './recording';
-export { finishStats, formatFinishStats, type FinishStat, type FinishStats } from './finish';
+export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';
 export { formatLongDate, joinNumbers, plural } from './ru';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
 export { initSession, reduce, type Action, type Phase, type Session } from './session';
+export { hasTechnique } from './technique';

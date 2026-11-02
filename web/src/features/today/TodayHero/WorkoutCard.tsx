@@ -21,7 +21,7 @@ export function WorkoutCard({ titleId, workout, onStart, onReschedule, onOpenExe
         {workout.title}
       </h2>
       <p className={styles.meta}>
-        {[exerciseCount(workout.exerciseCount), formatApproxMinutes(workout.minutes), workout.modeLabel].join(' · ')}
+        {[exerciseCount(workout.exerciseCount), formatApproxMinutes(workout.minutes), workout.modeLabel].filter(Boolean).join(' · ')}
       </p>
       <ul className={styles.muscles}>
         {workout.muscles.map((m) => (

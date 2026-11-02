@@ -1,0 +1,80 @@
+- generic [ref=f1e3]:
+  - main [ref=f1e4]:
+    - generic [ref=f1e251]:
+      - generic [ref=f1e252]:
+        - heading "План из файла" [level=1] [ref=f1e253]
+        - paragraph [ref=f1e254]: "2 тренировки за 1 неделю: вторник и четверг. Проверьте, как это ляжет в календарь."
+      - list "Шаги импорта" [ref=f1e255]:
+        - listitem [ref=f1e256]:
+          - text: Источник
+          - generic [ref=f1e260]: ", пройден"
+        - listitem [ref=f1e261]:
+          - text: Проверка
+          - generic [ref=f1e265]: ", пройден"
+        - listitem [ref=f1e266]:
+          - generic [aria-hidden] [ref=f1e267]: "3"
+          - text: План
+        - listitem [ref=f1e268]:
+          - generic [aria-hidden] [ref=f1e269]: "4"
+          - text: Готово
+      - region "Настройки плана" [ref=f1e270]:
+        - generic [ref=f1e271]:
+          - switch "Добавить тренировки в календарь по датам" [checked] [ref=f1e272] [cursor=pointer]
+          - generic [ref=f1e275]:
+            - paragraph [ref=f1e276]: Добавить тренировки в календарь по датам
+            - status [ref=f1e277]: 2 тренировки в календаре · 3 нояб — 5 нояб
+      - region [ref=f1e278]:
+        - generic [ref=f1e279]:
+          - heading "3 нояб — 5 нояб" [level=2] [ref=f1e280]
+          - paragraph [ref=f1e281]: Первая неделя пропускается, план идёт с 3 ноября
+          - list "Обозначения" [ref=f1e282]:
+            - listitem [ref=f1e283]: Из файла
+            - listitem [ref=f1e285]: Уже в плане
+            - listitem [ref=f1e287]: Конфликт
+            - listitem [ref=f1e289]: Пропущена
+        - region "Календарь импорта по неделям" [ref=f1e291]:
+          - table [ref=f1e292]:
+            - rowgroup [ref=f1e293]:
+              - row [ref=f1e294]:
+                - cell [ref=f1e295]
+                - columnheader "Пн" [ref=f1e296]
+                - columnheader "Вт" [ref=f1e297]
+                - columnheader "Ср" [ref=f1e298]
+                - columnheader "Чт" [ref=f1e299]
+                - columnheader "Пт" [ref=f1e300]
+                - columnheader "Сб" [ref=f1e301]
+                - columnheader "Вс" [ref=f1e302]
+            - rowgroup [ref=f1e303]:
+              - row [ref=f1e304]:
+                - rowheader "Нед 1 2–8 нояб" [ref=f1e305]:
+                  - generic [ref=f1e306]: Нед 1
+                  - generic [ref=f1e307]: 2–8 нояб
+                - cell "2" [ref=f1e308]
+                - 'cell "3 из файла: Трицепс, пресс, ноги" [ref=f1e310]':
+                  - generic [ref=f1e311]: "3"
+                  - generic [ref=f1e312]: "из файла:"
+                  - generic [ref=f1e313]: Трицепс, пресс, ноги
+                - cell "4" [ref=f1e314]
+                - 'cell "5 из файла: Грудь, кор, спина" [ref=f1e316]':
+                  - generic [ref=f1e317]: "5"
+                  - generic [ref=f1e318]: "из файла:"
+                  - generic [ref=f1e319]: Грудь, кор, спина
+                - cell "6" [ref=f1e320]
+                - cell "7" [ref=f1e322]
+                - cell "8" [ref=f1e324]
+      - generic [ref=f1e326]:
+        - paragraph [ref=f1e327]: 2 тренировки · в календаре 2
+        - generic [ref=f1e328]:
+          - button "Назад" [ref=f1e329] [cursor=pointer]
+          - button "Импортировать и добавить в план" [ref=f1e330] [cursor=pointer]
+  - navigation "Основная навигация" [ref=f1e87]:
+    - link "Сегодня" [ref=f1e88] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f1e91] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f1e95] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f1e99] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f1e104] [cursor=pointer]:
+      - /url: /profile

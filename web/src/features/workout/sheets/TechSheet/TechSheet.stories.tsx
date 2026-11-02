@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, screen, userEvent, within } from 'storybook/test';
+import type { Technique } from '../../../../../../shared/types';
 import { Button } from '../../../../ui/Button/Button';
 import { ARTIFACT } from '../../../../ui/storyKit';
 import { COMMENTS, NOW, TECHNIQUE } from '../storyData';
@@ -8,7 +9,7 @@ import { TechSheet } from './TechSheet';
 
 const onOpenComments = fn();
 
-function Demo({ withComment = true }: { withComment?: boolean }) {
+function Demo({ withComment = true, technique = TECHNIQUE }: { withComment?: boolean; technique?: Technique }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -20,7 +21,7 @@ function Demo({ withComment = true }: { withComment?: boolean }) {
         onOpenChange={setOpen}
         title="Обратные отжимания от лавочки"
         pose="dips"
-        technique={TECHNIQUE}
+        technique={technique}
         comment={withComment ? COMMENTS[0] : undefined}
         commentsCount={5}
         onOpenComments={onOpenComments}
@@ -91,5 +92,16 @@ export const WithoutComment: Story = {
   play: async () => {
     const dialog = await open();
     await expect(dialog.queryByText('Комментарий тренера')).toBeNull();
+  },
+};
+
+export const Empty: Story = {
+  render: () => <Demo technique={{ instructions: [] }} />,
+  play: async () => {
+    const dialog = await open();
+    await expect(dialog.getByText('Описания пока нет')).toBeVisible();
+    await expect(dialog.getByText('Тренер или админ добавят его в разделе «Упражнения»')).toBeVisible();
+    await expect(dialog.queryByRole('tab', { name: 'Видео' })).toBeNull();
+    await expect(dialog.queryByText('Как выполнять')).toBeNull();
   },
 };

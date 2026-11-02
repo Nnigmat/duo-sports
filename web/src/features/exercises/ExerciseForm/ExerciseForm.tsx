@@ -1,5 +1,5 @@
-import { Chip, ChipGroup, ChoiceCard, ParamStepper, Text, TextInput } from '../../../ui';
-import { EQUIPMENT_OPTIONS, groupHint, KIND_INFO, KINDS, MUSCLE_OPTIONS, paramFields, toggleItem } from '../library';
+import { Chip, ChipGroup, ChoiceCard, ParamStepper, Text, TextArea, TextInput } from '../../../ui';
+import { EQUIPMENT_OPTIONS, groupHint, KIND_INFO, KINDS, MUSCLE_OPTIONS, paramFields, toggleItem, videoError } from '../library';
 import type { ExerciseDraft } from '../types';
 import styles from './ExerciseForm.module.css';
 
@@ -28,6 +28,24 @@ export function ExerciseForm({ draft, onChange, showGroupHint, kindChanged, name
         placeholder="Например, болгарские выпады"
         value={draft.name}
         onChange={(e) => set({ name: e.target.value })}
+      />
+
+      <TextArea
+        label="Как выполнять"
+        hint="Один шаг на строку"
+        placeholder="Встаньте прямо, стопы на ширине плеч"
+        value={draft.notes}
+        onChange={(e) => set({ notes: e.target.value })}
+      />
+
+      <TextInput
+        label="Ссылка на видео"
+        type="url"
+        inputMode="url"
+        placeholder="https://"
+        value={draft.video}
+        error={videoError(draft)}
+        onChange={(e) => set({ video: e.target.value })}
       />
 
       <div role="radiogroup" aria-labelledby={`${name}-label`} className={styles.block}>

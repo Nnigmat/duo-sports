@@ -57,3 +57,12 @@ export const Interactive: Story = {
     await expect(c.getByText('Ничего не нашлось')).toBeVisible();
   },
 };
+
+export const ReadOnly: Story = {
+  args: { onCreate: undefined },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.queryByRole('button', { name: 'Своё упражнение' })).toBeNull();
+    await expect(c.queryByRole('button', { name: 'Новое упражнение' })).toBeNull();
+  },
+};

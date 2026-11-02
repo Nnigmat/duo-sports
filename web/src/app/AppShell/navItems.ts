@@ -13,3 +13,10 @@ export const navItems: NavItem[] = [
   { to: '/progress/achievements', label: 'Прогресс', icon: 'trophy' },
   { to: '/profile', label: 'Профиль', icon: 'duo' },
 ];
+
+/** Только в боковой панели: на мобильной нижней панели мест мало */
+export const sideNavItems: NavItem[] = [
+  ...navItems.slice(0, 4),
+  { to: '/import', label: 'Импорт', icon: 'upload' },
+  ...navItems.slice(4),
+];

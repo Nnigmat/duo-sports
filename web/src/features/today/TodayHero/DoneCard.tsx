@@ -17,18 +17,22 @@ export function DoneCard({ titleId, summary, onOpenSummary }: Props) {
         {summary.title}
       </h2>
       <dl className={styles.stats}>
-        <div>
-          <dd>{formatMinutes(summary.minutes)}</dd>
-          <dt>время</dt>
-        </div>
+        {summary.minutes !== undefined && (
+          <div>
+            <dd>{formatMinutes(summary.minutes)}</dd>
+            <dt>время</dt>
+          </div>
+        )}
         <div>
           <dd>{formatVolume(summary.volumeKg)}</dd>
           <dt>объём</dt>
         </div>
-        <div>
-          <dd>{summary.records}</dd>
-          <dt>{recordsWord(summary.records)}</dt>
-        </div>
+        {summary.records !== undefined && (
+          <div>
+            <dd>{summary.records}</dd>
+            <dt>{recordsWord(summary.records)}</dt>
+          </div>
+        )}
       </dl>
       <div className={styles.actions}>
         <Button onClick={onOpenSummary}>Посмотреть итоги</Button>

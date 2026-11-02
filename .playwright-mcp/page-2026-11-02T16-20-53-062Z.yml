@@ -1,0 +1,40 @@
+- generic [ref=f18e3]:
+  - main [ref=f18e4]:
+    - generic [ref=f18e139]:
+      - generic [ref=f18e140]:
+        - button "Упражнения" [ref=f18e142] [cursor=pointer]
+        - button "Редактировать" [ref=f18e146] [cursor=pointer]
+      - generic [ref=f18e150]:
+        - figure "Видео техники не добавлено" [ref=f18e151]
+        - generic [ref=f18e156]:
+          - generic [ref=f18e157]:
+            - heading "Болгарские выпады с гантелями" [level=1] [ref=f18e158]
+            - generic [ref=f18e159]: Вес × повторы
+            - list "Мышцы и снаряд" [ref=f18e162]:
+              - listitem [ref=f18e163]:
+                - generic [ref=f18e164]: Квадрицепс
+              - listitem [ref=f18e165]:
+                - generic [ref=f18e166]: Без снаряда
+          - region [ref=f18e167]:
+            - heading "Как выполнять" [level=2] [ref=f18e168]
+            - list [ref=f18e169]:
+              - listitem [ref=f18e170]: Задняя нога на скамье, корпус прямой
+              - listitem [ref=f18e171]: Опускайтесь до угла 90 градусов в передней ноге
+              - listitem [ref=f18e172]: Встаньте, толкаясь пяткой
+          - generic [ref=f18e173]:
+            - paragraph [ref=f18e174]: Ещё не выполнялось
+            - paragraph [ref=f18e175]: Добавьте упражнение в тренировку. После первого подхода здесь появятся рекорд, подходы и график.
+          - region [ref=f18e176]:
+            - heading "Видео и комментарии" [level=2] [ref=f18e177]
+            - paragraph [ref=f18e178]: Пока нет видео и комментариев. Запишите подход на видео во время тренировки.
+  - navigation "Основная навигация" [ref=f18e117]:
+    - link "Сегодня" [ref=f18e118] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f18e121] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f18e125] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f18e129] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f18e134] [cursor=pointer]:
+      - /url: /profile

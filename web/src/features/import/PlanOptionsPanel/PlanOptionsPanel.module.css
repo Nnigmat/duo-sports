@@ -1,0 +1,79 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--surface);
+}
+.switchRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+/* Нажимаемая область 44 px; сама дорожка 52 × 32 */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--size-touch);
+  height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.track {
+  position: relative;
+  width: 52px; /* нет токена */
+  height: 32px;
+  border-radius: var(--rounded-full);
+  background: var(--stone);
+}
+.switch[aria-checked='true'] .track {
+  background: var(--primary);
+}
+.knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+  transition: left 150ms;
+}
+.switch[aria-checked='true'] .knob {
+  left: 24px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .knob {
+    transition: none;
+  }
+}
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  padding-top: var(--spacing-xxs);
+}
+.texts p {
+  margin: 0;
+}
+.past {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--hairline);
+}
+.past p {
+  margin: 0;
+}
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}

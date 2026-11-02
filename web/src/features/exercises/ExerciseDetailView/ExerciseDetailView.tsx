@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Badge, BarChart, Button, CommentBubble, EmptyState, Icon, MediaLink, StatTile, Text, TopBar } from '../../../ui';
 import {
-  barsNote, KIND_INFO, lastSessionRows, latestMedia, mediaCountText, recordTiles, trendInfo,
+  barsNote, isVideoUrl, KIND_INFO, lastSessionRows, latestMedia, mediaCountText, noteSteps, recordTiles, trendInfo,
 } from '../library';
 import type { LibraryExercise } from '../types';
 import styles from './ExerciseDetailView.module.css';
@@ -9,7 +9,8 @@ import styles from './ExerciseDetailView.module.css';
 type Props = {
   exercise: LibraryExercise;
   onBack: () => void;
-  onEdit: () => void;
+  /** Нет — кнопки «Редактировать» нет (только чтение) */
+  onEdit?: () => void;
   onOpenHistory: () => void;
   onAddVideo?: () => void;
   /** Подпись кнопки назад; на десктопе «Все упражнения» */
@@ -28,13 +29,15 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
   const hasHistory = ex.sessionsTotal > 0;
   const hasMedia = !!(media.video || media.comment);
   const last = ex.sessions[0];
+  const steps = noteSteps(ex.notes);
+  const videoLink = ex.video && isVideoUrl(ex.video) ? ex.video : undefined;
 
   return (
     <div className={styles.root}>
       {topBar ?? (
         <TopBar
           start={<Button variant="ghost" compact icon="back" onClick={onBack}>{backLabel}</Button>}
-          end={<Button variant="ghost" compact icon="pencil" onClick={onEdit}>Редактировать</Button>}
+          end={onEdit && <Button variant="ghost" compact icon="pencil" onClick={onEdit}>Редактировать</Button>}
         />
       )}
 
@@ -65,6 +68,24 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
             <li><Badge tone="neutral">{ex.equipment}</Badge></li>
           </ul>
         </div>
+
+        {(steps.length > 0 || videoLink) && (
+          <section aria-labelledby="ex-how" className={styles.section}>
+            <Text variant="h5" tag="h2" id="ex-how">Как выполнять</Text>
+            {steps.length > 0 && (
+              <ol className={styles.steps}>
+                {steps.map((t, i) => (
+                  <li key={i}>{t}</li>
+                ))}
+              </ol>
+            )}
+            {videoLink && (
+              <Button variant="secondary" compact icon="video" href={videoLink} target="_blank" rel="noopener noreferrer">
+                Видео-пример
+              </Button>
+            )}
+          </section>
+        )}
 
         {!hasHistory && (
           <EmptyState

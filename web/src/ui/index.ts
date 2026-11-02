@@ -35,6 +35,7 @@ export { Stepper, formatDuration } from './Stepper/Stepper';
 export { StreakBadge } from './StreakBadge/StreakBadge';
 export { Text } from './Text/Text';
 export { TextInput } from './TextInput/TextInput';
+export { TextArea } from './TextArea/TextArea';
 export { TierLegend } from './TierLegend/TierLegend';
 export { TierMark } from './TierMark/TierMark';
 export { TierSteps, type TierStep } from './TierSteps/TierSteps';

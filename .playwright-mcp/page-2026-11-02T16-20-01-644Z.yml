@@ -1,0 +1,13 @@
+- generic [ref=f16e3]:
+  - main [ref=f16e4]
+  - navigation "Основная навигация" [ref=f16e6]:
+    - link "Сегодня" [ref=f16e7] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f16e10] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f16e14] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f16e18] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f16e23] [cursor=pointer]:
+      - /url: /profile

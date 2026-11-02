@@ -1,0 +1,306 @@
+- generic [ref=f19e3]:
+  - main [ref=f19e4]:
+    - generic [ref=f19e147]:
+      - generic [ref=f19e148]:
+        - generic [ref=f19e149]:
+          - heading "Упражнения" [level=1] [ref=f19e150]
+          - paragraph [ref=f19e151]: 30 упражнений · 0 в плане
+        - button "Своё упражнение" [ref=f19e152] [cursor=pointer]
+      - generic [ref=f19e155]:
+        - generic [ref=f19e156]: Поиск по названию или мышце
+        - searchbox "Поиск по названию или мышце" [ref=f19e157]
+      - group "Группы мышц" [ref=f19e158]:
+        - button "Все30" [pressed] [ref=f19e159] [cursor=pointer]
+        - button "Ноги8" [ref=f19e160] [cursor=pointer]
+        - button "Спина5" [ref=f19e161] [cursor=pointer]
+        - button "Грудь и плечи4" [ref=f19e162] [cursor=pointer]
+        - button "Руки4" [ref=f19e163] [cursor=pointer]
+        - button "Пресс4" [ref=f19e164] [cursor=pointer]
+        - button "Кардио1" [ref=f19e165] [cursor=pointer]
+        - button "Другие4" [ref=f19e166] [cursor=pointer]
+      - region [ref=f19e167]:
+        - generic [ref=f19e168]:
+          - heading "Ноги и ягодицы" [level=2] [ref=f19e169]
+          - generic [ref=f19e170]: "8"
+        - list [ref=f19e171]:
+          - listitem [ref=f19e172]:
+            - button "Приседания со штангой квадрицепс, ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e173] [cursor=pointer]:
+              - generic [ref=f19e177]:
+                - generic [ref=f19e178]: Приседания со штангой
+                - generic [ref=f19e179]: квадрицепс, ягодицы · Без снаряда
+                - generic [ref=f19e180]:
+                  - generic [ref=f19e181]: Новое
+                  - generic [ref=f19e182]: Ещё не выполнялось
+          - listitem [ref=f19e185]:
+            - button "Румынская тяга бицепс бедра, ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e186] [cursor=pointer]:
+              - generic [ref=f19e190]:
+                - generic [ref=f19e191]: Румынская тяга
+                - generic [ref=f19e192]: бицепс бедра, ягодицы · Без снаряда
+                - generic [ref=f19e193]:
+                  - generic [ref=f19e194]: Новое
+                  - generic [ref=f19e195]: Ещё не выполнялось
+          - listitem [ref=f19e198]:
+            - button "Жим ногами квадрицепс, ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e199] [cursor=pointer]:
+              - generic [ref=f19e203]:
+                - generic [ref=f19e204]: Жим ногами
+                - generic [ref=f19e205]: квадрицепс, ягодицы · Без снаряда
+                - generic [ref=f19e206]:
+                  - generic [ref=f19e207]: Новое
+                  - generic [ref=f19e208]: Ещё не выполнялось
+          - listitem [ref=f19e211]:
+            - button "Выпады с гантелями квадрицепс, ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e212] [cursor=pointer]:
+              - generic [ref=f19e216]:
+                - generic [ref=f19e217]: Выпады с гантелями
+                - generic [ref=f19e218]: квадрицепс, ягодицы · Без снаряда
+                - generic [ref=f19e219]:
+                  - generic [ref=f19e220]: Новое
+                  - generic [ref=f19e221]: Ещё не выполнялось
+          - listitem [ref=f19e224]:
+            - button "Сгибания ног лёжа бицепс бедра · Без снаряда Новое Ещё не выполнялось" [ref=f19e225] [cursor=pointer]:
+              - generic [ref=f19e229]:
+                - generic [ref=f19e230]: Сгибания ног лёжа
+                - generic [ref=f19e231]: бицепс бедра · Без снаряда
+                - generic [ref=f19e232]:
+                  - generic [ref=f19e233]: Новое
+                  - generic [ref=f19e234]: Ещё не выполнялось
+          - listitem [ref=f19e237]:
+            - button "Подъёмы на носки икры · Без снаряда Новое Ещё не выполнялось" [ref=f19e238] [cursor=pointer]:
+              - generic [ref=f19e242]:
+                - generic [ref=f19e243]: Подъёмы на носки
+                - generic [ref=f19e244]: икры · Без снаряда
+                - generic [ref=f19e245]:
+                  - generic [ref=f19e246]: Новое
+                  - generic [ref=f19e247]: Ещё не выполнялось
+          - listitem [ref=f19e250]:
+            - button "Становая тяга спина, бицепс бедра, ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e251] [cursor=pointer]:
+              - generic [ref=f19e255]:
+                - generic [ref=f19e256]: Становая тяга
+                - generic [ref=f19e257]: спина, бицепс бедра, ягодицы · Без снаряда
+                - generic [ref=f19e258]:
+                  - generic [ref=f19e259]: Новое
+                  - generic [ref=f19e260]: Ещё не выполнялось
+          - listitem [ref=f19e263]:
+            - button "Ягодичный мост ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e264] [cursor=pointer]:
+              - generic [ref=f19e268]:
+                - generic [ref=f19e269]: Ягодичный мост
+                - generic [ref=f19e270]: ягодицы · Без снаряда
+                - generic [ref=f19e271]:
+                  - generic [ref=f19e272]: Новое
+                  - generic [ref=f19e273]: Ещё не выполнялось
+      - region [ref=f19e276]:
+        - generic [ref=f19e277]:
+          - heading "Спина" [level=2] [ref=f19e278]
+          - generic [ref=f19e279]: "5"
+        - list [ref=f19e280]:
+          - listitem [ref=f19e281]:
+            - button "Гиперэкстензия поясница, ягодицы · Без снаряда Новое Ещё не выполнялось" [ref=f19e282] [cursor=pointer]:
+              - generic [ref=f19e286]:
+                - generic [ref=f19e287]: Гиперэкстензия
+                - generic [ref=f19e288]: поясница, ягодицы · Без снаряда
+                - generic [ref=f19e289]:
+                  - generic [ref=f19e290]: Новое
+                  - generic [ref=f19e291]: Ещё не выполнялось
+          - listitem [ref=f19e294]:
+            - button "Тяга верхнего блока широчайшие, бицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e295] [cursor=pointer]:
+              - generic [ref=f19e299]:
+                - generic [ref=f19e300]: Тяга верхнего блока
+                - generic [ref=f19e301]: широчайшие, бицепс · Без снаряда
+                - generic [ref=f19e302]:
+                  - generic [ref=f19e303]: Новое
+                  - generic [ref=f19e304]: Ещё не выполнялось
+          - listitem [ref=f19e307]:
+            - button "Тяга горизонтального блока спина · Без снаряда Новое Ещё не выполнялось" [ref=f19e308] [cursor=pointer]:
+              - generic [ref=f19e312]:
+                - generic [ref=f19e313]: Тяга горизонтального блока
+                - generic [ref=f19e314]: спина · Без снаряда
+                - generic [ref=f19e315]:
+                  - generic [ref=f19e316]: Новое
+                  - generic [ref=f19e317]: Ещё не выполнялось
+          - listitem [ref=f19e320]:
+            - button "Подтягивания широчайшие, бицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e321] [cursor=pointer]:
+              - generic [ref=f19e325]:
+                - generic [ref=f19e326]: Подтягивания
+                - generic [ref=f19e327]: широчайшие, бицепс · Без снаряда
+                - generic [ref=f19e328]:
+                  - generic [ref=f19e329]: Новое
+                  - generic [ref=f19e330]: Ещё не выполнялось
+          - listitem [ref=f19e333]:
+            - button "Тяга штанги в наклоне спина · Без снаряда Новое Ещё не выполнялось" [ref=f19e334] [cursor=pointer]:
+              - generic [ref=f19e338]:
+                - generic [ref=f19e339]: Тяга штанги в наклоне
+                - generic [ref=f19e340]: спина · Без снаряда
+                - generic [ref=f19e341]:
+                  - generic [ref=f19e342]: Новое
+                  - generic [ref=f19e343]: Ещё не выполнялось
+      - region [ref=f19e346]:
+        - generic [ref=f19e347]:
+          - heading "Грудь и плечи" [level=2] [ref=f19e348]
+          - generic [ref=f19e349]: "4"
+        - list [ref=f19e350]:
+          - listitem [ref=f19e351]:
+            - button "Жим лёжа грудь, трицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e352] [cursor=pointer]:
+              - generic [ref=f19e356]:
+                - generic [ref=f19e357]: Жим лёжа
+                - generic [ref=f19e358]: грудь, трицепс · Без снаряда
+                - generic [ref=f19e359]:
+                  - generic [ref=f19e360]: Новое
+                  - generic [ref=f19e361]: Ещё не выполнялось
+          - listitem [ref=f19e364]:
+            - button "Жим на наклонной скамье грудь, плечи · Без снаряда Новое Ещё не выполнялось" [ref=f19e365] [cursor=pointer]:
+              - generic [ref=f19e369]:
+                - generic [ref=f19e370]: Жим на наклонной скамье
+                - generic [ref=f19e371]: грудь, плечи · Без снаряда
+                - generic [ref=f19e372]:
+                  - generic [ref=f19e373]: Новое
+                  - generic [ref=f19e374]: Ещё не выполнялось
+          - listitem [ref=f19e377]:
+            - button "Разведения гантелей грудь · Без снаряда Новое Ещё не выполнялось" [ref=f19e378] [cursor=pointer]:
+              - generic [ref=f19e382]:
+                - generic [ref=f19e383]: Разведения гантелей
+                - generic [ref=f19e384]: грудь · Без снаряда
+                - generic [ref=f19e385]:
+                  - generic [ref=f19e386]: Новое
+                  - generic [ref=f19e387]: Ещё не выполнялось
+          - listitem [ref=f19e390]:
+            - button "Отжимания грудь, трицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e391] [cursor=pointer]:
+              - generic [ref=f19e395]:
+                - generic [ref=f19e396]: Отжимания
+                - generic [ref=f19e397]: грудь, трицепс · Без снаряда
+                - generic [ref=f19e398]:
+                  - generic [ref=f19e399]: Новое
+                  - generic [ref=f19e400]: Ещё не выполнялось
+      - region [ref=f19e403]:
+        - generic [ref=f19e404]:
+          - heading "Руки" [level=2] [ref=f19e405]
+          - generic [ref=f19e406]: "4"
+        - list [ref=f19e407]:
+          - listitem [ref=f19e408]:
+            - button "Отжимания на брусьях трицепс, грудь · Без снаряда Новое Ещё не выполнялось" [ref=f19e409] [cursor=pointer]:
+              - generic [ref=f19e413]:
+                - generic [ref=f19e414]: Отжимания на брусьях
+                - generic [ref=f19e415]: трицепс, грудь · Без снаряда
+                - generic [ref=f19e416]:
+                  - generic [ref=f19e417]: Новое
+                  - generic [ref=f19e418]: Ещё не выполнялось
+          - listitem [ref=f19e421]:
+            - button "Сгибания на бицепс бицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e422] [cursor=pointer]:
+              - generic [ref=f19e426]:
+                - generic [ref=f19e427]: Сгибания на бицепс
+                - generic [ref=f19e428]: бицепс · Без снаряда
+                - generic [ref=f19e429]:
+                  - generic [ref=f19e430]: Новое
+                  - generic [ref=f19e431]: Ещё не выполнялось
+          - listitem [ref=f19e434]:
+            - button "Французский жим трицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e435] [cursor=pointer]:
+              - generic [ref=f19e439]:
+                - generic [ref=f19e440]: Французский жим
+                - generic [ref=f19e441]: трицепс · Без снаряда
+                - generic [ref=f19e442]:
+                  - generic [ref=f19e443]: Новое
+                  - generic [ref=f19e444]: Ещё не выполнялось
+          - listitem [ref=f19e447]:
+            - button "Обратные отжимания от лавочки трицепс · Без снаряда Новое Ещё не выполнялось" [ref=f19e448] [cursor=pointer]:
+              - generic [ref=f19e452]:
+                - generic [ref=f19e453]: Обратные отжимания от лавочки
+                - generic [ref=f19e454]: трицепс · Без снаряда
+                - generic [ref=f19e455]:
+                  - generic [ref=f19e456]: Новое
+                  - generic [ref=f19e457]: Ещё не выполнялось
+      - region [ref=f19e460]:
+        - generic [ref=f19e461]:
+          - heading "Пресс" [level=2] [ref=f19e462]
+          - generic [ref=f19e463]: "4"
+        - list [ref=f19e464]:
+          - listitem [ref=f19e465]:
+            - button "Планка пресс, кор · Без снаряда Новое Ещё не выполнялось" [ref=f19e466] [cursor=pointer]:
+              - generic [ref=f19e470]:
+                - generic [ref=f19e471]: Планка
+                - generic [ref=f19e472]: пресс, кор · Без снаряда
+                - generic [ref=f19e473]:
+                  - generic [ref=f19e474]: Новое
+                  - generic [ref=f19e475]: Ещё не выполнялось
+          - listitem [ref=f19e478]:
+            - button "Скручивания пресс · Без снаряда Новое Ещё не выполнялось" [ref=f19e479] [cursor=pointer]:
+              - generic [ref=f19e483]:
+                - generic [ref=f19e484]: Скручивания
+                - generic [ref=f19e485]: пресс · Без снаряда
+                - generic [ref=f19e486]:
+                  - generic [ref=f19e487]: Новое
+                  - generic [ref=f19e488]: Ещё не выполнялось
+          - listitem [ref=f19e491]:
+            - button "Подъём ног в висе пресс · Без снаряда Новое Ещё не выполнялось" [ref=f19e492] [cursor=pointer]:
+              - generic [ref=f19e496]:
+                - generic [ref=f19e497]: Подъём ног в висе
+                - generic [ref=f19e498]: пресс · Без снаряда
+                - generic [ref=f19e499]:
+                  - generic [ref=f19e500]: Новое
+                  - generic [ref=f19e501]: Ещё не выполнялось
+          - listitem [ref=f19e504]:
+            - button "Ножницы лёжа пресс · Без снаряда Новое Ещё не выполнялось" [ref=f19e505] [cursor=pointer]:
+              - generic [ref=f19e509]:
+                - generic [ref=f19e510]: Ножницы лёжа
+                - generic [ref=f19e511]: пресс · Без снаряда
+                - generic [ref=f19e512]:
+                  - generic [ref=f19e513]: Новое
+                  - generic [ref=f19e514]: Ещё не выполнялось
+      - region [ref=f19e517]:
+        - generic [ref=f19e518]:
+          - heading "Кардио" [level=2] [ref=f19e519]
+          - generic [ref=f19e520]: "1"
+        - list [ref=f19e521]:
+          - listitem [ref=f19e522]:
+            - button "Скакалка выносливость · Без снаряда Новое Ещё не выполнялось" [ref=f19e523] [cursor=pointer]:
+              - generic [ref=f19e527]:
+                - generic [ref=f19e528]: Скакалка
+                - generic [ref=f19e529]: выносливость · Без снаряда
+                - generic [ref=f19e530]:
+                  - generic [ref=f19e531]: Новое
+                  - generic [ref=f19e532]: Ещё не выполнялось
+      - region [ref=f19e535]:
+        - generic [ref=f19e536]:
+          - heading "Другие" [level=2] [ref=f19e537]
+          - generic [ref=f19e538]: "4"
+        - list [ref=f19e539]:
+          - listitem [ref=f19e540]:
+            - button "Выпады на месте · Без снаряда Новое Ещё не выполнялось" [ref=f19e541] [cursor=pointer]:
+              - generic [ref=f19e545]:
+                - generic [ref=f19e546]: Выпады на месте
+                - generic [ref=f19e547]: · Без снаряда
+                - generic [ref=f19e548]:
+                  - generic [ref=f19e549]: Новое
+                  - generic [ref=f19e550]: Ещё не выполнялось
+          - listitem [ref=f19e553]:
+            - button "Отжимания с касанием предмета · Без снаряда Новое Ещё не выполнялось" [ref=f19e554] [cursor=pointer]:
+              - generic [ref=f19e558]:
+                - generic [ref=f19e559]: Отжимания с касанием предмета
+                - generic [ref=f19e560]: · Без снаряда
+                - generic [ref=f19e561]:
+                  - generic [ref=f19e562]: Новое
+                  - generic [ref=f19e563]: Ещё не выполнялось
+          - listitem [ref=f19e566]:
+            - button "Подтягивание колен в висе · Без снаряда Новое Ещё не выполнялось" [ref=f19e567] [cursor=pointer]:
+              - generic [ref=f19e571]:
+                - generic [ref=f19e572]: Подтягивание колен в висе
+                - generic [ref=f19e573]: · Без снаряда
+                - generic [ref=f19e574]:
+                  - generic [ref=f19e575]: Новое
+                  - generic [ref=f19e576]: Ещё не выполнялось
+          - listitem [ref=f19e579]:
+            - button "Лодочка · Без снаряда Новое Ещё не выполнялось" [ref=f19e580] [cursor=pointer]:
+              - generic [ref=f19e584]:
+                - generic [ref=f19e585]: Лодочка
+                - generic [ref=f19e586]: · Без снаряда
+                - generic [ref=f19e587]:
+                  - generic [ref=f19e588]: Новое
+                  - generic [ref=f19e589]: Ещё не выполнялось
+  - navigation "Основная навигация" [ref=f19e117]:
+    - link "Сегодня" [ref=f19e118] [cursor=pointer]:
+      - /url: /
+    - link "План" [ref=f19e121] [cursor=pointer]:
+      - /url: /plan
+    - link "Упражнения" [ref=f19e125] [cursor=pointer]:
+      - /url: /exercises
+    - link "Прогресс" [ref=f19e129] [cursor=pointer]:
+      - /url: /progress/achievements
+    - link "Профиль" [ref=f19e134] [cursor=pointer]:
+      - /url: /profile

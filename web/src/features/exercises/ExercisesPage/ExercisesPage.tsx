@@ -1,17 +1,19 @@
 import { useState, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../../app/auth/AuthProvider';
 import { useExercises } from '../../../data/hooks';
 import { Skeleton, useMediaQuery } from '../../../shared';
 import { ExerciseDetailView } from '../ExerciseDetailView/ExerciseDetailView';
 import { ExerciseFormScreen } from '../ExerciseForm/ExerciseFormScreen';
 import { ExerciseHistoryView } from '../ExerciseHistoryView/ExerciseHistoryView';
 import { ExerciseListView } from '../ExerciseListView/ExerciseListView';
-import { applyDraft, createExercise, type GroupFilter, type HistorySort } from '../library';
+import { createExercise, deleteExercise, updateExercise } from '../api';
+import { canManageExercises, type GroupFilter, type HistorySort } from '../library';
 import type { ExerciseDraft, LibraryExercise } from '../types';
 
 const BASE = '/exercises';
 
-/** Вкладка «Упражнения»: загрузка и маршруты. Правки пока живут в памяти и пропадают при перезагрузке (сервера нет). */
+/** Вкладка «Упражнения»: загрузка и маршруты. Библиотека общая и приходит с сервера; создают, правят и удаляют тренер и админ, спортсмен только читает. */
 export function ExercisesPage() {
   const { data, error } = useExercises();
   if (error) return <p role="alert">{error}</p>;
@@ -29,20 +31,29 @@ function Exercise({ items, render }: { items: LibraryExercise[]; render: (ex: Li
 function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
   const navigate = useNavigate();
   const desktop = useMediaQuery('(min-width: 1024px)');
+  const auth = useAuth();
+  const canManage = auth.status === 'in' && canManageExercises(auth.user.role);
   const [items, setItems] = useState(initial);
   // Поиск и фильтр живут здесь, чтобы после возврата из карточки список остался как был
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<GroupFilter>('all');
   const [sort, setSort] = useState<HistorySort>('new');
 
-  function create(draft: ExerciseDraft) {
-    const ex = createExercise(draft, `custom-${Date.now()}`);
+  // Ошибка запроса летит в форму: она остаётся открытой и показывает сообщение
+  async function create(draft: ExerciseDraft) {
+    const ex = await createExercise(draft);
     setItems((list) => [...list, ex]);
     navigate(`${BASE}/${ex.id}`);
   }
-  function save(id: string, draft: ExerciseDraft) {
-    setItems((list) => list.map((e) => (e.id === id ? applyDraft(e, draft) : e)));
-    navigate(`${BASE}/${id}`);
+  async function save(current: LibraryExercise, draft: ExerciseDraft) {
+    const next = await updateExercise(current, draft);
+    setItems((list) => list.map((e) => (e.id === current.id ? next : e)));
+    navigate(`${BASE}/${current.id}`);
+  }
+  async function remove(id: string) {
+    await deleteExercise(id);
+    setItems((list) => list.filter((e) => e.id !== id));
+    navigate(BASE, { replace: true });
   }
 
   return (
@@ -57,12 +68,15 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
             group={group}
             onGroupChange={setGroup}
             onOpen={(id) => navigate(`${BASE}/${id}`)}
-            onCreate={() => navigate(`${BASE}/new`)}
+            onCreate={canManage ? () => navigate(`${BASE}/new`) : undefined}
             layout={desktop ? 'desktop' : 'mobile'}
           />
         }
       />
-      <Route path="new" element={<ExerciseFormScreen mode="create" onCancel={() => navigate(BASE)} onSubmit={create} />} />
+      <Route
+        path="new"
+        element={canManage ? <ExerciseFormScreen mode="create" onCancel={() => navigate(BASE)} onSubmit={create} /> : <Navigate to={BASE} replace />}
+      />
       <Route
         path=":id"
         element={
@@ -73,7 +87,7 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
                 exercise={ex}
                 backLabel={desktop ? 'Все упражнения' : 'Упражнения'}
                 onBack={() => navigate(BASE)}
-                onEdit={() => navigate(`${BASE}/${ex.id}/edit`)}
+                onEdit={canManage ? () => navigate(`${BASE}/${ex.id}/edit`) : undefined}
                 onOpenHistory={() => {
                   setSort('new');
                   navigate(`${BASE}/${ex.id}/history`);
@@ -88,9 +102,19 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
         element={
           <Exercise
             items={items}
-            render={(ex) => (
-              <ExerciseFormScreen mode="edit" exercise={ex} onCancel={() => navigate(`${BASE}/${ex.id}`)} onSubmit={(d) => save(ex.id, d)} />
-            )}
+            render={(ex) =>
+              canManage ? (
+                <ExerciseFormScreen
+                  mode="edit"
+                  exercise={ex}
+                  onCancel={() => navigate(`${BASE}/${ex.id}`)}
+                  onSubmit={(d) => save(ex, d)}
+                  onDelete={() => remove(ex.id)}
+                />
+              ) : (
+                <Navigate to={`${BASE}/${ex.id}`} replace />
+              )
+            }
           />
         }
       />

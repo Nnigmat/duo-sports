@@ -1,3 +1,4 @@
+import type { SessionResult } from '../../../../shared/types';
 /** Запросы фичи к серверу. Компоненты их не вызывают: контейнер сверху передаёт колбэки. */
 
 export interface UploadedVideo {
@@ -18,4 +19,19 @@ export async function uploadVideo(blob: Blob): Promise<UploadedVideo> {
     throw new Error(error ?? `Сервер ответил ${res.status}`);
   }
   return res.json();
+}
+
+/** Записать итог тренировки: день плана после этого отмечается выполненным. */
+export async function saveSession(workoutId: string, result: SessionResult): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/workouts/${encodeURIComponent(workoutId)}/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(result),
+    });
+  } catch {
+    throw new Error('Нет связи с сервером: итоги не сохранены, нажмите «Завершить» ещё раз');
+  }
+  if (!res.ok) throw new Error(res.status === 401 ? 'Сессия закончилась: войдите заново' : `Итоги не сохранены: сервер ответил ${res.status}`);
 }

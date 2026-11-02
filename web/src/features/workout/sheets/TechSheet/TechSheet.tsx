@@ -12,7 +12,7 @@ import { SegmentedControl } from "../../../../ui/SegmentedControl/SegmentedContr
 import { Sheet } from "../../../../ui/Sheet/Sheet";
 import { Text } from "../../../../ui/Text/Text";
 import { Chibi } from "../../chibi/Chibi";
-import { formatCommentDate } from "../../flow";
+import { formatCommentDate, hasTechnique } from "../../flow";
 import styles from "./TechSheet.module.css";
 
 type Props = {
@@ -80,61 +80,78 @@ function TechBody({
   // Смена key перезапускает CSS-анимацию с начала
   const [run, setRun] = useState(0);
 
+  const filled = hasTechnique(technique);
+
   return (
     <>
-      <SegmentedControl
-        label="Формат"
-        value={format}
-        onChange={setFormat}
-        options={[
-          { value: "animation", label: "Анимация" },
-          { value: "video", label: "Видео" },
-        ]}
-      />
+      {filled && (
+        <>
+          <SegmentedControl
+            label="Формат"
+            value={format}
+            onChange={setFormat}
+            options={[
+              { value: "animation", label: "Анимация" },
+              { value: "video", label: "Видео" },
+            ]}
+          />
 
-      <div className={styles.media}>
-        {format === "animation" ? (
-          <>
-            <Chibi
-              key={run}
-              pose={pose}
-              size={196}
-              speed={0.5}
-              paused={paused}
-              className={styles.chibi}
-            />
-            <span className={styles.speed}>Замедленно · 0,5×</span>
-            <div className={styles.controls}>
-              <IconButton
-                icon="replay"
-                aria-label="Повторить"
-                onClick={() => {
-                  setRun((n) => n + 1);
-                  setPaused(false);
-                }}
-              />
-              <IconButton
-                icon={paused ? "play" : "pause"}
-                aria-label={paused ? "Продолжить" : "Пауза"}
-                onClick={() => setPaused((p) => !p)}
-              />
-            </div>
-          </>
-        ) : technique.videoUrl ? (
-          <video
-            className={styles.video}
-            src={technique.videoUrl}
-            controls
-            playsInline
-          >
-            <track kind="captions" />
-          </video>
-        ) : (
-          <Text variant="body-sm" color="slate" className={styles.empty}>
-            Видео к этому упражнению пока нет
+          <div className={styles.media}>
+            {format === "animation" ? (
+              <>
+                <Chibi
+                  key={run}
+                  pose={pose}
+                  size={196}
+                  speed={0.5}
+                  paused={paused}
+                  className={styles.chibi}
+                />
+                <span className={styles.speed}>Замедленно · 0,5×</span>
+                <div className={styles.controls}>
+                  <IconButton
+                    icon="replay"
+                    aria-label="Повторить"
+                    onClick={() => {
+                      setRun((n) => n + 1);
+                      setPaused(false);
+                    }}
+                  />
+                  <IconButton
+                    icon={paused ? "play" : "pause"}
+                    aria-label={paused ? "Продолжить" : "Пауза"}
+                    onClick={() => setPaused((p) => !p)}
+                  />
+                </div>
+              </>
+            ) : technique.videoUrl ? (
+              <video
+                className={styles.video}
+                src={technique.videoUrl}
+                controls
+                playsInline
+              >
+                <track kind="captions" />
+              </video>
+            ) : (
+              <Text variant="body-sm" color="slate" className={styles.empty}>
+                Видео к этому упражнению пока нет
+              </Text>
+            )}
+          </div>
+        </>
+      )}
+
+      {!filled && (
+        <div className={styles.blank}>
+          <Text variant="h3" tag="p">
+            Описания пока нет
           </Text>
-        )}
-      </div>
+          <Text variant="body-sm" color="slate">
+            Тренер или админ добавят его в разделе «Упражнения»
+          </Text>
+        </div>
+      )}
 
       {comment && (
         <Card onClick={onOpenComments} className={styles.note}>
