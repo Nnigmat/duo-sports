@@ -82,7 +82,7 @@ export function scheduleOf(db: Db, userId: number, today: string, from: string):
 export type MoveResult = { ok: true } | { ok: false; error: 'not_found' | 'bad_target' };
 
 /** Переносит тренировку из дня `from` в `to`; в целевом дне остальные тренировки сохраняются */
-export function moveEntry(db: Db, userId: number, today: string, from: string, to: string): MoveResult {
+export function moveEntry(db: Db, userId: number, today: string, from: string, to: string, clock: () => Date = () => new Date()): MoveResult {
   return db.transaction((): MoveResult => {
     if (to === from || to < today) return { ok: false, error: 'bad_target' };
     const mine = planRows(db, userId).find((r) => r.date === from && !isHandled(db, userId, from, r.workout_id));
@@ -90,6 +90,11 @@ export function moveEntry(db: Db, userId: number, today: string, from: string, t
     // Если та же тренировка уже стоит в целевом дне, запись из исходного просто убираем
     db.prepare('INSERT OR IGNORE INTO plan_entries (user_id, date, workout_id, import_id) SELECT user_id, ?, workout_id, import_id FROM plan_entries WHERE user_id = ? AND date = ? AND workout_id = ?').run(to, userId, from, mine.workout_id);
     db.prepare('DELETE FROM plan_entries WHERE user_id = ? AND date = ? AND workout_id = ?').run(userId, from, mine.workout_id);
+    // Помним первоначальный день: повторный перенос продолжает ту же запись, возврат домой стирает её
+    const chain = db.prepare('SELECT from_date FROM plan_moves WHERE user_id = ? AND workout_id = ? AND to_date = ?').get(userId, mine.workout_id, from) as { from_date: string } | undefined;
+    const origin = chain?.from_date ?? from;
+    if (chain) db.prepare('DELETE FROM plan_moves WHERE user_id = ? AND workout_id = ? AND from_date = ?').run(userId, mine.workout_id, origin);
+    if (origin !== to) db.prepare('INSERT OR REPLACE INTO plan_moves (user_id, workout_id, from_date, to_date, created_at) VALUES (?, ?, ?, ?, ?)').run(userId, mine.workout_id, origin, to, clock().toISOString());
     return { ok: true };
   })();
 }

@@ -1,4 +1,4 @@
-import type { CommitBlock, PlanEntry, PlanResponse, PlanTemplate, PlanTone } from '../shared/types';
+import type { CommitBlock, PlanEntry, PlanMove, PlanResponse, PlanTemplate, PlanTone } from '../shared/types';
 import type { Db } from './db';
 
 const TONES: PlanTone[] = ['primary', 'teal', 'amber', 'slate'];
@@ -31,7 +31,12 @@ export function planOf(db: Db, userId: number): PlanResponse {
     if (!main) entries[r.date] = { templateId: String(r.workout_id), status: statusOf(r), custom: true };
     else (main.more ??= []).push(titles.get(r.workout_id) ?? '');
   }
-  return { templates: workouts.map(template), entries };
+  const moves = (
+    db
+      .prepare('SELECT m.workout_id, m.from_date, m.to_date FROM plan_moves m JOIN plan_entries e ON e.user_id = m.user_id AND e.date = m.to_date AND e.workout_id = m.workout_id WHERE m.user_id = ? ORDER BY m.from_date, m.workout_id')
+      .all(userId) as Array<{ workout_id: number; from_date: string; to_date: string }>
+  ).map((m): PlanMove => ({ templateId: String(m.workout_id), from: m.from_date, to: m.to_date }));
+  return { templates: workouts.map(template), entries, moves };
 }
 
 export type DayResult = { ok: true } | { ok: false; error: 'not_found' };
@@ -41,6 +46,7 @@ export function setDay(db: Db, userId: number, date: string, workoutId: number):
   return db.transaction((): DayResult => {
     if (!db.prepare('SELECT 1 FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, userId)) return { ok: false, error: 'not_found' };
     db.prepare('DELETE FROM plan_entries WHERE user_id = ? AND date = ?').run(userId, date);
+    db.prepare('DELETE FROM plan_moves WHERE user_id = ? AND to_date = ?').run(userId, date);
     db.prepare('INSERT INTO plan_entries (user_id, date, workout_id, import_id) VALUES (?, ?, ?, NULL)').run(userId, date, workoutId);
     return { ok: true };
   })();
@@ -48,4 +54,5 @@ export function setDay(db: Db, userId: number, date: string, workoutId: number):
 
 export function clearDay(db: Db, userId: number, date: string): void {
   db.prepare('DELETE FROM plan_entries WHERE user_id = ? AND date = ?').run(userId, date);
+  db.prepare('DELETE FROM plan_moves WHERE user_id = ? AND to_date = ?').run(userId, date);
 }

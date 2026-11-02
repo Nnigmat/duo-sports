@@ -3,7 +3,7 @@ import type { CommitBlock } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { applyImport } from './imports';
-import { planOf } from './plan';
+import { clearDay, planOf, setDay } from './plan';
 import { buildSchedule, moveEntry, rangeLabel, pausePlan, resumePlan, scheduleOf, skipEntry, unskipEntry } from './schedule';
 
 let db: Db;
@@ -151,6 +151,42 @@ describe('scheduleOf и moveEntry', () => {
     expect(moveEntry(db, me, '2026-11-02', '2026-11-02', '2026-11-01')).toEqual({ ok: false, error: 'bad_target' });
     expect(moveEntry(db, other, '2026-11-02', '2026-11-02', '2026-11-04')).toEqual({ ok: false, error: 'not_found' });
     expect(dates(me)).toHaveLength(1);
+  });
+});
+
+describe('перенос помнит исходный день', () => {
+  const moves = (userId = me) => planOf(db, userId).moves;
+  const wid = () => planOf(db, me).templates[0]!.id;
+  it('перенос записывает исходную и новую дату', () => {
+    seed(me, [{ date: '2026-11-04', workout: 0 }]);
+    moveEntry(db, me, '2026-11-02', '2026-11-04', '2026-11-06');
+    expect(moves()).toEqual([{ templateId: wid(), from: '2026-11-04', to: '2026-11-06' }]);
+    expect(moves(other)).toEqual([]);
+  });
+  it('повторный перенос сохраняет самую первую дату', () => {
+    seed(me, [{ date: '2026-11-04', workout: 0 }]);
+    moveEntry(db, me, '2026-11-02', '2026-11-04', '2026-11-06');
+    moveEntry(db, me, '2026-11-02', '2026-11-06', '2026-11-09');
+    expect(moves()).toEqual([{ templateId: wid(), from: '2026-11-04', to: '2026-11-09' }]);
+  });
+  it('возврат на исходный день стирает перенос', () => {
+    seed(me, [{ date: '2026-11-04', workout: 0 }]);
+    moveEntry(db, me, '2026-11-02', '2026-11-04', '2026-11-06');
+    moveEntry(db, me, '2026-11-02', '2026-11-06', '2026-11-04');
+    expect(moves()).toEqual([]);
+  });
+  it('перенос исчезает, если тренировку с нового дня убрали', () => {
+    seed(me, [{ date: '2026-11-04', workout: 0 }]);
+    moveEntry(db, me, '2026-11-02', '2026-11-04', '2026-11-06');
+    clearDay(db, me, '2026-11-06');
+    expect(moves()).toEqual([]);
+    setDay(db, me, '2026-11-06', Number(wid()));
+    expect(moves()).toEqual([]);
+  });
+  it('перенос в день, где та же тренировка уже стоит, тоже запоминается', () => {
+    seed(me, [{ date: '2026-11-04', workout: 0 }, { date: '2026-11-06', workout: 0 }]);
+    moveEntry(db, me, '2026-11-02', '2026-11-04', '2026-11-06');
+    expect(moves()).toEqual([{ templateId: wid(), from: '2026-11-04', to: '2026-11-06' }]);
   });
 });
 

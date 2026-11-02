@@ -121,6 +121,15 @@ CREATE TABLE IF NOT EXISTS reviews (
   reviewer_id INTEGER NOT NULL REFERENCES users(id),
   reviewed_at TEXT NOT NULL
 );
+-- Перенос тренировки: первоначальный день и день, где она стоит сейчас
+CREATE TABLE IF NOT EXISTS plan_moves (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workout_id INTEGER NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
+  from_date TEXT NOT NULL,
+  to_date TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, workout_id, from_date)
+);
 CREATE TABLE IF NOT EXISTS plan_entries (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,

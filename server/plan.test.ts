@@ -29,7 +29,7 @@ beforeEach(async () => {
 
 describe('planOf', () => {
   it('пустой план у нового пользователя', () => {
-    expect(planOf(db, me)).toEqual({ templates: [], entries: {} });
+    expect(planOf(db, me)).toEqual({ templates: [], entries: {}, moves: [] });
   });
   it('тренировки становятся шаблонами с упражнениями и оценкой длительности', () => {
     importTwo(me);
@@ -48,7 +48,7 @@ describe('planOf', () => {
   });
   it('чужой план не виден', () => {
     importTwo(me);
-    expect(planOf(db, other)).toEqual({ templates: [], entries: {} });
+    expect(planOf(db, other)).toEqual({ templates: [], entries: {}, moves: [] });
   });
   it('оценка длительности кратна пяти и не меньше 15', () => {
     expect([0, 1, 3, 4, 10].map(estimateMinutes)).toEqual([15, 15, 25, 30, 60]);
