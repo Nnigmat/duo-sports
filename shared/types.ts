@@ -480,6 +480,36 @@ export interface AwaitingReview {
   videos: number;
 }
 
+// ── Кабинет тренера ───────────────────────────────────────
+
+export type AthleteStatus = 'review' | 'inactive' | 'ok';
+
+/** Строка списка учеников */
+export interface AthleteRow {
+  id: number;
+  name: string;
+  email: string;
+  /** Цель, которую задал тренер: «Сила»; null — не задана */
+  goal: string | null;
+  lastSession: { date: string; title: string } | null;
+  /** Тренировок за последние 7 дней и сколько стояло в плане */
+  done7: number;
+  planned7: number;
+  /** review — есть неразобранные тренировки с видео или с заметками; inactive — 7 дней без тренировок; иначе ok */
+  status: AthleteStatus;
+  waitingSessions: number;
+  waitingVideos: number;
+  /** Дней с последней тренировки; null — тренировок не было */
+  daysSinceLast: number | null;
+}
+
+/** Ответ GET /api/trainer/athletes?date=&filter=&q= */
+export interface AthleteListResponse {
+  athletes: AthleteRow[];
+  /** Сколько учеников в каждом фильтре, не зависит от выбранного фильтра и поиска */
+  counts: Record<'all' | AthleteStatus, number>;
+}
+
 // ── Перенос тренировки ──
 
 export type ScheduleTarget = { date: string; weekday: string; day: string; busy?: string };

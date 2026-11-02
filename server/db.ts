@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('athlete', 'trainer', 'admin')),
   password_changed_at TEXT,
+  goal TEXT,
   created_at TEXT NOT NULL
 );
 -- Тренер видит только своих учеников; связь создаёт админ
@@ -235,6 +236,7 @@ function migrate(db: Db) {
   const columns = (table: string) => (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name);
   if (!columns('sessions_done').includes('duration_sec')) db.exec('ALTER TABLE sessions_done ADD COLUMN duration_sec INTEGER');
   if (!columns('workouts').includes('structure')) db.exec('ALTER TABLE workouts ADD COLUMN structure TEXT');
+  if (!columns('users').includes('goal')) db.exec('ALTER TABLE users ADD COLUMN goal TEXT');
   if (!columns('comments').includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id INTEGER REFERENCES sessions_done(id) ON DELETE CASCADE');
   if (!columns('comments').includes('timecode_sec')) db.exec('ALTER TABLE comments ADD COLUMN timecode_sec INTEGER');
   db.exec('CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at); CREATE INDEX IF NOT EXISTS comments_session ON comments(session_id)');

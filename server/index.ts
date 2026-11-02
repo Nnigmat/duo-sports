@@ -11,6 +11,7 @@ import { reviewRouter } from './reviewRouter';
 import { workoutRouter } from './workoutRouter';
 import { scheduleRouter } from './scheduleRouter';
 import { todayRouter } from './todayRouter';
+import { trainerRouter } from './trainerRouter';
 import { videosRouter } from './videos';
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api', planRouter(db));
 app.use('/api', workoutRouter(db));
 app.use('/api', todayRouter(db));
 app.use('/api', reviewRouter(db));
+app.use('/api', trainerRouter(db));
 app.use('/api', achievementsRouter(db));
 app.use('/api', scheduleRouter(db));
 app.use('/api', videosRouter({ db, dir: path.join(dataDir, 'videos'), maxBytes: 300 * 1024 * 1024 }));
