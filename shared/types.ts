@@ -458,6 +458,8 @@ export interface SessionReviewResponse {
 
 /** Ответ GET /api/videos/:id/review: видео и комментарии к нему */
 export interface VideoReviewResponse {
+  /** Чьё видео: ему адресуются ответы */
+  athleteId: number;
   video: { id: string; durationSec: number; exerciseName: string; /** «Подход 4 · 80 кг × 5» */ label: string; sessionId: number | null };
   comments: ReviewComment[];
 }

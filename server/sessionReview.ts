@@ -143,7 +143,7 @@ export function videoReviewOf(db: Db, viewer: Viewer, videoId: string): VideoRev
   const rows = db.prepare(`SELECT ${COMMENT_COLUMNS} FROM comments WHERE video_id = ? ORDER BY timecode_sec IS NULL, timecode_sec, created_at, id`).all(videoId) as CommentRow[];
   const comments = rows.map((r) => toComment(r, viewer.id));
   db.prepare('UPDATE comments SET seen_at = ? WHERE video_id = ? AND author_id <> ? AND seen_at IS NULL').run(new Date().toISOString(), videoId, viewer.id);
-  return { ok: true, review: { video: { id: videoId, durationSec: v.duration_sec, exerciseName, label, sessionId: v.session_id }, comments } };
+  return { ok: true, review: { athleteId: v.athlete_id, video: { id: videoId, durationSec: v.duration_sec, exerciseName, label, sessionId: v.session_id }, comments } };
 }
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];

@@ -119,6 +119,7 @@ describe('videoReviewOf', () => {
     addComment(db, T(), athlete, { videoId: V, timecodeSec: 9, text: 'Глубина отличная' }, at('2026-11-01T19:30:00Z'));
     const r = videoReviewOf(db, A(), V);
     if (!r.ok) throw new Error(r.error);
+    expect(r.review.athleteId).toBe(athlete);
     expect(r.review.video).toEqual({ id: V, durationSec: 38, exerciseName: 'Приседания со штангой', label: `Подход 4 · 80${NB}кг × 5`, sessionId: sid });
     expect(r.review.comments.map((c) => c.timecodeSec)).toEqual([9, 21]);
   });
