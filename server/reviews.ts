@@ -1,5 +1,6 @@
 import type { Role } from '../shared/types';
 import type { Db } from './db';
+import { notifyReview } from './notifications';
 import { canAccessAthlete } from './trainerLinks';
 
 type Clock = () => Date;
@@ -20,7 +21,11 @@ export function markReviewed(db: Db, reviewer: { id: number; role: Role }, sessi
   const s = db.prepare('SELECT user_id FROM sessions_done WHERE id = ?').get(sessionId) as { user_id: number } | undefined;
   if (!s) return { ok: false, error: 'not_found' };
   if (reviewer.role === 'athlete' || !canAccessAthlete(db, reviewer, s.user_id)) return { ok: false, error: 'forbidden' };
-  db.prepare('INSERT OR IGNORE INTO reviews (session_id, reviewer_id, reviewed_at) VALUES (?, ?, ?)').run(sessionId, reviewer.id, clock().toISOString());
+  // Уведомляем только при первой отметке, иначе повтор шлёт спортсмену второе уведомление
+  db.transaction(() => {
+    const inserted = db.prepare('INSERT OR IGNORE INTO reviews (session_id, reviewer_id, reviewed_at) VALUES (?, ?, ?)').run(sessionId, reviewer.id, clock().toISOString()).changes;
+    if (inserted === 1) notifyReview(db, s.user_id, sessionId, clock);
+  })();
   return { ok: true };
 }
 

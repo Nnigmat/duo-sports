@@ -142,6 +142,17 @@ CREATE TABLE IF NOT EXISTS workout_hints (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS workout_hints_athlete ON workout_hints(athlete_id, workout_id);
+-- Уведомления: пока только «Тренер разобрал тренировку». read_at гасит точку, dismissed_at прячет карточку
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('review')),
+  session_id INTEGER REFERENCES sessions_done(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  read_at TEXT,
+  dismissed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS notifications_user ON notifications(user_id, created_at);
 CREATE TABLE IF NOT EXISTS plan_entries (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
