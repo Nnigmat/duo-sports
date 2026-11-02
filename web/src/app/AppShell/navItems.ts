@@ -6,17 +6,15 @@ export type NavItem = {
   icon: IconName;
 };
 
-export const navItems: NavItem[] = [
-  { to: '/', label: 'Сегодня', icon: 'play' },
-  { to: '/plan', label: 'План', icon: 'target' },
-  { to: '/exercises', label: 'Упражнения', icon: 'kettlebell' },
-  { to: '/progress/achievements', label: 'Прогресс', icon: 'trophy' },
-  { to: '/profile', label: 'Профиль', icon: 'duo' },
-];
+const today: NavItem = { to: '/', label: 'Сегодня', icon: 'play' };
+const plan: NavItem = { to: '/plan', label: 'План', icon: 'target' };
+const exercises: NavItem = { to: '/exercises', label: 'Упражнения', icon: 'kettlebell' };
+const stats: NavItem = { to: '/progress/achievements', label: 'Статистика', icon: 'trophy' };
+const imports: NavItem = { to: '/import', label: 'Импорт', icon: 'upload' };
+const profile: NavItem = { to: '/profile', label: 'Профиль', icon: 'duo' };
 
-/** Только в боковой панели: на мобильной нижней панели мест мало */
-export const sideNavItems: NavItem[] = [
-  ...navItems.slice(0, 4),
-  { to: '/import', label: 'Импорт', icon: 'upload' },
-  ...navItems.slice(4),
-];
+/** Нижняя панель на телефоне: четыре пункта, как в макете */
+export const navItems: NavItem[] = [today, plan, stats, profile];
+
+/** Боковая панель: места больше, поэтому здесь ещё «Упражнения» и «Импорт» */
+export const sideNavItems: NavItem[] = [today, plan, exercises, stats, imports, profile];
