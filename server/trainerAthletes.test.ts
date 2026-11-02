@@ -3,7 +3,9 @@ import { createUser } from './auth';
 import { addComment } from './comments';
 import { openDb, type Db } from './db';
 import { markReviewed } from './reviews';
-import { listAthletes, setGoal } from './trainerAthletes';
+import type { Role } from '../shared/types';
+import { moveEntry } from './schedule';
+import { exerciseCommentsOf, listAthletes, sessionsOf, setGoal } from './trainerAthletes';
 import { linkAthlete } from './trainerLinks';
 
 let db: Db;
@@ -15,6 +17,7 @@ let alexey: number;
 let dmitry: number;
 const TODAY = '2026-11-02';
 const V = '11111111-1111-4111-8111-111111111111';
+const V2 = '22222222-2222-4222-8222-222222222222';
 const T = () => ({ id: trainer, role: 'trainer' as const });
 
 const session = (user: number, date: string, title = 'Всё тело') =>
@@ -85,7 +88,7 @@ describe('listAthletes', () => {
   });
   it('старше двух недель в ожидание не попадает', () => {
     session(dmitry, '2026-10-10');
-    video(dmitry, (db.prepare("SELECT id FROM sessions_done WHERE user_id = ? AND date = '2026-10-10'").get(dmitry) as { id: number }).id, '22222222-2222-4222-8222-222222222222');
+    video(dmitry, (db.prepare("SELECT id FROM sessions_done WHERE user_id = ? AND date = '2026-10-10'").get(dmitry) as { id: number }).id, V2);
     expect(list().athletes.find((a) => a.name === 'Dmitry')!.waitingSessions).toBe(0);
   });
   it('новый ученик без тренировок не «пропадает» в первую неделю', async () => {
@@ -113,5 +116,79 @@ describe('setGoal', () => {
     expect(setGoal(db, { id: nikita, role: 'athlete' }, nikita, 'x')).toEqual({ ok: false, error: 'forbidden' });
     expect(setGoal(db, T(), 999, 'x')).toEqual({ ok: false, error: 'not_found' });
     expect(setGoal(db, T(), nikita, 'я'.repeat(81))).toEqual({ ok: false, error: 'too_long' });
+  });
+});
+
+describe('sessionsOf: вкладка «Тренировки»', () => {
+  const blocks = JSON.stringify([{ kind: 'exercises', heading: 'Основа', items: [{ name: 'Присед', value: '4 × 5' }, { name: 'Тяга', value: '3 × 10' }] }]);
+  const wk = (title: string) => Number(db.prepare('INSERT INTO workouts (user_id, title, blocks, created_at) VALUES (?, ?, ?, ?)').run(nikita, title, blocks, 'x').lastInsertRowid);
+  const entry = (date: string, w: number) => db.prepare('INSERT INTO plan_entries (user_id, date, workout_id) VALUES (?, ?, ?)').run(nikita, date, w);
+  const view = (viewer: { id: number; role: Role } = T()) => {
+    const r = sessionsOf(db, viewer, nikita, TODAY);
+    if (!r.ok) throw new Error(r.error);
+    return r.sessions;
+  };
+  it('запланированные с сегодня по порядку, выполненные и прошлые не в плане', () => {
+    const legs = wk('Ноги');
+    const upper = wk('Верх');
+    entry('2026-11-05', legs);
+    entry('2026-11-02', upper);
+    entry('2026-10-20', upper);
+    expect(view().planned.map((p) => [p.date, p.title, p.kind, p.exerciseCount])).toEqual([['2026-11-02', 'Верх', 'planned', 2], ['2026-11-05', 'Ноги', 'planned', 2]]);
+  });
+  it('перенос: на старом дне «перенесена», на новом «со дня»', () => {
+    const cardio = wk('Кардио');
+    entry('2026-11-04', cardio);
+    moveEntry(db, nikita, TODAY, '2026-11-04', '2026-11-06');
+    expect(view().planned).toEqual([
+      { kind: 'moved', date: '2026-11-04', workoutId: cardio, title: 'Кардио', exerciseCount: 2, movedTo: '2026-11-06' },
+      { kind: 'planned', date: '2026-11-06', workoutId: cardio, title: 'Кардио', exerciseCount: 2, movedFrom: '2026-11-04' },
+    ]);
+  });
+  it('история: свежие первыми, с видео, разбором и новыми ответами ученика', () => {
+    const sid = (db.prepare('SELECT id FROM sessions_done WHERE user_id = ?').get(nikita) as { id: number }).id;
+    addComment(db, { id: nikita, role: 'athlete' }, nikita, { sessionId: sid, text: 'Плохо спал' });
+    const older = session(nikita, '2026-10-26', 'Верх тела');
+    markReviewed(db, T(), older, () => new Date('2026-10-27T10:00:00Z'));
+    const h = view().history;
+    expect(h.map((x) => [x.title, x.videos, x.reviewedAt, x.newFromAthlete])).toEqual([['Всё тело', 1, null, 1], ['Верх тела', 0, '2026-10-27T10:00:00.000Z', 0]]);
+  });
+  it('история помнит, откуда перенесена тренировка', () => {
+    const w = wk('Ноги');
+    entry('2026-10-29', w);
+    moveEntry(db, nikita, '2026-10-28', '2026-10-29', '2026-10-31');
+    db.prepare("INSERT INTO sessions_done (user_id, workout_id, title, date, finished_at, steps, videos) VALUES (?, ?, 'Ноги', '2026-10-31', 'x', '[]', 0)").run(nikita, w);
+    expect(view().history.find((x) => x.date === '2026-10-31')!.movedFrom).toBe('2026-10-29');
+  });
+  it('доступ только тренеру ученика', () => {
+    expect(sessionsOf(db, { id: otherTrainer, role: 'trainer' }, nikita, TODAY)).toEqual({ ok: false, error: 'forbidden' });
+    expect(sessionsOf(db, { id: nikita, role: 'athlete' }, nikita, TODAY)).toEqual({ ok: false, error: 'forbidden' });
+    expect(sessionsOf(db, T(), 999, TODAY)).toEqual({ ok: false, error: 'not_found' });
+  });
+});
+
+describe('exerciseCommentsOf: прошлые комментарии по упражнению', () => {
+  beforeEach(() => {
+    db.prepare("INSERT INTO exercises (slug, name, aliases, kind, group_id, created_at) VALUES ('deadlift', 'Становая тяга', '[\"тяга\"]', 'weight', 'back', 'x')").run();
+  });
+  it('комментарии тренера по упражнению, свежие первыми, с датой тренировки; ответы ученика и чужие не в счёт', () => {
+    const a = session(nikita, '2026-10-24');
+    video(nikita, a, V2);
+    const at = (iso: string) => () => new Date(iso);
+    addComment(db, T(), nikita, { exerciseId: 'deadlift', text: 'Спина ровная' }, at('2026-10-12T10:00:00Z'));
+    addComment(db, T(), nikita, { videoId: V2, timecodeSec: 12, exerciseId: 'deadlift', text: 'Гриф уходит вперёд' }, at('2026-10-25T10:00:00Z'));
+    addComment(db, { id: nikita, role: 'athlete' }, nikita, { exerciseId: 'deadlift', text: 'Понял' }, at('2026-10-26T10:00:00Z'));
+    addComment(db, T(), alexey, { exerciseId: 'deadlift', text: 'Чужому ученику' }, at('2026-10-27T10:00:00Z'));
+    const r = exerciseCommentsOf(db, T(), nikita, 'становая ТЯГА');
+    if (!r.ok) throw new Error(r.error);
+    expect(r.comments.map((c) => [c.date, c.timecodeSec, c.text])).toEqual([['2026-10-24', 12, 'Гриф уходит вперёд'], ['2026-10-12', null, 'Спина ровная']]);
+  });
+  it('exclude убирает комментарии выбранной тренировки; чужой тренер — нет', () => {
+    const a = session(nikita, '2026-10-24');
+    video(nikita, a, V2);
+    addComment(db, T(), nikita, { videoId: V2, timecodeSec: 12, exerciseId: 'deadlift', text: 'Гриф' });
+    const r = exerciseCommentsOf(db, T(), nikita, 'Становая тяга', a);
+    expect(r).toEqual({ ok: true, comments: [] });
+    expect(exerciseCommentsOf(db, { id: otherTrainer, role: 'trainer' }, nikita, 'Становая тяга')).toEqual({ ok: false, error: 'forbidden' });
   });
 });

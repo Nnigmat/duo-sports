@@ -510,6 +510,50 @@ export interface AthleteListResponse {
   counts: Record<'all' | AthleteStatus, number>;
 }
 
+/** Запись плана ученика для тренера: «Запланирована» или «Перенесена» (серый пунктир на старом дне) */
+export interface TrainerPlanItem {
+  kind: 'planned' | 'moved';
+  date: string;
+  workoutId: number;
+  title: string;
+  exerciseCount: number;
+  /** kind = planned: перенесена сюда с этого дня */
+  movedFrom?: string;
+  /** kind = moved: теперь стоит на этом дне */
+  movedTo?: string;
+}
+
+export interface TrainerHistoryItem {
+  sessionId: number;
+  date: string;
+  title: string;
+  durationSec: number | null;
+  volumeKg: number;
+  setsDone: number;
+  videos: number;
+  /** ISO-время разбора; null — ждёт разбора */
+  reviewedAt: string | null;
+  /** Сколько написал ученик, чего тренер ещё не открывал */
+  newFromAthlete: number;
+  /** Тренировка перенесена на этот день с этого */
+  movedFrom?: string;
+}
+
+/** Ответ GET /api/trainer/athletes/:id/sessions?date= */
+export interface AthleteSessionsResponse {
+  planned: TrainerPlanItem[];
+  history: TrainerHistoryItem[];
+}
+
+/** Прошлый комментарий тренера к упражнению ученика */
+export interface ExerciseCommentItem {
+  id: string;
+  /** День тренировки, а без неё — день комментария */
+  date: string;
+  timecodeSec: number | null;
+  text: string;
+}
+
 // ── Перенос тренировки ──
 
 export type ScheduleTarget = { date: string; weekday: string; day: string; busy?: string };

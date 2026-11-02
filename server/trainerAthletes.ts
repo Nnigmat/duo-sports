@@ -1,7 +1,9 @@
-import type { AthleteListResponse, AthleteRow, AthleteStatus, Role } from '../shared/types';
+import type { AthleteListResponse, AthleteRow, AthleteSessionsResponse, AthleteStatus, CommitBlock, ExerciseCommentItem, Role, SessionStepResult, TrainerHistoryItem, TrainerPlanItem } from '../shared/types';
+import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
+import { planOf } from './plan';
 import { AWAITING_DAYS } from './sessionReview';
-import { addDays, userNameOf } from './today';
+import { addDays, doneSets, sessionVolume, userNameOf } from './today';
 import { canAccessAthlete } from './trainerLinks';
 
 type Viewer = { id: number; role: Role };
@@ -80,4 +82,78 @@ export function setGoal(db: Db, viewer: Viewer, athleteId: number, goal: string)
   if (g.length > MAX_GOAL_LENGTH) return { ok: false, error: 'too_long' };
   db.prepare('UPDATE users SET goal = ? WHERE id = ?').run(g || null, athleteId);
   return { ok: true };
+}
+
+type Access = { ok: true } | { ok: false; error: 'not_found' | 'forbidden' };
+
+/** Тренер (или админ) и существующий ученик */
+function athleteAccess(db: Db, viewer: Viewer, athleteId: number): Access {
+  if (!db.prepare("SELECT 1 FROM users WHERE id = ? AND role = 'athlete'").get(athleteId)) return { ok: false, error: 'not_found' };
+  if (viewer.role === 'athlete' || !canAccessAthlete(db, viewer, athleteId)) return { ok: false, error: 'forbidden' };
+  return { ok: true };
+}
+
+export type SessionsResult = { ok: true; sessions: AthleteSessionsResponse } | { ok: false; error: 'not_found' | 'forbidden' };
+
+/** Вкладка «Тренировки»: что стоит в плане с сегодняшнего дня и история выполненных, свежие первыми */
+export function sessionsOf(db: Db, viewer: Viewer, athleteId: number, today: string, historyLimit = 60): SessionsResult {
+  const access = athleteAccess(db, viewer, athleteId);
+  if (!access.ok) return access;
+  const moves = planOf(db, athleteId).moves;
+  const workouts = new Map(
+    (db.prepare('SELECT id, title, blocks FROM workouts WHERE user_id = ?').all(athleteId) as Array<{ id: number; title: string; blocks: string }>).map((w) => [w.id, { title: w.title, count: (JSON.parse(w.blocks) as CommitBlock[]).reduce((n, b) => n + b.items.length, 0) }]),
+  );
+  const info = (id: number) => workouts.get(id) ?? { title: '', count: 0 };
+
+  const entries = db
+    .prepare(
+      `SELECT e.date, e.workout_id FROM plan_entries e WHERE e.user_id = ? AND e.date >= ?
+         AND NOT EXISTS (SELECT 1 FROM sessions_done s WHERE s.user_id = e.user_id AND s.date = e.date AND s.workout_id = e.workout_id)
+       ORDER BY e.date, e.workout_id`,
+    )
+    .all(athleteId, today) as Array<{ date: string; workout_id: number }>;
+  const planned: TrainerPlanItem[] = entries.map((e) => {
+    const from = moves.find((m) => m.to === e.date && m.templateId === String(e.workout_id))?.from;
+    return { kind: 'planned', date: e.date, workoutId: e.workout_id, title: info(e.workout_id).title, exerciseCount: info(e.workout_id).count, ...(from && { movedFrom: from }) };
+  });
+  for (const m of moves) {
+    if (m.from < today) continue;
+    const id = Number(m.templateId);
+    planned.push({ kind: 'moved', date: m.from, workoutId: id, title: info(id).title, exerciseCount: info(id).count, movedTo: m.to });
+  }
+  planned.sort((a, b) => a.date.localeCompare(b.date) || (a.kind === b.kind ? 0 : a.kind === 'moved' ? -1 : 1));
+
+  const rows = db
+    .prepare(
+      `SELECT s.id, s.workout_id, s.title, s.date, s.steps, s.duration_sec, r.reviewed_at,
+         (SELECT COUNT(*) FROM videos v WHERE v.session_id = s.id) AS videos,
+         (SELECT COUNT(*) FROM comments c WHERE c.session_id = s.id AND c.author_id = s.user_id AND c.seen_at IS NULL) AS fresh
+       FROM sessions_done s LEFT JOIN reviews r ON r.session_id = s.id WHERE s.user_id = ? ORDER BY s.date DESC, s.id DESC LIMIT ?`,
+    )
+    .all(athleteId, historyLimit) as Array<{ id: number; workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null; reviewed_at: string | null; videos: number; fresh: number }>;
+  const history: TrainerHistoryItem[] = rows.map((r) => {
+    const steps = JSON.parse(r.steps) as SessionStepResult[];
+    const from = r.workout_id === null ? undefined : moves.find((m) => m.to === r.date && m.templateId === String(r.workout_id))?.from;
+    return { sessionId: r.id, date: r.date, title: r.title, durationSec: r.duration_sec, volumeKg: sessionVolume(steps), setsDone: doneSets(steps), videos: r.videos, reviewedAt: r.reviewed_at, newFromAthlete: r.fresh, ...(from && { movedFrom: from }) };
+  });
+  return { ok: true, sessions: { planned, history } };
+}
+
+export type ExerciseCommentsResult = { ok: true; comments: ExerciseCommentItem[] } | { ok: false; error: 'not_found' | 'forbidden' };
+
+/** Что тренер раньше писал ученику по упражнению, свежие первыми. exclude — тренировка, которую смотрим сейчас. */
+export function exerciseCommentsOf(db: Db, viewer: Viewer, athleteId: number, exerciseName: string, excludeSessionId?: number): ExerciseCommentsResult {
+  const access = athleteAccess(db, viewer, athleteId);
+  if (!access.ok) return access;
+  const name = exerciseName.trim().toLowerCase();
+  const slug = libraryIndex(libraryOf(db)).get(name)?.slug ?? null;
+  const rows = db
+    .prepare(
+      `SELECT c.id, c.timecode_sec, c.text, COALESCE(s.date, substr(c.created_at, 1, 10)) AS date FROM comments c LEFT JOIN sessions_done s ON s.id = c.session_id
+       WHERE c.athlete_id = ? AND c.author_id <> c.athlete_id AND (lower(c.exercise_name) = ? OR (? IS NOT NULL AND c.exercise_slug = ?))
+         AND (? IS NULL OR c.session_id IS NULL OR c.session_id <> ?)
+       ORDER BY date DESC, c.id DESC`,
+    )
+    .all(athleteId, name, slug, slug, excludeSessionId ?? null, excludeSessionId ?? null) as Array<{ id: number; timecode_sec: number | null; text: string; date: string }>;
+  return { ok: true, comments: rows.map((r) => ({ id: String(r.id), date: r.date, timecodeSec: r.timecode_sec, text: r.text })) };
 }

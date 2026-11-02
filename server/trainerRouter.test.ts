@@ -67,3 +67,49 @@ describe('PUT /api/trainer/athletes/:id/goal', () => {
     expect(db.prepare('SELECT goal FROM users WHERE id = ?').get(nikita)).toEqual({ goal: 'Сила' });
   });
 });
+
+describe('карточка ученика', () => {
+  let sid: number;
+  let wid: number;
+  beforeEach(() => {
+    sid = Number(db.prepare("INSERT INTO sessions_done (user_id, title, date, finished_at, steps, videos) VALUES (?, 'Ноги', '2026-11-01', 'x', '[]', 0)").run(nikita).lastInsertRowid);
+    wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Верх', '[]', '[{\"id\":\"b\",\"mode\":\"timed\",\"title\":\"Р\",\"exercises\":[]}]', 'x')").run(nikita).lastInsertRowid);
+    db.prepare("INSERT INTO exercises (slug, name, kind, group_id, created_at) VALUES ('squat', 'Присед', 'weight', 'legs', 'x')").run();
+  });
+  const post = (path: string, cookie: string, body?: unknown) => call(path, cookie, { method: 'POST', ...(body ? { body: JSON.stringify(body) } : {}) });
+
+  it('sessions: 400 без даты, 403 чужому тренеру, 200 своему', async () => {
+    expect((await call(`/trainer/athletes/${nikita}/sessions`, coach)).status).toBe(400);
+    expect((await call(`/trainer/athletes/${nikita}/sessions?date=2026-11-02`, other)).status).toBe(403);
+    const ok = await call(`/trainer/athletes/${nikita}/sessions?date=2026-11-02`, coach);
+    expect(ok.status).toBe(200);
+    expect((await ok.json()).history.map((h: { sessionId: number }) => h.sessionId)).toEqual([sid]);
+    expect((await call('/trainer/athletes/999/sessions?date=2026-11-02', coach)).status).toBe(404);
+  });
+  it('exercise-comments: нужен exercise, exclude — число', async () => {
+    expect((await call(`/trainer/athletes/${nikita}/exercise-comments`, coach)).status).toBe(400);
+    expect((await call(`/trainer/athletes/${nikita}/exercise-comments?exercise=Присед&exclude=x`, coach)).status).toBe(400);
+    expect(await (await call(`/trainer/athletes/${nikita}/exercise-comments?exercise=${encodeURIComponent('Присед')}&exclude=${sid}`, coach)).json()).toEqual({ comments: [] });
+    expect((await call(`/trainer/athletes/${nikita}/exercise-comments?exercise=x`, other)).status).toBe(403);
+  });
+  it('состав тренировки ученика: свой тренер видит, чужой нет, чужой id — 404', async () => {
+    expect((await (await call(`/trainer/athletes/${nikita}/workouts/${wid}`, coach)).json()).title).toBe('Верх');
+    expect((await call(`/trainer/athletes/${nikita}/workouts/${wid}`, other)).status).toBe(403);
+    expect((await call(`/trainer/athletes/${nikita}/workouts/999`, coach)).status).toBe(404);
+  });
+  it('подсказка: 201, 400 на кривое, 403 чужому, 400 на неизвестное упражнение', async () => {
+    const body = { workoutId: wid, exerciseId: 'squat', text: 'Пауза внизу' };
+    expect((await post(`/trainer/athletes/${nikita}/hints`, coach, body)).status).toBe(201);
+    expect((await post(`/trainer/athletes/${nikita}/hints`, coach, { ...body, text: '' })).status).toBe(400);
+    expect((await post(`/trainer/athletes/${nikita}/hints`, other, body)).status).toBe(403);
+    expect((await post(`/trainer/athletes/${nikita}/hints`, coach, { ...body, exerciseId: 'nope' })).status).toBe(400);
+  });
+  it('разобрана: 204 тренеру ученика (дважды), 403 чужому, 404 несуществующей', async () => {
+    expect((await post(`/trainer/sessions/${sid}/reviewed`, other)).status).toBe(403);
+    expect((await post(`/trainer/sessions/${sid}/reviewed`, coach)).status).toBe(204);
+    expect((await post(`/trainer/sessions/${sid}/reviewed`, coach)).status).toBe(204);
+    expect((await post('/trainer/sessions/999/reviewed', coach)).status).toBe(404);
+    expect((await post(`/trainer/sessions/${sid}/reviewed`, athlete)).status).toBe(403);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM notifications').get()).toEqual({ n: 1 });
+  });
+});
