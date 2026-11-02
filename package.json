@@ -7,6 +7,7 @@
     "dev": "concurrently -k -n web,server -c cyan,green \"vite --config web/vite.config.ts\" \"tsx watch server/index.ts\"",
     "build": "tsc --noEmit && vite build --config web/vite.config.ts",
     "create-user": "tsx server/createUser.ts",
+    "link-user": "tsx server/linkUser.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
     "test": "vitest run --project unit",
     "storybook": "storybook dev -p 6006",

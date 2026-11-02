@@ -13,6 +13,13 @@ CREATE TABLE IF NOT EXISTS users (
   password_changed_at TEXT,
   created_at TEXT NOT NULL
 );
+-- Тренер видит только своих учеников; связь создаёт админ
+CREATE TABLE IF NOT EXISTS trainer_athletes (
+  trainer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  athlete_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (trainer_id, athlete_id)
+);
+CREATE INDEX IF NOT EXISTS trainer_athletes_athlete ON trainer_athletes(athlete_id);
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
