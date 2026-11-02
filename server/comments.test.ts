@@ -1,11 +1,14 @@
+import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Block } from '../shared/types';
 import { createUser } from './auth';
 import { addComment, commentRowsOf, commentsFor, libraryOf, techniqueOf, techniquesFor, validateComment, type LibraryRow } from './comments';
 import { openDb, type Db } from './db';
 import { applyImport, ensureLibrary } from './imports';
-import { workoutResponse } from './workouts';
+import { linkAthlete } from './trainerLinks';
+import { saveSession, workoutResponse } from './workouts';
 
+const V = '11111111-1111-4111-8111-111111111111';
 const clock = () => new Date('2026-11-03T10:00:00Z');
 const blocks: Block[] = [
   { id: 'b1', mode: 'sets', title: 'Подходами', restSec: 90, videoRounds: [], exercises: [
@@ -50,7 +53,14 @@ describe('комментарии для экрана', () => {
 
 describe('проверка тела', () => {
   it('принимает текст, режет пробелы', () => {
-    expect(validateComment({ text: ' Хорошо ', exerciseId: 'bench' })).toEqual({ ok: true, comment: { exerciseId: 'bench', text: 'Хорошо', videoId: undefined, videoLabel: undefined } });
+    expect(validateComment({ text: ' Хорошо ', exerciseId: 'bench' })).toEqual({ ok: true, comment: { exerciseId: 'bench', text: 'Хорошо' } });
+  });
+  it('цель: упражнение, тренировка или видео; таймкод только у видео', () => {
+    expect(validateComment({ text: 'a', sessionId: 4 }).ok).toBe(true);
+    expect(validateComment({ text: 'a', videoId: V, timecodeSec: 18 })).toMatchObject({ ok: true, comment: { videoId: V, timecodeSec: 18 } });
+    expect(validateComment({ text: 'a', exerciseId: 'bench', timecodeSec: 18 }).ok).toBe(false);
+    for (const t of [-1, 1.5, 3601, '5']) expect(validateComment({ text: 'a', videoId: V, timecodeSec: t }).ok).toBe(false);
+    for (const sid of [0, -1, 1.5, '4']) expect(validateComment({ text: 'a', sessionId: sid }).ok).toBe(false);
   });
   it('отвергает пустое, длинное и кривое', () => {
     expect(validateComment({ text: '  ' }).ok).toBe(false);
@@ -66,11 +76,16 @@ describe('проверка тела', () => {
 describe('база', () => {
   let db: Db;
   let athlete: number;
+  let stranger: number;
   let trainer: number;
+  let otherTrainer: number;
   beforeEach(async () => {
     db = openDb(':memory:');
     athlete = await createUser(db, 'a@example.com', 'trenirovka7', 'athlete', clock);
+    stranger = await createUser(db, 's@example.com', 'trenirovka7', 'athlete', clock);
     trainer = await createUser(db, 't@example.com', 'trenirovka7', 'trainer', clock);
+    otherTrainer = await createUser(db, 't2@example.com', 'trenirovka7', 'trainer', clock);
+    linkAthlete(db, trainer, athlete);
     applyImport(db, trainer, {
       exercises: [{ id: 'bench', name: 'Жим лёжа', aliases: [], muscles: [], kind: 'weight', group: 'chest', notes: '1. Лопатки сведены', video: '/v/b.mp4' }],
       workouts: [{ title: 'Служебная', blocks: [] }],
@@ -85,29 +100,91 @@ describe('база', () => {
     }, clock);
   });
   const wid = () => (db.prepare('SELECT id FROM workouts WHERE user_id = ?').get(athlete) as { id: number }).id;
+  const T = () => ({ id: trainer, role: 'trainer' as const });
+  const A = () => ({ id: athlete, role: 'athlete' as const });
+  /** Тренировка спортсмена с видео первого подхода */
+  const sessionWithVideo = () => {
+    db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, created_at) VALUES (?, ?, ?, 38, '2026-11-03T09:00:00Z')").run(V, athlete, `${V}.webm`);
+    const r = saveSession(db, athlete, wid(), {
+      date: '2026-11-03', videos: 1,
+      steps: [{ exerciseId: 'b1-e0', exerciseName: 'Жим лёжа', blockIndex: 0, round: 1, rounds: 3, kind: 'weight', plan: { target: { min: 8, max: 8 }, weight: 60 }, completed: true, videoId: V }],
+    }, clock);
+    if (!r.ok) throw new Error(r.error);
+    return r.id;
+  };
 
-  it('атлет не пишет комментарии', () => {
-    expect(addComment(db, { id: athlete, role: 'athlete' }, athlete, { exerciseId: 'bench', text: 'a' }, clock)).toEqual({ ok: false, error: 'forbidden' });
-  });
-  it('тренер пишет к упражнению; без упражнения, неизвестное упражнение и спортсмена отвергает', () => {
-    const t = { id: trainer, role: 'trainer' as const };
-    expect(addComment(db, t, athlete, { exerciseId: 'bench', text: 'Локти ближе' }, clock).ok).toBe(true);
-    expect(addComment(db, t, athlete, { exerciseId: 'nope', text: 'a' }, clock)).toEqual({ ok: false, error: 'unknown_exercise' });
-    expect(addComment(db, t, 999, { exerciseId: 'bench', text: 'a' }, clock)).toEqual({ ok: false, error: 'not_found' });
+  it('тренер пишет к упражнению; неизвестное упражнение и спортсмена отвергает', () => {
+    expect(addComment(db, T(), athlete, { exerciseId: 'bench', text: 'Локти ближе' }, clock).ok).toBe(true);
+    expect(addComment(db, T(), athlete, { exerciseId: 'nope', text: 'a' }, clock)).toEqual({ ok: false, error: 'unknown_exercise' });
+    expect(addComment(db, T(), 999, { exerciseId: 'bench', text: 'a' }, clock)).toEqual({ ok: false, error: 'not_found' });
     expect(commentRowsOf(db, athlete)).toHaveLength(1);
   });
-  it('ответ тренировки содержит комментарии и технику; «новое» видно один раз', () => {
-    addComment(db, { id: trainer, role: 'admin' }, athlete, { exerciseId: 'bench', text: 'Локти ближе', videoId: 'v1', videoLabel: 'Видео · круг 2' }, clock);
+  it('доступ: тренер только к своему ученику, админ ко всем, ученик только о себе', () => {
+    const c = { exerciseId: 'bench', text: 'a' };
+    expect(addComment(db, { id: otherTrainer, role: 'trainer' }, athlete, c, clock)).toEqual({ ok: false, error: 'forbidden' });
+    expect(addComment(db, T(), stranger, c, clock)).toEqual({ ok: false, error: 'forbidden' });
+    expect(addComment(db, { id: trainer, role: 'admin' }, stranger, c, clock).ok).toBe(true);
+    expect(addComment(db, A(), athlete, c, clock).ok).toBe(true);
+    expect(addComment(db, A(), stranger, c, clock)).toEqual({ ok: false, error: 'forbidden' });
+  });
+  it('ответ тренировки содержит комментарии тренера и технику; «новое» видно один раз', () => {
+    addComment(db, { id: trainer, role: 'admin' }, athlete, { exerciseId: 'bench', text: 'Локти ближе', videoId: V, videoLabel: 'Видео · круг 2' }, clock);
+    // видео должно существовать
+    expect(commentRowsOf(db, athlete)).toHaveLength(0);
+    sessionWithVideo();
+    addComment(db, { id: trainer, role: 'admin' }, athlete, { exerciseId: 'bench', text: 'Локти ближе', videoId: V, videoLabel: 'Видео · круг 2' }, clock);
     const first = workoutResponse(db, athlete, wid())!;
     expect(first.comments).toHaveLength(1);
-    expect(first.comments[0]).toMatchObject({ exerciseId: 'b1-e0', exerciseName: 'Жим лёжа', isNew: true, video: { id: 'v1' } });
+    expect(first.comments[0]).toMatchObject({ exerciseId: 'b1-e0', exerciseName: 'Жим лёжа', isNew: true, video: { id: V } });
     expect(first.techniques['b1-e0']).toEqual({ instructions: ['Лопатки сведены'], videoUrl: '/v/b.mp4' });
     expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(false);
   });
+  it('ответы самого ученика на экран тренировки как комментарии тренера не попадают', () => {
+    addComment(db, A(), athlete, { exerciseId: 'bench', text: 'Тяжело' }, clock);
+    expect(workoutResponse(db, athlete, wid())!.comments).toEqual([]);
+  });
   it('чужие комментарии не попадают', () => {
     ensureLibrary(db);
-    expect(addComment(db, { id: trainer, role: 'trainer' }, trainer, { exerciseId: 'bench', text: 'себе' }, clock).ok).toBe(true);
+    addComment(db, { id: trainer, role: 'admin' }, stranger, { exerciseId: 'bench', text: 'не тебе' }, clock);
     expect(workoutResponse(db, athlete, wid())!.comments).toEqual([]);
     expect(libraryOf(db).map((e) => e.slug)).toContain('bench');
+  });
+
+  describe('цели: тренировка и видео', () => {
+    it('к тренировке целиком: подпись — название тренировки; чужая и несуществующая отвергаются', () => {
+      const sid = sessionWithVideo();
+      const r = addComment(db, T(), athlete, { sessionId: sid, text: 'Хорошая работа' }, clock);
+      expect(r.ok).toBe(true);
+      expect(db.prepare('SELECT session_id, exercise_slug, exercise_name, video_id, timecode_sec FROM comments').get()).toEqual({ session_id: sid, exercise_slug: null, exercise_name: 'Верх', video_id: null, timecode_sec: null });
+      expect(addComment(db, T(), athlete, { sessionId: sid + 1, text: 'a' }, clock)).toEqual({ ok: false, error: 'unknown_session' });
+      expect(addComment(db, { id: trainer, role: 'admin' }, stranger, { sessionId: sid, text: 'a' }, clock)).toEqual({ ok: false, error: 'unknown_session' });
+    });
+    it('к видео с таймкодом: сессия и упражнение берутся из видео', () => {
+      const sid = sessionWithVideo();
+      expect(addComment(db, T(), athlete, { videoId: V, timecodeSec: 21, text: 'Колени внутрь' }, clock).ok).toBe(true);
+      expect(db.prepare('SELECT session_id, exercise_name, video_id, timecode_sec FROM comments').get()).toEqual({ session_id: sid, exercise_name: 'Жим лёжа', video_id: V, timecode_sec: 21 });
+    });
+    it('чужое и неизвестное видео отвергается', () => {
+      db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, created_at) VALUES (?, ?, 'x.webm', 5, '2026-11-03T09:00:00Z')").run(V, stranger);
+      expect(addComment(db, T(), athlete, { videoId: V, text: 'a' }, clock)).toEqual({ ok: false, error: 'unknown_video' });
+      expect(addComment(db, T(), athlete, { videoId: '33333333-3333-4333-8333-333333333333', text: 'a' }, clock)).toEqual({ ok: false, error: 'unknown_video' });
+    });
+  });
+});
+
+describe('миграция coach_comments → comments', () => {
+  it('старая таблица переименована, строки целы, новые поля пусты', () => {
+    const file = `${process.env.TMPDIR ?? '/tmp'}/old-comments-${Date.now()}.db`;
+    const old = new Database(file);
+    old.exec(`CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, role TEXT NOT NULL, password_changed_at TEXT, created_at TEXT NOT NULL);
+      INSERT INTO users (email, password_hash, role, created_at) VALUES ('a@b.c', 'x', 'athlete', 'now'), ('t@b.c', 'x', 'trainer', 'now');
+      CREATE TABLE coach_comments (id INTEGER PRIMARY KEY, athlete_id INTEGER NOT NULL, author_id INTEGER NOT NULL, exercise_slug TEXT, exercise_name TEXT NOT NULL, video_id TEXT, video_label TEXT, text TEXT NOT NULL, created_at TEXT NOT NULL, seen_at TEXT);
+      INSERT INTO coach_comments (athlete_id, author_id, exercise_slug, exercise_name, text, created_at) VALUES (1, 2, 'bench', 'Жим', 'Локти ближе', 'now');`);
+    old.close();
+    const migrated = openDb(file);
+    expect(migrated.prepare("SELECT name FROM sqlite_master WHERE name = 'coach_comments'").get()).toBeUndefined();
+    expect(migrated.prepare('SELECT text, session_id, timecode_sec FROM comments').get()).toEqual({ text: 'Локти ближе', session_id: null, timecode_sec: null });
+    migrated.close();
+    expect(openDb(file).prepare('SELECT COUNT(*) AS n FROM comments').get()).toEqual({ n: 1 });
   });
 });

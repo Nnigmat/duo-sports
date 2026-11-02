@@ -87,8 +87,9 @@ CREATE TABLE IF NOT EXISTS sessions_done (
   duration_sec INTEGER
 );
 CREATE INDEX IF NOT EXISTS sessions_done_user ON sessions_done(user_id, date);
--- Комментарии тренера: к упражнению (slug из библиотеки спортсмена), к видео или ко всей тренировке
-CREATE TABLE IF NOT EXISTS coach_comments (
+-- Комментарии к упражнению, видео (с таймкодом) или ко всей тренировке. Пишет тренер или сам спортсмен (ответ);
+-- seen_at — когда комментарий открыла другая сторона
+CREATE TABLE IF NOT EXISTS comments (
   id INTEGER PRIMARY KEY,
   athlete_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -96,11 +97,13 @@ CREATE TABLE IF NOT EXISTS coach_comments (
   exercise_name TEXT NOT NULL,
   video_id TEXT,
   video_label TEXT,
+  session_id INTEGER REFERENCES sessions_done(id) ON DELETE CASCADE,
+  timecode_sec INTEGER,
   text TEXT NOT NULL,
   created_at TEXT NOT NULL,
   seen_at TEXT
 );
-CREATE INDEX IF NOT EXISTS coach_comments_athlete ON coach_comments(athlete_id, created_at);
+CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at);
 -- Видео подхода: файл лежит в data/videos, session_id и step_index проставляются, когда тренировка сохранена
 CREATE TABLE IF NOT EXISTS videos (
   id TEXT PRIMARY KEY,
@@ -143,6 +146,7 @@ export function openDb(file: string): Db {
   const db = new Database(file);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  renameCoachComments(db);
   db.exec(schema);
   migrate(db);
   return db;
@@ -181,10 +185,20 @@ export function migrateSharedExercises(db: Db) {
   })();
 }
 
+/** coach_comments → comments: до появления ответов ученика таблица называлась иначе. Идемпотентно. */
+function renameCoachComments(db: Db) {
+  const has = (name: string) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
+  if (!has('coach_comments') || has('comments')) return;
+  db.exec('DROP INDEX IF EXISTS coach_comments_athlete; ALTER TABLE coach_comments RENAME TO comments');
+}
+
 /** Колонки, добавленные после первого выпуска: у уже созданных баз их нет */
 function migrate(db: Db) {
   const columns = (table: string) => (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name);
   if (!columns('sessions_done').includes('duration_sec')) db.exec('ALTER TABLE sessions_done ADD COLUMN duration_sec INTEGER');
   if (!columns('workouts').includes('structure')) db.exec('ALTER TABLE workouts ADD COLUMN structure TEXT');
+  if (!columns('comments').includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id INTEGER REFERENCES sessions_done(id) ON DELETE CASCADE');
+  if (!columns('comments').includes('timecode_sec')) db.exec('ALTER TABLE comments ADD COLUMN timecode_sec INTEGER');
+  db.exec('CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at); CREATE INDEX IF NOT EXISTS comments_session ON comments(session_id)');
   migrateSharedExercises(db);
 }
