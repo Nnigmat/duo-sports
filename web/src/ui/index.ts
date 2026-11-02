@@ -22,6 +22,7 @@ export { IconButton } from './IconButton/IconButton';
 export { Notice } from './Notice/Notice';
 export { ListRow } from './ListRow/ListRow';
 export { MediaLink } from './MediaLink/MediaLink';
+export { PastComments } from './PastComments/PastComments';
 export { PasswordInput } from './PasswordInput/PasswordInput';
 export { ParamStepper } from './ParamStepper/ParamStepper';
 export { ProgressBar } from './ProgressBar/ProgressBar';

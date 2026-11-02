@@ -38,3 +38,29 @@ export function formatDuration(min: number): string {
   if (h === 0) return formatMinutes(m);
   return m === 0 ? `${h}${NBSP}ч` : `${h}${NBSP}ч${NBSP}${m}${NBSP}мин`;
 }
+
+const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+/** '2026-10-12' или ISO-время → «12 окт»; день берётся из записи, без пересчёта в пояс */
+export function formatShortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return '';
+  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}`;
+}
+
+/** «1 комментарий», «4 комментария», «5 комментариев» */
+export function commentsCount(n: number): string {
+  return `${n} ${plural(n, ['комментарий', 'комментария', 'комментариев'])}`;
+}
+
+/** «сегодня в 9:05», «вчера в 19:40», «31 окт в 19:40»; по местному времени */
+export function formatReviewedAt(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86_400_000);
+  if (diff === 0) return `сегодня в ${time}`;
+  if (diff === 1) return `вчера в ${time}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} в ${time}`;
+}

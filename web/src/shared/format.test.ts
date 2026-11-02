@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exerciseCount, formatDuration, formatApproxMinutes, formatMinutes, formatVolume, groupDigits, recordsWord } from './format';
+import { commentsCount, formatReviewedAt, formatShortDate, exerciseCount, formatDuration, formatApproxMinutes, formatMinutes, formatVolume, groupDigits, recordsWord } from './format';
 
 describe('format', () => {
   it('разряды через неразрывный пробел', () => {
@@ -20,5 +20,25 @@ describe('format', () => {
   });
   it('длительность', () => {
     expect([40, 95, 120].map(formatDuration)).toEqual(['40\u00a0мин', '1\u00a0ч\u00a035\u00a0мин', '2\u00a0ч']);
+  });
+});
+
+describe('разбор: даты и склонения', () => {
+  it('короткая дата без часового пояса', () => {
+    expect(formatShortDate('2026-10-12')).toBe('12 окт');
+    expect(formatShortDate('2026-01-05T23:30:00Z')).toBe('5 янв');
+    expect(formatShortDate('мусор')).toBe('');
+  });
+  it('комментарии', () => {
+    expect([1, 2, 4, 5, 11, 21].map(commentsCount)).toEqual([
+      '1 комментарий', '2 комментария', '4 комментария', '5 комментариев', '11 комментариев', '21 комментарий',
+    ]);
+  });
+  it('когда разобрано: сегодня, вчера, дата', () => {
+    const now = new Date(2026, 10, 2, 12, 0);
+    expect(formatReviewedAt(new Date(2026, 10, 2, 9, 5).toISOString(), now)).toBe('сегодня в 9:05');
+    expect(formatReviewedAt(new Date(2026, 10, 1, 19, 40).toISOString(), now)).toBe('вчера в 19:40');
+    expect(formatReviewedAt(new Date(2026, 9, 31, 19, 40).toISOString(), now)).toBe('31 окт в 19:40');
+    expect(formatReviewedAt('мусор', now)).toBe('');
   });
 });
