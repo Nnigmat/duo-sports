@@ -5,6 +5,7 @@ import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
 import { PlanPage } from '../features/plan';
 import { ReviewPage, VideoReviewPage } from '../features/review';
+import { StudentsPage } from '../features/trainer';
 import { TodayPage } from '../features/today';
 import { WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
@@ -26,7 +27,7 @@ export function AppRoutes() {
             }
           />
           <Route path="trainer" element={<RequireTrainer />}>
-            <Route index element={<h1>Ученики</h1>} />
+            <Route index element={<StudentsPage />} />
           </Route>
           <Route path="plan" element={<PlanPage />} />
           <Route path="import/*" element={<ImportPage />} />
