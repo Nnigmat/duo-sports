@@ -1,4 +1,7 @@
+import type { MouseEvent } from 'react';
 import type { TodayData } from '../../../data/types';
+import { ReviewNoticeCard } from '../../../ui';
+import { AwaitingCard } from '../AwaitingCard/AwaitingCard';
 import { AchievementsPreview } from '../AchievementsPreview/AchievementsPreview';
 import { ActivityCard } from '../ActivityCard/ActivityCard';
 import { PauseCard } from '../PauseCard/PauseCard';
@@ -20,18 +23,34 @@ export type TodayViewActions = TodayHeroActions & {
   onMoveMissed?: (iso: string) => void;
   /** Возобновить план, стоящий на паузе */
   onResume?: () => void;
+  /** Куда ведут карточка разбора и колокольчик; без него разбор не показываем */
+  reviewHref?: string;
+  onOpenReview?: () => void;
+  onDismissReview?: () => void;
 };
 
 type Props = TodayViewActions & {
   data: TodayData;
 };
 
-export function TodayView({ data, onOpenAchievements, onOpenLatestAchievement, onOpenProgress, onWeekDayAction, onMoveMissed, onResume, ...hero }: Props) {
-  const { insights } = data;
+export function TodayView({ data, onOpenAchievements, onOpenLatestAchievement, onOpenProgress, onWeekDayAction, onMoveMissed, onResume, reviewHref, onOpenReview, onDismissReview, ...hero }: Props) {
+  const { insights, reviewNotice, awaitingReview } = data;
+  const openReview = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!onOpenReview) return;
+    e.preventDefault();
+    onOpenReview();
+  };
   return (
     <div className={styles.view}>
-      <TodayHeader dateLabel={data.dateLabel} userName={data.userName} streakWeeks={data.streakWeeks} />
+      <TodayHeader
+        dateLabel={data.dateLabel}
+        userName={data.userName}
+        streakWeeks={data.streakWeeks}
+        bell={reviewHref && reviewNotice ? { href: reviewHref, unread: data.unread ?? 0, onClick: openReview } : undefined}
+      />
       {onResume && data.pause && <PauseCard pause={data.pause} onResume={onResume} />}
+      {reviewHref && reviewNotice && onDismissReview && <ReviewNoticeCard notice={reviewNotice} href={reviewHref} onLinkClick={openReview} onDismiss={onDismissReview} />}
+      {awaitingReview && <AwaitingCard awaiting={awaitingReview} />}
       <TodayHero state={data.state} {...hero} />
       <WeekCard days={data.week} onDayAction={onWeekDayAction} />
       {onMoveMissed && data.missed && <MissedCard items={data.missed} onMove={onMoveMissed} />}

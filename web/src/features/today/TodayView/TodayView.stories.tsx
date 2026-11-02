@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { todayDoneFixture, todayFixture, todayRestFixture } from '../../../data/fixtures';
+import { todayDoneFixture, todayFixture, todayRestFixture, todayReviewFixture } from '../../../data/fixtures';
 import { TodayView } from './TodayView';
 
 const meta = {
@@ -38,6 +38,19 @@ export const Workout: Story = {
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
     await userEvent.click(c.getByRole('button', { name: 'Перенести' }));
     await expect(args.onReschedule).toHaveBeenCalledTimes(1);
+  },
+};
+export const WithReview: Story = {
+  args: { data: todayReviewFixture, reviewHref: '/review/7', onOpenReview: fn(), onDismissReview: fn() },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('heading', { name: 'Тренер разобрал «Ноги и ягодицы»' })).toBeVisible();
+    await expect(c.getByText(/2 видео отправлены, тренер ещё не посмотрел/)).toBeVisible();
+    await expect(c.getByRole('link', { name: 'Уведомления, 1 новое' })).toBeVisible();
+    await userEvent.click(c.getByRole('link', { name: 'Посмотреть разбор' }));
+    await expect(args.onOpenReview).toHaveBeenCalledTimes(1);
+    await userEvent.click(c.getByRole('button', { name: 'Скрыть' }));
+    await expect(args.onDismissReview).toHaveBeenCalledTimes(1);
   },
 };
 export const Rest: Story = { args: { data: todayRestFixture } };

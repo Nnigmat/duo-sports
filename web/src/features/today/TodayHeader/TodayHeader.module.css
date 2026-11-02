@@ -28,3 +28,36 @@
     line-height: var(--heading-1-line);
   }
 }
+
+.aside {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  flex-shrink: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-full);
+  color: var(--ink);
+}
+.bell:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 2px solid var(--canvas);
+  border-radius: var(--rounded-full);
+  background: var(--highlight);
+}

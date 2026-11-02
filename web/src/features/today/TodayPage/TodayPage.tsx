@@ -4,6 +4,7 @@ import { addDays, toIso } from '../../plan/plan';
 import { useSchedule, useToday } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
+import { dismissNotification } from '../../review/api';
 import { moveWorkout, pausePlan, resumePlan, skipWorkout, unskipWorkout } from '../../schedule/api';
 import { TodayView } from '../TodayView/TodayView';
 
@@ -18,11 +19,15 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
   /** День, тренировку которого переносим; null — панель закрыта */
   const [moveFrom, setMoveFrom] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** Скрытая карточка исчезает сразу, не дожидаясь нового запроса «Сегодня» */
+  const [dismissed, setDismissed] = useState<number | null>(null);
   const navigate = useNavigate();
 
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={320} />;
   const open = (path: string) => () => navigate(path);
+  const notice = data.reviewNotice && data.reviewNotice.notificationId !== dismissed ? data.reviewNotice : undefined;
+  const view = notice ? { ...data, reviewNotice: notice } : { ...data, reviewNotice: undefined, unread: 0 };
   const reschedule = () => setMoveFrom(toIso(new Date()));
   const start = () => navigate(data.state.kind === 'workout' ? `/workout/${data.state.workout.id}?date=${toIso(new Date())}` : '/workout');
   const onWeekDayAction = (index: number) => {
@@ -39,7 +44,21 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
   return (
     <>
       <TodayView
-        data={data}
+        data={view}
+        reviewHref={notice ? `/review/${notice.sessionId}` : undefined}
+        onOpenReview={notice ? () => navigate(`/review/${notice.sessionId}`) : undefined}
+        onDismissReview={
+          notice
+            ? () => {
+                setActionError(null);
+                setDismissed(notice.notificationId);
+                dismissNotification(notice.notificationId).catch((e: Error) => {
+                  setDismissed(null);
+                  setActionError(e.message);
+                });
+              }
+            : undefined
+        }
         onStart={start}
         onReschedule={reschedule}
         onOpenExercises={open('/exercises')}

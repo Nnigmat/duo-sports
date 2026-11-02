@@ -1,4 +1,4 @@
-import type { TodayMissed, TodayPause } from '../../../shared/types';
+import type { AwaitingReview, ReviewNotice, TodayMissed, TodayPause } from '../../../shared/types';
 import type { IconName, WeekDay } from '../ui';
 
 export type WorkoutSummary = {
@@ -54,6 +54,12 @@ export type TodayData = {
   /** Идущая или будущая пауза плана */
   pause?: TodayPause;
   streakWeeks: number;
+  /** Непрочитанные уведомления: точка на колокольчике */
+  unread?: number;
+  /** Последний нескрытый разбор тренера */
+  reviewNotice?: ReviewNotice;
+  /** Видео отправлены, тренер ещё не посмотрел */
+  awaitingReview?: AwaitingReview;
   /** Блоки только для широкого экрана; без них страница показывает hero и неделю */
   insights?: TodayInsights;
 };

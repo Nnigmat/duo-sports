@@ -166,6 +166,12 @@ export const icons = {
       <path d="M12 7v5l3 2" />
     </>
   ),
+  bell: (
+    <>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </>
+  ),
   logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />,
 } satisfies Record<string, ReactNode>;
 

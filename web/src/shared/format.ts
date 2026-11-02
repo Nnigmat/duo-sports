@@ -53,6 +53,11 @@ export function commentsCount(n: number): string {
   return `${n} ${plural(n, ['комментарий', 'комментария', 'комментариев'])}`;
 }
 
+/** «1 видео отправлено», «2 видео отправлены»: «видео» не склоняется, согласуется глагол */
+export function videosSentText(n: number): string {
+  return `${n} видео ${plural(n, ['отправлено', 'отправлены', 'отправлено'])}`;
+}
+
 /** «сегодня в 9:05», «вчера в 19:40», «31 окт в 19:40»; по местному времени */
 export function formatReviewedAt(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);

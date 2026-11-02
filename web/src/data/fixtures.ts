@@ -239,3 +239,19 @@ export const planFixture: PlanData = {
 };
 
 export { exerciseLibrary as exercisesFixture } from '../features/exercises/mock';
+
+/** Тренер разобрал вчерашнюю тренировку; одна тренировка с видео ждёт разбора */
+export const todayReviewFixture: TodayData = {
+  ...todayFixture,
+  unread: 1,
+  reviewNotice: {
+    notificationId: 1,
+    sessionId: 7,
+    title: 'Ноги и ягодицы',
+    reviewedAt: '2026-10-30T19:40:00',
+    commentCount: 4,
+    videoCommentCount: 3,
+    preview: { exerciseName: 'Приседания со штангой', timecodeSec: 21, text: 'На 4-м повторе колени уходят внутрь. Думай «раздвинуть пол» стопами.' },
+  },
+  awaitingReview: { sessionId: 8, title: 'Всё тело', whenLabel: 'вчера', videos: 2 },
+};

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { commentsCount, formatReviewedAt, formatShortDate, exerciseCount, formatDuration, formatApproxMinutes, formatMinutes, formatVolume, groupDigits, recordsWord } from './format';
+import { videosSentText, commentsCount, formatReviewedAt, formatShortDate, exerciseCount, formatDuration, formatApproxMinutes, formatMinutes, formatVolume, groupDigits, recordsWord } from './format';
 
 describe('format', () => {
   it('разряды через неразрывный пробел', () => {
@@ -40,5 +40,19 @@ describe('разбор: даты и склонения', () => {
     expect(formatReviewedAt(new Date(2026, 10, 1, 19, 40).toISOString(), now)).toBe('вчера в 19:40');
     expect(formatReviewedAt(new Date(2026, 9, 31, 19, 40).toISOString(), now)).toBe('31 окт в 19:40');
     expect(formatReviewedAt('мусор', now)).toBe('');
+  });
+});
+
+describe('videosSentText', () => {
+  it('«1 видео отправлено», «2 видео отправлены», «5 видео отправлено»', () => {
+    expect([1, 2, 4, 5, 11, 21, 22].map(videosSentText)).toEqual([
+      '1 видео отправлено',
+      '2 видео отправлены',
+      '4 видео отправлены',
+      '5 видео отправлено',
+      '11 видео отправлено',
+      '21 видео отправлено',
+      '22 видео отправлены',
+    ]);
   });
 });
