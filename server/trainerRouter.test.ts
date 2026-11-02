@@ -86,6 +86,13 @@ describe('карточка ученика', () => {
     expect((await ok.json()).history.map((h: { sessionId: number }) => h.sessionId)).toEqual([sid]);
     expect((await call('/trainer/athletes/999/sessions?date=2026-11-02', coach)).status).toBe(404);
   });
+  it('progress: 400 без даты, 403 чужому тренеру, 200 своему', async () => {
+    expect((await call(`/trainer/athletes/${nikita}/progress`, coach)).status).toBe(400);
+    expect((await call(`/trainer/athletes/${nikita}/progress?date=2026-11-02`, other)).status).toBe(403);
+    const ok = await call(`/trainer/athletes/${nikita}/progress?date=2026-11-02`, coach);
+    expect(ok.status).toBe(200);
+    expect(Object.keys(await ok.json())).toEqual(['regularity', 'volume', 'records', 'recordsMonth']);
+  });
   it('exercise-comments: нужен exercise, exclude — число', async () => {
     expect((await call(`/trainer/athletes/${nikita}/exercise-comments`, coach)).status).toBe(400);
     expect((await call(`/trainer/athletes/${nikita}/exercise-comments?exercise=Присед&exclude=x`, coach)).status).toBe(400);

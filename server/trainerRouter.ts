@@ -5,7 +5,7 @@ import type { Db } from './db';
 import { isDate } from './imports';
 import { addHint, validateHint } from './hints';
 import { markReviewed } from './reviews';
-import { exerciseCommentsOf, listAthletes, sessionsOf, setGoal, type AthleteFilter } from './trainerAthletes';
+import { exerciseCommentsOf, listAthletes, progressOf, sessionsOf, setGoal, type AthleteFilter } from './trainerAthletes';
 import { canAccessAthlete } from './trainerLinks';
 import { workoutOf } from './workouts';
 
@@ -49,6 +49,15 @@ export function trainerRouter(db: Db) {
     const result = Number.isInteger(id) ? sessionsOf(db, req.user!, id, date) : ({ ok: false, error: 'not_found' } as const);
     if (!result.ok) return void res.status(code(result.error)).json({ error: result.error });
     res.json(result.sessions);
+  });
+
+  r.get('/trainer/athletes/:id/progress', (req, res) => {
+    const date = req.query.date;
+    if (!isDate(date)) return void res.status(400).json({ error: 'Ждём date вида 2026-11-03' });
+    const id = athleteId(req);
+    const result = Number.isInteger(id) ? progressOf(db, req.user!, id, date) : ({ ok: false, error: 'not_found' } as const);
+    if (!result.ok) return void res.status(code(result.error)).json({ error: result.error });
+    res.json(result.progress);
   });
 
   /** Прошлые комментарии тренера по упражнению; exclude — тренировка, которую смотрят сейчас */

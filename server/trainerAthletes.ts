@@ -1,7 +1,8 @@
-import type { AthleteListResponse, AthleteRow, AthleteSessionsResponse, AthleteStatus, CommitBlock, ExerciseCommentItem, Role, SessionStepResult, TrainerHistoryItem, TrainerPlanItem } from '../shared/types';
+import type { AthleteProgressResponse, AthleteListResponse, AthleteRow, AthleteSessionsResponse, AthleteStatus, CommitBlock, ExerciseCommentItem, Role, SessionStepResult, TrainerHistoryItem, TrainerPlanItem } from '../shared/types';
 import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
 import { planOf } from './plan';
+import { recordsOf, weeklyVolumes } from './progress';
 import { AWAITING_DAYS } from './sessionReview';
 import { addDays, doneSets, sessionVolume, userNameOf } from './today';
 import { canAccessAthlete } from './trainerLinks';
@@ -156,4 +157,20 @@ export function exerciseCommentsOf(db: Db, viewer: Viewer, athleteId: number, ex
     )
     .all(athleteId, name, slug, slug, excludeSessionId ?? null, excludeSessionId ?? null) as Array<{ id: number; timecode_sec: number | null; text: string; date: string }>;
   return { ok: true, comments: rows.map((r) => ({ id: String(r.id), date: r.date, timecodeSec: r.timecode_sec, text: r.text })) };
+}
+
+export type ProgressResult = { ok: true; progress: AthleteProgressResponse } | { ok: false; error: 'not_found' | 'forbidden' };
+
+/** Дней в окне регулярности */
+export const REGULARITY_DAYS = 28;
+
+/** Вкладка «Прогресс»: регулярность, объём по неделям, рекорды */
+export function progressOf(db: Db, viewer: Viewer, athleteId: number, today: string): ProgressResult {
+  const access = athleteAccess(db, viewer, athleteId);
+  if (!access.ok) return access;
+  const sessions = (db.prepare('SELECT date, steps FROM sessions_done WHERE user_id = ? AND date <= ? ORDER BY date, id').all(athleteId, today) as Array<{ date: string; steps: string }>).map((s) => ({ date: s.date, steps: JSON.parse(s.steps) as SessionStepResult[] }));
+  const from = addDays(today, -(REGULARITY_DAYS - 1));
+  const done = sessions.filter((s) => s.date >= from).length;
+  const planned = (db.prepare('SELECT COUNT(*) AS n FROM plan_entries WHERE user_id = ? AND date BETWEEN ? AND ?').get(athleteId, from, today) as { n: number }).n;
+  return { ok: true, progress: { regularity: { done, planned: Math.max(planned, done) }, volume: weeklyVolumes(sessions, today), ...recordsOf(sessions, today) } };
 }

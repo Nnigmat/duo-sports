@@ -5,7 +5,7 @@ import { openDb, type Db } from './db';
 import { markReviewed } from './reviews';
 import type { Role } from '../shared/types';
 import { moveEntry } from './schedule';
-import { exerciseCommentsOf, listAthletes, sessionsOf, setGoal } from './trainerAthletes';
+import { exerciseCommentsOf, listAthletes, progressOf, sessionsOf, setGoal } from './trainerAthletes';
 import { linkAthlete } from './trainerLinks';
 
 let db: Db;
@@ -190,5 +190,28 @@ describe('exerciseCommentsOf: прошлые комментарии по упр�
     const r = exerciseCommentsOf(db, T(), nikita, 'Становая тяга', a);
     expect(r).toEqual({ ok: true, comments: [] });
     expect(exerciseCommentsOf(db, { id: otherTrainer, role: 'trainer' }, nikita, 'Становая тяга')).toEqual({ ok: false, error: 'forbidden' });
+  });
+});
+
+describe('progressOf', () => {
+  it('регулярность за 28 дней, объём по неделям, рекорды', () => {
+    const step = (name: string, weight: number) => JSON.stringify([{ exerciseId: name, exerciseName: name, blockIndex: 0, round: 1, rounds: 1, kind: 'weight', plan: { target: { min: 5, max: 5 }, weight }, completed: true }]);
+    db.prepare("INSERT INTO sessions_done (user_id, title, date, finished_at, steps) VALUES (?, 'А', '2026-10-20', 'x', ?), (?, 'Б', '2026-10-30', 'x', ?), (?, 'В', '2026-09-01', 'x', ?)").run(nikita, step('Присед', 70), nikita, step('Присед', 80), nikita, step('Присед', 60));
+    planned(nikita, '2026-10-20');
+    planned(nikita, '2026-10-25');
+    const r = progressOf(db, T(), nikita, TODAY);
+    if (!r.ok) throw new Error(r.error);
+    // фикстура добавляет Никите тренировку и запись плана на 2026-11-01
+    expect(r.progress.regularity).toEqual({ done: 3, planned: 3 });
+    expect(r.progress.volume).toHaveLength(8);
+    // 2 ноября — понедельник: текущая неделя пуста, тренировка 30 октября в предыдущей
+    expect(r.progress.volume.slice(-2)).toEqual([{ weekStart: '2026-10-26', tons: 0.4 }, { weekStart: '2026-11-02', tons: 0 }]);
+    expect(r.progress.records).toEqual([{ exerciseName: 'Присед', label: '80\u00a0кг × 5', date: '2026-10-30' }]);
+    expect(r.progress.recordsMonth).toBe(2);
+  });
+  it('чужой тренер и ученик не видят', () => {
+    expect(progressOf(db, { id: otherTrainer, role: 'trainer' }, nikita, TODAY)).toEqual({ ok: false, error: 'forbidden' });
+    expect(progressOf(db, { id: nikita, role: 'athlete' }, nikita, TODAY)).toEqual({ ok: false, error: 'forbidden' });
+    expect(progressOf(db, T(), 999, TODAY)).toEqual({ ok: false, error: 'not_found' });
   });
 });

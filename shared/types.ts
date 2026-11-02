@@ -554,6 +554,26 @@ export interface ExerciseCommentItem {
   text: string;
 }
 
+export interface ProgressRecord {
+  exerciseName: string;
+  /** «90 кг × 5», «18 повт», «1:45» */
+  label: string;
+  /** День, когда рекорд поставлен */
+  date: string;
+}
+
+/** Ответ GET /api/trainer/athletes/:id/progress?date= */
+export interface AthleteProgressResponse {
+  /** Тренировки за последние 28 дней и сколько стояло в плане */
+  regularity: { done: number; planned: number };
+  /** Объём в тоннах по неделям с понедельника, старые первыми, последняя — текущая */
+  volume: Array<{ weekStart: string; tons: number }>;
+  /** Лучшие результаты по упражнениям, свежие первыми */
+  records: ProgressRecord[];
+  /** Сколько раз за последние 30 дней улучшен прежний рекорд */
+  recordsMonth: number;
+}
+
 // ── Перенос тренировки ──
 
 export type ScheduleTarget = { date: string; weekday: string; day: string; busy?: string };
