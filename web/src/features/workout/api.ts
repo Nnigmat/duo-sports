@@ -8,8 +8,8 @@ export interface UploadedVideo {
 }
 
 /** Загрузить видеофайл подхода: тело запроса — сам файл. */
-export async function uploadVideo(blob: Blob): Promise<UploadedVideo> {
-  const res = await fetch('/api/videos', {
+export async function uploadVideo(blob: Blob, durationSec = 0): Promise<UploadedVideo> {
+  const res = await fetch(`/api/videos?durationSec=${Math.max(0, Math.round(durationSec))}`, {
     method: 'POST',
     headers: { 'content-type': blob.type || 'video/webm' },
     body: blob,

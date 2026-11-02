@@ -13,6 +13,8 @@ export interface Session {
   completed: boolean[];
   /** Сколько видео записано */
   videos: number;
+  /** id видео подхода i с сервера; null — видео нет или сервер id не вернул */
+  videoIds: Array<string | null>;
   /** Запущен ли таймер текущего шага: в таймерных блоках сам, у упражнений на время по «Старт» */
   timerStarted: boolean;
 }
@@ -25,7 +27,7 @@ export type Action =
   | { type: 'back' }
   | { type: 'restOver' }
   /** видео записано и сохранено: подход считается выполненным */
-  | { type: 'recorded' }
+  | { type: 'recorded'; videoId?: string }
   | { type: 'finishNow' }
   | { type: 'editPlan'; plan: SetPlan; apply: boolean };
 
@@ -39,6 +41,7 @@ export function initSession(steps: Step[]): Session {
     phase: 'start',
     completed: steps.map(() => false),
     videos: 0,
+    videoIds: steps.map(() => null),
     timerStarted: false,
   };
 }
@@ -75,7 +78,9 @@ export function reduce(s: Session, a: Action): Session {
       return s.phase === 'work' ? complete(s) : s;
 
     case 'recorded':
-      return s.phase === 'work' ? complete({ ...s, videos: s.videos + 1 }) : s;
+      return s.phase === 'work'
+        ? complete({ ...s, videos: s.videos + 1, videoIds: s.videoIds.map((v, i) => (i === s.index ? (a.videoId ?? null) : v)) })
+        : s;
 
     case 'skip':
       return s.phase === 'work' || s.phase === 'rest' ? next(s) : s;

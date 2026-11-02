@@ -126,10 +126,20 @@ describe('таймер упражнения на время', () => {
 
 describe('recorded', () => {
   it('видео сохранено: счётчик растёт и подход выполнен', () => {
-    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded' });
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded', videoId: 'v-5' });
     expect(s.videos).toBe(1);
+    expect(s.videoIds[5]).toBe('v-5');
+    expect(s.videoIds.filter(Boolean)).toHaveLength(1);
     expect(s.completed[5]).toBe(true);
     expect(s).toMatchObject({ phase: 'rest', index: 5 });
+  });
+});
+
+describe('recorded без id', () => {
+  it('сервер id не вернул: подход выполнен, видео посчитано, привязки нет', () => {
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded' });
+    expect(s.videos).toBe(1);
+    expect(s.videoIds[5]).toBeNull();
   });
 });
 

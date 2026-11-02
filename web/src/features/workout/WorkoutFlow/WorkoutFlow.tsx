@@ -44,7 +44,8 @@ type Props = {
   /** Описание техники по id упражнения; без него панель «Техника» показывает только анимацию */
   techniques: Record<string, Technique>;
   /** Загрузить видео подхода. Ошибка (reject) остаётся на экране записи, можно повторить. */
-  onUploadVideo: (video: Blob, step: Step) => Promise<void>;
+  /** Возвращает id видео на сервере; без него подход всё равно считается записанным */
+  onUploadVideo: (video: Blob, step: Step, durationSec: number) => Promise<string | void>;
   /** «Завершить» на финише: итоги и каждый подход с планом и отметкой «выполнен» */
   onFinish: (stats: FinishStats, steps: SessionStepResult[]) => void;
   /** Выход с экрана старта и ✕ на финише */
@@ -87,7 +88,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onF
 
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    return <FinishScreen stats={stats} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed))} onClose={onExit} />;
+    return <FinishScreen stats={stats} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds))} onClose={onExit} />;
   }
 
   if (recording) {
@@ -96,10 +97,10 @@ export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onF
         eyebrow={recordingEyebrow(step)}
         line={stepLine(step)}
         startDelaySec={recordingDelaySec}
-        onUpload={async (video) => {
-          await onUploadVideo(video, step);
+        onUpload={async (video, durationSec) => {
+          const videoId = await onUploadVideo(video, step, durationSec);
           setRecording(false);
-          dispatch({ type: 'recorded' });
+          dispatch({ type: 'recorded', ...(videoId ? { videoId } : {}) });
         }}
         onCancel={() => setRecording(false)}
       />

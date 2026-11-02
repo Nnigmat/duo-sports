@@ -70,3 +70,12 @@ describe('sessionSteps', () => {
     expect(sessionSteps(steps, []).every((s) => !s.completed)).toBe(true);
   });
 });
+
+describe('sessionSteps: видео подходов', () => {
+  const steps = buildSteps([warmup, circuit]);
+  it('videoId попадает в свой подход, у остальных поля нет', () => {
+    const out = sessionSteps(steps, steps.map(() => true), steps.map((_, i) => (i === 1 ? 'v-1' : null)));
+    expect(out[1]!.videoId).toBe('v-1');
+    expect('videoId' in out[0]!).toBe(false);
+  });
+});

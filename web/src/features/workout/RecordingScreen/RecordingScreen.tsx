@@ -16,7 +16,8 @@ type Props = {
   /** «Обратные отжимания · 18–20 повт» */
   line: string;
   /** Загрузить записанное видео и привязать к подходу; экран ждёт промис. Ошибка показывается, повтор возможен. */
-  onUpload: (video: Blob) => Promise<void>;
+  /** durationSec — длина записи в целых секундах */
+  onUpload: (video: Blob, durationSec: number) => Promise<void>;
   /** Записи не будет: «Отмена», «Стоп» или «Назад». Камера выключается, видео отбрасывается. */
   onCancel: () => void;
   /** Секунд между «Старт» и началом записи; 0 — сразу */
@@ -62,7 +63,7 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
     try {
       const file = blob ?? (await rec.stop());
       setBlob(file);
-      await onUpload(file);
+      await onUpload(file, Math.round(rec.elapsed));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить видео');
       setSaving(false);
