@@ -18,3 +18,10 @@ export const navItems: NavItem[] = [today, plan, stats, profile];
 
 /** Боковая панель: места больше, поэтому здесь ещё «Упражнения» и «Импорт» */
 export const sideNavItems: NavItem[] = [today, plan, exercises, stats, imports, profile];
+
+/** Кабинет тренера: ученики, общая библиотека упражнений и профиль; нижней панели у тренера нет */
+export const trainerSideNavItems: NavItem[] = [
+  { to: '/trainer', label: 'Ученики', icon: 'users' },
+  exercises,
+  profile,
+];

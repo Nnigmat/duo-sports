@@ -9,6 +9,7 @@ import { TodayPage } from '../features/today';
 import { WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
 import { RequireAuth } from './auth/RequireAuth';
+import { HomeRedirect, RequireTrainer } from './auth/RequireRole';
 
 export function AppRoutes() {
   return (
@@ -16,7 +17,17 @@ export function AppRoutes() {
       <Route path="login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route index element={<TodayPage />} />
+          <Route
+            index
+            element={
+              <HomeRedirect>
+                <TodayPage />
+              </HomeRedirect>
+            }
+          />
+          <Route path="trainer" element={<RequireTrainer />}>
+            <Route index element={<h1>Ученики</h1>} />
+          </Route>
           <Route path="plan" element={<PlanPage />} />
           <Route path="import/*" element={<ImportPage />} />
           <Route path="exercises/*" element={<ExercisesPage />} />

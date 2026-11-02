@@ -31,3 +31,22 @@
   box-shadow: inset 3px 0 0 var(--primary);
   color: var(--primary-deep);
 }
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  padding: 0 var(--spacing-sm) var(--spacing-md);
+}
+.brandName {
+  font-family: var(--font-serif);
+  font-size: var(--heading-4-size);
+  line-height: var(--heading-4-line);
+}
+.brandCaption {
+  font-size: var(--micro-uppercase-size);
+  line-height: var(--micro-uppercase-line);
+  font-weight: var(--micro-uppercase-weight);
+  letter-spacing: var(--micro-uppercase-tracking);
+  text-transform: uppercase;
+  color: var(--steel);
+}

@@ -113,6 +113,13 @@ export const icons = {
   body: <path d="M10 4a2 2 0 1 0 4 0 2 2 0 1 0-4 0M12 6v7M8 21l4-8 4 8M6 10h12" />,
   timer: <path d="M4 14a8 8 0 1 0 16 0 8 8 0 1 0-16 0M12 10v4l3 2M9 2h6" />,
   rope: <path d="M6 3v6M18 3v6M6 9c0 7 2 12 6 12s6-5 6-12" />,
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5" />
+      <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .6 3.5 2.4 3.5 5.2" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="6.5" />
