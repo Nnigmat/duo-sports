@@ -1,0 +1,88 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  min-width: 0;
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.empty {
+  margin: 0;
+  font-size: var(--body-sm-size);
+  color: var(--steel);
+}
+.row,
+.movedRow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px; /* нет токена */
+  min-height: var(--size-touch);
+  box-sizing: border-box;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-sans);
+  text-align: left;
+}
+.row {
+  cursor: pointer;
+}
+.row:hover {
+  background: var(--surface);
+}
+.row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.on {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.movedRow {
+  border-style: dashed;
+  border-color: var(--highlight);
+}
+.date {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--steel);
+  font-variant-numeric: tabular-nums;
+}
+.title {
+  font-size: var(--body-md-size);
+  line-height: var(--body-md-line);
+  font-weight: 600;
+}
+.meta {
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xxs) var(--spacing-xs);
+  margin-top: var(--spacing-xxs);
+}
+.fromAthlete {
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.movedNote {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: 600;
+}

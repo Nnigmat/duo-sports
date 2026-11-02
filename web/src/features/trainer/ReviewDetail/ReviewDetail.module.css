@@ -1,0 +1,156 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+}
+.headMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.meta {
+  font-size: var(--body-sm-size);
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}
+.moved {
+  margin: 0;
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+}
+.num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; /* нет токена */
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  font-size: var(--caption-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stepBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+.stepHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.name {
+  margin: 0;
+  font-size: var(--body-md-size);
+  line-height: var(--body-md-line);
+  font-weight: 600;
+}
+.newBadge {
+  padding: 2px var(--spacing-xs); /* 2 px: нет токена */
+  border-radius: var(--rounded-full);
+  background: var(--highlight-soft);
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.videos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+.videoPanel {
+  max-width: 320px; /* нет токена: плеер вертикальный 9:16 */
+  overflow: hidden;
+  border-radius: var(--rounded-lg);
+}
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--rounded-md);
+  background: var(--surface);
+  font-size: var(--body-sm-size);
+}
+.noteHead {
+  font-size: var(--micro-uppercase-size);
+  font-weight: var(--micro-uppercase-weight);
+  letter-spacing: var(--micro-uppercase-tracking);
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.general {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--hairline-soft);
+}
+.mark {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--body-sm-size);
+}

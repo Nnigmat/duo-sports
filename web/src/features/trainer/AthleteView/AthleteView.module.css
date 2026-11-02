@@ -1,0 +1,76 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-width: 1180px; /* нет токена */
+  margin: 0 auto;
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--spacing-xxs);
+  min-height: var(--size-touch);
+  padding-right: var(--spacing-sm);
+  color: var(--link);
+  font-size: var(--body-sm-medium-size);
+  font-weight: 500;
+  text-decoration: none;
+}
+.back:focus-visible {
+  outline: none;
+  border-radius: var(--rounded-sm);
+  box-shadow: var(--focus-ring);
+}
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px; /* нет токена */
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--rounded-full);
+  background: var(--accent-300);
+  font-weight: 600;
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  min-width: 0;
+}
+.goal {
+  font-size: var(--body-sm-size);
+  color: var(--slate);
+}
+.last {
+  margin-left: auto;
+  font-size: var(--body-sm-size);
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--hairline-soft);
+}
+.list {
+  flex: 1 1 260px;
+  max-width: 320px; /* нет токена: ширина колонки из макета */
+  min-width: 0;
+}
+.detail {
+  flex: 3 1 480px;
+  min-width: 0;
+}

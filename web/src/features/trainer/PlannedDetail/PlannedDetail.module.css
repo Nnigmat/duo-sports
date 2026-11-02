@@ -1,0 +1,109 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+}
+.headMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.meta {
+  font-size: var(--body-sm-size);
+  color: var(--slate);
+  font-variant-numeric: tabular-nums;
+}
+.moved {
+  margin: 0;
+  font-size: var(--caption-size);
+  font-weight: 600;
+}
+.lead {
+  margin: 0;
+  max-width: 560px; /* нет токена */
+  font-size: var(--body-md-size);
+  line-height: var(--body-md-line);
+  color: var(--slate);
+}
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+}
+.num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; /* нет токена */
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  font-size: var(--caption-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stepBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+.name {
+  margin: 0;
+  font-size: var(--body-md-size);
+  line-height: var(--body-md-line);
+  font-weight: 600;
+}
+.sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.hintFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.saved {
+  font-size: var(--body-sm-size);
+  font-weight: 600;
+  color: var(--primary);
+}

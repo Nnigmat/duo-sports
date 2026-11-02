@@ -2,7 +2,7 @@ import type { AthleteListResponse, AthleteRow, AthleteStatus } from '../../../..
 import { parseIso } from '../plan/plan';
 import { plural } from '../workout/flow/ru';
 
-const NB = ' ';
+const NB = '\u00a0';
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 const WEEKDAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -65,8 +65,8 @@ export const weekAria = (a: AthleteRow): string =>
 /** «3 ученика · 2 ждут разбора» */
 export function summaryText(counts: AthleteListResponse['counts']): string {
   if (counts.all === 0) return 'Учеников пока нет';
-  const all = `${counts.all} ${plural(counts.all, ['ученик', 'ученика', 'учеников'])}`;
-  return counts.review > 0 ? `${all} · ${counts.review} ${waits(counts.review)} разбора` : all;
+  const all = `${counts.all}${NB}${plural(counts.all, ['ученик', 'ученика', 'учеников'])}`;
+  return counts.review > 0 ? `${all} · ${counts.review}${NB}${waits(counts.review)} разбора` : all;
 }
 
 /** Подпись пустого списка под выбранный фильтр */

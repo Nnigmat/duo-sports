@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AthleteRow } from '../../../../shared/types';
 import { avatarTone, badgeText, emptyText, FILTERS, goalText, initials, lastText, summaryText, weekAria, weekText } from './students';
 
-const NB = ' ';
+const NB = '\u00a0';
 const row = (over: Partial<AthleteRow> = {}): AthleteRow => ({
   id: 1,
   name: 'Никита Н.',
@@ -83,9 +83,9 @@ describe('goalText, weekText, weekAria', () => {
 
 describe('summaryText', () => {
   it('число учеников и сколько ждут разбора', () => {
-    expect(summaryText({ all: 3, review: 2, inactive: 1, ok: 0 })).toBe('3 ученика · 2 ждут разбора');
-    expect(summaryText({ all: 1, review: 1, inactive: 0, ok: 0 })).toBe('1 ученик · 1 ждёт разбора');
-    expect(summaryText({ all: 5, review: 0, inactive: 0, ok: 5 })).toBe('5 учеников');
+    expect(summaryText({ all: 3, review: 2, inactive: 1, ok: 0 })).toBe(`3${NB}ученика · 2${NB}ждут разбора`);
+    expect(summaryText({ all: 1, review: 1, inactive: 0, ok: 0 })).toBe(`1${NB}ученик · 1${NB}ждёт разбора`);
+    expect(summaryText({ all: 5, review: 0, inactive: 0, ok: 5 })).toBe(`5${NB}учеников`);
     expect(summaryText({ all: 0, review: 0, inactive: 0, ok: 0 })).toBe('Учеников пока нет');
   });
 });

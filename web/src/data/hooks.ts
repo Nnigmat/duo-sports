@@ -48,10 +48,19 @@ export const useAthleteSessions = (athleteId: number, version = 0): Resource<Ath
 /** Разбор выполненной тренировки глазами тренера; null — выбрана не выполненная */
 export const useTrainerReview = (sessionId: number | null, version = 0): Resource<SessionReviewResponse | null> =>
   useResource(useCallback(() => (sessionId === null ? Promise.resolve(null) : fetchSessionReview(sessionId, toIso(new Date()))), [sessionId, version]));
-/** Состав запланированной тренировки; null — выбрана не запланированная; 404 (без структуры) тоже null */
-export const usePlannedWorkout = (athleteId: number, workoutId: number | null): Resource<Workout | null> =>
+/** Состав запланированной тренировки; workout: null — состава нет (импорт без блоков). Сам data: null, пока идёт загрузка. */
+export const usePlannedWorkout = (athleteId: number, workoutId: number | null): Resource<{ workout: Workout | null }> =>
   useResource(
-    useCallback(() => (workoutId === null ? Promise.resolve(null) : fetchPlannedWorkout(athleteId, workoutId).catch((e: unknown) => (e instanceof Error && e.message === 'Не найдено' ? null : Promise.reject(e)))), [athleteId, workoutId]),
+    useCallback(
+      () =>
+        workoutId === null
+          ? Promise.resolve({ workout: null })
+          : fetchPlannedWorkout(athleteId, workoutId).then(
+              (workout) => ({ workout }),
+              (e: unknown) => (e instanceof Error && e.message === 'Не найдено' ? { workout: null } : Promise.reject(e)),
+            ),
+      [athleteId, workoutId],
+    ),
   );
 /** Прошлые комментарии по названиям упражнений (кроме тренировки exclude) */
 export const usePastComments = (athleteId: number, names: string[], exclude: number | null): Resource<Record<string, ExerciseCommentItem[]>> => {
