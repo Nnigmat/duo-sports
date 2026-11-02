@@ -158,3 +158,40 @@ describe('durationSec', () => {
     for (const bad of [-1, 1.5, 86_401, '60']) expect(validateSession({ ...base, durationSec: bad }).ok).toBe(false);
   });
 });
+
+describe('видео подхода', () => {
+  const V1 = '11111111-1111-4111-8111-111111111111';
+  const V2 = '22222222-2222-4222-8222-222222222222';
+  const upload = (id: string, owner: number) =>
+    db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, created_at) VALUES (?, ?, ?, 38, '2026-11-03T09:00:00Z')").run(id, owner, `${id}.webm`);
+  const withVideo = (videoId: string, step = 0): SessionResult => {
+    const r = result({ videos: 1 });
+    r.steps[step] = { ...r.steps[step]!, videoId };
+    return r;
+  };
+
+  it('сохранение привязывает видео к тренировке и номеру подхода', () => {
+    applyImport(db, me, commit(), clock);
+    upload(V1, me);
+    const saved = saveSession(db, me, workoutId(), withVideo(V1, 1), clock);
+    expect(saved.ok).toBe(true);
+    expect(db.prepare('SELECT session_id, step_index FROM videos WHERE id = ?').get(V1)).toEqual({ session_id: saved.ok ? saved.id : -1, step_index: 1 });
+  });
+  it('чужое, неизвестное и уже занятое видео не принимается, тренировка не записывается', () => {
+    applyImport(db, me, commit(), clock);
+    upload(V1, other);
+    expect(saveSession(db, me, workoutId(), withVideo(V1), clock)).toEqual({ ok: false, error: 'bad_video' });
+    expect(saveSession(db, me, workoutId(), withVideo(V2), clock)).toEqual({ ok: false, error: 'bad_video' });
+    upload(V2, me);
+    expect(saveSession(db, me, workoutId(), withVideo(V2), clock).ok).toBe(true);
+    expect(saveSession(db, me, workoutId(), withVideo(V2), clock)).toEqual({ ok: false, error: 'bad_video' });
+    expect(db.prepare('SELECT COUNT(*) AS n FROM sessions_done').get()).toEqual({ n: 1 });
+  });
+  it('validateSession: videoId — uuid, один и тот же на двух подходах нельзя', () => {
+    expect(validateSession(withVideo(V1)).ok).toBe(true);
+    expect(validateSession(withVideo('../app.db')).ok).toBe(false);
+    const r = withVideo(V1);
+    r.steps[1] = { ...r.steps[1]!, videoId: V1 };
+    expect(validateSession(r)).toMatchObject({ ok: false, error: 'videoId: одно видео на один подход' });
+  });
+});

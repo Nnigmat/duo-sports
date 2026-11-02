@@ -21,7 +21,7 @@ export function workoutRouter(db: Db) {
     const v = validateSession(req.body);
     if (!v.ok) return void res.status(400).json({ error: v.error });
     const saved = Number.isInteger(id) ? saveSession(db, req.user!.id, id, v.result) : ({ ok: false, error: 'not_found' } as const);
-    if (!saved.ok) return void res.status(404).json({ error: saved.error });
+    if (!saved.ok) return void res.status(saved.error === 'bad_video' ? 400 : 404).json({ error: saved.error });
     res.status(201).json({ id: saved.id });
   });
 

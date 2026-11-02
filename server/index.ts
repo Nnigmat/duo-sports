@@ -29,7 +29,7 @@ app.use('/api', workoutRouter(db));
 app.use('/api', todayRouter(db));
 app.use('/api', achievementsRouter(db));
 app.use('/api', scheduleRouter(db));
-app.use('/api', videosRouter({ dir: path.join(dataDir, 'videos'), maxBytes: 300 * 1024 * 1024 }));
+app.use('/api', videosRouter({ db, dir: path.join(dataDir, 'videos'), maxBytes: 300 * 1024 * 1024 }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

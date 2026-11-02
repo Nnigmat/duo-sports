@@ -5,24 +5,41 @@ import os from 'node:os';
 import path from 'node:path';
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createUser, login } from './auth';
+import { openDb, type Db } from './db';
+import { linkAthlete } from './trainerLinks';
 import { videosRouter } from './videos';
 
 let dir: string;
 let server: Server;
 let base: string;
+let db: Db;
+let cookie: string;
+let cookieOf: (email: string) => Promise<string>;
 
 async function start(maxBytes = 1024) {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'videos-'));
+  db = openDb(':memory:');
+  const athlete = await createUser(db, 'nikita@example.com', 'trenirovka7', 'athlete');
+  const coach = await createUser(db, 'coach@example.com', 'trenirovka7', 'trainer');
+  await createUser(db, 'coach2@example.com', 'trenirovka7', 'trainer');
+  linkAthlete(db, coach, athlete);
+  cookieOf = async (email) => {
+    const r = await login(db, email, 'trenirovka7');
+    if (!r.ok) throw new Error('login');
+    return `session=${r.token}`;
+  };
+  cookie = await cookieOf('nikita@example.com');
   const app = express();
-  app.use('/api', videosRouter({ dir, maxBytes }));
+  app.use('/api', videosRouter({ db, dir, maxBytes }));
   await new Promise<void>((resolve) => {
     server = app.listen(0, () => resolve());
   });
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/videos`;
 }
 
-const post = (body: BodyInit | null, type?: string) =>
-  fetch(base, { method: 'POST', body, headers: type ? { 'content-type': type } : {} });
+const post = (body: BodyInit | null, type?: string, query = '') =>
+  fetch(base + query, { method: 'POST', body, headers: { cookie, ...(type ? { 'content-type': type } : {}) } });
 
 beforeEach(() => start());
 afterEach(async () => {
@@ -75,5 +92,52 @@ describe('POST /api/videos', () => {
     const b = await (await post(new Uint8Array([1]), 'video/webm')).json();
     expect(a.id).not.toBe(b.id);
     expect(fs.readdirSync(dir)).toHaveLength(2);
+  });
+});
+
+describe('владелец и длительность', () => {
+  it('без входа: 401', async () => {
+    const res = await fetch(base, { method: 'POST', body: new Uint8Array([1]), headers: { 'content-type': 'video/webm' } });
+    expect(res.status).toBe(401);
+    expect(fs.readdirSync(dir)).toEqual([]);
+  });
+
+  it('запоминает владельца и длительность', async () => {
+    const { id } = await (await post(new Uint8Array([1]), 'video/webm', '?durationSec=38')).json();
+    expect(db.prepare('SELECT duration_sec, file FROM videos WHERE id = ?').get(id)).toEqual({ duration_sec: 38, file: `${id}.webm` });
+  });
+
+  it('длительность не число или вне 0–3600: 400 и файла нет', async () => {
+    for (const q of ['?durationSec=abc', '?durationSec=-1', '?durationSec=3601', '?durationSec=1.5']) {
+      expect((await post(new Uint8Array([1]), 'video/webm', q)).status).toBe(400);
+    }
+    expect(fs.readdirSync(dir)).toEqual([]);
+  });
+});
+
+describe('GET /api/videos/:id', () => {
+  const get = (id: string, c: string, headers: Record<string, string> = {}) => fetch(`${base}/${id}`, { headers: { cookie: c, ...headers } });
+  let id: string;
+  beforeEach(async () => {
+    id = (await (await post(new Uint8Array([10, 11, 12, 13, 14, 15]), 'video/webm')).json()).id;
+  });
+
+  it('владелец и его тренер получают файл, чужой тренер нет', async () => {
+    const own = await get(id, cookie);
+    expect(own.status).toBe(200);
+    expect(new Uint8Array(await own.arrayBuffer())).toEqual(new Uint8Array([10, 11, 12, 13, 14, 15]));
+    expect((await get(id, await cookieOf('coach@example.com'))).status).toBe(200);
+    expect((await get(id, await cookieOf('coach2@example.com'))).status).toBe(404);
+  });
+
+  it('Range отдаёт кусок: перемотка в плеере', async () => {
+    const res = await get(id, cookie, { range: 'bytes=2-3' });
+    expect(res.status).toBe(206);
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([12, 13]));
+  });
+
+  it('неизвестный id и не-uuid: 404', async () => {
+    expect((await get('00000000-0000-4000-8000-000000000000', cookie)).status).toBe(404);
+    expect((await get('..%2Fapp.db', cookie)).status).toBe(404);
   });
 });

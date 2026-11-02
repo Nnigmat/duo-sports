@@ -101,6 +101,17 @@ CREATE TABLE IF NOT EXISTS coach_comments (
   seen_at TEXT
 );
 CREATE INDEX IF NOT EXISTS coach_comments_athlete ON coach_comments(athlete_id, created_at);
+-- Видео подхода: файл лежит в data/videos, session_id и step_index проставляются, когда тренировка сохранена
+CREATE TABLE IF NOT EXISTS videos (
+  id TEXT PRIMARY KEY,
+  athlete_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  file TEXT NOT NULL,
+  duration_sec INTEGER NOT NULL DEFAULT 0,
+  session_id INTEGER REFERENCES sessions_done(id) ON DELETE SET NULL,
+  step_index INTEGER,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS videos_session ON videos(session_id);
 CREATE TABLE IF NOT EXISTS plan_entries (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,

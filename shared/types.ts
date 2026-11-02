@@ -297,6 +297,8 @@ export interface SessionStepResult {
   /** План подхода с учётом правок «Изменить» */
   plan: SetPlan;
   completed: boolean;
+  /** Видео этого подхода: id из ответа POST /api/videos */
+  videoId?: string;
 }
 
 /** Итог выполненной тренировки: POST /api/workouts/:id/sessions */

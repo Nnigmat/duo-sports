@@ -30,6 +30,7 @@ const KINDS: ExerciseKind[] = ['reps', 'weight', 'time'];
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const nonNeg = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 export const MAX_STEPS = 2000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const MAX_DURATION_SEC = 86_400;
 
 export type ValidSession = { ok: true; result: SessionResult } | { ok: false; error: string };
@@ -45,20 +46,39 @@ export function validateSession(body: unknown): ValidSession {
       isObj(s) && typeof s.exerciseId === 'string' && s.exerciseId.length <= 100 && typeof s.exerciseName === 'string' && s.exerciseName.length <= 200 &&
       Number.isInteger(s.blockIndex) && Number.isInteger(s.round) && Number.isInteger(s.rounds) && KINDS.includes(s.kind as ExerciseKind) &&
       typeof s.completed === 'boolean' && isObj(plan) && isObj(plan.target) && nonNeg(plan.target.min) && nonNeg(plan.target.max) &&
-      (plan.weight === undefined || nonNeg(plan.weight));
+      (plan.weight === undefined || nonNeg(plan.weight)) &&
+      (s.videoId === undefined || (typeof s.videoId === 'string' && UUID.test(s.videoId)));
     if (!ok) return { ok: false, error: `steps[${i}]: неверные поля` };
   }
+  const ids = (body.steps as Array<{ videoId?: string }>).flatMap((s) => (s.videoId ? [s.videoId] : []));
+  if (new Set(ids).size !== ids.length) return { ok: false, error: 'videoId: одно видео на один подход' };
   return { ok: true, result: body as unknown as SessionResult };
 }
 
-export type SaveResult = { ok: true; id: number } | { ok: false; error: 'not_found' };
+export type SaveResult = { ok: true; id: number } | { ok: false; error: 'not_found' | 'bad_video' };
 
 /** Записывает итог тренировки. День плана после этого считается выполненным. */
 export function saveSession(db: Db, userId: number, workoutId: number, result: SessionResult, clock: Clock = now): SaveResult {
   const w = db.prepare('SELECT title FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, userId) as { title: string } | undefined;
   if (!w) return { ok: false, error: 'not_found' };
-  const info = db
-    .prepare('INSERT INTO sessions_done (user_id, workout_id, title, date, finished_at, steps, videos, duration_sec) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(userId, workoutId, w.title, result.date, clock().toISOString(), JSON.stringify(result.steps), result.videos, result.durationSec ?? null);
-  return { ok: true, id: Number(info.lastInsertRowid) };
+  const claim = db.prepare('UPDATE videos SET session_id = ?, step_index = ? WHERE id = ? AND athlete_id = ? AND session_id IS NULL');
+  // Одна транзакция: если видео чужое или уже занято, тренировка не записывается
+  const run = db.transaction((): SaveResult => {
+    const info = db
+      .prepare('INSERT INTO sessions_done (user_id, workout_id, title, date, finished_at, steps, videos, duration_sec) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(userId, workoutId, w.title, result.date, clock().toISOString(), JSON.stringify(result.steps), result.videos, result.durationSec ?? null);
+    const id = Number(info.lastInsertRowid);
+    for (const [i, s] of result.steps.entries()) {
+      if (s.videoId && claim.run(id, i, s.videoId, userId).changes !== 1) throw new BadVideo();
+    }
+    return { ok: true, id };
+  });
+  try {
+    return run();
+  } catch (e) {
+    if (e instanceof BadVideo) return { ok: false, error: 'bad_video' };
+    throw e;
+  }
 }
+
+class BadVideo extends Error {}
