@@ -46,6 +46,8 @@ export function CalendarGrid({ data, view, anchor, sel, copyDate = null, layout 
                 past={date < today}
                 template={template}
                 status={entry ? displayStatus(date, entry, today) : undefined}
+                movedTo={entry?.status === 'moved' ? entry.movedTo : undefined}
+                movedFrom={entry?.movedFrom}
                 onPick={onPick}
               />
             );

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanEntry } from '../../data/types';
 import {
+  applyMoves,
   calendarDays,
   canShift,
   cellAriaLabel,
@@ -244,5 +245,32 @@ describe('usedTemplates', () => {
   });
   it('пустые дни и неизвестные шаблоны пропускаются', () => {
     expect(usedTemplates(templates, { '2026-11-02': e('zzz') }, ['2026-11-01', '2026-11-02'])).toEqual([]);
+  });
+});
+
+describe('applyMoves: перенос в календаре', () => {
+  const planned = (id: string, over: Partial<PlanEntry> = {}): PlanEntry => ({ templateId: id, status: 'planned', custom: true, ...over });
+  it('пустой исходный день становится «перенесена» с датой, новый день помнит откуда', () => {
+    // 2026-11-04 — среда, 2026-11-06 — пятница
+    const out = applyMoves({ '2026-11-06': planned('3') }, [{ templateId: '3', from: '2026-11-04', to: '2026-11-06' }]);
+    expect(out['2026-11-04']).toEqual({ templateId: '3', status: 'moved', movedTo: '6 ноября' });
+    expect(out['2026-11-06']).toEqual({ ...planned('3'), movedFrom: 'ср' });
+  });
+  it('исходный день занят другой тренировкой: её не затираем', () => {
+    const entries = { '2026-11-04': planned('9'), '2026-11-06': planned('3') };
+    const out = applyMoves(entries, [{ templateId: '3', from: '2026-11-04', to: '2026-11-06' }]);
+    expect(out['2026-11-04']).toEqual(planned('9'));
+    expect(out['2026-11-06']!.movedFrom).toBe('ср');
+  });
+  it('на новом дне главная тренировка другая: подпись «со дня» не вешаем', () => {
+    const out = applyMoves({ '2026-11-06': planned('9', { more: ['Кардио'] }) }, [{ templateId: '3', from: '2026-11-04', to: '2026-11-06' }]);
+    expect(out['2026-11-06']!.movedFrom).toBeUndefined();
+  });
+  it('исходный объект не меняется, без переносов возвращается как есть', () => {
+    const entries = { '2026-11-06': planned('3') };
+    const same = applyMoves(entries, []);
+    expect(same).toBe(entries);
+    applyMoves(entries, [{ templateId: '3', from: '2026-11-04', to: '2026-11-06' }]);
+    expect(entries['2026-11-06']).toEqual(planned('3'));
   });
 });

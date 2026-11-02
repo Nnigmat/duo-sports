@@ -39,7 +39,20 @@ export const TodaySelected: Story = {
     await expect(within(canvasElement).getByText('сегодня')).toBeVisible();
   },
 };
-export const Moved: Story = { args: { date: '2026-10-29', template: legs, status: 'moved', past: true } };
+export const Moved: Story = {
+  args: { date: '2026-10-29', template: legs, status: 'moved', past: true, movedTo: '31 октября' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('→ на 31 октября')).toBeVisible();
+    await expect(c.getByRole('button', { name: /перенесена на 31 октября/ })).toBeVisible();
+  },
+};
+export const MovedHere: Story = {
+  args: { date: '2026-10-31', template: legs, status: 'planned', movedFrom: 'чт' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('со чт')).toBeVisible();
+  },
+};
 export const Skipped: Story = { args: { date: '2026-10-11', status: 'skipped', past: true } };
 export const Empty: Story = { args: { date: '2026-11-03', template: undefined, status: undefined } };
 export const CopyTargetFree: Story = {

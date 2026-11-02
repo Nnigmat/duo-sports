@@ -86,7 +86,12 @@ export function DayPanel({
 
   const status = displayStatus(date, entry, today);
   const actions = dayActions(status, !!entry.custom);
-  const statusText = status === 'moved' && entry.movedTo ? `Перенесена на ${entry.movedTo}` : planStatusWord(status);
+  const statusText =
+    status === 'moved' && entry.movedTo
+      ? `Перенесена на ${entry.movedTo}`
+      : entry.movedFrom
+        ? `${planStatusWord(status)} · перенесена со ${entry.movedFrom}`
+        : planStatusWord(status);
   const check = checkCopy(
     date,
     copyDate,

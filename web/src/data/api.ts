@@ -6,7 +6,7 @@ import { achievementsFixture, planFixture } from './fixtures';
 import { fetchImportContext } from '../features/import/api';
 import { fetchPlanResponse } from '../features/plan/api';
 import { fetchScheduleResponse } from '../features/schedule/api';
-import { planBounds, toIso } from '../features/plan/plan';
+import { applyMoves, planBounds, toIso } from '../features/plan/plan';
 import type { AchievementsData, ImportData, PlanData, ScheduleData, TodayData } from './types';
 
 export type WorkoutData = { workout: Workout; comments: CoachComment[]; techniques: Record<string, Technique> };
@@ -29,9 +29,10 @@ export const fetchSchedule = async (from?: string): Promise<ScheduleData> => fet
 export const fetchExercises = (): Promise<LibraryExercise[]> => fetchLibrary();
 /** План — с сервера; сегодня знает браузер, границы календаря считаются по записям */
 export const fetchPlan = async (): Promise<PlanData> => {
-  const { templates, entries } = await fetchPlanResponse();
+  const response = await fetchPlanResponse();
+  const entries = applyMoves(response.entries, response.moves ?? []);
   const today = toIso(new Date());
-  return { today, ...planBounds(today, Object.keys(entries)), templates, entries };
+  return { today, ...planBounds(today, Object.keys(entries)), templates: response.templates, entries };
 };
 /** Библиотека и план — с сервера; «сегодня» знает браузер, у него свой часовой пояс */
 export const fetchImport = async (): Promise<ImportData> => {

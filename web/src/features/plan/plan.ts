@@ -1,5 +1,6 @@
 import { MONTHS, plural } from '../workout/flow/ru';
 import type { PlanEntry, PlanEntryStatus, PlanTemplate } from '../../data/types';
+import type { PlanMove } from '../../../../shared/types';
 
 /** Логика страницы «План»: даты, сетка календаря, копирование. Без DOM. */
 
@@ -84,6 +85,24 @@ export function canShift(view: CalendarView, anchor: string, dir: -1 | 1, min: s
   return dir < 0 ? addDays(`${anchor.slice(0, 7)}-01`, -1) >= min : `${next.slice(0, 7)}-01` <= max;
 }
 
+/** «ср» — день недели даты */
+export const weekdayShort = (iso: string): string => WEEKDAY_HEADERS[(parseIso(iso).getDay() + 6) % 7]!;
+
+/**
+ * Переносы поверх записей плана: на пустом старом дне — «перенесена на 6 ноября», на новом — «со ср».
+ * Если старый день занят другой тренировкой, её не затираем; подпись «со дня» ставим только главной тренировке дня.
+ */
+export function applyMoves(entries: Record<string, PlanEntry>, moves: PlanMove[]): Record<string, PlanEntry> {
+  if (moves.length === 0) return entries;
+  const out = { ...entries };
+  for (const m of moves) {
+    if (!out[m.from]) out[m.from] = { templateId: m.templateId, status: 'moved', movedTo: shortDate(m.to) };
+    const target = out[m.to];
+    if (target && target.templateId === m.templateId) out[m.to] = { ...target, movedFrom: weekdayShort(m.from) };
+  }
+  return out;
+}
+
 /** Статус для показа: плановая тренировка сегодня — «сегодня», в прошедший день без выполнения — «пропущена» */
 export function displayStatus(date: string, entry: PlanEntry, today: string): DisplayStatus {
   if (entry.status !== 'planned') return entry.status;
@@ -111,10 +130,12 @@ export function cellAriaLabel(
   status: DisplayStatus | null,
   copyTarget: boolean,
   isToday = false,
+  movedTo?: string,
+  movedFrom?: string,
 ): string {
   const base = isToday && status !== 'today' ? `${longDate(date)}, сегодня` : longDate(date);
   const body = title
-    ? `${title}${status && status !== 'planned' ? `, ${STATUS_WORD[status].toLowerCase()}` : ''}`
+    ? `${title}${status && status !== 'planned' ? `, ${STATUS_WORD[status].toLowerCase()}` : ''}${status === 'moved' && movedTo ? ` на ${movedTo}` : ''}${movedFrom && status !== 'moved' ? `, перенесена со ${movedFrom}` : ''}`
     : 'нет тренировки';
   return `${base}: ${body}${copyTarget ? ', выбран для копии' : ''}`;
 }

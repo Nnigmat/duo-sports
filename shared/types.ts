@@ -270,6 +270,8 @@ export interface PlanEntry {
   status: PlanEntryStatus;
   /** Для status = moved: «31 октября» */
   movedTo?: string;
+  /** Тренировка перенесена на этот день с другого: «ср» */
+  movedFrom?: string;
   /** Добавлена или скопирована вручную: её можно убрать */
   custom?: boolean;
   /** Названия других тренировок в этот же день («Оставить обе» при импорте) */

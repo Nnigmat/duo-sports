@@ -18,6 +18,10 @@ type Props = {
   past?: boolean;
   template?: PlanTemplate;
   status?: DisplayStatus;
+  /** Для перенесённой тренировки: «6 ноября» — клетка пишет «→ на 6 ноября» */
+  movedTo?: string;
+  /** Тренировка пришла с другого дня: «ср» — клетка пишет «со ср» */
+  movedFrom?: string;
   onPick?: (date: string) => void;
 };
 
@@ -33,6 +37,8 @@ export function CalendarCell({
   past,
   template,
   status,
+  movedTo,
+  movedFrom,
   onPick,
 }: Props) {
   const num = Number(date.slice(8, 10));
@@ -44,7 +50,17 @@ export function CalendarCell({
   }
 
   const desktop = layout === 'desktop';
-  const statusText = copyTarget === 'replace' ? 'заменить копией' : copyTarget === 'new' ? 'копия сюда' : status ? cellStatusWord(status) : '';
+  const baseStatus = status ? cellStatusWord(status) : '';
+  const statusText =
+    copyTarget === 'replace'
+      ? 'заменить копией'
+      : copyTarget === 'new'
+        ? 'копия сюда'
+        : status === 'moved' && movedTo
+          ? `→ на ${movedTo}`
+          : movedFrom && status !== 'moved'
+            ? [baseStatus, `со ${movedFrom}`].filter(Boolean).join(' · ')
+            : baseStatus;
 
   return (
     <button
@@ -61,7 +77,7 @@ export function CalendarCell({
       data-layout={layout}
       onClick={() => onPick?.(date)}
     >
-      <span className={styles.sr}>{cellAriaLabel(date, template?.title ?? null, status ?? null, copyTarget !== null, isToday)}</span>
+      <span className={styles.sr}>{cellAriaLabel(date, template?.title ?? null, status ?? null, copyTarget !== null, isToday, movedTo, movedFrom)}</span>
       <span className={numClass} aria-hidden="true">{num}</span>
       {template &&
         (desktop ? (

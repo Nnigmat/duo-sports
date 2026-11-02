@@ -74,6 +74,18 @@ export const Moved: Story = {
     await expect(within(canvasElement).getByText('Перенесена на 31 октября')).toBeVisible();
   },
 };
+export const MovedHere: Story = {
+  args: {
+    date: '2026-11-02',
+    data: {
+      ...planFixture,
+      entries: { ...planFixture.entries, '2026-11-02': { templateId: planFixture.templates[0]!.id, status: 'planned', custom: true, movedFrom: 'пт' } },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText(/Запланирована · перенесена со пт/)).toBeVisible();
+  },
+};
 export const Skipped: Story = {
   args: { date: '2026-10-11' },
   play: async ({ canvasElement }) => {

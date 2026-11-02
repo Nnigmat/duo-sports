@@ -18,7 +18,7 @@ export const Month: Story = {
     // Октябрь 2026: 35 клеток, 31 доступна, 4 чужих дня скрыты от скринридера
     await expect(c.getAllByRole('button')).toHaveLength(31);
     await expect(c.getByRole('button', { name: /^Суббота, 31 октября/ })).toHaveAttribute('aria-pressed', 'true');
-    await expect(c.getByText('перенесена')).toBeVisible();
+    await expect(c.getByText('→ на 31 октября')).toBeVisible();
     await expect(c.getByText('пропущена')).toBeVisible();
     await userEvent.click(c.getByRole('button', { name: /^Понедельник, 26 октября/ }));
     await expect(args.onPick).toHaveBeenCalledWith('2026-10-26');

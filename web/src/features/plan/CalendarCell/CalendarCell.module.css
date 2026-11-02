@@ -46,7 +46,7 @@
   padding: calc(var(--spacing-xxs) - 1px) 0;
 }
 .moved {
-  border: 1px dashed var(--hairline-strong);
+  border: 1px dashed var(--highlight);
 }
 .cell:focus-visible {
   outline: none;
