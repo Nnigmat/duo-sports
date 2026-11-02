@@ -22,7 +22,9 @@ export function workoutResponse(db: Db, userId: number, id: number): WorkoutResp
   const library = libraryOf(db);
   const rows = commentRowsOf(db, userId);
   const comments = commentsFor(workout.blocks, library, rows);
-  markSeen(db, comments.filter((c) => c.isNew).map((c) => Number(c.id)));
+  // Комментарии из разбора (с привязкой к тренировке) помечает прочитанными экран разбора, иначе «новое» пропало бы раньше
+  const ofReview = new Set(rows.filter((r) => r.sessionId !== null).map((r) => String(r.id)));
+  markSeen(db, comments.filter((c) => c.isNew && !ofReview.has(c.id)).map((c) => Number(c.id)));
   return { workout, comments, techniques: techniquesFor(workout.blocks, library) };
 }
 

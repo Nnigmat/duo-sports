@@ -61,6 +61,19 @@ export const Default: Story = {
   },
 };
 
+/** CLAUDE.md: все кнопки не меньше 44 px, и метки на шкале, и сам ползунок */
+export const TouchTargets: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const controls = [...c.getAllByRole('button'), c.getByRole('slider')];
+    for (const el of controls) {
+      const { width, height } = el.getBoundingClientRect();
+      await expect(Math.round(width), el.getAttribute('aria-label') ?? el.tagName).toBeGreaterThanOrEqual(44);
+      await expect(Math.round(height), el.getAttribute('aria-label') ?? el.tagName).toBeGreaterThanOrEqual(44);
+    }
+  },
+};
+
 export const SkipFiveSeconds: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);

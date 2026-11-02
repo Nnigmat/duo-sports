@@ -1,7 +1,7 @@
 .strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--spacing-xxs);
+  gap: 2px; /* при 390 px кнопка дня остаётся не уже 44 px */
   margin: 0;
   padding: 0;
   list-style: none;

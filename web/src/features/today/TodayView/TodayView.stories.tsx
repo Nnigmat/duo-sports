@@ -36,6 +36,12 @@ export const Workout: Story = {
       await expect(c.getByRole('region', { name })).toBeVisible();
     }
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
+    // кнопки дней недели не уже и не ниже 44 px
+    for (const day of c.getAllByRole('button').filter((b) => b.hasAttribute('aria-pressed'))) {
+      const { width, height } = day.getBoundingClientRect();
+      await expect(Math.round(width), day.getAttribute('aria-label') ?? '').toBeGreaterThanOrEqual(44);
+      await expect(Math.round(height), day.getAttribute('aria-label') ?? '').toBeGreaterThanOrEqual(44);
+    }
     await userEvent.click(c.getByRole('button', { name: 'Перенести' }));
     await expect(args.onReschedule).toHaveBeenCalledTimes(1);
   },

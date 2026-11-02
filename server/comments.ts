@@ -23,6 +23,8 @@ export interface CommentRow {
   exerciseName: string;
   videoId: string | null;
   videoLabel: string | null;
+  /** Тренировка, к которой относится комментарий (разбор); null — комментарий без привязки */
+  sessionId: number | null;
   text: string;
   createdAt: string;
   seen: boolean;
@@ -153,9 +155,9 @@ export function libraryOf(db: Db): LibraryRow[] {
 /** Комментарии тренера спортсмену (ответы самого спортсмена не в счёт). После выдачи помечаются прочитанными: «новый» виден один раз. */
 export function commentRowsOf(db: Db, athleteId: number): CommentRow[] {
   const rows = db
-    .prepare('SELECT id, exercise_slug, exercise_name, video_id, video_label, text, created_at, seen_at FROM comments WHERE athlete_id = ? AND author_id <> athlete_id ORDER BY created_at DESC, id DESC')
-    .all(athleteId) as Array<{ id: number; exercise_slug: string | null; exercise_name: string; video_id: string | null; video_label: string | null; text: string; created_at: string; seen_at: string | null }>;
-  return rows.map((r) => ({ id: r.id, exerciseSlug: r.exercise_slug, exerciseName: r.exercise_name, videoId: r.video_id, videoLabel: r.video_label, text: r.text, createdAt: r.created_at, seen: r.seen_at !== null }));
+    .prepare('SELECT id, exercise_slug, exercise_name, video_id, video_label, session_id, text, created_at, seen_at FROM comments WHERE athlete_id = ? AND author_id <> athlete_id ORDER BY created_at DESC, id DESC')
+    .all(athleteId) as Array<{ id: number; exercise_slug: string | null; exercise_name: string; video_id: string | null; video_label: string | null; session_id: number | null; text: string; created_at: string; seen_at: string | null }>;
+  return rows.map((r) => ({ id: r.id, exerciseSlug: r.exercise_slug, exerciseName: r.exercise_name, videoId: r.video_id, videoLabel: r.video_label, sessionId: r.session_id, text: r.text, createdAt: r.created_at, seen: r.seen_at !== null }));
 }
 
 export function markSeen(db: Db, ids: number[], clock: Clock = now) {

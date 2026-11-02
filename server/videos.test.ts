@@ -136,6 +136,26 @@ describe('GET /api/videos/:id', () => {
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([12, 13]));
   });
 
+  it('Range за пределами файла: 416, а не 404', async () => {
+    const res = await get(id, cookie, { range: 'bytes=5000-' });
+    expect(res.status).toBe(416);
+  });
+
+  it('кеш браузера только у успешного ответа: ошибка не кешируется', async () => {
+    expect((await get(id, cookie)).headers.get('cache-control')).toBe('private, max-age=3600');
+    expect((await get(id, cookie, { range: 'bytes=5000-' })).headers.get('cache-control') ?? '').not.toContain('max-age=3600');
+    const missing = await get('00000000-0000-4000-8000-000000000000', cookie);
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get('cache-control') ?? '').not.toContain('max-age=3600');
+  });
+
+  it('файл пропал с диска при живой записи в базе: 404 и без кеша', async () => {
+    fs.rmSync(path.join(dir, `${id}.webm`));
+    const res = await get(id, cookie);
+    expect(res.status).toBe(404);
+    expect(res.headers.get('cache-control') ?? '').not.toContain('max-age=3600');
+  });
+
   it('неизвестный id и не-uuid: 404', async () => {
     expect((await get('00000000-0000-4000-8000-000000000000', cookie)).status).toBe(404);
     expect((await get('..%2Fapp.db', cookie)).status).toBe(404);

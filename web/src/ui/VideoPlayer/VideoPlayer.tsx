@@ -197,7 +197,7 @@ export function VideoPlayer({
                 key={c.id}
                 type="button"
                 className={styles.marker}
-                style={{ left: `calc(${duration > 0 ? (c.timecodeSec / duration) * 100 : 0}% - 16px)` }}
+                style={{ left: `calc(${duration > 0 ? (c.timecodeSec / duration) * 100 : 0}% - 22px)` }}
                 disabled={!ready}
                 aria-label={`${c.author}, комментарий на ${formatTime(c.timecodeSec)}`}
                 aria-current={on ? 'true' : undefined}

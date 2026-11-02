@@ -38,9 +38,13 @@ export function videosRouter({ db, dir, maxBytes }: { db: Db; dir: string; maxBy
     const id = String(req.params.id);
     const row = UUID.test(id) ? (db.prepare('SELECT athlete_id, file FROM videos WHERE id = ?').get(id) as { athlete_id: number; file: string } | undefined) : undefined;
     if (!row || !canAccessAthlete(db, req.user!, row.athlete_id)) return void res.status(404).json({ error: 'not_found' });
-    res.set('Cache-Control', 'private, max-age=3600');
-    res.sendFile(path.resolve(dir, row.file), (err) => {
-      if (err && !res.headersSent) res.status(404).json({ error: 'not_found' });
+    // Заголовок кеша уходит только с удачным ответом: ошибку браузер не должен запоминать на час
+    res.sendFile(path.resolve(dir, row.file), { headers: { 'Cache-Control': 'private, max-age=3600' } }, (err) => {
+      if (!err || res.headersSent) return;
+      res.removeHeader('Cache-Control'); // библиотека ставит заголовки до разбора Range
+      // Range за пределами файла: 416, пропавший файл: 404
+      const status = (err as { status?: number }).status === 416 ? 416 : 404;
+      res.status(status).json({ error: status === 416 ? 'range_not_satisfiable' : 'not_found' });
     });
   });
 

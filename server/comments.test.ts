@@ -5,6 +5,7 @@ import { createUser } from './auth';
 import { addComment, commentRowsOf, commentsFor, libraryOf, techniqueOf, techniquesFor, validateComment, type LibraryRow } from './comments';
 import { openDb, type Db } from './db';
 import { applyImport, ensureLibrary } from './imports';
+import { sessionReviewOf } from './sessionReview';
 import { linkAthlete } from './trainerLinks';
 import { saveSession, workoutResponse } from './workouts';
 
@@ -40,7 +41,7 @@ describe('техника', () => {
 });
 
 describe('комментарии для экрана', () => {
-  const row = (id: number, slug: string | null, over = {}) => ({ id, exerciseSlug: slug, exerciseName: 'X', videoId: null, videoLabel: null, text: 't', createdAt: '2026-11-01T00:00:00Z', seen: false, ...over });
+  const row = (id: number, slug: string | null, over = {}) => ({ id, exerciseSlug: slug, exerciseName: 'X', videoId: null, videoLabel: null, sessionId: null, text: 't', createdAt: '2026-11-01T00:00:00Z', seen: false, ...over });
   it('подставляет id упражнения из структуры, общие (без упражнения) отбрасывает, чужие упражнения отбрасывает', () => {
     const out = commentsFor(blocks, lib, [row(1, 'bench'), row(2, null), row(3, 'squat')]);
     expect(out.map((c) => [c.id, c.exerciseId])).toEqual([['1', 'b1-e0']]);
@@ -127,7 +128,7 @@ describe('база', () => {
     expect(addComment(db, A(), athlete, c, clock).ok).toBe(true);
     expect(addComment(db, A(), stranger, c, clock)).toEqual({ ok: false, error: 'forbidden' });
   });
-  it('ответ тренировки содержит комментарии тренера и технику; «новое» видно один раз', () => {
+  it('ответ тренировки содержит комментарии и технику; комментарий к видео привязан к разбору и остаётся «новым»', () => {
     addComment(db, { id: trainer, role: 'admin' }, athlete, { exerciseId: 'bench', text: 'Локти ближе', videoId: V, videoLabel: 'Видео · круг 2' }, clock);
     // видео должно существовать
     expect(commentRowsOf(db, athlete)).toHaveLength(0);
@@ -137,6 +138,25 @@ describe('база', () => {
     expect(first.comments).toHaveLength(1);
     expect(first.comments[0]).toMatchObject({ exerciseId: 'b1-e0', exerciseName: 'Жим лёжа', isNew: true, video: { id: V } });
     expect(first.techniques['b1-e0']).toEqual({ instructions: ['Лопатки сведены'], videoUrl: '/v/b.mp4' });
+    // видео привязывает комментарий к тренировке, значит гасит «новое» экран разбора, а не экран тренировки
+    expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(true);
+  });
+  it('комментарий без привязки к тренировке: «новое» видно один раз', () => {
+    addComment(db, T(), athlete, { exerciseId: 'bench', text: 'Локти ближе' }, clock);
+    expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(true);
+    expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(false);
+  });
+  it('комментарий из разбора экран тренировки не помечает прочитанным: «новое» доживает до экрана разбора', () => {
+    const sid = sessionWithVideo();
+    addComment(db, T(), athlete, { exerciseId: 'bench', sessionId: sid, text: 'Локти ближе' }, clock);
+    expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(true);
+    expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(true);
+    const review = (r = sessionReviewOf(db, A(), sid, '2026-11-04')) => {
+      if (!r.ok) throw new Error(r.error);
+      return r.review.exercises[0]!;
+    };
+    expect(review().newCount).toBe(1);
+    expect(review().newCount).toBe(0);
     expect(workoutResponse(db, athlete, wid())!.comments[0]!.isNew).toBe(false);
   });
   it('ответы самого ученика на экран тренировки как комментарии тренера не попадают', () => {
