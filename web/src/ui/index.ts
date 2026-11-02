@@ -30,6 +30,7 @@ export { SearchField } from './SearchField/SearchField';
 export { SegmentedControl } from './SegmentedControl/SegmentedControl';
 export { Sheet } from './Sheet/Sheet';
 export { StatTile } from './StatTile/StatTile';
+export { StatusBadge, type Status } from './StatusBadge/StatusBadge';
 export { TopBar } from './TopBar/TopBar';
 export { Stepper, formatDuration } from './Stepper/Stepper';
 export { StreakBadge } from './StreakBadge/StreakBadge';

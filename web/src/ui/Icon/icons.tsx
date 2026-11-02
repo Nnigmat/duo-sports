@@ -158,6 +158,14 @@ export const icons = {
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
     </>
   ),
+  arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
+  comment: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
   logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />,
 } satisfies Record<string, ReactNode>;
 
