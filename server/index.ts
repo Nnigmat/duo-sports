@@ -1,3 +1,5 @@
+import './instrument';
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,11 +16,14 @@ import { todayRouter } from './todayRouter';
 import { trainerRouter } from './trainerRouter';
 import { videosRouter } from './videos';
 import { demoRouter } from './demoRouter';
+import { logger, requestLogger } from './logger';
 
 const MAX_DEMO_BYTES = 50 * 1024 * 1024; // ролик чибика — секунды видео, не запись подхода
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
+
+app.use(requestLogger);
 
 // Импорт присылает до 500 тренировок за раз: лимит больше стандартных 100 КБ
 app.use(express.json({ limit: '5mb' }));
@@ -52,6 +57,13 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Ошибки обработчиков: сначала в Sentry, потом ответ клиенту
+Sentry.setupExpressErrorHandler(app);
+app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  req.log.error({ err }, 'необработанная ошибка');
+  if (!res.headersSent) res.status(500).json({ error: 'Внутренняя ошибка' });
+});
+
 app.listen(port, () => {
-  console.log(`Сервер: http://localhost:${port}`);
+  logger.info(`Сервер: http://localhost:${port}`);
 });

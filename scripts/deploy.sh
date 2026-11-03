@@ -4,6 +4,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# SENTRY_DSN и VITE_SENTRY_DSN приходят из GitHub Secrets (deploy.yml)
+for name in SENTRY_DSN VITE_SENTRY_DSN; do
+  [ -n "${!name:-}" ] || echo "Предупреждение: $name не задан, Sentry будет выключен" >&2
+done
+
 git fetch origin main
 git reset --hard origin/main
 npm ci
