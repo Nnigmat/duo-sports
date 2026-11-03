@@ -164,6 +164,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         onOpenChange={closeReading}
         title={shown.exerciseName}
         pose={shown.pose ?? 'stand'}
+        idleUrl={idleUrl(gender)}
         technique={techniques[shown.exerciseId] ?? { instructions: [] }}
         comment={note}
         commentsCount={commentsFor(comments, shown.exerciseId).length}

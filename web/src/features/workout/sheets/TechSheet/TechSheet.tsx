@@ -10,7 +10,7 @@ import { Icon } from "../../../../ui/Icon/Icon";
 import { IconButton } from "../../../../ui/IconButton/IconButton";
 import { Sheet } from "../../../../ui/Sheet/Sheet";
 import { Text } from "../../../../ui/Text/Text";
-import { Chibi } from "../../chibi/Chibi";
+import { ChibiClip } from "../../parts/ChibiClip/ChibiClip";
 import { formatCommentDate, hasTechnique } from "../../flow";
 import styles from "./TechSheet.module.css";
 
@@ -20,6 +20,8 @@ type Props = {
   /** Название упражнения */
   title: string;
   pose: Pose;
+  /** Ролик «стоит» на случай, когда у упражнения нет своего */
+  idleUrl?: string;
   technique: Technique;
   /** Последний комментарий тренера к упражнению */
   comment?: CoachComment;
@@ -35,6 +37,7 @@ export function TechSheet({
   onOpenChange,
   title,
   pose,
+  idleUrl,
   technique,
   comment,
   commentsCount,
@@ -52,6 +55,7 @@ export function TechSheet({
       {/* Состояние вкладки и анимации сбрасывается при каждом открытии */}
       <TechBody
         pose={pose}
+        idleUrl={idleUrl}
         technique={technique}
         comment={comment}
         commentsCount={commentsCount}
@@ -66,6 +70,7 @@ type BodyProps = Omit<Props, "open" | "onOpenChange" | "title">;
 
 function TechBody({
   pose,
+  idleUrl,
   technique,
   comment,
   commentsCount,
@@ -82,11 +87,12 @@ function TechBody({
     <>
       {filled && (
         <div className={styles.media}>
-            <Chibi
+            <ChibiClip
               key={run}
+              src={technique.demoUrl ?? idleUrl}
               pose={pose}
-              size={196}
-              speed={0.5}
+              size={188}
+              rate={0.5}
               paused={paused}
               className={styles.chibi}
             />

@@ -1,3 +1,4 @@
+import type { Gender } from '../../../../../shared/types';
 import type { AchievementsData } from '../../../data/types';
 import { Chip, ChipGroup, IconButton, Text, TopBar } from '../../../ui';
 import { AchievementsSummary } from '../AchievementsSummary/AchievementsSummary';
@@ -12,10 +13,11 @@ type Props = {
   /** Стрелка «назад к прогрессу» в шапке (только mobile) */
   onBack?: () => void;
   layout?: 'mobile' | 'desktop';
+  gender?: Gender;
 };
 
 /** Экран «Достижения»: сводка, фильтр по разделам и карточки. */
-export function AchievementsView({ data, filter, onFilterChange, onBack, layout = 'mobile' }: Props) {
+export function AchievementsView({ data, filter, onFilterChange, onBack, layout = 'mobile', gender }: Props) {
   const desktop = layout === 'desktop';
   const sections = visibleCategories(data.categories, filter);
 
@@ -29,7 +31,7 @@ export function AchievementsView({ data, filter, onFilterChange, onBack, layout 
         <Text variant={desktop ? 'display' : 'h1'} tag="h1" className={styles.title}>Достижения</Text>
       </header>
 
-      <AchievementsSummary categories={data.categories} layout={layout} />
+      <AchievementsSummary categories={data.categories} layout={layout} gender={gender} />
 
       <ChipGroup label="Категории" scroll={!desktop}>
         {categoryTabs(data.categories).map((t) => (

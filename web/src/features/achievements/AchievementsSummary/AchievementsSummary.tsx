@@ -1,5 +1,7 @@
+import type { Gender } from '../../../../../shared/types';
 import type { AchievementCategory } from '../../../data/types';
-import { Chibi } from '../../workout/chibi/Chibi';
+import { successUrl } from '../../workout/chibi/idle';
+import { ChibiClip } from '../../workout/parts/ChibiClip/ChibiClip';
 import { ProgressBar, Text, TierLegend } from '../../../ui';
 import { closestGoal, totalCount } from '../achievements';
 import styles from './AchievementsSummary.module.css';
@@ -7,10 +9,11 @@ import styles from './AchievementsSummary.module.css';
 type Props = {
   categories: AchievementCategory[];
   layout?: 'mobile' | 'desktop';
+  gender?: Gender;
 };
 
 /** Сводка: сколько уровней получено, что ближе всего, легенда уровней. */
-export function AchievementsSummary({ categories, layout = 'mobile' }: Props) {
+export function AchievementsSummary({ categories, layout = 'mobile', gender }: Props) {
   const { got, total } = totalCount(categories);
   const closest = closestGoal(categories);
   const desktop = layout === 'desktop';
@@ -18,7 +21,7 @@ export function AchievementsSummary({ categories, layout = 'mobile' }: Props) {
   return (
     <section aria-label="Сводка" className={styles.root} data-layout={layout}>
       <div className={styles.top}>
-        <Chibi pose="stand" medal size={desktop ? 130 : 80} />
+        <ChibiClip src={successUrl(gender)} pose="stand" medal size={desktop ? 130 : 80} />
         <div className={styles.total}>
           <span className={styles.number}>{got} из {total}</span>
           <Text variant="body-sm" color="slate">уровней получено</Text>

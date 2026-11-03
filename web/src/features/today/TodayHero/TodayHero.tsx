@@ -1,8 +1,9 @@
 import { useId } from 'react';
-import type { Pose } from '../../../../../shared/types';
+import type { Gender, Pose } from '../../../../../shared/types';
 import type { TodayState } from '../../../data/types';
 import { cx } from '../../../ui/cx';
-import { Chibi } from '../../workout/chibi/Chibi';
+import { idleUrl, restUrl, successUrl } from '../../workout/chibi/idle';
+import { ChibiClip } from '../../workout/parts/ChibiClip/ChibiClip';
 import { DoneCard } from './DoneCard';
 import { RestCard } from './RestCard';
 import { WorkoutCard } from './WorkoutCard';
@@ -19,18 +20,22 @@ export type TodayHeroActions = {
 
 type Props = TodayHeroActions & {
   state: TodayState;
+  /** Пол спортсмена: каким чибиком показать ролик */
+  gender?: Gender;
   className?: string;
 };
 
 const POSE: Record<TodayState['kind'], Pose> = { workout: 'wave', rest: 'rest', done: 'cheer' };
 
+const CLIP: Record<TodayState['kind'], (gender?: Gender) => string> = { workout: idleUrl, rest: restUrl, done: successUrl };
+
 /** Чибик и карточка дня: тренировка, отдых или сделано. */
-export function TodayHero({ state, className, ...actions }: Props) {
+export function TodayHero({ state, gender, className, ...actions }: Props) {
   const titleId = useId();
   return (
     <section aria-labelledby={titleId} className={cx(styles.hero, className)}>
       <div className={styles.disk}>
-        <Chibi pose={POSE[state.kind]} size={200} />
+        <ChibiClip src={CLIP[state.kind](gender)} pose={POSE[state.kind]} size={176} />
       </div>
       {state.kind === 'workout' && <WorkoutCard titleId={titleId} workout={state.workout} {...actions} />}
       {state.kind === 'rest' && <RestCard titleId={titleId} next={state.next} {...actions} />}
