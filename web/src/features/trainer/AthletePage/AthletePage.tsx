@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAthletes, useAthleteSessions, useExercises, usePastComments, usePlannedWorkout, useTrainerReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
@@ -20,13 +20,16 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
   const navigate = useNavigate();
   const [version, setVersion] = useState(0);
   const [picked, setPicked] = useState<Selection | null>(null);
+  // Телефон: открыта ли тренировка. Приходя из плана по ссылке с датой, сразу показываем её
+  const [search] = useSearchParams();
+  const [open, setOpen] = useState(() => search.has('date'));
+  const listScroll = useRef(0);
   const reload = () => setVersion((v) => v + 1);
 
   const list = useAthletes('all', '');
   const sessions = useAthleteSessions(athleteId, version);
   const athlete = list.data?.athletes.find((a) => a.id === athleteId);
   // ?date=…&workout=… приходит из плана: открываем итоги или запланированную тренировку этого дня
-  const [search] = useSearchParams();
   const fromPlan = sessions.data ? selectionFor(sessions.data, search.get('date'), search.get('workout')) : null;
   const selection = picked ?? fromPlan ?? (sessions.data ? defaultSelection(sessions.data) : null);
 
@@ -95,7 +98,17 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
       athlete={athlete}
       sessions={sessions.data}
       selection={selection}
-      onSelect={setPicked}
+      onSelect={(sel) => {
+        setPicked(sel);
+        listScroll.current = window.scrollY;
+        setOpen(true);
+        window.scrollTo(0, 0);
+      }}
+      open={open}
+      onClose={() => {
+        setOpen(false);
+        requestAnimationFrame(() => window.scrollTo(0, listScroll.current));
+      }}
       backHref="/trainer"
       onBack={() => navigate('/trainer')}
       onTab={(tab) => navigate(tab === 'plan' ? `/trainer/athletes/${athleteId}/plan` : `/trainer/athletes/${athleteId}`)}
