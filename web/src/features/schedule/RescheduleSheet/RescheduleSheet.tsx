@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ScheduleData } from '../../../data/types';
-import { ActionList, Button, ChoiceCard, DayPicker, Icon, Sheet, type PickerDay } from '../../../ui';
+import { ActionList, Button, DayPicker, Icon, IconButton, Sheet, type PickerDay } from '../../../ui';
 import { dayLabel } from '../../../ui/labels';
 import type { RescheduleTarget } from '../../../data/types';
-import { rescheduleNote } from '../reschedule';
+import { addDays, rangeTitle, toIso, weekStart } from '../../plan/plan';
+import { rescheduleNote, weekTargets } from '../reschedule';
 import styles from './RescheduleSheet.module.css';
 
 /** «вс, 1 ноября» без пометки про занятый день */
@@ -16,46 +17,42 @@ type Props = {
   onConfirm: (date: string) => void;
   onSkip: () => void;
   onPause: () => void;
+  /** Сегодняшний день «2026-11-03»; раньше него переносить нельзя */
+  today?: string;
 };
 
-/** Панель переноса тренировки: эта неделя, следующая неделя и последствия для серии. */
-export function RescheduleSheet({ open, onOpenChange, data, onConfirm, onSkip, onPause }: Props) {
+/** Панель переноса тренировки: неделя с переключателем вперёд и назад, любой день от сегодняшнего и последствия для серии. */
+export function RescheduleSheet({ open, onOpenChange, data, onConfirm, onSkip, onPause, today = toIso(new Date()) }: Props) {
   const { workout, sameWeek, nextWeek } = data;
-  const [date, setDate] = useState<string | undefined>(sameWeek?.date ?? nextWeek.days[0]?.date);
+  const busy = useMemo(() => {
+    if (data.busy) return data.busy;
+    const map: Record<string, string> = {};
+    for (const d of [...(sameWeek ? [sameWeek] : []), ...nextWeek.days]) if (d.busy) map[d.date] = d.busy;
+    return map;
+  }, [data.busy, sameWeek, nextWeek.days]);
+  const [date, setDate] = useState<string>(sameWeek?.date ?? nextWeek.days[0]?.date ?? today);
+  const [start, setStart] = useState(() => weekStart(date));
 
-  const sameWeekPicked = sameWeek !== undefined && sameWeek !== null && date === sameWeek.date;
-  const target = sameWeekPicked ? sameWeek : nextWeek.days.find((d) => d.date === date);
-  const note = target ? rescheduleNote(target, sameWeekPicked) : null;
-  const pickerDays: PickerDay[] = nextWeek.days;
+  const days = weekTargets(start, busy, today);
+  const target = days.find((d) => d.date === date);
+  // Серия сохраняется, пока тренировка остаётся в своей неделе (пропущенную считаем от сегодняшней)
+  const originWeek = weekStart(data.from && data.from >= today ? data.from : today);
+  const note = target ? rescheduleNote(target, start === originWeek) : null;
+  const pickerDays: PickerDay[] = days;
+  const canPrev = addDays(start, -1) >= today;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title="Перенести тренировку" eyebrow={`${workout.title} · ${workout.whenLabel}`}>
       <div className={styles.body}>
-        {sameWeek && (
-          <section className={styles.group} aria-labelledby="reschedule-this-week">
-            <h3 id="reschedule-this-week" className={styles.eyebrow}>
-              Эта неделя
+        <section className={styles.group} aria-labelledby="reschedule-week">
+          <div className={styles.weekNav}>
+            <IconButton icon="back" aria-label="Предыдущая неделя" disabled={!canPrev} onClick={() => setStart(addDays(start, -7))} />
+            <h3 id="reschedule-week" aria-live="polite" className={styles.weekTitle}>
+              {rangeTitle('week', start)}
             </h3>
-            <ChoiceCard
-              name="reschedule-day"
-              value={sameWeek.date}
-              checked={sameWeekPicked}
-              onChange={setDate}
-              title={`${sameWeek.relative ? `${sameWeek.relative}, ` : ''}${plainLabel(sameWeek)}`}
-              description={sameWeek.busy ? `Уже стоит: ${sameWeek.busy}` : undefined}
-            />
-          </section>
-        )}
-        <section className={styles.group} aria-labelledby="reschedule-next-week">
-          <h3 id="reschedule-next-week" className={styles.eyebrow}>
-            Следующая неделя · {nextWeek.rangeLabel}
-          </h3>
-          <DayPicker
-            label="Новый день тренировки"
-            days={pickerDays}
-            value={sameWeekPicked ? undefined : date}
-            onChange={setDate}
-          />
+            <IconButton icon="forward" aria-label="Следующая неделя" onClick={() => setStart(addDays(start, 7))} />
+          </div>
+          <DayPicker label="Новый день тренировки" days={pickerDays} value={date} onChange={setDate} />
           <p className={styles.legend}>
             <span className={styles.dot} aria-hidden="true" />в этот день уже есть тренировка
           </p>

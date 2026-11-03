@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
 import { addComment, validateComment } from './comments';
-import { saveSession, validateSession, workoutResponse } from './workouts';
+import { updateWorkout } from './workoutEdit';
+import { saveSession, validateSession, workoutOf, workoutResponse } from './workouts';
 
 /** Тренировка для выполнения и запись результата. Всё про данные вошедшего пользователя. */
 export function workoutRouter(db: Db) {
@@ -14,6 +15,22 @@ export function workoutRouter(db: Db) {
     const workout = Number.isInteger(id) ? workoutResponse(db, req.user!.id, id) : null;
     if (!workout) return void res.status(404).json({ error: 'not_found' });
     res.json(workout);
+  });
+
+  /** Состав для редактора: без пометки комментариев прочитанными */
+  r.get('/workouts/:id/plan', (req, res) => {
+    const id = Number(req.params.id);
+    const workout = Number.isInteger(id) ? workoutOf(db, req.user!.id, id) : null;
+    if (!workout) return void res.status(404).json({ error: 'not_found' });
+    res.json(workout);
+  });
+
+  /** Спортсмен меняет состав своей тренировки */
+  r.put('/workouts/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const result = Number.isInteger(id) ? updateWorkout(db, req.user!, req.user!.id, id, req.body) : ({ ok: false, error: 'not_found' } as const);
+    if (!result.ok) return void res.status(result.error === 'not_found' ? 404 : 400).json({ error: result.error });
+    res.json(result.workout);
   });
 
   r.post('/workouts/:id/sessions', (req, res) => {

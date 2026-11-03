@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import { pickDemo } from '../../../../../shared/demo';
+import type { Gender } from '../../../../../shared/types';
+import { useMediaQuery } from '../../../shared';
 import { Badge, BarChart, Button, CommentBubble, EmptyState, Icon, MediaLink, StatTile, Text, TopBar } from '../../../ui';
 import {
   barsNote, KIND_INFO, lastSessionRows, latestMedia, mediaCountText, noteSteps, recordTiles, trendInfo,
@@ -17,10 +20,14 @@ type Props = {
   backLabel?: string;
   /** Заменяет шапку, например при редактировании */
   topBar?: ReactNode;
+  /** Пол пользователя: по нему выбирается ролик техники */
+  gender?: Gender;
 };
 
 /** Карточка упражнения: тип, мышцы, рекорд, последняя тренировка, видео и комментарии, график. */
-export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory, onAddVideo, backLabel = 'Упражнения', topBar }: Props) {
+export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory, onAddVideo, backLabel = 'Упражнения', topBar, gender }: Props) {
+  const still = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const demoFile = pickDemo(gender, ex.demo);
   const tiles = recordTiles(ex);
   const rows = lastSessionRows(ex);
   const note = barsNote(ex);
@@ -42,10 +49,26 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
 
       <div className={styles.body}>
         <figure className={styles.figure}>
-          <Icon name="video" />
-          <figcaption className={styles.caption}>
-            {ex.demo ? 'Видео техники загружено' : 'Видео техники не добавлено'}
-          </figcaption>
+          {demoFile ? (
+            // Превью зациклено и без звука; при reduced motion стоит на первом кадре
+            <video
+              key={demoFile}
+              className={styles.demo}
+              src={`/api/demo/${demoFile}`}
+              muted
+              loop
+              playsInline
+              autoPlay={!still}
+              controls={still}
+              preload="metadata"
+              aria-label={`Видео техники: ${ex.name}`}
+            />
+          ) : (
+            <>
+              <Icon name="video" />
+              <figcaption className={styles.caption}>Видео техники не добавлено</figcaption>
+            </>
+          )}
           {onAddVideo && (
             <Button variant="secondary" compact icon="upload" onClick={onAddVideo}>
               {ex.demo ? 'Заменить видео' : 'Добавить видео'}

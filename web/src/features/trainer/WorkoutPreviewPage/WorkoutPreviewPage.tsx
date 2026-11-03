@@ -29,6 +29,7 @@ function Preview({ athleteId, workoutId }: { athleteId: number; workoutId: numbe
       workout={data.workout}
       comments={data.comments}
       techniques={data.techniques}
+      gender={data.gender}
       dateLabel={`Превью · ${formatLongDate(parseIso(day))}`}
       // Видео в превью на сервер не уходит: загрузка отключена, id не возвращается
       onUploadVideo={async () => undefined}

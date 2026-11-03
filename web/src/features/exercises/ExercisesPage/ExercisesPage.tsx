@@ -92,6 +92,7 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
             render={(ex) => (
               <ExerciseDetailView
                 exercise={ex}
+                gender={auth.status === 'in' ? auth.user.gender : undefined}
                 backLabel={desktop ? 'Все упражнения' : 'Упражнения'}
                 onBack={() => navigate(BASE)}
                 onEdit={canManage ? () => navigate(`${BASE}/${ex.id}/edit`) : undefined}

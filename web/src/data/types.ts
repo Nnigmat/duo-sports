@@ -138,6 +138,10 @@ export type RescheduleTarget = {
 };
 
 export type ScheduleData = {
+  /** День, с которого переносим */
+  from?: string;
+  /** Названия тренировок по датам плана — для занятых дней любой недели */
+  busy?: Record<string, string>;
   workout: WorkoutSummary;
   /** Ближайший свободный или занятый день этой недели; null, если неделя закончилась */
   sameWeek: (RescheduleTarget & { relative?: string }) | null;

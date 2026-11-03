@@ -5,7 +5,7 @@ import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
 import { PlanPage } from '../features/plan';
 import { ReviewPage, VideoReviewPage } from '../features/review';
-import { AthleteImportPage, AthletePage, AthletePlanPage, StudentsPage, WorkoutPreviewPage } from '../features/trainer';
+import { AthleteImportPage, AthletePage, AthletePlanPage, OwnWorkoutEditPage, StudentsPage, WorkoutEditPage, WorkoutPreviewPage } from '../features/trainer';
 import { TodayPage } from '../features/today';
 import { WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
@@ -30,9 +30,11 @@ export function AppRoutes() {
             <Route index element={<StudentsPage />} />
             <Route path="athletes/:id" element={<AthletePage />} />
             <Route path="athletes/:id/plan" element={<AthletePlanPage />} />
+            <Route path="athletes/:id/workouts/:wid/edit" element={<WorkoutEditPage />} />
             <Route path="athletes/:id/import/*" element={<AthleteImportPage />} />
           </Route>
           <Route path="plan" element={<PlanPage />} />
+          <Route path="plan/workouts/:wid/edit" element={<OwnWorkoutEditPage />} />
           <Route path="import/*" element={<ImportPage />} />
           <Route path="exercises/*" element={<ExercisesPage />} />
           <Route path="progress/achievements" element={<AchievementsPage />} />

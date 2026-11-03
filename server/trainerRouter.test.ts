@@ -177,6 +177,29 @@ describe('перенос, импорт и превью для ученика', (
     expect((await post(`/trainer/athletes/${nikita}/schedule/pause`, coach, { from: '2099-01-10', to: '2099-01-12' })).status).toBe(204);
   });
 
+  it('правка состава: PUT меняет структуру и список для подсказок, чужому 403, без структуры 404, кривое 400', async () => {
+    const blocks = [
+      { id: 'b1', mode: 'sets', title: 'Ноги', restSec: 90, videoRounds: [], exercises: [{ id: 'squat', name: 'Присед', kind: 'weight', target: { min: 8, max: 10 }, weight: 60, sets: 3 }] },
+    ];
+    const withStructure = Number(
+      db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Старая', '[]', '[]', 'x')").run(nikita).lastInsertRowid,
+    );
+    const url = `/trainer/athletes/${nikita}/workouts/${withStructure}`;
+    const put = (path: string, cookie: string, body: unknown) => call(path, cookie, { method: 'PUT', body: JSON.stringify(body) });
+    expect((await put(url, other, { title: 'Новая', blocks })).status).toBe(403);
+    expect((await put(url, coach, { title: '', blocks })).status).toBe(400);
+    expect((await put(url, coach, { title: 'Новая', blocks: [] })).status).toBe(400);
+    const bare = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, created_at) VALUES (?, 'Без структуры', '[]', 'x')").run(nikita).lastInsertRowid);
+    expect((await put(`/trainer/athletes/${nikita}/workouts/${bare}`, coach, { title: 'Новая', blocks })).status).toBe(404);
+    const ok = await put(url, coach, { title: 'Новая', blocks });
+    expect(ok.status).toBe(200);
+    expect((await ok.json()).title).toBe('Новая');
+    const row = db.prepare('SELECT title, blocks, structure FROM workouts WHERE id = ?').get(withStructure) as { title: string; blocks: string; structure: string };
+    expect(row.title).toBe('Новая');
+    expect(JSON.parse(row.structure)).toEqual(blocks);
+    expect(JSON.parse(row.blocks)).toEqual([{ kind: 'exercises', heading: 'Ноги', items: [{ name: 'Присед', value: '3 × 60 кг × 8–10' }] }]);
+  });
+
   it('импорт: пишет в аккаунт ученика, а не тренера', async () => {
     const ctx = await call(`/trainer/athletes/${nikita}/import/context`, coach);
     expect(ctx.status).toBe(200);

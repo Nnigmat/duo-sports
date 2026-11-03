@@ -3,3 +3,4 @@ export { StudentsPage } from './StudentsPage/StudentsPage';
 export { AthletePlanPage } from './AthletePlanPage/AthletePlanPage';
 export { AthleteImportPage } from './AthleteImportPage/AthleteImportPage';
 export { WorkoutPreviewPage } from './WorkoutPreviewPage/WorkoutPreviewPage';
+export { OwnWorkoutEditPage, WorkoutEditPage } from './WorkoutEditPage/WorkoutEditPage';

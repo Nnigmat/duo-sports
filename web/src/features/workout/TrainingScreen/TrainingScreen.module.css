@@ -50,6 +50,15 @@
   margin-bottom: var(--spacing-xxl); /* нет места под карточку тренера: ролик чуть выше центра */
 }
 
+/* Ролик «стоит» вертикальный 9:16: по высоте как чибик */
+.stage .idle {
+  width: auto;
+  max-width: 100%;
+  height: min(340px, 100%); /* нет токена */
+  aspect-ratio: 9 / 16;
+  margin-bottom: var(--spacing-xxl);
+}
+
 .left,
 .right {
   position: absolute;

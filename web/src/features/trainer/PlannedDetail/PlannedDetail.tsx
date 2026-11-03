@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { TrainerPlanItem, Workout } from '../../../../../shared/types';
-import { Button, SetChip, StatusBadge, Text, TextArea } from '../../../ui';
+import { Button, IconButton, SetChip, StatusBadge, Text, TextArea } from '../../../ui';
 import { findSlug, movedText, planSteps, plannedBadge, plannedMeta, rowDate } from '../sessions';
 import styles from './PlannedDetail.module.css';
 
@@ -15,10 +15,12 @@ type Props = {
   library: LibraryName[];
   /** Промис отклонён — ошибка показывается под полем */
   onHint: (workoutId: number, exerciseId: string, text: string) => Promise<void>;
+  /** Открыть редактор состава тренировки */
+  onEdit?: (workoutId: number) => void;
 };
 
 /** Справа в карточке ученика: состав запланированной тренировки и «Подсказка перед тренировкой» к упражнениям. */
-export function PlannedDetail({ today, item, workout, library, onHint }: Props) {
+export function PlannedDetail({ today, item, workout, library, onHint, onEdit }: Props) {
   const moved = movedText(item);
   const steps = workout ? planSteps(workout.blocks) : [];
   return (
@@ -26,9 +28,12 @@ export function PlannedDetail({ today, item, workout, library, onHint }: Props) 
       <header className={styles.head}>
         <div className={styles.headText}>
           <Text variant="eyebrow">{rowDate(item.date, today)}</Text>
-          <Text variant="h3" tag="h2" id="detail-title">
-            {item.title}
-          </Text>
+          <div className={styles.titleRow}>
+            <Text variant="h3" tag="h2" id="detail-title">
+              {item.title}
+            </Text>
+            {onEdit && <IconButton bare icon="pencil" aria-label="Изменить состав тренировки" onClick={() => onEdit(item.workoutId)} />}
+          </div>
         </div>
         <div className={styles.headMeta}>
           <StatusBadge status={plannedBadge(item, today)} />

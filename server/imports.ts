@@ -98,7 +98,7 @@ function checkExercise(e: unknown, withSets: boolean): boolean {
 }
 
 /** Блоки экрана тренировки: форма и пределы, чтобы в базу не попало то, на чём экран упадёт */
-function checkStructure(blocks: unknown): boolean {
+export function checkStructure(blocks: unknown): boolean {
   if (!Array.isArray(blocks) || blocks.length === 0 || blocks.length > LIMITS.blocks) return false;
   return blocks.every((b) => {
     if (!isObj(b) || !MODES.includes(String(b.mode)) || !isStr(b.id, 100) || !isStr(b.title, LIMITS.name)) return false;

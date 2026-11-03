@@ -11,6 +11,7 @@ import { markReviewed } from './reviews';
 import { exerciseCommentsOf, listAthletes, progressOf, sessionsOf, setGoal, type AthleteFilter } from './trainerAthletes';
 import { canAccessAthlete } from './trainerLinks';
 import { workoutOf, workoutResponse } from './workouts';
+import { updateWorkout } from './workoutEdit';
 
 const FILTERS: AthleteFilter[] = ['all', 'review', 'inactive', 'ok'];
 
@@ -179,6 +180,16 @@ export function trainerRouter(db: Db) {
     const workout = workoutOf(db, id, wid);
     if (!workout) return void res.status(404).json({ error: 'not_found' });
     res.json(workout);
+  });
+
+  /** Тренер меняет состав тренировки ученика: название и блоки целиком */
+  r.put('/trainer/athletes/:id/workouts/:wid', (req, res) => {
+    const id = athleteId(req);
+    const wid = Number(req.params.wid);
+    if (!Number.isInteger(id) || !Number.isInteger(wid)) return void res.status(404).json({ error: 'not_found' });
+    const result = updateWorkout(db, req.user!, id, wid, req.body);
+    if (!result.ok) return void res.status(result.error === 'forbidden' ? 403 : result.error === 'not_found' ? 404 : 400).json({ error: result.error });
+    res.json(result.workout);
   });
 
   /** Подсказка к упражнению ближайшего занятия */

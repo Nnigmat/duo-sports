@@ -1,5 +1,5 @@
 /** Запросы к серверу. Эндпоинтов пока нет, поэтому отдаём фикстуры тем же интерфейсом, что будет у fetch. */
-import type { CoachComment, PlanResponse, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
+import type { CoachComment, Gender, PlanResponse, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
 import { fetchLibrary } from '../features/exercises/api';
 import type { LibraryExercise } from '../features/exercises/types';
 import { achievementsFixture, planFixture } from './fixtures';
@@ -9,7 +9,7 @@ import { fetchScheduleResponse } from '../features/schedule/api';
 import { applyMoves, planBounds, toIso } from '../features/plan/plan';
 import type { AchievementsData, ImportData, PlanData, ScheduleData, TodayData } from './types';
 
-export type WorkoutData = { workout: Workout; comments: CoachComment[]; techniques: Record<string, Technique> };
+export type WorkoutData = { workout: Workout; comments: CoachComment[]; techniques: Record<string, Technique>; gender?: Gender };
 
 /** «Сегодня» собирает сервер; дату знает браузер. Блока insights пока нет. */
 export const fetchToday = async (): Promise<TodayData> => {

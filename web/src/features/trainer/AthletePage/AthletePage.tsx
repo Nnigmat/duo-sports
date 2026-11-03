@@ -79,6 +79,7 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
         item={plan}
         workout={workout.data.workout}
         library={library.data.map((e) => ({ id: e.id, name: e.name, aliases: e.aliases ?? [] }))}
+        onEdit={(workoutId) => navigate(`/trainer/athletes/${athleteId}/workouts/${workoutId}/edit`)}
         onHint={(workoutId, exerciseId, text) => postHint(athleteId, { workoutId, exerciseId, text })}
       />
     ) : (

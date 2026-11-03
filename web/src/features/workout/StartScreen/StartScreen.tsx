@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import type { Block } from '../../../../../shared/types';
 import { Button } from '../../../ui/Button/Button';
 import { Card } from '../../../ui/Card/Card';
 import { Icon } from '../../../ui/Icon/Icon';
 import { Screen } from '../../../ui/Screen/Screen';
 import { Text } from '../../../ui/Text/Text';
+import { useMediaQuery } from '../../../shared';
 import { Chibi } from '../chibi/Chibi';
+import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
 import { blockItems, plural, restLabel, timedHeadline, videoLabel, workoutMeta } from '../flow';
 import styles from './StartScreen.module.css';
 
@@ -14,12 +17,17 @@ type Props = {
   blocks: Block[];
   /** «Пятница, 30 октября» */
   dateLabel: string;
+  /** Ролик «чибик стоит»; без него (или если не загрузился) стоит статичный чибик */
+  idleUrl?: string;
   onBack: () => void;
   onStart: () => void;
 };
 
 /** Экран старта: что сегодня в тренировке и кнопка «Начать». */
-export function StartScreen({ title, blocks, dateLabel, onBack, onStart }: Props) {
+export function StartScreen({ title, blocks, dateLabel, idleUrl, onBack, onStart }: Props) {
+  const still = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const [failed, setFailed] = useState(false);
+  const playing = idleUrl && !still && !failed ? idleUrl : undefined;
   return (
     <Screen label={dateLabel} back={{ onClick: onBack }}>
       <div className={styles.top}>
@@ -32,7 +40,11 @@ export function StartScreen({ title, blocks, dateLabel, onBack, onStart }: Props
         </div>
         <div className={styles.mascot}>
           <span className={styles.disc} aria-hidden="true" />
-          <Chibi pose="stand" size={128} className={styles.chibi} />
+          {playing ? (
+            <DemoVideo src={playing} onFail={() => setFailed(true)} className={styles.idle} />
+          ) : (
+            <Chibi pose="stand" size={128} className={styles.chibi} />
+          )}
         </div>
       </div>
 

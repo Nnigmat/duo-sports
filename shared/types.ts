@@ -118,6 +118,8 @@ export interface WorkoutResponse {
   workout: Workout;
   comments: CoachComment[];
   techniques: Record<string, Technique>;
+  /** Пол владельца тренировки: по нему выбирается ролик «чибик стоит»; не задан, пока админ не указал */
+  gender?: Gender;
 }
 
 /** Роли: аккаунты создаёт админ, саморегистрации нет */
@@ -601,6 +603,8 @@ export type ScheduleResponse = {
   /** Ближайший свободный (иначе ближайший) день этой недели; null, если неделя закончилась */
   sameWeek: (ScheduleTarget & { relative?: string }) | null;
   nextWeek: { rangeLabel: string; days: ScheduleTarget[] };
+  /** Названия тренировок по датам плана: нужны, чтобы показать занятые дни любой недели */
+  busy: Record<string, string>;
 };
 
 // ── «Достижения» ──────────────────────────────────────────

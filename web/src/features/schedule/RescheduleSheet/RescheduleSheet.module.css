@@ -49,3 +49,16 @@
   flex-shrink: 0;
   margin-top: 1px;
 }
+.weekNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+.weekTitle {
+  margin: 0;
+  font-size: var(--heading-4-size);
+  line-height: var(--heading-4-line);
+  font-weight: var(--heading-4-weight);
+  font-variant-numeric: tabular-nums;
+}

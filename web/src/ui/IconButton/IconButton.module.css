@@ -18,6 +18,13 @@
 .root:hover {
   background: var(--surface);
 }
+.root:disabled {
+  border-style: dashed;
+  background: var(--canvas);
+  color: var(--steel);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .sm {
   width: var(--size-stage-action);

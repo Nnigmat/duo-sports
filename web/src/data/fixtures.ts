@@ -154,6 +154,8 @@ export const achievementsFixture: AchievementsData = {
 };
 
 export const scheduleFixture: ScheduleData = {
+  from: '2026-10-31',
+  busy: { '2026-11-01': 'Всё тело', '2026-11-02': 'Верх тела', '2026-11-04': 'Кардио и пресс', '2026-11-05': 'Ноги и ягодицы', '2026-11-08': 'Всё тело', '2026-11-10': 'Верх тела' },
   workout: { id: 'w1', title: 'Ноги и ягодицы', whenLabel: 'сегодня, сб 31 окт' },
   sameWeek: { date: '2026-11-01', weekday: 'вс', day: '1', relative: 'Завтра', busy: 'Всё тело' },
   nextWeek: {

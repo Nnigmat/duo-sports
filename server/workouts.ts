@@ -28,7 +28,8 @@ export function workoutResponse(db: Db, userId: number, id: number, markRead = t
   if (markRead) markSeen(db, comments.filter((c) => c.isNew && !ofReview.has(c.id)).map((c) => Number(c.id)));
   // Ролик выбираем по полу владельца тренировки: тренер в превью видит то же, что увидит ученик
   const owner = db.prepare('SELECT gender FROM users WHERE id = ?').get(userId) as { gender: Gender | null } | undefined;
-  return { workout, comments, techniques: techniquesFor(workout.blocks, library, owner?.gender ?? undefined) };
+  const gender = owner?.gender ?? undefined;
+  return { workout, comments, techniques: techniquesFor(workout.blocks, library, gender), ...(gender ? { gender } : {}) };
 }
 
 const KINDS: ExerciseKind[] = ['reps', 'weight', 'time'];

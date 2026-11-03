@@ -126,10 +126,14 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
     }
   };
 
-  /** «Начать» и «Изменить» открывают конкретную тренировку этого дня: шаблон берём из записи плана */
+  /** «Начать» открывает конкретную тренировку этого дня, «Изменить» — её состав: шаблон берём из записи плана */
   const start = (date: string) => {
     const id = data.entries[date]?.templateId;
     navigate(id ? `/workout/${id}?date=${date}` : '/plan');
+  };
+  const edit = (date: string) => {
+    const id = data.entries[date]?.templateId;
+    if (id) navigate(`/plan/workouts/${id}/edit`);
   };
 
   return (
@@ -146,7 +150,7 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
         onPreview={nav?.onPreview}
         onResults={nav ? nav.onResults : () => navigate('/workout/summary')}
         onMove={onMove ?? (nav ? nav.onMove : () => navigate('/'))}
-        onEdit={nav ? nav.onEdit : start}
+        onEdit={nav ? nav.onEdit : edit}
         onCreate={nav ? nav.onCreate : (date) => navigate(`/import?date=${date}`)}
         onImport={nav ? nav.onImport : () => navigate('/import')}
         onAdd={(date, templateId) => change(date, { templateId, status: 'planned', custom: true }, () => save.put(date, templateId))}

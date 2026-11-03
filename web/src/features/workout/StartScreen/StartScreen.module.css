@@ -28,6 +28,17 @@
 .chibi {
   position: relative;
 }
+/* Вертикальный ролик 9:16 в круге диска */
+.idle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: 116px; /* нет токена: диск 128 минус поля */
+  aspect-ratio: 9 / 16;
+  transform: translate(-50%, -50%);
+  border-radius: 0;
+}
 
 .blocks {
   display: flex;

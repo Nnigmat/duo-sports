@@ -45,3 +45,8 @@
 .busy {
   background: var(--steel);
 }
+.day:disabled {
+  color: var(--steel);
+  border-style: dashed;
+  cursor: not-allowed;
+}

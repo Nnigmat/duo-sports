@@ -86,6 +86,7 @@ function Flow({ data, dateLabel, onFinish, onExit }: FlowProps) {
       workout={data.workout}
       comments={data.comments}
       techniques={data.techniques}
+      gender={data.gender}
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}
       onFinish={(stats, steps) => void onFinish(steps, stats.videos)}

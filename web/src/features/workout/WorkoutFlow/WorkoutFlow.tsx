@@ -1,6 +1,7 @@
 import { useReducer, useState, type Dispatch } from 'react';
-import type { CoachComment, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
+import type { CoachComment, Gender, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
+import { idleUrl, restUrl } from '../chibi/idle';
 import { poseFor } from '../chibi/poseFor';
 import {
   applyLabel,
@@ -44,6 +45,8 @@ type Props = {
   comments: CoachComment[];
   /** Описание техники по id упражнения; без него панель «Техника» показывает только анимацию */
   techniques: Record<string, Technique>;
+  /** Пол спортсмена: каким чибиком показать «стоит» */
+  gender?: Gender;
   /** Загрузить видео подхода. Ошибка (reject) остаётся на экране записи, можно повторить. */
   /** Возвращает id видео на сервере; без него подход всё равно считается записанным */
   onUploadVideo: (video: Blob, step: Step, durationSec: number) => Promise<string | void>;
@@ -64,7 +67,7 @@ type Sheet = 'edit' | 'tech' | 'comments' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onFinish, onExit, recordingDelaySec, now, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initSession(buildSteps(w.blocks)));
   const [comments, setComments] = useState(rest.comments);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -81,6 +84,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onF
         title={workout.title}
         blocks={workout.blocks}
         dateLabel={dateLabel}
+        idleUrl={idleUrl(gender)}
         onBack={onExit}
         onStart={() => dispatch({ type: 'begin' })}
       />
@@ -127,6 +131,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onF
         session={session}
         dispatch={dispatch}
         shown={shown}
+        idleUrl={idleUrl(gender)}
+        restUrl={restUrl(gender)}
         demoUrl={demoFor({ phase, record: step.record, demoUrl: techniques[shown.exerciseId]?.demoUrl })}
         note={note?.text}
         techNew={hasNewComments(comments, shown.exerciseId)}
@@ -198,6 +204,8 @@ type StageProps = {
   /** Шаг, про который экран: текущий или (на отдыхе) следующий */
   shown: Step;
   demoUrl?: string;
+  idleUrl: string;
+  restUrl: string;
   note?: string;
   techNew: boolean;
   onEdit: () => void;
@@ -254,7 +262,7 @@ function TimedStage(props: StageProps) {
   );
 }
 
-function StageView({ session, dispatch, shown, demoUrl, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+function StageView({ session, dispatch, shown, demoUrl, idleUrl, restUrl, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
 }) {
   const step = session.steps[session.index];
@@ -266,6 +274,8 @@ function StageView({ session, dispatch, shown, demoUrl, note, techNew, bar, onTe
       eyebrow={resting ? restEyebrow(shown) : eyebrow(step)}
       line={stepLine(shown)}
       demoUrl={demoUrl}
+      idleUrl={idleUrl}
+      restUrl={restUrl}
       pose={poseFor({ phase: resting ? 'rest' : 'work', exercisePose: step.pose, record: step.record })}
       note={note}
       techNew={techNew}

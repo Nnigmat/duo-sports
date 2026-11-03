@@ -54,8 +54,11 @@ function Content({ athleteId }: { athleteId: number }) {
             const wid = templateOf(date);
             if (wid) navigate(`${base}/preview/${wid}?date=${date}`);
           },
-          // «Изменить» и «Итоги» открывают тренировку в карточке ученика: подсказки, разбор и комментарии
-          onEdit: (date) => navigate(`${base}?date=${date}&workout=${templateOf(date) ?? ''}`),
+          // «Изменить» открывает редактор состава; «Итоги» — карточку ученика с разбором
+          onEdit: (date) => {
+            const wid = templateOf(date);
+            if (wid) navigate(`${base}/workouts/${wid}/edit`);
+          },
           onResults: (date) => navigate(`${base}?date=${date}`),
           onMove: setMoveFrom,
           onCreate: (date) => navigate(`${base}/import?date=${date}`),

@@ -12,6 +12,8 @@ export type PickerDay = {
   day: string;
   /** Название тренировки, которая уже стоит в этот день */
   busy?: string;
+  /** День нельзя выбрать (например, он в прошлом) */
+  disabled?: boolean;
 };
 
 type Props = {
@@ -27,11 +29,14 @@ type Props = {
 export function DayPicker({ label, days, value, onChange, className }: Props) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedIndex = days.findIndex((d) => d.date === value);
-  const tabStop = selectedIndex >= 0 ? selectedIndex : 0;
+  const tabStop = selectedIndex >= 0 ? selectedIndex : Math.max(0, days.findIndex((d) => !d.disabled));
 
   function onKeyDown(e: KeyboardEvent, index: number) {
-    const next = arrowTarget(e.key, index, days.length);
+    let next = arrowTarget(e.key, index, days.length);
     if (next === null) return;
+    const step = next > index || (next === 0 && index === days.length - 1) ? 1 : -1;
+    for (let i = 0; i < days.length && days[next]?.disabled; i++) next = (next + step + days.length) % days.length;
+    if (days[next]?.disabled) return;
     e.preventDefault();
     onChange(days[next].date);
     refs.current[next]?.focus();
@@ -50,6 +55,7 @@ export function DayPicker({ label, days, value, onChange, className }: Props) {
             type="button"
             role="radio"
             aria-checked={checked}
+            disabled={d.disabled}
             aria-label={dayLabel(d)}
             tabIndex={i === tabStop ? 0 : -1}
             className={cx(styles.day, checked && styles.checked)}

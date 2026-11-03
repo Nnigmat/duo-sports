@@ -22,6 +22,10 @@ type Props = {
   pose: Pose;
   /** Ролик чибика с упражнением вместо статичного; без него (или если не загрузился) стоит чибик */
   demoUrl?: string;
+  /** Ролик «чибик стоит»: показывается вместо статичного чибика в позе «стоит» */
+  idleUrl?: string;
+  /** Ролик «чибик отдыхает»: показывается вместо статичного чибика в позе «отдых» */
+  restUrl?: string;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -47,6 +51,8 @@ export function TrainingScreen({
   line,
   pose,
   demoUrl,
+  idleUrl,
+  restUrl,
   note,
   techNew,
   recordable,
@@ -61,7 +67,8 @@ export function TrainingScreen({
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
   // Адрес, на котором ролик упал: смена упражнения даёт новый адрес и новую попытку
   const [failed, setFailed] = useState<string | null>(null);
-  const playing = demoUrl && !still && failed !== demoUrl ? demoUrl : undefined;
+  const clip = demoUrl ?? (pose === 'stand' ? idleUrl : pose === 'rest' ? restUrl : undefined);
+  const playing = clip && !still && failed !== clip ? clip : undefined;
   return (
     <Screen label={blockLabel} back={{ onClick: onBack }} close={{ onClick: onExit }} className={styles.screen}>
       <ProgressSegments
@@ -77,7 +84,11 @@ export function TrainingScreen({
 
       <div className={styles.stage}>
         {playing ? (
-          <DemoVideo src={playing} onFail={() => setFailed(playing)} className={styles.demo} />
+          <DemoVideo
+            src={playing}
+            onFail={() => setFailed(playing)}
+            className={playing === idleUrl ? styles.idle : styles.demo}
+          />
         ) : (
           <>
             <span className={styles.disc} aria-hidden="true" />

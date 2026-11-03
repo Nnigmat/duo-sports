@@ -56,6 +56,7 @@ export function buildSchedule(input: ScheduleInput): ScheduleResponse | null {
     workout: { id: String(workout.id), title: workout.title, whenLabel },
     sameWeek: pick ? { ...target(pick, titleByDate), ...(relative && { relative }) } : null,
     nextWeek: { rangeLabel: rangeLabel(nextStart, addDays(nextStart, 6)), days: Array.from({ length: 7 }, (_, i) => target(addDays(nextStart, i), titleByDate)) },
+    busy: Object.fromEntries([...titleByDate].filter(([date]) => date >= today)),
   };
 }
 
