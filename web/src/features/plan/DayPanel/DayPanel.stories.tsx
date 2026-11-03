@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { planFixture } from '../../../data/fixtures';
@@ -110,6 +110,24 @@ export const CopyOpen: Story = {
     const c = within(canvasElement);
     await expect(c.getByRole('button', { name: 'Копировать' })).toHaveAttribute('aria-expanded', 'true');
     await expect(c.getByRole('group', { name: 'Копировать на другую дату' })).toBeVisible();
+  },
+};
+const maria = { id: 2, name: 'Маша' };
+/** План Маши: на 3 ноября у неё уже стоит своя тренировка */
+const mariaPlan = { ...planFixture, templates: [{ ...planFixture.templates[0]!, id: 'm1', title: 'Спина Маши' }], entries: { '2026-11-03': { templateId: 'm1', status: 'planned' as const, custom: true } } };
+export const CopyToAthleteWarnsAboutTheirDay: Story = {
+  args: { copyOpen: true, copyDate: '2026-11-03', copyAthletes: [maria], targetPlan: mariaPlan },
+  render: (args) => {
+    const [target, setTarget] = useState<number | null>(null);
+    return <DayPanel {...args} onCopyTarget={setTarget} targetPlan={target === maria.id ? mariaPlan : null} />;
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.selectOptions(c.getByLabelText('Кому'), 'Маша');
+    await expect(c.getByText(/«Спина Маши»/)).toBeVisible();
+    await expect(c.getByRole('button', { name: 'Заменить копией' })).toBeEnabled();
+    await userEvent.selectOptions(c.getByLabelText('Кому'), 'Этому ученику');
+    await expect(c.queryByText(/«Спина Маши»/)).toBeNull();
   },
 };
 export const Copied: Story = {

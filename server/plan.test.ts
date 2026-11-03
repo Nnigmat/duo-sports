@@ -3,7 +3,7 @@ import type { CommitBlock } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { applyImport } from './imports';
-import { clearDay, estimateMinutes, planOf, setDay } from './plan';
+import { clearDay, copyWorkoutToAthlete, estimateMinutes, planOf, setDay } from './plan';
 
 let db: Db;
 let me: number;
@@ -79,5 +79,25 @@ describe('setDay и clearDay', () => {
     expect(planOf(db, me).entries['2026-11-05']).toBeUndefined();
     expect(planOf(db, me).templates).toHaveLength(2);
     expect(planOf(db, other).entries['2026-11-05']).toBeDefined();
+  });
+});
+
+describe('copyWorkoutToAthlete', () => {
+  it('создаёт другому ученику свою тренировку с тем же составом и ставит в день', () => {
+    importTwo(me);
+    const src = planOf(db, me).templates[0]!;
+    expect(copyWorkoutToAthlete(db, me, Number(src.id), other, '2026-11-10')).toEqual({ ok: true });
+    const theirs = planOf(db, other);
+    const copy = theirs.templates.find((t) => t.id === theirs.entries['2026-11-10']?.templateId)!;
+    expect(copy.id).not.toBe(src.id);
+    expect(copy.title).toBe(src.title);
+    expect(copy.exercises).toEqual(src.exercises);
+    expect(planOf(db, me).templates).toHaveLength(2);
+  });
+  it('чужую тренировку не копирует', () => {
+    importTwo(other);
+    const foreign = Number(planOf(db, other).templates[0]!.id);
+    expect(copyWorkoutToAthlete(db, me, foreign, other, '2026-11-10')).toEqual({ ok: false, error: 'not_found' });
+    expect(planOf(db, other).templates).toHaveLength(2);
   });
 });
