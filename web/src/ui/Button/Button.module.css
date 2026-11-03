@@ -62,6 +62,15 @@
   background: color-mix(in srgb, var(--danger) 85%, var(--ink));
 }
 
+/* Прозрачный фон, красный текст; текст затемнён ink, чтобы контраст на белом был не ниже 4.5:1 */
+.dangerText {
+  background: transparent;
+  color: color-mix(in srgb, var(--danger) 85%, var(--ink));
+}
+.dangerText:hover {
+  background: var(--surface);
+}
+
 .primary:active {
   background: var(--primary-deep);
 }
@@ -85,7 +94,9 @@
   color: var(--muted);
 }
 .ghost:disabled,
-.ghost[aria-disabled='true'] {
+.dangerText:disabled,
+.ghost[aria-disabled='true'],
+.dangerText[aria-disabled='true'] {
   color: var(--muted);
 }
 
