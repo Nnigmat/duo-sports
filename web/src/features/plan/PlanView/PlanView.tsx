@@ -25,6 +25,8 @@ type Props = {
   /** Без обработчиков кнопки «Начать», «Изменить», «Перенести», «Создать» и импорта не показываются */
   onImport?: () => void;
   layout?: 'mobile' | 'desktop';
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
 };
 
 /** Экран «План»: календарь месяца или недели и карточка выбранного дня. */
@@ -43,6 +45,8 @@ export function PlanView({
   onCopy,
   onImport,
   layout = 'mobile',
+  exerciseHref,
+  onOpenExercise,
 }: Props) {
   const calTitleId = useId();
   const desktop = layout === 'desktop';
@@ -119,6 +123,8 @@ export function PlanView({
               dispatch({ type: 'copied', to, title: selectedTemplate?.title ?? '' });
             }}
             onOpenCopied={() => dispatch({ type: 'openCopied' })}
+            exerciseHref={exerciseHref}
+            onOpenExercise={onOpenExercise}
           />
         </div>
       </div>

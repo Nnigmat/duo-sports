@@ -39,6 +39,9 @@ type Props = {
   /** Подтверждённая копия: куда */
   onCopy: (to: string) => void;
   onOpenCopied: () => void;
+  /** Ссылка с названия упражнения на его карточку */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
 };
 
 /** Карточка выбранного дня: состав тренировки и действия, копирование или создание новой. */
@@ -61,6 +64,8 @@ export function DayPanel({
   onCopyDate,
   onCopy,
   onOpenCopied,
+  exerciseHref,
+  onOpenExercise,
 }: Props) {
   const titleId = useId();
   const copyId = useId();
@@ -126,7 +131,12 @@ export function DayPanel({
         )}
       </header>
 
-      <ExerciseList exercises={template.exercises} label={`Упражнения: ${template.title}`} />
+      <ExerciseList
+        exercises={template.exercises}
+        label={`Упражнения: ${template.title}`}
+        hrefFor={exerciseHref}
+        onOpen={onOpenExercise}
+      />
 
       <div className={styles.actions}>
         {actions.start && onStart && (

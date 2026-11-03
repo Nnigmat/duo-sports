@@ -1,6 +1,6 @@
-import { useReducer, useState } from 'react';
+import { useMemo, useReducer, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePlan, useSchedule } from '../../../data/hooks';
+import { useExercises, usePlan, useSchedule } from '../../../data/hooks';
 import type { PlanData } from '../../../data/types';
 import { Skeleton, useMediaQuery } from '../../../shared';
 import { Notice } from '../../../ui';
@@ -97,6 +97,13 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
   const [state, dispatch] = useReducer(planReducer, initial.today, (t) => initialPlanState(t));
   const navigate = useNavigate();
   const desktop = useMediaQuery('(min-width: 1024px)');
+  // Библиотека нужна только для ссылок: пока не пришла (или упала), названия остаются текстом
+  const { data: library } = useExercises();
+  const exerciseIds = useMemo(() => new Map((library ?? []).map((e) => [e.name, e.id])), [library]);
+  const exerciseHref = (name: string) => {
+    const id = exerciseIds.get(name);
+    return id ? `/exercises/${id}` : undefined;
+  };
 
   const show = (date: string, entry: Entry | null) =>
     setData((d) => {
@@ -133,6 +140,8 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
         state={state}
         dispatch={dispatch}
         layout={desktop ? 'desktop' : 'mobile'}
+        exerciseHref={exerciseHref}
+        onOpenExercise={navigate}
         onStart={nav ? nav.onStart : start}
         onPreview={nav?.onPreview}
         onResults={nav ? nav.onResults : () => navigate('/workout/summary')}
