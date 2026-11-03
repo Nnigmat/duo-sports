@@ -29,15 +29,15 @@ export function ensureLibrary(db: Db, clock: Clock = now): void {
   })();
 }
 
-type ExerciseRow = { slug: string; name: string; aliases: string; muscles: string; kind: ExerciseKind; group_id: MuscleGroupId; notes: string | null; video_url: string | null };
+type ExerciseRow = { slug: string; name: string; aliases: string; muscles: string; kind: ExerciseKind; group_id: MuscleGroupId; notes: string | null; demo_female: string | null; demo_male: string | null };
 
-/** Общая библиотека для всех пользователей; notes и video есть, только если заполнены. */
+/** Общая библиотека для всех пользователей; notes и demo есть, только если заполнены. */
 export function libraryOf(db: Db): LibraryEntry[] {
-  const rows = db.prepare('SELECT slug, name, aliases, muscles, kind, group_id, notes, video_url FROM exercises ORDER BY id').all() as ExerciseRow[];
+  const rows = db.prepare('SELECT slug, name, aliases, muscles, kind, group_id, notes, demo_female, demo_male FROM exercises ORDER BY id').all() as ExerciseRow[];
   return rows.map((r) => ({
     id: r.slug, name: r.name, aliases: JSON.parse(r.aliases), kind: r.kind, group: r.group_id, muscles: JSON.parse(r.muscles),
     ...(r.notes ? { notes: r.notes } : {}),
-    ...(r.video_url ? { video: r.video_url } : {}),
+    ...(r.demo_female || r.demo_male ? { demo: { ...(r.demo_female ? { female: r.demo_female } : {}), ...(r.demo_male ? { male: r.demo_male } : {}) } } : {}),
   }));
 }
 
@@ -124,7 +124,7 @@ export function validateCommit(body: unknown): Validated {
     const ok =
       isObj(e) && isStr(e.name, LIMITS.name) && (e.id === undefined || (typeof e.id === 'string' && SLUG.test(e.id))) &&
       strList(e.aliases, LIMITS.name) && strList(e.muscles, LIMITS.name) && KINDS.includes(e.kind as ExerciseKind) &&
-      GROUPS.includes(e.group as MuscleGroupId) && optStr(e.video, 500) && optStr(e.notes, LIMITS.text);
+      GROUPS.includes(e.group as MuscleGroupId) && optStr(e.notes, LIMITS.text);
     if (!ok) return { ok: false, error: `exercises[${i}]: неверные поля` };
   }
   for (const [i, w] of workouts.entries()) {
@@ -168,13 +168,13 @@ function apply(db: Db, userId: number, importId: number, commit: ImportCommit, c
 
   const hasExercise = db.prepare('SELECT 1 FROM exercises WHERE slug = ?');
   const insertExercise = db.prepare(
-    `INSERT INTO exercises (slug, name, aliases, muscles, kind, group_id, video_url, notes, import_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO exercises (slug, name, aliases, muscles, kind, group_id, notes, import_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   for (const e of commit.exercises as CommitExercise[]) {
     const slug = e.id ?? slugOf(e.name, (s) => !!hasExercise.get(s));
     if (hasExercise.get(slug)) continue; // уже есть: не дублируем и не перезаписываем
-    insertExercise.run(slug, e.name, JSON.stringify(e.aliases), JSON.stringify(e.muscles), e.kind, e.group, e.video ?? null, e.notes ?? null, importId, at);
+    insertExercise.run(slug, e.name, JSON.stringify(e.aliases), JSON.stringify(e.muscles), e.kind, e.group, e.notes ?? null, importId, at);
     summary.created++;
   }
 
@@ -220,10 +220,13 @@ const record = (r: ImportRow): ImportRecord => ({
   summary: JSON.parse(r.summary),
 });
 
-/** Роль берётся из базы: непустой раздел exercises разрешён только тренеру и админу, иначе ImportForbiddenError. */
-export function applyImport(db: Db, userId: number, commit: ImportCommit, clock: Clock = now): ImportRecord {
+/**
+ * Роль берётся из базы: непустой раздел exercises разрешён только тренеру и админу, иначе ImportForbiddenError.
+ * Данные пишутся userId, а право проверяется у actorId — того, кто импортирует (тренер за ученика).
+ */
+export function applyImport(db: Db, userId: number, commit: ImportCommit, clock: Clock = now, actorId: number = userId): ImportRecord {
   if (commit.exercises.length > 0) {
-    const u = db.prepare('SELECT role FROM users WHERE id = ?').get(userId) as { role: Role } | undefined;
+    const u = db.prepare('SELECT role FROM users WHERE id = ?').get(actorId) as { role: Role } | undefined;
     if (!u || !canAddExercises(u.role)) throw new ImportForbiddenError();
   }
   return db.transaction(() => {

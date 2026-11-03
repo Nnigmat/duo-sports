@@ -1,4 +1,5 @@
-import type { Block, CoachComment, Role, Technique } from '../shared/types';
+import { pickDemo } from '../shared/demo';
+import type { Block, CoachComment, ExerciseDemo, Gender, Role, Technique } from '../shared/types';
 import type { Db } from './db';
 import { canAccessAthlete } from './trainerLinks';
 
@@ -14,7 +15,7 @@ export interface LibraryRow {
   name: string;
   aliases: string[];
   notes: string | null;
-  videoUrl: string | null;
+  demo: ExerciseDemo;
 }
 
 export interface CommentRow {
@@ -43,23 +44,23 @@ export function exercisesOf(blocks: Block[]): Array<{ id: string; name: string }
   return blocks.flatMap((b) => b.exercises.map((e) => ({ id: e.id, name: e.name })));
 }
 
-/** Описание из библиотеки: строки заметки — шаги, нумерацию и маркеры убираем. Нет текста и видео — техники нет. */
-export function techniqueOf(notes: string | null, videoUrl: string | null): Technique | null {
+/** Описание из библиотеки: строки заметки — шаги, нумерацию и маркеры убираем. Нет текста и ролика — техники нет. */
+export function techniqueOf(notes: string | null, demoFile: string | undefined): Technique | null {
   const instructions = (notes ?? '')
     .split('\n')
     .map((l) => l.replace(/^\s*(?:\d+[.)]|[-•–])\s*/, '').trim())
     .filter(Boolean);
-  if (!instructions.length && !videoUrl) return null;
-  return { instructions, ...(videoUrl ? { videoUrl } : {}) };
+  if (!instructions.length && !demoFile) return null;
+  return { instructions, ...(demoFile ? { demoUrl: `/api/demo/${demoFile}` } : {}) };
 }
 
 /** Техника по id упражнений тренировки */
-export function techniquesFor(blocks: Block[], library: LibraryRow[]): Record<string, Technique> {
+export function techniquesFor(blocks: Block[], library: LibraryRow[], gender?: Gender): Record<string, Technique> {
   const index = libraryIndex(library);
   const out: Record<string, Technique> = {};
   for (const ex of exercisesOf(blocks)) {
     const lib = index.get(key(ex.name));
-    const t = lib && techniqueOf(lib.notes, lib.videoUrl);
+    const t = lib && techniqueOf(lib.notes, pickDemo(gender, lib.demo));
     if (t) out[ex.id] = t;
   }
   return out;
@@ -142,14 +143,15 @@ export function validateComment(body: unknown): ValidComment {
 // ── База ──────────────────────────────────────────────────
 
 export function libraryOf(db: Db): LibraryRow[] {
-  const rows = db.prepare('SELECT slug, name, aliases, notes, video_url FROM exercises ORDER BY id').all() as Array<{
+  const rows = db.prepare('SELECT slug, name, aliases, notes, demo_female, demo_male FROM exercises ORDER BY id').all() as Array<{
     slug: string;
     name: string;
     aliases: string;
     notes: string | null;
-    video_url: string | null;
+    demo_female: string | null;
+    demo_male: string | null;
   }>;
-  return rows.map((r) => ({ slug: r.slug, name: r.name, aliases: JSON.parse(r.aliases) as string[], notes: r.notes, videoUrl: r.video_url }));
+  return rows.map((r) => ({ slug: r.slug, name: r.name, aliases: JSON.parse(r.aliases) as string[], notes: r.notes, demo: { ...(r.demo_female ? { female: r.demo_female } : {}), ...(r.demo_male ? { male: r.demo_male } : {}) } }));
 }
 
 /** Комментарии тренера спортсмену (ответы самого спортсмена не в счёт). После выдачи помечаются прочитанными: «новый» виден один раз. */

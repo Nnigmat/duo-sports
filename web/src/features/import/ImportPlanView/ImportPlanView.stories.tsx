@@ -22,7 +22,6 @@ export const Default: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { level: 1, name: 'План из файла' })).toBeVisible();
-    await expect(c.getByText('24 тренировки в календаре · 3 нояб — 21 янв')).toBeVisible();
     await expect(c.getByText('26 тренировок · в календаре 24 · 2 пропущено')).toBeVisible();
     await expect(c.getByText('План начинается 27 октября')).toBeVisible();
     await userEvent.click(c.getByRole('button', { name: 'Импортировать и добавить в план' }));
@@ -34,7 +33,6 @@ export const ShiftWeek: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: 'Сдвинуть план на неделю' }));
-    await expect(c.getByText('26 тренировок в календаре · 3 нояб — 28 янв')).toBeVisible();
     await expect(c.getByText(/Все даты сдвинуты на 7 дней вперёд/)).toBeVisible();
     await expect(c.getByText('26 тренировок · в календаре 26')).toBeVisible();
   },
@@ -45,16 +43,6 @@ export const ResolveConflicts: Story = {
     const c = within(canvasElement);
     await userEvent.click(within(c.getByRole('group', { name: 'Для всех' })).getByRole('button', { name: 'Оставить мою' }));
     await expect(c.getByText('26 тренировок · в календаре 22 · 2 пропущено')).toBeVisible();
-  },
-};
-
-export const WithoutPlan: Story = {
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    await userEvent.click(c.getByRole('switch'));
-    await expect(c.getByText('26 тренировок · без дат')).toBeVisible();
-    await expect(c.getByRole('button', { name: 'Импортировать без плана' })).toBeVisible();
-    await expect(c.queryByRole('heading', { name: /Конфликты/ })).toBeNull();
   },
 };
 

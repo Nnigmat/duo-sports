@@ -1,4 +1,4 @@
-import type { AuthUser, LoginFailure } from '../../../../shared/types';
+import type { AuthUser, Gender, LoginFailure } from '../../../../shared/types';
 
 async function post(url: string, body?: unknown) {
   return fetch(url, {
@@ -35,4 +35,14 @@ export async function apiChangePassword(
   if (res.ok) return 'saved';
   if (res.status === 403) return 'wrongCurrent';
   throw new Error('Не удалось сменить пароль. Попробуйте ещё раз');
+}
+
+export async function apiSetGender(gender: Gender): Promise<void> {
+  const res = await fetch('/api/auth/gender', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ gender }),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить пол. Попробуйте ещё раз');
 }

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { ARTIFACT } from '../../../ui/storyKit';
+import sample from '../parts/DemoVideo/sample.mp4';
 import { TrainingScreen } from './TrainingScreen';
 
 const handlers = {
@@ -97,6 +98,28 @@ export const SetWithCamera: Story = {
     await expect(c.getByText('Нажмите на камеру, чтобы снять подход')).toBeVisible();
     await userEvent.click(c.getByRole('button', { name: 'Начать запись' }));
     await expect(handlers.onRecord).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** Ролик чибика вместо статичного */
+export const SetWithDemo: Story = {
+  args: { demoUrl: sample },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(canvasElement.querySelector('video')).not.toBeNull();
+    await expect(c.queryByRole('img')).toBeNull();
+    await expect(c.getByRole('button', { name: 'Техника' })).toBeVisible();
+    await expect(c.getByRole('button', { name: 'Готово' })).toBeVisible();
+  },
+};
+
+/** Файл ролика не загрузился: возвращается статичный чибик */
+export const DemoFailed: Story = {
+  args: { demoUrl: '/net-takogo-rolika.mp4' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => expect(c.getByRole('img')).toBeVisible());
+    await expect(canvasElement.querySelector('video')).toBeNull();
   },
 };
 

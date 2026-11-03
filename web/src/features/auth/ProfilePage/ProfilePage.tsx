@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { apiChangePassword } from '../../../app/auth/authApi';
+import type { Gender } from '../../../../../shared/types';
+import { apiChangePassword, apiSetGender } from '../../../app/auth/authApi';
 import { useAuth } from '../../../app/auth/AuthProvider';
+import { Card, SegmentedControl, Text } from '../../../ui';
+import styles from './ProfilePage.module.css';
 import { ChangePasswordView } from '../ChangePasswordView/ChangePasswordView';
 
 const formatDate = (iso: string) =>
@@ -16,6 +19,32 @@ export function ProfilePage() {
   return (
     <>
       {error && <p role="alert">{error}</p>}
+      <Card tone="canvas" role="region" aria-labelledby="profile-gender" className={styles.gender}>
+        <Text variant="h4" tag="h2" id="profile-gender">
+          Пол
+        </Text>
+        <Text variant="body-sm" color="slate">
+          От него зависит, какой ролик с техникой вы увидите
+        </Text>
+        <SegmentedControl<Gender | ''>
+          label="Пол"
+          options={[
+            { value: 'male', label: 'Мужской' },
+            { value: 'female', label: 'Женский' },
+          ]}
+          value={user.gender ?? ''}
+          onChange={async (g) => {
+            if (g === '') return;
+            setError(null);
+            try {
+              await apiSetGender(g);
+              await auth.refresh();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Не удалось сохранить пол');
+            }
+          }}
+        />
+      </Card>
       <ChangePasswordView
         email={user.email}
         lastChanged={user.passwordChangedAt ? formatDate(user.passwordChangedAt) : 'пароль не менялся'}

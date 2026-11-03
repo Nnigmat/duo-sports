@@ -237,6 +237,9 @@ function migrate(db: Db) {
   if (!columns('sessions_done').includes('duration_sec')) db.exec('ALTER TABLE sessions_done ADD COLUMN duration_sec INTEGER');
   if (!columns('workouts').includes('structure')) db.exec('ALTER TABLE workouts ADD COLUMN structure TEXT');
   if (!columns('users').includes('goal')) db.exec('ALTER TABLE users ADD COLUMN goal TEXT');
+  if (!columns('exercises').includes('demo_female')) db.exec('ALTER TABLE exercises ADD COLUMN demo_female TEXT');
+  if (!columns('exercises').includes('demo_male')) db.exec('ALTER TABLE exercises ADD COLUMN demo_male TEXT');
+  if (!columns('users').includes('gender')) db.exec("ALTER TABLE users ADD COLUMN gender TEXT CHECK (gender IN ('female', 'male'))");
   if (!columns('comments').includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id INTEGER REFERENCES sessions_done(id) ON DELETE CASCADE');
   if (!columns('comments').includes('timecode_sec')) db.exec('ALTER TABLE comments ADD COLUMN timecode_sec INTEGER');
   db.exec('CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at); CREATE INDEX IF NOT EXISTS comments_session ON comments(session_id)');

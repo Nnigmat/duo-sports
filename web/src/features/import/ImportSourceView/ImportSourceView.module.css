@@ -60,10 +60,20 @@
   display: flex;
   gap: var(--spacing-xs);
 }
+.field {
+  position: relative;
+}
+.check {
+  position: absolute;
+  right: var(--spacing-sm);
+  bottom: var(--spacing-sm);
+}
 .textarea {
+  display: block;
   width: 100%;
   min-height: 320px; /* нет токена */
   padding: var(--spacing-md);
+  padding-bottom: 72px; /* нет токена: место под кнопку «Проверить», чтобы она не закрывала текст */
   border: 1px solid var(--hairline-strong);
   border-radius: var(--rounded-md);
   background: var(--canvas);
@@ -110,13 +120,6 @@
   min-height: var(--size-touch);
   color: var(--link);
   font-weight: var(--body-sm-medium-weight);
-}
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--hairline);
 }
 .issues {
   display: flex;

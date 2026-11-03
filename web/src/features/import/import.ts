@@ -16,7 +16,6 @@ exercises:                     # новые — создадим с вашего
     name: Обратные отжимания от лавочки
     muscles: [трицепс]
     measure: reps
-    video: https://youtu.be/…
     notes: Таз неподвижен, работают только руки
   - id: floor-scissors
     name: Ножницы лёжа
@@ -57,6 +56,25 @@ export function sampleYaml(today: string): string {
   const tuesday = addDays(today, (1 - dow + 7) % 7);
   return sampleTemplate(tuesday, addDays(tuesday, 2));
 }
+
+/** Базовый шаблон для кнопки «Создать тренировку»: одна тренировка на выбранный день, остаётся поправить название и упражнения */
+export const newWorkoutYaml = (date: string): string => `version: 1
+
+workouts:
+  - date: ${date}
+    title: Новая тренировка
+    blocks:
+      - type: warmup
+        time: 5m
+        text: Разогреться любым способом
+      - type: sets
+        exercises:
+          - { name: Приседания, do: "3x12" }
+          - { name: Отжимания, do: "3x10" }
+          - { name: Планка, time: 45s }
+      - type: cooldown
+        text: Растяжка
+`;
 
 /** Пример на «сегодня» из макета: для историй и тестов */
 export const SAMPLE_YAML = sampleYaml('2026-11-02');

@@ -26,14 +26,12 @@ export interface PlanSource {
 }
 
 export interface PlanOptions {
-  /** Ставить ли тренировки в календарь по датам */
-  planOn: boolean;
   past: PastMode;
   /** Решения по конфликтам: дата → выбор; нет записи — «Заменить» */
   resolutions: Record<string, ConflictChoice>;
 }
 
-export const DEFAULT_OPTIONS: PlanOptions = { planOn: true, past: 'skip', resolutions: {} };
+export const DEFAULT_OPTIONS: PlanOptions = { past: 'skip', resolutions: {} };
 
 export type CellKind = 'empty' | 'mine' | 'import' | 'conflict' | 'skipped';
 
@@ -112,10 +110,10 @@ export function buildPlan(src: PlanSource, opts: PlanOptions): PlanResult {
     const row: DayCell[] = [];
     for (let d = 0; d < 7; d++) {
       const date = addDays(src.firstMonday, r * 7 + d);
-      const imp = opts.planOn ? imports[date] : undefined;
+      const imp = imports[date];
       const my = src.mine[date];
       let cell: DayCell = { date, kind: 'empty', title: '' };
-      if (opts.planOn && skipped[date]) cell = { date, kind: 'skipped', title: 'пропущена', strike: skipped[date] };
+      if (skipped[date]) cell = { date, kind: 'skipped', title: 'пропущена', strike: skipped[date] };
       else if (imp && my) {
         const choice = opts.resolutions[date] ?? 'replace';
         conflicts.push({ date, mine: my, theirs: imp.title, choice });
@@ -139,16 +137,16 @@ export function buildPlan(src: PlanSource, opts: PlanOptions): PlanResult {
     weeks.push(row);
   }
 
-  const dates = opts.planOn ? Object.keys(imports).sort() : [];
+  const dates = Object.keys(imports).sort();
   return {
     weeks,
     conflicts,
     inCalendar,
-    skipped: opts.planOn ? Object.keys(skipped).length : 0,
+    skipped: Object.keys(skipped).length,
     first: dates[0] ?? null,
     last: dates[dates.length - 1] ?? null,
-    entries: opts.planOn ? entries : [],
-    replaced: opts.planOn ? replaced : [],
+    entries,
+    replaced,
   };
 }
 
@@ -169,13 +167,6 @@ export function setPast(opts: PlanOptions, past: PastMode): PlanOptions {
 
 const workoutsWord = (n: number) => plural(n, ['тренировка', 'тренировки', 'тренировок']);
 
-/** «24 тренировки в календаре · 3 нояб — 21 янв»; без плана — про тренировки без дат */
-export function planSummary(r: PlanResult, planOn: boolean): string {
-  if (!planOn) return 'Тренировки сохранятся без дат — их можно будет поставить в план вручную';
-  const range = r.first && r.last ? ` · ${dayLabel(r.first)} — ${dayLabel(r.last)}` : '';
-  return `${r.inCalendar} ${workoutsWord(r.inCalendar)} в календаре${range}`;
-}
-
 /** Подпись под заголовком календаря: что произойдёт с прошлыми днями. first — первая тренировка в календаре. */
 export function calendarNote(past: PastMode, first: string | null): string {
   if (past === 'shift') return `Все даты сдвинуты на 7 дней вперёд${first ? ` — первая тренировка ${longDate(first).toLowerCase()}` : ''}`;
@@ -184,13 +175,10 @@ export function calendarNote(past: PastMode, first: string | null): string {
 }
 
 /** «26 тренировок · в календаре 24 · 2 пропущено» */
-export function planFooter(total: number, r: PlanResult, planOn: boolean): string {
+export function planFooter(total: number, r: PlanResult): string {
   const base = `${total} ${workoutsWord(total)}`;
-  if (!planOn) return `${base} · без дат`;
   return `${base} · в календаре ${r.inCalendar}${r.skipped ? ` · ${r.skipped} пропущено` : ''}`;
 }
-
-export const planCta = (planOn: boolean): string => (planOn ? 'Импортировать и добавить в план' : 'Импортировать без плана');
 
 export const conflictsTitle = (n: number): string => `Конфликты · ${n}`;
 

@@ -2,8 +2,29 @@ import { describe, expect, it } from 'vitest';
 import { newExercisesFixture as list, weeksFixture as weeks } from './fixtures';
 import {
   actionOf, createAll, diffSession, EMPTY_CHOICES, EXERCISES_LIMIT, filterCounts, firstUseWeek, footerText, needsGroup, previousSession,
-  sessionChip, sessionItems, setAction, setGroup, skippedNames, tally, tallyText, useAllSimilar, visibleExercises, weekSummary,
+  renamedNames, replacementOf, sessionChip, sessionItems, setAction, setGroup, skippedNames, tally, tallyText, useAllSimilar, useExisting, visibleExercises, weekSummary,
 } from './preview';
+
+describe('«Это упражнение из библиотеки»', () => {
+  const ex = list.find((e) => e.name === 'Боковая планка')!;
+  it('для недель: выбранное упражнение подменяет название, остальные не трогаем', () => {
+    expect([...renamedNames(list, EMPTY_CHOICES)]).toEqual([]);
+    const c = useExisting(EMPTY_CHOICES, ex.key, 'Планка с подъёмом ноги');
+    expect([...renamedNames(list, c)]).toEqual([['Боковая планка', 'Планка с подъёмом ноги']]);
+    expect([...renamedNames(list, createAll(c))]).toEqual([]);
+  });
+  it('запоминает, какое упражнение имелось в виду', () => {
+    const c = useExisting(EMPTY_CHOICES, ex.key, 'Планка с подъёмом ноги');
+    expect(actionOf(c, ex.key)).toBe('use');
+    expect(replacementOf(ex, c)).toBe('Планка с подъёмом ноги');
+  });
+  it('без выбора подставляется похожее, «Создать все» выбор сбрасывает', () => {
+    expect(replacementOf(ex, EMPTY_CHOICES)).toBe('Планка');
+    const c = createAll(useExisting(EMPTY_CHOICES, ex.key, 'Другое'));
+    expect(actionOf(c, ex.key)).toBe('create');
+    expect(replacementOf(ex, c)).toBe('Планка');
+  });
+});
 
 describe('выбор по новым упражнениям', () => {
   it('по умолчанию всё создаётся', () => {

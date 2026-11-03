@@ -1,4 +1,4 @@
-import type { Block, ExerciseKind, SessionResult, Workout, WorkoutResponse } from '../shared/types';
+import type { Block, ExerciseKind, Gender, SessionResult, Workout, WorkoutResponse } from '../shared/types';
 import { commentRowsOf, commentsFor, libraryOf, markSeen, techniquesFor } from './comments';
 import type { Db } from './db';
 import { isDate } from './imports';
@@ -16,7 +16,8 @@ export function workoutOf(db: Db, userId: number, id: number): Workout | null {
 }
 
 /** Тренировка с комментариями тренера и техникой из библиотеки. Показанные комментарии помечаются прочитанными. */
-export function workoutResponse(db: Db, userId: number, id: number): WorkoutResponse | null {
+/** markRead: false — превью тренера: ученик ничего не «прочитал», комментарии остаются новыми */
+export function workoutResponse(db: Db, userId: number, id: number, markRead = true): WorkoutResponse | null {
   const workout = workoutOf(db, userId, id);
   if (!workout) return null;
   const library = libraryOf(db);
@@ -24,8 +25,10 @@ export function workoutResponse(db: Db, userId: number, id: number): WorkoutResp
   const comments = commentsFor(workout.blocks, library, rows);
   // Комментарии из разбора (с привязкой к тренировке) помечает прочитанными экран разбора, иначе «новое» пропало бы раньше
   const ofReview = new Set(rows.filter((r) => r.sessionId !== null).map((r) => String(r.id)));
-  markSeen(db, comments.filter((c) => c.isNew && !ofReview.has(c.id)).map((c) => Number(c.id)));
-  return { workout, comments, techniques: techniquesFor(workout.blocks, library) };
+  if (markRead) markSeen(db, comments.filter((c) => c.isNew && !ofReview.has(c.id)).map((c) => Number(c.id)));
+  // Ролик выбираем по полу владельца тренировки: тренер в превью видит то же, что увидит ученик
+  const owner = db.prepare('SELECT gender FROM users WHERE id = ?').get(userId) as { gender: Gender | null } | undefined;
+  return { workout, comments, techniques: techniquesFor(workout.blocks, library, owner?.gender ?? undefined) };
 }
 
 const KINDS: ExerciseKind[] = ['reps', 'weight', 'time'];

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Badge, BarChart, Button, CommentBubble, EmptyState, Icon, MediaLink, StatTile, Text, TopBar } from '../../../ui';
 import {
-  barsNote, isVideoUrl, KIND_INFO, lastSessionRows, latestMedia, mediaCountText, noteSteps, recordTiles, trendInfo,
+  barsNote, KIND_INFO, lastSessionRows, latestMedia, mediaCountText, noteSteps, recordTiles, trendInfo,
 } from '../library';
 import type { LibraryExercise } from '../types';
 import styles from './ExerciseDetailView.module.css';
@@ -30,7 +30,6 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
   const hasMedia = !!(media.video || media.comment);
   const last = ex.sessions[0];
   const steps = noteSteps(ex.notes);
-  const videoLink = ex.video && isVideoUrl(ex.video) ? ex.video : undefined;
 
   return (
     <div className={styles.root}>
@@ -45,11 +44,11 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
         <figure className={styles.figure}>
           <Icon name="video" />
           <figcaption className={styles.caption}>
-            {media.videoCount > 0 ? 'Видео техники' : 'Видео техники не добавлено'}
+            {ex.demo ? 'Видео техники загружено' : 'Видео техники не добавлено'}
           </figcaption>
           {onAddVideo && (
             <Button variant="secondary" compact icon="upload" onClick={onAddVideo}>
-              {media.videoCount > 0 ? 'Заменить видео' : 'Добавить видео'}
+              {ex.demo ? 'Заменить видео' : 'Добавить видео'}
             </Button>
           )}
         </figure>
@@ -69,21 +68,14 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
           </ul>
         </div>
 
-        {(steps.length > 0 || videoLink) && (
+        {steps.length > 0 && (
           <section aria-labelledby="ex-how" className={styles.section}>
             <Text variant="h5" tag="h2" id="ex-how">Как выполнять</Text>
-            {steps.length > 0 && (
-              <ol className={styles.steps}>
-                {steps.map((t, i) => (
-                  <li key={i}>{t}</li>
-                ))}
-              </ol>
-            )}
-            {videoLink && (
-              <Button variant="secondary" compact icon="video" href={videoLink} target="_blank" rel="noopener noreferrer">
-                Видео-пример
-              </Button>
-            )}
+            <ol className={styles.steps}>
+              {steps.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ol>
           </section>
         )}
 

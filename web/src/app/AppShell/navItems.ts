@@ -16,12 +16,14 @@ const profile: NavItem = { to: '/profile', label: 'Профиль', icon: 'duo' 
 /** Нижняя панель на телефоне: четыре пункта, как в макете */
 export const navItems: NavItem[] = [today, plan, stats, profile];
 
-/** Боковая панель: места больше, поэтому здесь ещё «Упражнения» и «Импорт» */
-export const sideNavItems: NavItem[] = [today, plan, exercises, stats, imports, profile];
+/** Боковая панель: места больше, поэтому здесь ещё «Упражнения» и «Импорт»; «Профиль» вынесен вниз */
+export const sideNavItems: NavItem[] = [today, plan, exercises, stats, imports];
 
-/** Кабинет тренера: ученики, общая библиотека упражнений и профиль; нижней панели у тренера нет */
+/** Кабинет тренера: ученики и общая библиотека упражнений; нижней панели у тренера нет */
 export const trainerSideNavItems: NavItem[] = [
   { to: '/trainer', label: 'Ученики', icon: 'users' },
   exercises,
-  profile,
 ];
+
+/** Низ бокового меню: «Профиль»; рядом с ним кнопка «Выйти» */
+export const sideNavFooterItems: NavItem[] = [profile];

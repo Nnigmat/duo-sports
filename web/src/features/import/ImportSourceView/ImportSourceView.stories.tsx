@@ -14,7 +14,6 @@ const meta = {
     exercises: libraryFixture,
     onCopyReference: fn(),
     formatHref: '/import/format',
-    onCancel: fn(),
     onCheck: fn(),
   },
   // Текст живёт в состоянии, как в контейнере

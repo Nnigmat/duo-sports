@@ -37,7 +37,10 @@ export function LoginView({ status, onSubmit, forgotHref, initial, layout = 'mob
     e.preventDefault();
     if (locked) return;
     setSubmitted(true);
-    if (Object.keys(loginErrors(email, password)).length === 0) onSubmit({ email, password, remember });
+    if (Object.keys(loginErrors(email, password)).length === 0) {
+      setPasswordEdited(false);
+      onSubmit({ email, password, remember });
+    }
   }
 
   const forgot = forgotHref && (

@@ -1,10 +1,10 @@
 import { useId, useState } from 'react';
-import { Badge, Button, Chip, Text } from '../../../ui';
+import { Button, Chip, Icon, Text } from '../../../ui';
 import {
-  actionOf, createAll, EXERCISES_LIMIT, filterCounts, needsGroup, setAction, setGroup, skipNote, tally, tallyText, usedText, useAllSimilar, visibleExercises,
+  actionOf, createAll, EXERCISES_LIMIT, filterCounts, needsGroup, replacementOf, setAction, setGroup, tally, tallyText, usedText, useAllSimilar, useExisting, visibleExercises,
   type ExerciseFilter,
 } from '../preview';
-import type { ExerciseAction, ExerciseChoices, NewExercise } from '../types';
+import type { ExerciseChoices, NewExercise } from '../types';
 import styles from './NewExercisesSection.module.css';
 
 type Props = {
@@ -23,7 +23,7 @@ const FILTERS: Array<{ id: ExerciseFilter; label: string }> = [
 
 const DEFAULT_GROUPS = ['Пресс', 'Кор', 'Спина', 'Предплечья', 'Ноги'];
 
-/** Новые упражнения из файла: для каждого — создать, взять похожее или не создавать. Ничего не создаём без согласия. */
+/** Новые упражнения из файла: все создаём. Если в названии может быть опечатка, предлагаем выбрать существующее упражнение. */
 export function NewExercisesSection({ exercises, choices, onChoicesChange, groups = DEFAULT_GROUPS }: Props) {
   const uid = useId();
   const [filter, setFilter] = useState<ExerciseFilter>('all');
@@ -40,7 +40,7 @@ export function NewExercisesSection({ exercises, choices, onChoicesChange, group
             Новые упражнения
           </Text>
           <Text variant="body-sm" color="slate">
-            Этих упражнений нет во вкладке «Упражнения». Без вашего согласия ничего не создадим: выберите для каждого, что сделать.
+            Этих упражнений нет во вкладке «Упражнения», при импорте мы их создадим. Если в названии опечатка, выберите существующее упражнение.
           </Text>
         </div>
         <div className={styles.bulk}>
@@ -67,9 +67,7 @@ export function NewExercisesSection({ exercises, choices, onChoicesChange, group
       <ul className={styles.list}>
         {rows.map((ex) => {
           const action = actionOf(choices, ex.key);
-          const options: Array<{ id: ExerciseAction; label: string }> = [{ id: 'create', label: 'Создать' }];
-          if (ex.similar) options.push({ id: 'use', label: `Использовать «${ex.similar}»` });
-          options.push({ id: 'skip', label: 'Не создавать' });
+          const candidates = ex.candidates ?? (ex.similar ? [ex.similar] : []);
           return (
             <li key={ex.key} className={styles.row} data-action={action}>
               <div className={styles.info}>
@@ -80,33 +78,44 @@ export function NewExercisesSection({ exercises, choices, onChoicesChange, group
                   {' · '}
                   {ex.muscles || 'группа мышц не указана'}
                 </span>
-                {action === 'skip' && <Badge tone="neutral">{skipNote(ex.usedIn)}</Badge>}
               </div>
+              {candidates.length > 0 && (
+                <div className={styles.warning}>
+                  <Icon name="warning" size={20} className={styles.warningIcon} />
+                  <div className={styles.warningBody}>
+                    <span>Упражнения «{ex.name}» нет в библиотеке. Возможно, опечатка: создайте его или выберите существующее.</span>
+                    <div className={styles.options} role="group" aria-label={`Что сделать с «${ex.name}»`}>
+                      <Chip pressed={action === 'create'} onClick={() => onChoicesChange(setAction(choices, ex.key, 'create'))}>
+                        Создать
+                      </Chip>
+                      {candidates.map((name) => (
+                        <Chip
+                          key={name}
+                          pressed={action === 'use' && replacementOf(ex, choices) === name}
+                          onClick={() => onChoicesChange(useExisting(choices, ex.key, name))}
+                        >
+                          {name}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               {needsGroup(ex, choices) && (
                 <div className={styles.group}>
-                  <label htmlFor={`${uid}-g-${ex.key}`} className={styles.groupLabel}>
-                    Группа мышц
-                  </label>
                   <select
-                    id={`${uid}-g-${ex.key}`}
+                    aria-label={`Группа мышц: ${ex.name}`}
                     className={styles.select}
                     value={choices.group[ex.key] ?? ''}
                     onChange={(e) => onChoicesChange(setGroup(choices, ex.key, e.target.value))}
                   >
-                    <option value="">Выбрать…</option>
+                    <option value="">Группа мышц не выбрана</option>
                     {groups.map((g) => (
                       <option key={g}>{g}</option>
                     ))}
                   </select>
                 </div>
               )}
-              <div className={styles.options} role="group" aria-label={`Что сделать с «${ex.name}»`}>
-                {options.map((o) => (
-                  <Chip key={o.id} pressed={action === o.id} onClick={() => onChoicesChange(setAction(choices, ex.key, o.id))}>
-                    {o.label}
-                  </Chip>
-                ))}
-              </div>
             </li>
           );
         })}

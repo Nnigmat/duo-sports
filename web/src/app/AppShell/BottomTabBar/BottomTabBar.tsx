@@ -3,7 +3,11 @@ import { Icon } from '../../../ui';
 import { navItems } from '../navItems';
 import styles from './BottomTabBar.module.css';
 
-export function BottomTabBar() {
+type Props = {
+  onSignOut: () => void;
+};
+
+export function BottomTabBar({ onSignOut }: Props) {
   return (
     <nav aria-label="Основная навигация" className={styles.bar}>
       {navItems.map((item) => (
@@ -12,6 +16,10 @@ export function BottomTabBar() {
           {item.label}
         </NavLink>
       ))}
+      <button type="button" className={styles.tab} onClick={onSignOut}>
+        <Icon name="logout" />
+        Выйти
+      </button>
     </nav>
   );
 }

@@ -80,6 +80,15 @@ describe('listAthletes', () => {
     markReviewed(db, T(), sid);
     expect(list().athletes.find((a) => a.name === 'Nikita')).toMatchObject({ status: 'ok', waitingSessions: 0 });
   });
+  it('ответ ученика в разобранной тренировке возвращает его в «ждут разбора», пока тренер не откроет её', () => {
+    const sid = session(dmitry, '2026-11-02');
+    markReviewed(db, T(), sid);
+    expect(list().athletes.find((a) => a.name === 'Dmitry')).toMatchObject({ status: 'ok', repliedSessions: 0 });
+    addComment(db, { id: dmitry, role: 'athlete' }, dmitry, { sessionId: sid, text: 'А можно легче?' });
+    expect(list().athletes.find((a) => a.name === 'Dmitry')).toMatchObject({ status: 'review', waitingSessions: 0, repliedSessions: 1 });
+    db.prepare('UPDATE comments SET seen_at = ? WHERE session_id = ?').run('2026-11-03T08:00:00Z', sid);
+    expect(list().athletes.find((a) => a.name === 'Dmitry')).toMatchObject({ status: 'ok', repliedSessions: 0 });
+  });
   it('без видео ждёт, только если ученик что-то написал', () => {
     const sid = session(dmitry, '2026-11-02');
     expect(list().athletes.find((a) => a.name === 'Dmitry')!.status).toBe('ok');

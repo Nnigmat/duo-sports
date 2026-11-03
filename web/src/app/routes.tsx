@@ -5,7 +5,7 @@ import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
 import { PlanPage } from '../features/plan';
 import { ReviewPage, VideoReviewPage } from '../features/review';
-import { AthletePage, StudentsPage } from '../features/trainer';
+import { AthleteImportPage, AthletePage, AthletePlanPage, StudentsPage, WorkoutPreviewPage } from '../features/trainer';
 import { TodayPage } from '../features/today';
 import { WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
@@ -29,16 +29,22 @@ export function AppRoutes() {
           <Route path="trainer" element={<RequireTrainer />}>
             <Route index element={<StudentsPage />} />
             <Route path="athletes/:id" element={<AthletePage />} />
+            <Route path="athletes/:id/plan" element={<AthletePlanPage />} />
+            <Route path="athletes/:id/import/*" element={<AthleteImportPage />} />
           </Route>
           <Route path="plan" element={<PlanPage />} />
           <Route path="import/*" element={<ImportPage />} />
           <Route path="exercises/*" element={<ExercisesPage />} />
           <Route path="progress/achievements" element={<AchievementsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="review/video/:videoId" element={<VideoReviewPage />} />
         </Route>
-        {/* Разбор и тренировка на весь экран, без навигации */}
+        {/* Разбор ученика и тренировка на весь экран, без навигации */}
         <Route path="review/:sessionId" element={<ReviewPage />} />
-        <Route path="review/video/:videoId" element={<VideoReviewPage />} />
+        {/* Превью тренировки ученика: на весь экран, только для тренера */}
+        <Route element={<RequireTrainer />}>
+          <Route path="trainer/athletes/:id/preview/:wid" element={<WorkoutPreviewPage />} />
+        </Route>
         <Route path="workout" element={<WorkoutPage />} />
         <Route path="workout/:id" element={<WorkoutPage />} />
       </Route>

@@ -37,13 +37,12 @@ export const NeverPerformed: Story = {
   },
 };
 
-export const WithNotesAndVideo: Story = {
-  args: { exercise: { ...squat, notes: 'Встаньте прямо\nОпуститесь до параллели\nВстаньте', video: 'https://youtu.be/abc' } },
+export const WithNotes: Story = {
+  args: { exercise: { ...squat, notes: 'Встаньте прямо\nОпуститесь до параллели\nВстаньте'} },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     const region = c.getByRole('region', { name: 'Как выполнять' });
     await expect(within(region).getAllByRole('listitem')).toHaveLength(3);
-    await expect(within(region).getByRole('link', { name: 'Видео-пример' })).toHaveAttribute('href', 'https://youtu.be/abc');
   },
 };
 export const ReadOnly: Story = {

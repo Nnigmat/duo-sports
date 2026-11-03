@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { mkdir, rm } from 'node:fs/promises';
@@ -21,6 +21,42 @@ function extensionFor(contentType: string | undefined): string | undefined {
   const mime = contentType?.split(';')[0].trim().toLowerCase();
   return mime ? EXTENSIONS[mime] : undefined;
 }
+
+export type SaveUpload = { ok: true; file: string; size: number } | { ok: false; status: 400 | 413 | 415; error: string };
+
+/**
+ * Пишет тело запроса потоком в dir/<uuid>.<ext> (в память не буферизуем). Расширение берётся из Content-Type;
+ * при любой ошибке недописанный файл удаляется. Ошибки чтения потока (обрыв) пробрасываются.
+ */
+export async function saveUpload(req: Request, dir: string, maxBytes: number): Promise<SaveUpload> {
+  const ext = extensionFor(req.headers['content-type']);
+  if (!ext) return { ok: false, status: 415, error: 'Неподдерживаемый формат видео' };
+  await mkdir(dir, { recursive: true });
+  const file = `${randomUUID()}.${ext}`;
+  const target = path.join(dir, file);
+  let size = 0;
+  const limit = new Transform({
+    transform(chunk: Buffer, _enc, done) {
+      size += chunk.length;
+      if (size > maxBytes) done(new TooLarge());
+      else done(null, chunk);
+    },
+  });
+  try {
+    await pipeline(req, limit, createWriteStream(target));
+  } catch (err) {
+    await rm(target, { force: true });
+    if (err instanceof TooLarge) return { ok: false, status: 413, error: 'Видео слишком большое' };
+    throw err;
+  }
+  if (size === 0) {
+    await rm(target, { force: true });
+    return { ok: false, status: 400, error: 'Пустое видео' };
+  }
+  return { ok: true, file, size };
+}
+
+export const UUID_FILE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp4|webm)$/;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const MAX_VIDEO_SEC = 3600;
@@ -55,43 +91,17 @@ export function videosRouter({ db, dir, maxBytes }: { db: Db; dir: string; maxBy
       res.status(400).json({ error: 'durationSec: секунды от 0 до 3600' });
       return;
     }
-    const ext = extensionFor(req.headers['content-type']);
-    if (!ext) {
-      res.status(415).json({ error: 'Неподдерживаемый формат видео' });
+    const saved = await saveUpload(req, dir, maxBytes).catch(next);
+    if (!saved) return;
+    if (!saved.ok) {
+      if (saved.status === 413) res.set('Connection', 'close');
+      res.status(saved.status).json({ error: saved.error });
       return;
     }
-
-    await mkdir(dir, { recursive: true });
-    const id = randomUUID();
-    const file = path.join(dir, `${id}.${ext}`);
-    let size = 0;
-    const limit = new Transform({
-      transform(chunk: Buffer, _enc, done) {
-        size += chunk.length;
-        if (size > maxBytes) done(new TooLarge());
-        else done(null, chunk);
-      },
-    });
-
-    try {
-      await pipeline(req, limit, createWriteStream(file));
-    } catch (err) {
-      await rm(file, { force: true });
-      if (err instanceof TooLarge) {
-        res.set('Connection', 'close').status(413).json({ error: 'Видео слишком большое' });
-      } else {
-        next(err);
-      }
-      return;
-    }
-
-    if (size === 0) {
-      await rm(file, { force: true });
-      res.status(400).json({ error: 'Пустое видео' });
-      return;
-    }
-    db.prepare('INSERT INTO videos (id, athlete_id, file, duration_sec, created_at) VALUES (?, ?, ?, ?, ?)').run(id, req.user!.id, `${id}.${ext}`, durationSec, new Date().toISOString());
-    res.status(201).json({ id, path: `videos/${id}.${ext}` });
+    const { file } = saved;
+    const id = file.slice(0, file.lastIndexOf('.'));
+    db.prepare('INSERT INTO videos (id, athlete_id, file, duration_sec, created_at) VALUES (?, ?, ?, ?, ?)').run(id, req.user!.id, file, durationSec, new Date().toISOString());
+    res.status(201).json({ id, path: `videos/${file}` });
   });
 
   return router;

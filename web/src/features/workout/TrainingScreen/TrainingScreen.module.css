@@ -46,6 +46,10 @@
   aspect-ratio: 1;
 }
 
+.stage .demo {
+  margin-bottom: var(--spacing-xxl); /* нет места под карточку тренера: ролик чуть выше центра */
+}
+
 .left,
 .right {
   position: absolute;

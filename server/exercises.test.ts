@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_EXERCISES } from './defaultExercises';
 import { migrateSharedExercises, openDb, type Db } from './db';
+import { deleteExercise, setDemo } from './exercises';
 import { ensureLibrary, libraryOf } from './imports';
 import Database from 'better-sqlite3';
 
@@ -22,12 +23,28 @@ describe('общая библиотека упражнений', () => {
     ensureLibrary(db);
     expect(libraryOf(db)).toHaveLength(1);
   });
-  it('notes и video отдаются, только если заполнены', () => {
-    db.prepare("INSERT INTO exercises (slug, name, kind, group_id, notes, video_url, created_at) VALUES ('x', 'Икс', 'reps', 'core', '1. Раз\n2. Два', '/v/x.mp4', 'z')").run();
-    expect(libraryOf(db)[0]).toMatchObject({ id: 'x', notes: '1. Раз\n2. Два', video: '/v/x.mp4' });
+  it('notes и demo отдаются, только если заполнены; ссылки video нет', () => {
+    db.prepare("INSERT INTO exercises (slug, name, kind, group_id, notes, video_url, demo_female, created_at) VALUES ('x', 'Икс', 'reps', 'core', '1. Раз\n2. Два', 'https://old', 'a.mp4', 'z')").run();
+    expect(libraryOf(db)[0]).toMatchObject({ id: 'x', notes: '1. Раз\n2. Два', demo: { female: 'a.mp4' } });
+    expect(libraryOf(db)[0]).not.toHaveProperty('video');
+    expect(libraryOf(db)[0]!.demo).not.toHaveProperty('male');
     db.prepare("INSERT INTO exercises (slug, name, kind, group_id, created_at) VALUES ('y', 'Игрек', 'reps', 'core', 'z')").run();
     expect(libraryOf(db)[1]).not.toHaveProperty('notes');
-    expect(libraryOf(db)[1]).not.toHaveProperty('video');
+    expect(libraryOf(db)[1]).not.toHaveProperty('demo');
+  });
+  it('setDemo ставит и очищает ролик и возвращает прежний файл', () => {
+    db.prepare("INSERT INTO exercises (slug, name, kind, group_id, created_at) VALUES ('x', 'Икс', 'reps', 'core', 'z')").run();
+    expect(setDemo(db, 'x', 'male', 'm1.mp4')).toEqual({ ok: true });
+    expect(setDemo(db, 'x', 'male', 'm2.mp4')).toEqual({ ok: true, previous: 'm1.mp4' });
+    expect(libraryOf(db)[0]).toMatchObject({ demo: { male: 'm2.mp4' } });
+    expect(setDemo(db, 'x', 'male', null)).toEqual({ ok: true, previous: 'm2.mp4' });
+    expect(libraryOf(db)[0]).not.toHaveProperty('demo');
+    expect(setDemo(db, 'net', 'male', 'a.mp4')).toEqual({ ok: false });
+  });
+  it('deleteExercise возвращает файлы роликов, для чужого slug null', () => {
+    db.prepare("INSERT INTO exercises (slug, name, kind, group_id, demo_female, demo_male, created_at) VALUES ('x', 'Икс', 'reps', 'core', 'f.mp4', 'm.mp4', 'z')").run();
+    expect(deleteExercise(db, 'x')).toEqual(['f.mp4', 'm.mp4']);
+    expect(deleteExercise(db, 'x')).toBeNull();
   });
 });
 

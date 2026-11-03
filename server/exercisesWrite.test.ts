@@ -56,15 +56,10 @@ describe('validateFields', () => {
     expect(err({ aliases: Array.from({ length: 13 }, (_, i) => `a${i}`) })).toMatch(/12/);
     expect(validateFields({ aliases: Array.from({ length: 12 }, (_, i) => `a${i}`) }).ok).toBe(true);
   });
-  it('notes до 4000, video только http(s)', () => {
+  it('notes до 4000; поле video больше не принимается и отбрасывается', () => {
     expect(validateFields({ notes: 'x'.repeat(4000) }).ok).toBe(true);
     expect(err({ notes: 'x'.repeat(4001) })).toMatch(/Описание/);
-    expect(validateFields({ notes: '', video: '' })).toEqual({ ok: true, value: { notes: '', video: '' } });
-    expect(validateFields({ video: 'https://example.com/a.mp4' }).ok).toBe(true);
-    expect(err({ video: 'javascript:alert(1)' })).toMatch(/Видео/);
-    expect(err({ video: 'ftp://x/y' })).toMatch(/Видео/);
-    expect(err({ video: '/videos/a.mp4' })).toMatch(/Видео/);
-    expect(err({ video: 'https://e.com/' + 'a'.repeat(500) })).toMatch(/Видео/);
+    expect(validateFields({ notes: '', video: 'https://example.com/a.mp4' })).toEqual({ ok: true, value: { notes: '' } });
   });
   it('не объект — ошибка', () => {
     expect(err(null)).not.toBeNull();
@@ -95,13 +90,12 @@ describe('createExercise / updateExercise / deleteExercise', () => {
     expect(createExercise(db, { ...base, name: 'bench PRESS' })).toEqual({ ok: false, error: 'duplicate' });
     expect(libraryOf(db)).toHaveLength(1);
   });
-  it('patch: частичное обновление, slug не меняется, пустые notes/video очищают', () => {
-    createExercise(db, { ...base, notes: '1. А', video: 'https://e.com/v' });
+  it('patch: частичное обновление, slug не меняется, пустые notes очищают', () => {
+    createExercise(db, { ...base, notes: '1. А' });
     const r = updateExercise(db, 'zhim-lezha', { name: 'Жим штанги', kind: 'reps' });
-    expect(r).toMatchObject({ ok: true, entry: { id: 'zhim-lezha', name: 'Жим штанги', kind: 'reps', group: 'chest', notes: '1. А', video: 'https://e.com/v' } });
-    const c = updateExercise(db, 'zhim-lezha', { notes: '', video: '' });
+    expect(r).toMatchObject({ ok: true, entry: { id: 'zhim-lezha', name: 'Жим штанги', kind: 'reps', group: 'chest', notes: '1. А' } });
+    const c = updateExercise(db, 'zhim-lezha', { notes: '' });
     expect(c.ok && c.entry).not.toHaveProperty('notes');
-    expect(c.ok && c.entry).not.toHaveProperty('video');
   });
   it('patch: 404 и дубликат; своё название можно оставить', () => {
     createExercise(db, base);
@@ -112,8 +106,8 @@ describe('createExercise / updateExercise / deleteExercise', () => {
   });
   it('delete', () => {
     createExercise(db, base);
-    expect(deleteExercise(db, 'zhim-lezha')).toBe(true);
-    expect(deleteExercise(db, 'zhim-lezha')).toBe(false);
+    expect(deleteExercise(db, 'zhim-lezha')).toEqual([]);
+    expect(deleteExercise(db, 'zhim-lezha')).toBeNull();
   });
   it('notes из упражнения превращаются в технику', () => {
     createExercise(db, { ...base, name: 'Отжимания', notes: '1. Шаг\n2. Шаг' });
@@ -175,7 +169,6 @@ describe('/api/exercises (HTTP)', () => {
     const p = await call('PATCH', 'trainer', { notes: '1. А' }, '/zhim-lezha');
     expect(p.status).toBe(200);
     expect(await p.json()).toMatchObject({ notes: '1. А' });
-    expect((await call('PATCH', 'trainer', { video: 'javascript:1' }, '/zhim-lezha')).status).toBe(400);
     expect((await call('PATCH', 'trainer', { name: 'X' }, '/net')).status).toBe(404);
     expect((await call('DELETE', 'admin', undefined, '/zhim-lezha')).status).toBe(204);
     expect((await call('DELETE', 'admin', undefined, '/zhim-lezha')).status).toBe(404);

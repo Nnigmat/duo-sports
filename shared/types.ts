@@ -102,8 +102,8 @@ export interface Technique {
   instructions: string[];
   /** Частая ошибка */
   mistake?: string;
-  /** Видео-пример; без него вкладка «Видео» показывает пустое состояние */
-  videoUrl?: string;
+  /** Ролик чибика под пол спортсмена: /api/demo/<файл>; сервер выбирает его сам */
+  demoUrl?: string;
 }
 
 /** Тренировка дня: блоки по порядку */
@@ -123,12 +123,17 @@ export interface WorkoutResponse {
 /** Роли: аккаунты создаёт админ, саморегистрации нет */
 export type Role = 'athlete' | 'trainer' | 'admin';
 
+/** Пол спортсмена: по нему выбирается ролик чибика к упражнению */
+export type Gender = 'female' | 'male';
+
 export interface AuthUser {
   id: number;
   email: string;
   role: Role;
   /** ISO-время последней смены пароля; null, если пароль ещё не менялся */
   passwordChangedAt: string | null;
+  /** Не задан, пока админ не указал */
+  gender?: Gender;
 }
 
 /** Ответ POST /api/auth/login при отказе */
@@ -138,6 +143,12 @@ export type LoginFailure = { error: 'wrong_credentials' } | { error: 'locked'; r
 
 /** Группа мышц библиотеки */
 export type MuscleGroupId = 'legs' | 'back' | 'chest' | 'arms' | 'core' | 'cardio' | 'other';
+
+/** Ролики чибика к упражнению: имена файлов в data/videos */
+export interface ExerciseDemo {
+  female?: string;
+  male?: string;
+}
 
 /** Упражнение библиотеки в том виде, что нужен импорту: найти по названию и показать в справочнике */
 export interface LibraryEntry {
@@ -149,12 +160,13 @@ export interface LibraryEntry {
   muscles: string[];
   /** Как выполнять: строки через \n */
   notes?: string;
-  video?: string;
+  /** Ролики чибика; есть, только если загружен хотя бы один */
+  demo?: ExerciseDemo;
 }
 
 /**
  * Тело POST /api/exercises и PATCH /api/exercises/:id (в PATCH все поля необязательны).
- * Пустая строка в notes или video очищает поле. Писать могут только trainer и admin.
+ * Пустая строка в notes очищает поле. Писать могут только trainer и admin.
  */
 export interface ExerciseInput {
   name: string;
@@ -164,8 +176,6 @@ export interface ExerciseInput {
   aliases: string[];
   /** Как выполнять: шаги через \n */
   notes?: string;
-  /** Ссылка на видео-пример */
-  video?: string;
 }
 
 /** Ответ GET /api/exercises: общая библиотека */
@@ -189,7 +199,6 @@ export interface CommitExercise {
   muscles: string[];
   kind: ExerciseKind;
   group: MuscleGroupId;
-  video?: string;
   notes?: string;
 }
 
@@ -505,6 +514,8 @@ export interface AthleteRow {
   status: AthleteStatus;
   waitingSessions: number;
   waitingVideos: number;
+  /** Разобранные тренировки, где ученик оставил комментарий, которого тренер ещё не видел */
+  repliedSessions: number;
   /** Дней с последней тренировки; null — тренировок не было */
   daysSinceLast: number | null;
 }

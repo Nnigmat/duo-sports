@@ -17,6 +17,7 @@ const meta = {
     onSelect,
     backHref: '/trainer',
     onBack: fn(),
+    onTab: fn(),
     detail: <p>Выбранная тренировка по шагам</p>,
   },
   beforeEach: () => {

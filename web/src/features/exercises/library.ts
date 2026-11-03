@@ -287,11 +287,11 @@ export function paramFields(kind: ExerciseKind): ParamField[] {
 }
 
 export function emptyDraft(): ExerciseDraft {
-  return { name: '', kind: 'weight', muscles: [], equipment: '', notes: '', video: '', params: { ...DEFAULT_PARAMS } };
+  return { name: '', kind: 'weight', muscles: [], equipment: '', notes: '', params: { ...DEFAULT_PARAMS } };
 }
 
 export function draftFromExercise(ex: LibraryExercise): ExerciseDraft {
-  return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: ex.equipment, notes: ex.notes ?? '', video: ex.video ?? '', params: { ...ex.defaults } };
+  return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: ex.equipment, notes: ex.notes ?? '', params: { ...ex.defaults } };
 }
 
 export function canSubmit(draft: ExerciseDraft): boolean {
@@ -322,7 +322,6 @@ export function applyDraft(ex: LibraryExercise, draft: ExerciseDraft): LibraryEx
     muscles: draft.muscles.length ? draft.muscles : ex.muscles,
     equipment: draft.equipment,
     notes: draft.notes.trim() || undefined,
-    video: draft.video.trim() || undefined,
     defaults: { ...draft.params },
   };
 }
@@ -336,7 +335,6 @@ export function createExercise(draft: ExerciseDraft, id: string): LibraryExercis
     muscles: draft.muscles.length ? draft.muscles : ['Всё тело'],
     equipment: draft.equipment || 'Без снаряда',
     notes: draft.notes.trim() || undefined,
-    video: draft.video.trim() || undefined,
     defaults: { ...draft.params },
     sessionsTotal: 0,
     sessions: [],
@@ -356,22 +354,6 @@ export function noteSteps(notes: string | undefined): string[] {
   return (notes ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
 }
 
-/** Ссылку на видео открываем только если это http(s) */
-export function isVideoUrl(value: string): boolean {
-  try {
-    const u = new URL(value.trim());
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-/** Ссылка пустая или корректная — иначе показываем ошибку в форме */
-export function videoError(draft: ExerciseDraft): string | undefined {
-  const v = draft.video.trim();
-  return v && !isVideoUrl(v) ? 'Нужна ссылка, начинающаяся с http:// или https://' : undefined;
-}
-
 /** Тело POST: полное упражнение. Раздел берётся по первой мышце. */
 export function toExerciseInput(draft: ExerciseDraft): ExerciseInput {
   return {
@@ -381,7 +363,6 @@ export function toExerciseInput(draft: ExerciseDraft): ExerciseInput {
     muscles: draft.muscles.length ? draft.muscles : ['Всё тело'],
     aliases: [],
     notes: draft.notes.trim(),
-    video: draft.video.trim(),
   };
 }
 

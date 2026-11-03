@@ -35,6 +35,8 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
     <div role="tablist" aria-label={label} className={cx(styles.root, className)}>
       {options.map((o, i) => {
         const selected = o.value === value;
+        // Если ничего не выбрано, в контрол можно войти с клавиатуры через первый вариант
+        const focusable = selected || (i === 0 && !options.some((x) => x.value === value));
         return (
           <button
             key={o.value}
@@ -44,7 +46,7 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             type="button"
             role="tab"
             aria-selected={selected}
-            tabIndex={selected ? 0 : -1}
+            tabIndex={focusable ? 0 : -1}
             className={cx(styles.tab, selected && styles.selected)}
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKeyDown(e, i)}

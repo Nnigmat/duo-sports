@@ -17,7 +17,7 @@ const blocks = (...names: string[]): CommitBlock[] => [
   { kind: 'exercises', heading: 'Круг · 3 раунда', items: names.map((name) => ({ name, value: '10–12' })) },
 ];
 const commit = (over: Partial<ImportCommit> = {}): ImportCommit => ({
-  exercises: [{ id: 'reverse-pushup', name: 'Обратные отжимания', aliases: [], muscles: ['трицепс'], kind: 'reps', group: 'arms', video: 'https://youtu.be/x' }],
+  exercises: [{ id: 'reverse-pushup', name: 'Обратные отжимания', aliases: [], muscles: ['трицепс'], kind: 'reps', group: 'arms', video: 'https://youtu.be/x' } as never],
   workouts: [
     { id: 'w01-tue', title: 'Трицепс', blocks: blocks('Обратные отжимания') },
     { id: 'w01-thu', title: 'Спина', blocks: blocks('Подтягивания') },
@@ -113,6 +113,13 @@ describe('импорт', () => {
 });
 
 describe('права на упражнения', () => {
+  it('тренер импортирует ученику: права проверяются по тренеру, данные пишутся ученику', () => {
+    const r = applyImport(db, other, commit(), clock, me);
+    expect(r.summary.created).toBe(1);
+    expect(count('workouts', other)).toBe(2);
+    expect(libraryOf(db).some((e) => e.id === 'reverse-pushup')).toBe(true);
+  });
+
   it('спортсмен не добавляет упражнения, ничего не записывается', () => {
     expect(() => applyImport(db, other, commit(), clock)).toThrow('Упражнения добавляют тренер и админ');
     expect(count('workouts', other)).toBe(0);
@@ -133,7 +140,9 @@ describe('права на упражнения', () => {
   });
   it('библиотека общая: упражнение тренера видно всем', () => {
     applyImport(db, me, commit(), clock);
-    expect(libraryOf(db).find((e) => e.id === 'reverse-pushup')).toMatchObject({ video: 'https://youtu.be/x' });
+    const e = libraryOf(db).find((x) => x.id === 'reverse-pushup');
+    expect(e).toMatchObject({ name: 'Обратные отжимания' });
+    expect(e).not.toHaveProperty('video'); // ключ video в файле импорта допустим, но молча игнорируется
   });
 });
 

@@ -120,3 +120,79 @@ describe('карточка ученика', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM notifications').get()).toEqual({ n: 1 });
   });
 });
+
+describe('план ученика', () => {
+  let wid: number;
+  let foreign: number;
+  beforeEach(async () => {
+    wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, created_at) VALUES (?, 'Верх', '[]', 'x')").run(nikita).lastInsertRowid);
+    const stranger = await createUser(db, 'stranger@example.com', 'trenirovka7', 'athlete');
+    foreign = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, created_at) VALUES (?, 'Чужая', '[]', 'x')").run(stranger).lastInsertRowid);
+  });
+  const path = (id: number | string, date = '2026-11-05') => `/trainer/athletes/${id}/plan/entries/${date}`;
+  const put = (id: number | string, cookie: string, body: unknown, date?: string) => call(path(id, date), cookie, { method: 'PUT', body: JSON.stringify(body) });
+
+  it('GET: тренер видит план своего ученика, чужой тренер и ученик нет', async () => {
+    db.prepare("INSERT INTO plan_entries (user_id, date, workout_id) VALUES (?, '2026-11-05', ?)").run(nikita, wid);
+    const plan = await (await call(`/trainer/athletes/${nikita}/plan`, coach)).json();
+    expect(plan.templates.map((t: { title: string }) => t.title)).toEqual(['Верх']);
+    expect(plan.entries['2026-11-05'].templateId).toBe(String(wid));
+    expect((await call(`/trainer/athletes/${nikita}/plan`, other)).status).toBe(403);
+    expect((await call(`/trainer/athletes/${nikita}/plan`, athlete)).status).toBe(403);
+    expect((await call(`/trainer/athletes/999/plan`, coach)).status).toBe(403);
+  });
+  it('PUT и DELETE меняют план ученика', async () => {
+    expect((await put(nikita, coach, { workoutId: wid })).status).toBe(204);
+    expect(db.prepare('SELECT workout_id FROM plan_entries WHERE user_id = ?').all(nikita)).toEqual([{ workout_id: wid }]);
+    expect((await call(path(nikita), coach, { method: 'DELETE' })).status).toBe(204);
+    expect(db.prepare('SELECT 1 FROM plan_entries WHERE user_id = ?').all(nikita)).toEqual([]);
+  });
+  it('PUT и DELETE: 403 чужому тренеру, 404 на чужую тренировку, 400 на кривой ввод', async () => {
+    expect((await put(nikita, other, { workoutId: wid })).status).toBe(403);
+    expect((await call(path(nikita), other, { method: 'DELETE' })).status).toBe(403);
+    expect((await put(nikita, coach, { workoutId: foreign })).status).toBe(404);
+    expect((await put(nikita, coach, { workoutId: 'x' })).status).toBe(400);
+    expect((await put(nikita, coach, { workoutId: wid }, 'bad')).status).toBe(400);
+    expect(db.prepare('SELECT 1 FROM plan_entries').all()).toEqual([]);
+  });
+});
+
+describe('перенос, импорт и превью для ученика', () => {
+  let wid: number;
+  beforeEach(() => {
+    wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Верх', '[]', '[{\"id\":\"b\",\"mode\":\"timed\",\"title\":\"Р\",\"exercises\":[]}]', 'x')").run(nikita).lastInsertRowid);
+  });
+  const post = (path: string, cookie: string, body: unknown) => call(path, cookie, { method: 'POST', body: JSON.stringify(body) });
+
+  it('перенос: тренер двигает тренировку ученика, чужой тренер не может', async () => {
+    db.prepare("INSERT INTO plan_entries (user_id, date, workout_id) VALUES (?, '2099-01-05', ?)").run(nikita, wid);
+    const sched = await (await call(`/trainer/athletes/${nikita}/schedule?date=2099-01-04&from=2099-01-05`, coach)).json();
+    expect(sched.workout.title).toBe('Верх');
+    const move = { today: '2099-01-04', from: '2099-01-05', to: '2099-01-06' };
+    expect((await post(`/trainer/athletes/${nikita}/schedule/move`, other, move)).status).toBe(403);
+    expect((await post(`/trainer/athletes/${nikita}/schedule/move`, coach, move)).status).toBe(204);
+    expect(db.prepare('SELECT date FROM plan_entries WHERE user_id = ?').all(nikita)).toEqual([{ date: '2099-01-06' }]);
+    expect((await post(`/trainer/athletes/${nikita}/schedule/skip`, coach, { from: '2099-01-06' })).status).toBe(204);
+    expect((await post(`/trainer/athletes/${nikita}/schedule/pause`, other, { from: '2099-01-10', to: '2099-01-12' })).status).toBe(403);
+    expect((await post(`/trainer/athletes/${nikita}/schedule/pause`, coach, { from: '2099-01-10', to: '2099-01-12' })).status).toBe(204);
+  });
+
+  it('импорт: пишет в аккаунт ученика, а не тренера', async () => {
+    const ctx = await call(`/trainer/athletes/${nikita}/import/context`, coach);
+    expect(ctx.status).toBe(200);
+    expect((await call(`/trainer/athletes/${nikita}/import/context`, other)).status).toBe(403);
+    expect((await call(`/trainer/athletes/${nikita}/import/context`, athlete)).status).toBe(403);
+    expect((await post(`/trainer/athletes/${nikita}/imports`, coach, { nonsense: true })).status).toBe(400);
+  });
+
+  it('превью: отдаёт тренировку ученика и не помечает комментарии прочитанными', async () => {
+    const res = await call(`/trainer/athletes/${nikita}/workouts/${wid}/preview`, coach);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.workout.title).toBe('Верх');
+    expect(body).toHaveProperty('comments');
+    expect(body).toHaveProperty('techniques');
+    expect((await call(`/trainer/athletes/${nikita}/workouts/${wid}/preview`, other)).status).toBe(403);
+    expect((await call(`/trainer/athletes/${nikita}/workouts/999/preview`, coach)).status).toBe(404);
+  });
+});

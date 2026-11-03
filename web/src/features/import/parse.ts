@@ -82,6 +82,7 @@ interface Used {
   hasVideo: boolean;
   muscles: string;
   similar?: string;
+  candidates: string[];
   slug?: string;
   aliases: string[];
   measure: Measure;
@@ -103,6 +104,42 @@ export function similarTo(name: string, library: LibraryEntry[]): string | undef
     const theirs = words(l.name);
     return theirs.size > 0 && theirs.size < mine.size && [...theirs].every((w) => mine.has(w));
   })?.name;
+}
+
+const CANDIDATES_MAX = 3;
+const TYPO_RATIO = 0.7;
+
+/** Расстояние Левенштейна: сколько букв заменить, вставить или убрать, чтобы получить одну строку из другой */
+function editDistance(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length]!;
+}
+
+/**
+ * Упражнения библиотеки, которые человек мог иметь в виду: опечатка («Подтягиваня»), более короткое или более длинное название
+ * («Планка» ↔ «Боковая планка»). Самые похожие первыми, не больше трёх.
+ */
+export function candidatesFor(name: string, library: LibraryEntry[]): string[] {
+  const words = (s: string) => new Set(norm(s).split(/[^a-zа-я0-9]+/).filter(Boolean));
+  const mine = words(name);
+  const mineText = norm(name);
+  const within = (a: Set<string>, b: Set<string>) => a.size > 0 && [...a].every((w) => b.has(w));
+  const scored = library.flatMap((l) => {
+    const theirs = words(l.name);
+    // Все слова одного названия есть в другом: ближе всего «Планка» к «Боковой планке»
+    let score = within(theirs, mine) || within(mine, theirs) ? 0.9 : 0;
+    for (const label of [l.name, ...l.aliases]) {
+      const a = norm(label);
+      score = Math.max(score, 1 - editDistance(mineText, a) / Math.max(mineText.length, a.length, 1));
+    }
+    return score >= TYPO_RATIO && norm(l.name) !== mineText ? [{ name: l.name, score }] : [];
+  });
+  return scored.sort((x, y) => y.score - x.score).slice(0, CANDIDATES_MAX).map((c) => c.name);
 }
 
 /** Красивое сообщение об ошибке самого YAML: отступы, табы, повторы ключей */
@@ -228,6 +265,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       hasVideo: !!def?.video,
       muscles: def?.muscles.join(', ') ?? '',
       similar: similarTo(shown, ctx.library),
+      candidates: candidatesFor(shown, ctx.library),
       slug: def?.id,
       aliases: def?.aliases ?? [],
       measure: def?.measure ?? inferMeasure(ex),
@@ -521,6 +559,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     hasVideo: u.hasVideo,
     muscles: u.muscles,
     similar: u.similar,
+    candidates: u.candidates,
     slug: u.slug,
     aliases: u.aliases,
     measure: u.measure,

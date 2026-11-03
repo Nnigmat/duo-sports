@@ -12,6 +12,8 @@ export interface NewExercise {
   muscles: string;
   /** Название похожего упражнения из библиотеки, если нашлось */
   similar?: string;
+  /** Названия из библиотеки, которые могли иметь в виду (опечатка, похожее название); самые близкие первыми */
+  candidates?: string[];
   /** Что понадобится при создании: id из файла, другие названия, как считать, ссылка на технику */
   slug?: string;
   aliases?: string[];
@@ -27,6 +29,8 @@ export type Measure = 'weight' | 'reps' | 'time' | 'distance';
 export interface ExerciseChoices {
   action: Record<string, ExerciseAction>;
   group: Record<string, string>;
+  /** Какое упражнение библиотеки имелось в виду, когда выбрано «взять похожее»; без выбора — NewExercise.similar */
+  target?: Record<string, string>;
 }
 
 export interface PreviewItem {

@@ -14,6 +14,7 @@ const row = (over: Partial<AthleteRow> = {}): AthleteRow => ({
   status: 'ok',
   waitingSessions: 0,
   waitingVideos: 0,
+  repliedSessions: 0,
   daysSinceLast: 1,
   ...over,
 });
@@ -35,6 +36,8 @@ describe('initials', () => {
 describe('badgeText', () => {
   it('ждут разбора: видео важнее тренировок', () => {
     expect(badgeText(row({ status: 'review', waitingVideos: 2, waitingSessions: 1 }))).toBe(`2${NB}видео ждут разбора`);
+    expect(badgeText(row({ status: 'review', repliedSessions: 1 }))).toBe('Новый комментарий');
+    expect(badgeText(row({ status: 'review', repliedSessions: 3 }))).toBe('Новый комментарий');
     expect(badgeText(row({ status: 'review', waitingVideos: 1 }))).toBe(`1${NB}видео ждёт разбора`);
     expect(badgeText(row({ status: 'review', waitingVideos: 21 }))).toBe(`21${NB}видео ждёт разбора`);
   });

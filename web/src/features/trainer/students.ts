@@ -33,7 +33,8 @@ export function badgeText(a: AthleteRow): string {
   if (a.status === 'review') {
     if (a.waitingVideos > 0) return `${a.waitingVideos}${NB}видео ${waits(a.waitingVideos)} разбора`;
     const n = a.waitingSessions;
-    return `${n}${NB}${plural(n, ['тренировка', 'тренировки', 'тренировок'])} ${waits(n)} разбора`;
+    if (n > 0) return `${n}${NB}${plural(n, ['тренировка', 'тренировки', 'тренировок'])} ${waits(n)} разбора`;
+    return 'Новый комментарий';
   }
   if (a.status === 'inactive') {
     if (a.daysSinceLast === null) return 'Тренировок ещё не было';

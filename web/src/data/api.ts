@@ -1,5 +1,5 @@
 /** Запросы к серверу. Эндпоинтов пока нет, поэтому отдаём фикстуры тем же интерфейсом, что будет у fetch. */
-import type { CoachComment, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
+import type { CoachComment, PlanResponse, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
 import { fetchLibrary } from '../features/exercises/api';
 import type { LibraryExercise } from '../features/exercises/types';
 import { achievementsFixture, planFixture } from './fixtures';
@@ -25,18 +25,19 @@ export const fetchAchievements = async (): Promise<AchievementsData> => {
   if (!res.ok) throw new Error(res.status === 401 ? 'Сессия закончилась: войдите заново' : `Сервер ответил ${res.status}`);
   return (await res.json()) as AchievementsData;
 };
-export const fetchSchedule = async (from?: string): Promise<ScheduleData> => fetchScheduleResponse(toIso(new Date()), from);
+export const fetchSchedule = async (from?: string, base?: string): Promise<ScheduleData> => fetchScheduleResponse(toIso(new Date()), from, base);
 export const fetchExercises = (): Promise<LibraryExercise[]> => fetchLibrary();
 /** План — с сервера; сегодня знает браузер, границы календаря считаются по записям */
-export const fetchPlan = async (): Promise<PlanData> => {
-  const response = await fetchPlanResponse();
+export const fetchPlan = async (): Promise<PlanData> => toPlanData(await fetchPlanResponse());
+/** Ответ сервера в данные экрана «План»; общий для спортсмена и тренера */
+export const toPlanData = (response: PlanResponse): PlanData => {
   const entries = applyMoves(response.entries, response.moves ?? []);
   const today = toIso(new Date());
   return { today, ...planBounds(today, Object.keys(entries)), templates: response.templates, entries };
 };
 /** Библиотека и план — с сервера; «сегодня» знает браузер, у него свой часовой пояс */
-export const fetchImport = async (): Promise<ImportData> => {
-  const context = await fetchImportContext();
+export const fetchImport = async (base?: string): Promise<ImportData> => {
+  const context = await fetchImportContext(base);
   return { ...context, today: toIso(new Date()) };
 };
 

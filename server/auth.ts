@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { AuthUser, Role } from '../shared/types';
+import type { AuthUser, Gender, Role } from '../shared/types';
 import type { Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -11,20 +11,30 @@ type Clock = () => Date;
 const now: Clock = () => new Date();
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null };
+type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null };
 const toUser = (r: UserRow): AuthUser => ({
   id: r.id,
   email: r.email,
   role: r.role,
   passwordChangedAt: r.password_changed_at,
+  ...(r.gender ? { gender: r.gender } : {}),
 });
 
-export async function createUser(db: Db, email: string, password: string, role: Role, clock: Clock = now) {
+const isGender = (v: unknown): v is Gender => v === 'female' || v === 'male';
+
+export async function createUser(db: Db, email: string, password: string, role: Role, clock: Clock = now, gender?: Gender) {
+  if (gender !== undefined && !isGender(gender)) throw new Error('gender: female или male');
   const hash = await hashPassword(password);
   const info = db
-    .prepare('INSERT INTO users (email, password_hash, role, created_at) VALUES (?, ?, ?, ?)')
-    .run(email.trim(), hash, role, clock().toISOString());
+    .prepare('INSERT INTO users (email, password_hash, role, gender, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(email.trim(), hash, role, gender ?? null, clock().toISOString());
   return Number(info.lastInsertRowid);
+}
+
+/** Пол спортсмена выбирает ролик чибика; null очищает. false — такого email нет. */
+export function setGender(db: Db, email: string, gender: Gender | null): boolean {
+  if (gender !== null && !isGender(gender)) throw new Error('gender: female, male или null');
+  return db.prepare('UPDATE users SET gender = ? WHERE email = ?').run(gender, email.trim()).changes === 1;
 }
 
 function newSession(db: Db, userId: number, clock: Clock): string {

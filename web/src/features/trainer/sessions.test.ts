@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AthleteSessionsResponse, Block, TrainerHistoryItem, TrainerPlanItem } from '../../../../shared/types';
-import { buildCommentRequest, defaultSelection, findSlug, firstName, historyBadge, historyMeta, movedText, planSteps, plannedBadge, rowDate, sameSelection } from './sessions';
+import { buildCommentRequest, defaultSelection, findSlug, firstName, historyBadge, historyMeta, movedText, planSteps, plannedBadge, rowDate, sameSelection, selectionFor } from './sessions';
 
 const NB = '\u00a0';
 const TODAY = '2026-11-02';
@@ -127,5 +127,28 @@ describe('planSteps', () => {
     expect(steps[2]!.sets).toHaveLength(2);
     expect(plain(steps[3]!.sets)).toEqual(['18–20 повт', '18–20 повт']);
     expect(steps[1]!.key).toBe('b1-e0');
+  });
+});
+
+describe('selectionFor: тренировка дня из плана', () => {
+  const s: AthleteSessionsResponse = {
+    planned: [
+      { kind: 'planned', date: '2026-11-05', workoutId: 13, title: 'Ноги', exerciseCount: 3 },
+      { kind: 'moved', date: '2026-11-04', workoutId: 12, title: 'Кардио', exerciseCount: 3, movedTo: '2026-11-06' },
+    ],
+    history: [hist({ sessionId: 8, date: '2026-11-01' })],
+  };
+  it('с workout открывает запланированную тренировку этого дня', () => {
+    expect(selectionFor(s, '2026-11-05', '13')).toEqual({ kind: 'plan', date: '2026-11-05', workoutId: 13 });
+  });
+  it('без workout открывает выполненную в этот день', () => {
+    expect(selectionFor(s, '2026-11-01')).toEqual({ kind: 'session', sessionId: 8 });
+  });
+  it('перенесённую, чужой номер, кривую дату и пустой день не выбирает', () => {
+    expect(selectionFor(s, '2026-11-04', '12')).toBeNull();
+    expect(selectionFor(s, '2026-11-05', '99')).toBeNull();
+    expect(selectionFor(s, '2026-11-05', 'x')).toBeNull();
+    expect(selectionFor(s, null, '13')).toBeNull();
+    expect(selectionFor(s, '2026-11-09')).toBeNull();
   });
 });

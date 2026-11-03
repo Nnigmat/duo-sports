@@ -48,7 +48,7 @@ describe('buildCommit', () => {
     expect(names).toEqual(['Обратные отжимания', 'Подтягивания с резинкой', 'Лодочка']);
     expect(c.exercises[0]).toEqual({
       id: 'reverse-pushup', name: 'Обратные отжимания', aliases: ['обратка'], muscles: ['трицепс'], kind: 'reps', group: 'arms',
-      video: 'https://youtu.be/x', notes: 'Таз неподвижен',
+      notes: 'Таз неподвижен',
     });
     expect(c.exercises.map((e) => e.name)).toEqual(names);
     expect(c.exercises[2]).toMatchObject({ name: 'Лодочка', kind: 'time', muscles: [], group: 'other' });
@@ -72,12 +72,6 @@ describe('buildCommit', () => {
     const both = buildCommit(parsed, EMPTY_CHOICES, { ...DEFAULT_OPTIONS, resolutions: { '2026-11-05': 'both' } });
     expect(both.entries).toHaveLength(2);
     expect(both.replaceDates).toEqual([]);
-  });
-  it('без плана — тренировки сохраняются, записей в календаре нет', () => {
-    const c = buildCommit(parsed, EMPTY_CHOICES, { ...DEFAULT_OPTIONS, planOn: false });
-    expect(c.workouts).toHaveLength(2);
-    expect(c.entries).toEqual([]);
-    expect(c.replaceDates).toEqual([]);
   });
   it('«Не создавать» убирает упражнение и из списка, и из тренировок', () => {
     const c = buildCommit(parsed, setAction(EMPTY_CHOICES, parsed.preview.newExercises[2]!.key, 'skip'), DEFAULT_OPTIONS);

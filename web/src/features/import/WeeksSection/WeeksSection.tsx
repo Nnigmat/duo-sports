@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { Badge, Button, Icon, Text } from '../../../ui';
 import { plural } from '../../workout/flow/ru';
-import { diffSession, firstUseWeek, previousSession, sessionChip, sessionItems, skippedNames, visibleBlocks, weekNotes, weekSummary } from '../preview';
+import { diffSession, firstUseWeek, previousSession, renamedNames, sessionChip, sessionItems, skippedNames, visibleBlocks, weekNotes, weekSummary } from '../preview';
 import type { ExerciseChoices, NewExercise, PreviewWeek } from '../types';
 import styles from './WeeksSection.module.css';
 
@@ -21,7 +21,10 @@ export function WeeksSection({ weeks, note, newExercises, choices }: Props) {
   const [openSession, setOpenSession] = useState<string | null>('3-0');
   const allOpen = openWeeks.size === weeks.length;
   const skipped = skippedNames(newExercises, choices);
-  const newNames = new Set(newExercises.map((e) => e.name));
+  const renamed = renamedNames(newExercises, choices);
+  const shown = (name: string) => renamed.get(name) ?? name;
+  // Заменённые существующим упражнением уже не новые
+  const newNames = new Set(newExercises.filter((e) => !renamed.has(e.name)).map((e) => e.name));
 
   const toggleWeek = (i: number) =>
     setOpenWeeks((s) => {
@@ -89,7 +92,7 @@ export function WeeksSection({ weeks, note, newExercises, choices }: Props) {
                           <span className={styles.sessionTitle}>
                             <span className={styles.date}>{s.date}</span>
                             <span className={styles.name}>{s.title}</span>
-                            <span className={styles.meta}>{items.map((i) => i.name).join(', ')}</span>
+                            <span className={styles.meta}>{items.map((i) => shown(i.name)).join(', ')}</span>
                           </span>
                           <Badge tone={TONE[chip.tone]}>{chip.text}</Badge>
                           <Icon name="forward" size={20} className={isOpen ? `${styles.chevSession} ${styles.chevOpen}` : styles.chevSession} />
@@ -106,7 +109,7 @@ export function WeeksSection({ weeks, note, newExercises, choices }: Props) {
                                     {b.items.map((x) => (
                                       <li key={x.name} className={styles.item}>
                                         <span className={styles.itemName}>
-                                          {x.name}
+                                          {shown(x.name)}
                                           {newNames.has(x.name) && firstUseWeek(weeks, x.name) === wi && (
                                             <>
                                               {' '}

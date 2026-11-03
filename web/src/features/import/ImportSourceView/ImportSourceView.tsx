@@ -19,7 +19,6 @@ type Props = {
   issues?: ParseIssue[];
   /** Текст для «Вставить пример»; по умолчанию — пример на день из макета */
   sample?: string;
-  onCancel: () => void;
   onCheck: () => void;
 };
 
@@ -31,7 +30,7 @@ workouts:
     blocks: [ … ]`;
 
 /** Шаг 1 импорта: вставить YAML и свериться со справочником упражнений. Артборд «Импорт · 1 Источник». */
-export function ImportSourceView({ text, onTextChange, exercises, customIds, onCopyReference, formatHref, issues = [], sample = SAMPLE_YAML, onCancel, onCheck }: Props) {
+export function ImportSourceView({ text, onTextChange, exercises, customIds, onCopyReference, formatHref, issues = [], sample = SAMPLE_YAML, onCheck }: Props) {
   const fieldId = useId();
   const statusId = useId();
   const empty = text.trim() === '';
@@ -64,16 +63,22 @@ export function ImportSourceView({ text, onTextChange, exercises, customIds, onC
               </Button>
             </div>
           </div>
-          <textarea
-            id={fieldId}
-            className={styles.textarea}
-            rows={24}
-            spellCheck={false}
-            placeholder="version: 1"
-            value={text}
-            aria-describedby={statusId}
-            onChange={(e) => onTextChange(e.target.value)}
-          />
+          <div className={styles.field}>
+            <textarea
+              id={fieldId}
+              className={styles.textarea}
+              rows={24}
+              spellCheck={false}
+              placeholder="version: 1"
+              value={text}
+              aria-describedby={statusId}
+              onChange={(e) => onTextChange(e.target.value)}
+            />
+            {/* Недоступна, пока поле пустое; как только появился текст, становится активной */}
+            <Button className={styles.check} compact disabled={empty} onClick={onCheck}>
+              Проверить
+            </Button>
+          </div>
           {issues.length > 0 && (
             <section className={styles.issues} aria-label="Ошибки в тексте">
               <Text variant="h5" tag="h2">
@@ -113,15 +118,6 @@ export function ImportSourceView({ text, onTextChange, exercises, customIds, onC
       </div>
 
       <ExerciseReference exercises={exercises} customIds={customIds} onCopy={onCopyReference} />
-
-      <footer className={styles.footer}>
-        <Button variant="ghost" onClick={onCancel}>
-          Отмена
-        </Button>
-        <Button disabled={empty} onClick={onCheck}>
-          Проверить
-        </Button>
-      </footer>
     </div>
   );
 }

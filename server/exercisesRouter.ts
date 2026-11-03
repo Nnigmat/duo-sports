@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { rm } from 'node:fs/promises';
+import path from 'node:path';
 import type { ExercisesResponse } from '../shared/types';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
@@ -6,7 +8,7 @@ import { createExercise, deleteExercise, DUPLICATE_ERROR, EXERCISES_WRITE_FORBID
 import { canAddExercises, ensureLibrary, libraryOf } from './imports';
 
 /** Общая библиотека упражнений: читает любой вошедший, меняют тренер и админ. */
-export function exercisesRouter(db: Db) {
+export function exercisesRouter(db: Db, demoDir?: string) {
   const r = Router();
   const auth = requireUser(db);
   r.get('/exercises', auth, (req, res) => {
@@ -37,9 +39,11 @@ export function exercisesRouter(db: Db) {
     res.json(result.entry);
   });
 
-  r.delete('/exercises/:id', auth, (req, res) => {
+  r.delete('/exercises/:id', auth, async (req, res) => {
     if (!canAddExercises(req.user!.role)) return void res.status(403).json({ error: EXERCISES_WRITE_FORBIDDEN });
-    if (!deleteExercise(db, String(req.params.id))) return void res.status(404).json({ error: 'Упражнение не найдено' });
+    const files = deleteExercise(db, String(req.params.id));
+    if (files === null) return void res.status(404).json({ error: 'Упражнение не найдено' });
+    if (demoDir) await Promise.all(files.map((f) => rm(path.join(demoDir, f), { force: true })));
     res.status(204).end();
   });
   return r;

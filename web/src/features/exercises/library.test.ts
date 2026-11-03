@@ -3,7 +3,7 @@ import {
   applyDraft, barsNote, canSubmit, createExercise, draftFromExercise, emptyDraft, exerciseIcon, formatKg,
   formatReps, formatTime, groupExercises, groupForMuscles, groupHint, groupTabs, hiddenSessions, lastSessionRows,
   latestMedia, mediaCountText, paramFields, recordText, recordTiles, searchExercises, sessionSummary, sortSessions,
-  planShort, toggleItem, totalText, trendInfo, canManageExercises, noteSteps, isVideoUrl, videoError,
+  planShort, toggleItem, totalText, trendInfo, canManageExercises, noteSteps,
   toExerciseInput, toExercisePatch,
 } from './library';
 import { exerciseLibrary } from './mock';
@@ -196,17 +196,10 @@ describe('права и запись', () => {
     expect(noteSteps(undefined)).toEqual([]);
   });
 
-  it('isVideoUrl и videoError принимают только http(s)', () => {
-    expect(isVideoUrl('https://youtu.be/x')).toBe(true);
-    expect(isVideoUrl('javascript:alert(1)')).toBe(false);
-    expect(isVideoUrl('просто текст')).toBe(false);
-    expect(videoError({ ...emptyDraft(), video: '' })).toBeUndefined();
-    expect(videoError({ ...emptyDraft(), video: 'ftp://x' })).toBeDefined();
-  });
-
   it('toExerciseInput и toExercisePatch', () => {
     const draft = { ...emptyDraft(), name: ' Мост ', muscles: ['Спина'], notes: ' шаг ' };
-    expect(toExerciseInput(draft)).toMatchObject({ name: 'Мост', group: 'back', muscles: ['Спина'], aliases: [], notes: 'шаг', video: '' });
+    expect(toExerciseInput(draft)).toMatchObject({ name: 'Мост', group: 'back', muscles: ['Спина'], aliases: [], notes: 'шаг' });
+    expect(toExerciseInput(draft)).not.toHaveProperty('video');
     const ex = { ...base, muscles: ['Спина'] };
     expect(toExercisePatch(draft, ex)).not.toHaveProperty('group');
     expect(toExercisePatch({ ...draft, muscles: ['Грудь'] }, ex)).toMatchObject({ group: 'chest', muscles: ['Грудь'] });

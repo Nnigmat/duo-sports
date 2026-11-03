@@ -1,4 +1,4 @@
-import type { ExerciseKind } from '../../../../shared/types';
+import type { ExerciseDemo, ExerciseKind } from '../../../../shared/types';
 
 export type { MuscleGroupId } from '../../../../shared/types';
 import type { MuscleGroupId } from '../../../../shared/types';
@@ -51,8 +51,8 @@ export interface LibraryExercise {
   equipment: string;
   /** Как выполнять: шаги через \n */
   notes?: string;
-  /** Ссылка на видео-пример */
-  video?: string;
+  /** Ролики чибика: девочка и мальчик */
+  demo?: ExerciseDemo;
   /** Гантели парой: вес показываем как «2 × 14 кг» */
   pair?: boolean;
   defaults: ExerciseDefaults;
@@ -76,7 +76,5 @@ export interface ExerciseDraft {
   equipment: string;
   /** Как выполнять: один шаг на строку */
   notes: string;
-  /** Ссылка на видео; пустая строка — нет */
-  video: string;
   params: ExerciseDefaults;
 }

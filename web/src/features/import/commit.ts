@@ -2,7 +2,7 @@ import type { Block, CommitBlock, CommitExercise, CommitWorkout, ExerciseKind, I
 import { groupForMuscles } from '../exercises/library';
 import { buildPlan, type PlanOptions } from './importPlan';
 import type { ParsedImport } from './parse';
-import { actionOf } from './preview';
+import { actionOf, replacementOf } from './preview';
 import type { ExerciseChoices, NewExercise } from './types';
 
 /** Из разобранного текста и выбора пользователя собирает то, что отправляем на сервер. Чистая функция. */
@@ -38,7 +38,6 @@ export function commitExercise(e: NewExercise, choices: ExerciseChoices): Commit
     group: groupForMuscles(muscles.map(cap)),
   };
   if (e.slug) out.id = e.slug;
-  if (e.video) out.video = e.video;
   if (e.notes) out.notes = e.notes;
   return out;
 }
@@ -49,7 +48,7 @@ function renamer(list: NewExercise[], choices: ExerciseChoices) {
   for (const e of list) {
     const action = actionOf(choices, e.key);
     if (action === 'skip') map.set(e.name, null);
-    else if (action === 'use' && e.similar) map.set(e.name, e.similar);
+    else if (action === 'use' && replacementOf(e, choices)) map.set(e.name, replacementOf(e, choices)!);
   }
   return map;
 }

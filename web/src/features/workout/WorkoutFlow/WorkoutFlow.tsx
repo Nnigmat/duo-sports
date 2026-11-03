@@ -7,6 +7,7 @@ import {
   blockLabel,
   buildSteps,
   commentsFor,
+  demoFor,
   editEyebrow,
   eyebrow,
   finishStats,
@@ -126,6 +127,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, onUploadVideo, onF
         session={session}
         dispatch={dispatch}
         shown={shown}
+        demoUrl={demoFor({ phase, record: step.record, demoUrl: techniques[shown.exerciseId]?.demoUrl })}
         note={note?.text}
         techNew={hasNewComments(comments, shown.exerciseId)}
         onEdit={() => setSheet('edit')}
@@ -195,6 +197,7 @@ type StageProps = {
   dispatch: Dispatch<Action>;
   /** Шаг, про который экран: текущий или (на отдыхе) следующий */
   shown: Step;
+  demoUrl?: string;
   note?: string;
   techNew: boolean;
   onEdit: () => void;
@@ -251,7 +254,7 @@ function TimedStage(props: StageProps) {
   );
 }
 
-function StageView({ session, dispatch, shown, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+function StageView({ session, dispatch, shown, demoUrl, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
 }) {
   const step = session.steps[session.index];
@@ -262,6 +265,7 @@ function StageView({ session, dispatch, shown, note, techNew, bar, onTech, onOpe
       progress={{ count: shown.blockSize, current: shown.indexInBlock - 1 }}
       eyebrow={resting ? restEyebrow(shown) : eyebrow(step)}
       line={stepLine(shown)}
+      demoUrl={demoUrl}
       pose={poseFor({ phase: resting ? 'rest' : 'work', exercisePose: step.pose, record: step.record })}
       note={note}
       techNew={techNew}

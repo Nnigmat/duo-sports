@@ -8,7 +8,6 @@ import { Badge } from "../../../../ui/Badge/Badge";
 import { Card } from "../../../../ui/Card/Card";
 import { Icon } from "../../../../ui/Icon/Icon";
 import { IconButton } from "../../../../ui/IconButton/IconButton";
-import { SegmentedControl } from "../../../../ui/SegmentedControl/SegmentedControl";
 import { Sheet } from "../../../../ui/Sheet/Sheet";
 import { Text } from "../../../../ui/Text/Text";
 import { Chibi } from "../../chibi/Chibi";
@@ -30,8 +29,6 @@ type Props = {
   /** Для даты комментария; в приложении не передаётся */
   now?: Date;
 };
-
-type Format = "animation" | "video";
 
 export function TechSheet({
   open,
@@ -75,7 +72,6 @@ function TechBody({
   onOpenComments,
   now = new Date(),
 }: BodyProps) {
-  const [format, setFormat] = useState<Format>("animation");
   const [paused, setPaused] = useState(false);
   // Смена key перезапускает CSS-анимацию с начала
   const [run, setRun] = useState(0);
@@ -86,58 +82,31 @@ function TechBody({
     <>
       {filled && (
         <>
-          <SegmentedControl
-            label="Формат"
-            value={format}
-            onChange={setFormat}
-            options={[
-              { value: "animation", label: "Анимация" },
-              { value: "video", label: "Видео" },
-            ]}
-          />
-
           <div className={styles.media}>
-            {format === "animation" ? (
-              <>
-                <Chibi
-                  key={run}
-                  pose={pose}
-                  size={196}
-                  speed={0.5}
-                  paused={paused}
-                  className={styles.chibi}
-                />
-                <span className={styles.speed}>Замедленно · 0,5×</span>
-                <div className={styles.controls}>
-                  <IconButton
-                    icon="replay"
-                    aria-label="Повторить"
-                    onClick={() => {
-                      setRun((n) => n + 1);
-                      setPaused(false);
-                    }}
-                  />
-                  <IconButton
-                    icon={paused ? "play" : "pause"}
-                    aria-label={paused ? "Продолжить" : "Пауза"}
-                    onClick={() => setPaused((p) => !p)}
-                  />
-                </div>
-              </>
-            ) : technique.videoUrl ? (
-              <video
-                className={styles.video}
-                src={technique.videoUrl}
-                controls
-                playsInline
-              >
-                <track kind="captions" />
-              </video>
-            ) : (
-              <Text variant="body-sm" color="slate" className={styles.empty}>
-                Видео к этому упражнению пока нет
-              </Text>
-            )}
+            <Chibi
+              key={run}
+              pose={pose}
+              size={196}
+              speed={0.5}
+              paused={paused}
+              className={styles.chibi}
+            />
+            <span className={styles.speed}>Замедленно · 0,5×</span>
+            <div className={styles.controls}>
+              <IconButton
+                icon="replay"
+                aria-label="Повторить"
+                onClick={() => {
+                  setRun((n) => n + 1);
+                  setPaused(false);
+                }}
+              />
+              <IconButton
+                icon={paused ? "play" : "pause"}
+                aria-label={paused ? "Продолжить" : "Пауза"}
+                onClick={() => setPaused((p) => !p)}
+              />
+            </div>
           </div>
         </>
       )}

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { changePassword, createUser, login, logout, userBySession, MAX_ATTEMPTS } from './auth';
+import { changePassword, createUser, login, logout, setGender, userBySession, MAX_ATTEMPTS } from './auth';
 import { openDb, type Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -73,5 +73,33 @@ describe('changePassword', () => {
     if (!other.ok) throw new Error();
     await changePassword(db, id(), 'trenirovka7', 'Prisyad-80kg', false, clock);
     expect(userBySession(db, other.token, clock)).not.toBeNull();
+  });
+});
+
+describe('пол спортсмена', () => {
+  const sessionOf = async (email: string) => {
+    const r = await login(db, email, 'trenirovka7', clock);
+    if (!r.ok) throw new Error('нет входа');
+    return userBySession(db, r.token, clock)!;
+  };
+
+  it('без пола поля gender нет', async () => {
+    expect((await sessionOf('nikita@example.com')).gender).toBeUndefined();
+  });
+  it('пол, заданный при создании, виден в сессии', async () => {
+    await createUser(db, 'girl@example.com', 'trenirovka7', 'athlete', clock, 'female');
+    expect((await sessionOf('girl@example.com')).gender).toBe('female');
+  });
+  it('setGender меняет и очищает пол', async () => {
+    setGender(db, 'nikita@example.com', 'male');
+    expect((await sessionOf('nikita@example.com')).gender).toBe('male');
+    setGender(db, 'nikita@example.com', null);
+    expect((await sessionOf('nikita@example.com')).gender).toBeUndefined();
+  });
+  it('пол вне двух значений отвергается', () => {
+    expect(() => setGender(db, 'nikita@example.com', 'other' as never)).toThrow();
+  });
+  it('setGender для неизвестного email возвращает false', () => {
+    expect(setGender(db, 'nobody@example.com', 'male')).toBe(false);
   });
 });

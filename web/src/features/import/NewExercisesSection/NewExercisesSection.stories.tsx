@@ -32,17 +32,6 @@ export const Default: Story = {
   },
 };
 
-export const SkipOne: Story = {
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    const first = within(c.getByRole('group', { name: 'Что сделать с «Обратные отжимания от лавочки»' }));
-    await userEvent.click(first.getByRole('button', { name: 'Не создавать' }));
-    await expect(first.getByRole('button', { name: 'Не создавать' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(c.getByText('Уберём из 4 тренировок')).toBeVisible();
-    await expect(c.getByRole('status')).toHaveTextContent('создать 30 · не создавать 1');
-  },
-};
-
 export const UseSimilar: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
@@ -58,12 +47,25 @@ export const WithoutGroup: Story = {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: /Без группы мышц/ }));
     await expect(c.getAllByRole('listitem')).toHaveLength(4);
-    const select = c.getAllByRole('combobox', { name: 'Группа мышц' })[0];
+    const select = c.getAllByRole('combobox', { name: /Группа мышц/ })[0];
     await userEvent.selectOptions(select, 'Пресс');
     await expect(select).toHaveValue('Пресс');
-    // Если не создавать, выбор группы не нужен
-    const row = within(c.getAllByRole('listitem')[0]);
-    await userEvent.click(row.getByRole('button', { name: 'Не создавать' }));
-    await expect(c.getAllByRole('combobox', { name: 'Группа мышц' })).toHaveLength(3);
+  },
+};
+
+export const MeantExisting: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: /Есть похожее/ }));
+    const group = within(c.getByRole('group', { name: 'Что сделать с «Боковая планка»' }));
+    await expect(c.getAllByText(/Упражнения «Боковая планка» нет в библиотеке/)).toHaveLength(1);
+    await userEvent.click(group.getByRole('button', { name: 'Планка' }));
+    await expect(group.getByRole('button', { name: 'Планка' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(c.getByRole('status')).toHaveTextContent('создать 30 · взять похожие 1');
+    // Передумали: создаём как есть
+    const create = group.getByRole('button', { name: 'Создать' });
+    await userEvent.click(create);
+    await expect(create).toHaveAttribute('aria-pressed', 'true');
+    await expect(c.getByRole('status')).toHaveTextContent('создать 31');
   },
 };

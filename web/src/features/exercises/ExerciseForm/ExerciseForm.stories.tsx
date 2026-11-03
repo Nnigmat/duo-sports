@@ -65,7 +65,7 @@ export const EditScreen: Story = {
   },
 };
 
-export const NotesAndVideo: Story = {
+export const Notes: Story = {
   render: () => <Live initial={emptyDraft()} />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
@@ -73,19 +73,6 @@ export const NotesAndVideo: Story = {
     await expect(notes).toHaveAccessibleDescription('Один шаг на строку');
     await userEvent.type(notes, 'Встаньте прямо{enter}Опуститесь вниз');
     await expect(notes).toHaveValue('Встаньте прямо\nОпуститесь вниз');
-    const video = c.getByLabelText('Ссылка на видео');
-    await expect(video).toHaveAttribute('type', 'url');
-    await userEvent.type(video, 'https://youtu.be/abc');
-    await expect(video).toHaveValue('https://youtu.be/abc');
-    await expect(video).not.toHaveAttribute('aria-invalid');
-  },
-};
-export const InvalidVideo: Story = {
-  render: () => <Live initial={{ ...emptyDraft(), video: 'ссылка' }} />,
-  play: async ({ canvasElement }) => {
-    const video = within(canvasElement).getByLabelText('Ссылка на видео');
-    await expect(video).toHaveAttribute('aria-invalid', 'true');
-    await expect(video).toHaveAccessibleDescription(/http/);
   },
 };
 
@@ -142,5 +129,56 @@ export const DeleteError: Story = {
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Удалить' }));
     await expect(await c.findByRole('alert')).toHaveTextContent('Нет связи с сервером');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  },
+};
+
+const pick = (c: ReturnType<typeof within>, label: string) =>
+  within(c.getByText(label, { selector: 'p' }).parentElement as HTMLElement);
+const video = new File([new Uint8Array([1])], 'a.mp4', { type: 'video/mp4' });
+
+export const EditDemo: Story = {
+  render: () => (
+    <ExerciseFormScreen
+      mode="edit"
+      exercise={squat}
+      onCancel={noop}
+      onSubmit={noop}
+      demo={{ onUpload: async (g) => ({ [g]: 'x.mp4' }), onRemove: async () => ({}) }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const girl = pick(c, 'Девочка');
+    await expect(girl.getByRole('button', { name: 'Выбрать файл' })).toBeEnabled();
+    await userEvent.upload(canvasElement.querySelectorAll('input[type=file]')[0] as HTMLInputElement, video);
+    await expect(await girl.findByRole('button', { name: 'Заменить' })).toBeVisible();
+    await userEvent.click(girl.getByRole('button', { name: 'Удалить' }));
+    await expect(await girl.findByRole('button', { name: 'Выбрать файл' })).toBeVisible();
+  },
+};
+
+export const EditDemoError: Story = {
+  render: () => (
+    <ExerciseFormScreen
+      mode="edit"
+      exercise={squat}
+      onCancel={noop}
+      onSubmit={noop}
+      demo={{ onUpload: fail('Видео слишком большое'), onRemove: async () => ({}) }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.upload(canvasElement.querySelectorAll('input[type=file]')[1] as HTMLInputElement, video);
+    await expect(await pick(c, 'Мальчик').findByRole('alert')).toHaveTextContent('Видео слишком большое');
+  },
+};
+
+export const CreateWithoutDemo: Story = {
+  render: () => <ExerciseFormScreen mode="create" onCancel={noop} onSubmit={noop} />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Видео можно добавить после создания упражнения.')).toBeVisible();
+    await expect(pick(c, 'Девочка').getByRole('button', { name: 'Выбрать файл' })).toBeDisabled();
   },
 };

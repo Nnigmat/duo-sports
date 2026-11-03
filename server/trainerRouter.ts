@@ -3,11 +3,14 @@ import type { NextFunction, Request, Response } from 'express';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
 import { isDate } from './imports';
+import { mountImport } from './importRouter';
+import { MAX_PAUSE_DAYS, moveEntry, pausePlan, scheduleOf, skipEntry } from './schedule';
 import { addHint, validateHint } from './hints';
+import { clearDay, planOf, setDay } from './plan';
 import { markReviewed } from './reviews';
 import { exerciseCommentsOf, listAthletes, progressOf, sessionsOf, setGoal, type AthleteFilter } from './trainerAthletes';
 import { canAccessAthlete } from './trainerLinks';
-import { workoutOf } from './workouts';
+import { workoutOf, workoutResponse } from './workouts';
 
 const FILTERS: AthleteFilter[] = ['all', 'review', 'inactive', 'ok'];
 
@@ -70,6 +73,101 @@ export function trainerRouter(db: Db) {
     const result = Number.isInteger(id) ? exerciseCommentsOf(db, req.user!, id, exercise, skip) : ({ ok: false, error: 'not_found' } as const);
     if (!result.ok) return void res.status(code(result.error)).json({ error: result.error });
     res.json({ comments: result.comments });
+  });
+
+  /** План ученика целиком и правки по дням: те же данные и действия, что у самого спортсмена на /plan */
+  r.get('/trainer/athletes/:id/plan', (req, res) => {
+    const id = athleteId(req);
+    if (!Number.isInteger(id)) return void res.status(404).json({ error: 'not_found' });
+    if (!canAccessAthlete(db, req.user!, id)) return void res.status(403).json({ error: 'forbidden' });
+    res.json(planOf(db, id));
+  });
+
+  r.put('/trainer/athletes/:id/plan/entries/:date', (req, res) => {
+    const id = athleteId(req);
+    const workoutId = Number(req.body?.workoutId);
+    if (!Number.isInteger(id)) return void res.status(404).json({ error: 'not_found' });
+    if (!canAccessAthlete(db, req.user!, id)) return void res.status(403).json({ error: 'forbidden' });
+    if (!isDate(req.params.date) || !Number.isInteger(workoutId)) return void res.status(400).json({ error: 'Ждём дату в адресе и workoutId в теле' });
+    const result = setDay(db, id, req.params.date, workoutId);
+    if (!result.ok) return void res.status(404).json({ error: result.error });
+    res.status(204).end();
+  });
+
+  r.delete('/trainer/athletes/:id/plan/entries/:date', (req, res) => {
+    const id = athleteId(req);
+    if (!Number.isInteger(id)) return void res.status(404).json({ error: 'not_found' });
+    if (!canAccessAthlete(db, req.user!, id)) return void res.status(403).json({ error: 'forbidden' });
+    if (!isDate(req.params.date)) return void res.status(400).json({ error: 'Ждём дату вида 2026-11-03' });
+    clearDay(db, id, req.params.date);
+    res.status(204).end();
+  });
+
+  /** Ученик из адреса, если он доступен тренеру; иначе отвечает 404 или 403 и возвращает null */
+  const accessible = (req: Request, res: Response): number | null => {
+    const id = athleteId(req);
+    if (!Number.isInteger(id)) {
+      res.status(404).json({ error: 'not_found' });
+      return null;
+    }
+    if (!canAccessAthlete(db, req.user!, id)) {
+      res.status(403).json({ error: 'forbidden' });
+      return null;
+    }
+    return id;
+  };
+
+  /** Импорт и создание тренировок для ученика: тот же поток, что у спортсмена, но данные пишутся ему */
+  mountImport(r, db, '/trainer/athletes/:id', accessible);
+
+  /** Перенос и пропуск тренировки ученика: те же панели, что у спортсмена */
+  r.get('/trainer/athletes/:id/schedule', (req, res) => {
+    const id = accessible(req, res);
+    if (id === null) return;
+    const { date, from } = req.query;
+    if (!isDate(date) || (from !== undefined && !isDate(from))) return void res.status(400).json({ error: 'Ждём date (и from) вида 2026-11-03' });
+    const data = scheduleOf(db, id, date, (from as string | undefined) ?? date);
+    if (!data) return void res.status(404).json({ error: 'not_found' });
+    res.json(data);
+  });
+
+  r.post('/trainer/athletes/:id/schedule/move', (req, res) => {
+    const id = accessible(req, res);
+    if (id === null) return;
+    const { today, from, to } = req.body ?? {};
+    if (!isDate(today) || !isDate(from) || !isDate(to)) return void res.status(400).json({ error: 'Ждём today, from и to вида 2026-11-03' });
+    const result = moveEntry(db, id, today, from, to);
+    if (!result.ok) return void res.status(result.error === 'not_found' ? 404 : 400).json({ error: result.error });
+    res.status(204).end();
+  });
+
+  r.post('/trainer/athletes/:id/schedule/skip', (req, res) => {
+    const id = accessible(req, res);
+    if (id === null) return;
+    const { from } = req.body ?? {};
+    if (!isDate(from)) return void res.status(400).json({ error: 'Ждём from вида 2026-11-03' });
+    const result = skipEntry(db, id, from);
+    if (!result.ok) return void res.status(404).json({ error: result.error });
+    res.status(204).end();
+  });
+
+  r.post('/trainer/athletes/:id/schedule/pause', (req, res) => {
+    const id = accessible(req, res);
+    if (id === null) return;
+    const { from, to } = req.body ?? {};
+    if (!isDate(from) || !isDate(to)) return void res.status(400).json({ error: 'Ждём from и to вида 2026-11-03' });
+    if (!pausePlan(db, id, from, to).ok) return void res.status(400).json({ error: `Пауза от 1 до ${MAX_PAUSE_DAYS} дней` });
+    res.status(204).end();
+  });
+
+  /** Тренировка ученика для запуска в превью: с комментариями и техникой, но без пометки «прочитано» */
+  r.get('/trainer/athletes/:id/workouts/:wid/preview', (req, res) => {
+    const id = accessible(req, res);
+    if (id === null) return;
+    const wid = Number(req.params.wid);
+    const data = Number.isInteger(wid) ? workoutResponse(db, id, wid, false) : null;
+    if (!data) return void res.status(404).json({ error: 'not_found' });
+    res.json(data);
   });
 
   /** Состав запланированной тренировки ученика */

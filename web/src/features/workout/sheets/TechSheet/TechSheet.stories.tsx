@@ -37,7 +37,7 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: `Высокая панель «Техника»: вкладки «Анимация» и «Видео», последний комментарий тренера, шаги и частая ошибка. Анимация замедлена до 0,5× и управляется кнопками «Повторить» и «Пауза». Артборд «Техника — анимация, инструкция, комментарий». ${ARTIFACT}`,
+        component: `Высокая панель «Техника»: замедленная анимация, последний комментарий тренера, шаги и частая ошибка. Анимация замедлена до 0,5× и управляется кнопками «Повторить» и «Пауза». Артборд «Техника — анимация, инструкция, комментарий». ${ARTIFACT}`,
       },
     },
   },
@@ -76,17 +76,6 @@ export const PauseAndReplay: Story = {
   },
 };
 
-export const VideoTab: Story = {
-  render: () => <Demo />,
-  play: async () => {
-    const dialog = await open();
-    await userEvent.click(dialog.getByRole('tab', { name: 'Видео' }));
-    await expect(dialog.getByRole('tab', { name: 'Видео' })).toHaveAttribute('aria-selected', 'true');
-    await expect(dialog.getByText('Видео к этому упражнению пока нет')).toBeVisible();
-    await expect(dialog.queryByText('Замедленно · 0,5×')).toBeNull();
-  },
-};
-
 export const WithoutComment: Story = {
   render: () => <Demo withComment={false} />,
   play: async () => {
@@ -101,7 +90,6 @@ export const Empty: Story = {
     const dialog = await open();
     await expect(dialog.getByText('Описания пока нет')).toBeVisible();
     await expect(dialog.getByText('Тренер или админ добавят его в разделе «Упражнения»')).toBeVisible();
-    await expect(dialog.queryByRole('tab', { name: 'Видео' })).toBeNull();
     await expect(dialog.queryByText('Как выполнять')).toBeNull();
   },
 };

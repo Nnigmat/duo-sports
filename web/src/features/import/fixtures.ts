@@ -47,6 +47,7 @@ export const newExercisesFixture: NewExercise[] = NEW.map(([name, usedIn, muscle
   muscles,
   hasVideo,
   similar,
+  candidates: similar ? [similar] : [],
 }));
 
 const WARMUP = 'Растяжка забитых мышц, расслабление спины: скручивания, мёртвый жук, ноги за голову 20–30 с.';

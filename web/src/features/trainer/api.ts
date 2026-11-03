@@ -1,4 +1,4 @@
-import type { AthleteListResponse, AthleteSessionsResponse, ExerciseCommentItem, Workout } from '../../../../shared/types';
+import type { AthleteListResponse, AthleteSessionsResponse, ExerciseCommentItem, PlanResponse, WorkoutResponse, Workout } from '../../../../shared/types';
 import type { AthleteFilter } from './students';
 
 /** Запросы кабинета тренера. Компоненты их не вызывают: страница передаёт колбэки. */
@@ -56,3 +56,22 @@ export type NewComment = { text: string; exerciseId?: string; sessionId?: number
 export const postComment = async (athleteId: number, comment: NewComment): Promise<void> => {
   await request(`/api/athletes/${athleteId}/comments`, { method: 'POST', headers: json, body: JSON.stringify(comment) });
 };
+
+/** План ученика: те же данные, что у спортсмена на /plan */
+export const fetchAthletePlan = async (athleteId: number): Promise<PlanResponse> => (await request(`/api/trainer/athletes/${athleteId}/plan`)).json();
+
+/** Ставит тренировку ученика в день, заменяя стоявшую */
+export const putAthleteDay = async (athleteId: number, date: string, workoutId: string): Promise<void> => {
+  await request(`/api/trainer/athletes/${athleteId}/plan/entries/${date}`, { method: 'PUT', headers: json, body: JSON.stringify({ workoutId: Number(workoutId) }) });
+};
+
+export const deleteAthleteDay = async (athleteId: number, date: string): Promise<void> => {
+  await request(`/api/trainer/athletes/${athleteId}/plan/entries/${date}`, { method: 'DELETE' });
+};
+
+/** Тренировка ученика для запуска в превью */
+export const fetchAthletePreview = async (athleteId: number, workoutId: number): Promise<WorkoutResponse> =>
+  (await request(`/api/trainer/athletes/${athleteId}/workouts/${workoutId}/preview`)).json();
+
+/** Адрес тренерских копий запросов переноса и импорта */
+export const athleteBase = (athleteId: number) => `/api/trainer/athletes/${athleteId}`;

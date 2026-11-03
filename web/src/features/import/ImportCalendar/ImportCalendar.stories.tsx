@@ -32,5 +32,3 @@ export const WithShift: Story = {
     await expect(within(canvasElement).getAllByRole('row')).toHaveLength(15);
   },
 };
-
-export const Muted: Story = { args: { weeks: buildPlan(planSourceFixture, { ...DEFAULT_OPTIONS, planOn: false }).weeks } };

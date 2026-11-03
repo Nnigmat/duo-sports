@@ -28,3 +28,4 @@ export { formatLongDate, joinNumbers, plural } from './ru';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
 export { initSession, reduce, type Action, type Phase, type Session } from './session';
 export { hasTechnique } from './technique';
+export { demoFor } from './demo';

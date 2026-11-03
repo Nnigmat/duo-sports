@@ -13,6 +13,9 @@ import { scheduleRouter } from './scheduleRouter';
 import { todayRouter } from './todayRouter';
 import { trainerRouter } from './trainerRouter';
 import { videosRouter } from './videos';
+import { demoRouter } from './demoRouter';
+
+const MAX_DEMO_BYTES = 50 * 1024 * 1024; // ролик чибика — секунды видео, не запись подхода
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -25,7 +28,9 @@ const dataDir = path.resolve(process.env.DATA_DIR || 'data');
 const db = openDb(path.join(dataDir, 'app.db'));
 app.use('/api', authRouter(db));
 app.use('/api', importRouter(db));
-app.use('/api', exercisesRouter(db));
+const videosDir = path.join(dataDir, 'videos');
+app.use('/api', exercisesRouter(db, videosDir));
+app.use('/api', demoRouter({ db, dir: videosDir, maxBytes: MAX_DEMO_BYTES }));
 app.use('/api', planRouter(db));
 app.use('/api', workoutRouter(db));
 app.use('/api', todayRouter(db));
@@ -33,7 +38,7 @@ app.use('/api', reviewRouter(db));
 app.use('/api', trainerRouter(db));
 app.use('/api', achievementsRouter(db));
 app.use('/api', scheduleRouter(db));
-app.use('/api', videosRouter({ db, dir: path.join(dataDir, 'videos'), maxBytes: 300 * 1024 * 1024 }));
+app.use('/api', videosRouter({ db, dir: videosDir, maxBytes: 300 * 1024 * 1024 }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

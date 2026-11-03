@@ -34,8 +34,8 @@ type Props = {
   /** Переход по ссылке внутри приложения */
   onNavigate: (href: string) => void;
   onCopy: (text: string) => void;
-  /** «Отмена» на первом шаге */
-  onCancel: () => void;
+  /** Что стоит в поле при открытии, например шаблон новой тренировки */
+  initialText?: string;
 };
 
 type Step = 1 | 2 | 3 | 4;
@@ -45,9 +45,9 @@ type Step = 1 | 2 | 3 | 4;
  * «Импортировать» отправляет результат на сервер, «Отменить импорт» откатывает его. Router не нужен:
  * ссылки перехватываются и уходят в onNavigate.
  */
-export function ImportFlow({ data, view, links, actions, onNavigate, onCopy, onCancel }: Props) {
+export function ImportFlow({ data, view, links, actions, onNavigate, onCopy, initialText = '' }: Props) {
   const [step, setStep] = useState<Step>(1);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [parsed, setParsed] = useState<ParsedImport | null>(null);
   const [issues, setIssues] = useState<ParseIssue[]>([]);
   const [choices, setChoices] = useState<ExerciseChoices>(EMPTY_CHOICES);
@@ -123,7 +123,6 @@ export function ImportFlow({ data, view, links, actions, onNavigate, onCopy, onC
           sample={sample}
           onCopyReference={onCopy}
           formatHref={links.format}
-          onCancel={onCancel}
           onCheck={check}
         />
       ) : step === 2 ? (

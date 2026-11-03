@@ -2,8 +2,8 @@ import { Button, Notice, Text } from '../../../ui';
 import { ConflictsSection } from '../ConflictsSection/ConflictsSection';
 import { ImportCalendar } from '../ImportCalendar/ImportCalendar';
 import { ImportSteps } from '../ImportSteps/ImportSteps';
-import { PlanOptionsPanel } from '../PlanOptionsPanel/PlanOptionsPanel';
-import { buildPlan, calendarNote, dayLabel, firstDate, pastCount, planCta, planLead, planFooter, planSummary, resolveAll, setPast, type PlanOptions, type PlanSource } from '../importPlan';
+import { PastModePanel } from '../PastModePanel/PastModePanel';
+import { buildPlan, calendarNote, dayLabel, firstDate, pastCount, planLead, planFooter, resolveAll, setPast, type PlanOptions, type PlanSource } from '../importPlan';
 import { shortDate } from '../../plan/plan';
 import styles from './ImportPlanView.module.css';
 
@@ -25,7 +25,6 @@ type Props = {
 export function ImportPlanView({ source, options, onOptionsChange, total, onBack, onImport, busy, error }: Props) {
   const result = buildPlan(source, options);
   const start = firstDate(source);
-  const { planOn } = options;
 
   return (
     <div className={styles.root}>
@@ -40,40 +39,35 @@ export function ImportPlanView({ source, options, onOptionsChange, total, onBack
 
       <ImportSteps current={3} />
 
-      <PlanOptionsPanel
-        planOn={planOn}
-        onPlanOnChange={(on) => onOptionsChange({ ...options, planOn: on })}
+      <PastModePanel
         past={options.past}
         onPastChange={(p) => onOptionsChange(setPast(options, p))}
-        summary={planSummary(result, planOn)}
         startLabel={start ? shortDate(start) : ''}
         pastCount={pastCount(source)}
       />
 
       <ImportCalendar
         title={result.first && result.last ? `${dayLabel(result.first)} — ${dayLabel(result.last)}` : 'Календарь'}
-        note={planOn ? calendarNote(options.past, result.first) : 'План выключен: тренировки сохранятся без дат'}
+        note={calendarNote(options.past, result.first)}
         weeks={result.weeks}
       />
 
-      {planOn && (
-        <ConflictsSection
-          conflicts={result.conflicts}
-          onChoice={(date, choice) => onOptionsChange({ ...options, resolutions: { ...options.resolutions, [date]: choice } })}
-          onChoiceAll={(choice) => onOptionsChange({ ...options, resolutions: resolveAll(result.conflicts, choice) })}
-        />
-      )}
+      <ConflictsSection
+        conflicts={result.conflicts}
+        onChoice={(date, choice) => onOptionsChange({ ...options, resolutions: { ...options.resolutions, [date]: choice } })}
+        onChoiceAll={(choice) => onOptionsChange({ ...options, resolutions: resolveAll(result.conflicts, choice) })}
+      />
 
       {error && <Notice tone="error">{error}</Notice>}
 
       <footer className={styles.footer}>
-        <p className={styles.total}>{planFooter(total, result, planOn)}</p>
+        <p className={styles.total}>{planFooter(total, result)}</p>
         <div className={styles.actions}>
           <Button variant="ghost" onClick={onBack} disabled={busy}>
             Назад
           </Button>
           <Button onClick={onImport} loading={busy}>
-            {planCta(planOn)}
+            Импортировать и добавить в план
           </Button>
         </div>
       </footer>

@@ -39,9 +39,18 @@ function rowOf(db: Db, id: number, today: string): AthleteRow | null {
          AND (EXISTS (SELECT 1 FROM videos v WHERE v.session_id = s.id) OR EXISTS (SELECT 1 FROM comments c WHERE c.session_id = s.id AND c.author_id = s.user_id))`,
     )
     .get(id, addDays(today, -AWAITING_DAYS)) as { sessions: number; videos: number };
+  // Ответы ученика в уже разобранных тренировках, которые тренер ещё не открывал
+  const replied = (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM sessions_done s WHERE s.user_id = ? AND EXISTS (SELECT 1 FROM reviews r WHERE r.session_id = s.id)
+           AND EXISTS (SELECT 1 FROM comments c WHERE c.session_id = s.id AND c.author_id = s.user_id AND c.seen_at IS NULL)`,
+      )
+      .get(id) as { n: number }
+  ).n;
   const daysSinceLast = last ? days(last.date, today) : null;
   const idleDays = daysSinceLast ?? days(u.created_at.slice(0, 10), today);
-  const status: AthleteStatus = waiting.sessions > 0 ? 'review' : idleDays >= INACTIVE_DAYS ? 'inactive' : 'ok';
+  const status: AthleteStatus = waiting.sessions > 0 || replied > 0 ? 'review' : idleDays >= INACTIVE_DAYS ? 'inactive' : 'ok';
   return {
     id,
     name: userNameOf(u.email),
@@ -53,6 +62,7 @@ function rowOf(db: Db, id: number, today: string): AthleteRow | null {
     status,
     waitingSessions: waiting.sessions,
     waitingVideos: waiting.videos,
+    repliedSessions: replied,
     daysSinceLast,
   };
 }

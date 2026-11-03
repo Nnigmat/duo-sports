@@ -35,10 +35,13 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 const post = <T>(url: string, body?: unknown) =>
   request<T>(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
 
-export const fetchImportContext = () => request<ImportContextResponse>('/api/import/context');
+/** base — «/api» у спортсмена, «/api/trainer/athletes/:id» у тренера: тогда тренировки попадают ученику */
+export const fetchImportContext = (base = '/api') => request<ImportContextResponse>(`${base}/import/context`);
 
-export const importActions: ImportActions = {
-  commit: (commit) => post<ImportRecord>('/api/imports', commit),
-  undo: (id) => post<ImportRecord>(`/api/imports/${id}/undo`),
-  redo: (id) => post<ImportRecord>(`/api/imports/${id}/redo`),
-};
+export const importActionsFor = (base = '/api'): ImportActions => ({
+  commit: (commit) => post<ImportRecord>(`${base}/imports`, commit),
+  undo: (id) => post<ImportRecord>(`${base}/imports/${id}/undo`),
+  redo: (id) => post<ImportRecord>(`${base}/imports/${id}/redo`),
+});
+
+export const importActions: ImportActions = importActionsFor();

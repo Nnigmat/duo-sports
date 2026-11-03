@@ -1,6 +1,6 @@
 import { parseIso } from '../plan/plan';
 import { plural } from '../workout/flow/ru';
-import { actionOf, tally } from './preview';
+import { actionOf, replacementOf, tally } from './preview';
 import { dayLabel, type PlanResult } from './importPlan';
 import type { ExerciseChoices, NewExercise } from './types';
 
@@ -49,8 +49,8 @@ export function addedList(list: NewExercise[], choices: ExerciseChoices): AddedE
     const action = actionOf(choices, ex.key);
     if (action === 'skip') continue;
     const item: AddedExercise =
-      action === 'use' && ex.similar
-        ? { title: ex.similar, meta: 'уже было в библиотеке', chip: 'Из библиотеки' }
+      action === 'use' && replacementOf(ex, choices)
+        ? { title: replacementOf(ex, choices)!, meta: 'уже было в библиотеке', chip: 'Из библиотеки' }
         : { title: ex.name, meta: [ex.muscles || choices.group[ex.key]?.toLowerCase() || 'группа мышц не указана', ex.hasVideo ? 'видео' : ''].filter(Boolean).join(' · '), chip: 'Создано' };
     if (seen.has(item.title)) continue;
     seen.add(item.title);

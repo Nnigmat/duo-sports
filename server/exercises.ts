@@ -1,4 +1,4 @@
-import type { ExerciseInput, ExerciseKind, LibraryEntry, MuscleGroupId } from '../shared/types';
+import type { ExerciseInput, ExerciseKind, Gender, LibraryEntry, MuscleGroupId } from '../shared/types';
 import type { Db } from './db';
 import { GROUPS, libraryOf } from './imports';
 
@@ -6,7 +6,7 @@ type Clock = () => Date;
 const now: Clock = () => new Date();
 
 const KINDS: ExerciseKind[] = ['reps', 'weight', 'time'];
-export const EXERCISE_LIMITS = { name: 80, list: 12, item: 60, notes: 4000, video: 500 };
+export const EXERCISE_LIMITS = { name: 80, list: 12, item: 60, notes: 4000 };
 export const EXERCISES_WRITE_FORBIDDEN = 'Упражнения меняют тренер и админ';
 
 // ── Слаг ──────────────────────────────────────────────────
@@ -52,16 +52,8 @@ function list(v: unknown, field: string): Checked<string[]> {
   return { ok: true, value: out };
 }
 
-export function isHttpUrl(s: string): boolean {
-  try {
-    const u = new URL(s);
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
 
-/** Проверяет и нормализует поля; отсутствующие пропускает (для PATCH). Пустая строка в notes/video остаётся пустой. */
+/** Проверяет и нормализует поля; отсутствующие пропускает (для PATCH). Пустая строка в notes остаётся пустой. */
 export function validateFields(body: unknown): Checked<Partial<ExerciseInput>> {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) return bad('Нужен объект с полями упражнения');
   const b = body as Record<string, unknown>;
@@ -89,13 +81,6 @@ export function validateFields(body: unknown): Checked<Partial<ExerciseInput>> {
     if (typeof b.notes !== 'string' || b.notes.length > EXERCISE_LIMITS.notes) return bad(`Описание: до ${EXERCISE_LIMITS.notes} символов`);
     out.notes = b.notes.trim();
   }
-  if (b.video !== undefined) {
-    const v = typeof b.video === 'string' ? b.video.trim() : null;
-    if (v === null || v.length > EXERCISE_LIMITS.video || (v !== '' && !isHttpUrl(v))) {
-      return bad(`Видео: ссылка http или https до ${EXERCISE_LIMITS.video} символов`);
-    }
-    out.video = v;
-  }
   return { ok: true, value: out };
 }
 
@@ -106,7 +91,7 @@ export function validateCreate(body: unknown): Checked<ExerciseInput> {
   if (v.name === undefined) return bad(`Название: от 1 до ${EXERCISE_LIMITS.name} символов`);
   if (v.group === undefined) return bad('Группа мышц: обязательное поле');
   if (v.kind === undefined) return bad('Тип: reps, weight или time');
-  return { ok: true, value: { name: v.name, group: v.group, kind: v.kind, muscles: v.muscles ?? [], aliases: v.aliases ?? [], ...(v.notes !== undefined ? { notes: v.notes } : {}), ...(v.video !== undefined ? { video: v.video } : {}) } };
+  return { ok: true, value: { name: v.name, group: v.group, kind: v.kind, muscles: v.muscles ?? [], aliases: v.aliases ?? [], ...(v.notes !== undefined ? { notes: v.notes } : {}) } };
 }
 
 // ── База ──────────────────────────────────────────────────
@@ -131,8 +116,8 @@ export function createExercise(db: Db, input: ExerciseInput, clock: Clock = now)
     const taken = new Set((db.prepare('SELECT slug FROM exercises').all() as Array<{ slug: string }>).map((r) => r.slug));
     const slug = uniqueSlug(slugify(input.name), taken);
     db.prepare(
-      `INSERT INTO exercises (slug, name, aliases, muscles, kind, group_id, video_url, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(slug, input.name, JSON.stringify(input.aliases), JSON.stringify(input.muscles), input.kind, input.group, input.video || null, input.notes || null, clock().toISOString());
+      `INSERT INTO exercises (slug, name, aliases, muscles, kind, group_id, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(slug, input.name, JSON.stringify(input.aliases), JSON.stringify(input.muscles), input.kind, input.group, input.notes || null, clock().toISOString());
     return { ok: true, entry: entryOf(db, slug) };
   })();
 }
@@ -149,15 +134,31 @@ export function updateExercise(db: Db, slug: string, patch: Partial<ExerciseInpu
       muscles: patch.muscles ?? cur.muscles,
       aliases: patch.aliases ?? cur.aliases,
       notes: patch.notes !== undefined ? patch.notes : cur.notes ?? '',
-      video: patch.video !== undefined ? patch.video : cur.video ?? '',
     };
-    db.prepare('UPDATE exercises SET name = ?, group_id = ?, kind = ?, muscles = ?, aliases = ?, notes = ?, video_url = ? WHERE slug = ?').run(
-      next.name, next.group, next.kind, JSON.stringify(next.muscles), JSON.stringify(next.aliases), next.notes || null, next.video || null, slug,
+    db.prepare('UPDATE exercises SET name = ?, group_id = ?, kind = ?, muscles = ?, aliases = ?, notes = ? WHERE slug = ?').run(
+      next.name, next.group, next.kind, JSON.stringify(next.muscles), JSON.stringify(next.aliases), next.notes || null, slug,
     );
     return { ok: true, entry: entryOf(db, slug) };
   })();
 }
 
-export function deleteExercise(db: Db, slug: string): boolean {
-  return db.prepare('DELETE FROM exercises WHERE slug = ?').run(slug).changes > 0;
+/** Удаляет упражнение; возвращает файлы его роликов, чтобы вызывающий убрал их с диска. null — такого упражнения нет. */
+export function deleteExercise(db: Db, slug: string): string[] | null {
+  return db.transaction((): string[] | null => {
+    const cur = libraryOf(db).find((e) => e.id === slug);
+    if (!cur) return null;
+    db.prepare('DELETE FROM exercises WHERE slug = ?').run(slug);
+    return [cur.demo?.female, cur.demo?.male].filter((f): f is string => !!f);
+  })();
+}
+
+/** Ставит (или при null убирает) ролик пола; previous — прежний файл, его нужно удалить с диска. */
+export function setDemo(db: Db, slug: string, gender: Gender, file: string | null): { ok: true; previous?: string } | { ok: false } {
+  const col = gender === 'female' ? 'demo_female' : 'demo_male';
+  return db.transaction((): { ok: true; previous?: string } | { ok: false } => {
+    const row = db.prepare(`SELECT ${col} AS file FROM exercises WHERE slug = ?`).get(slug) as { file: string | null } | undefined;
+    if (!row) return { ok: false };
+    db.prepare(`UPDATE exercises SET ${col} = ? WHERE slug = ?`).run(file, slug);
+    return row.file ? { ok: true, previous: row.file } : { ok: true };
+  })();
 }

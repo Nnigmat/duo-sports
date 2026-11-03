@@ -31,7 +31,6 @@ const meta = {
     links: { import: '/import', format: '/import/format', workouts: '/', plan: '/plan', exercises: '/exercises' },
     onNavigate: fn(),
     onCopy: fn(),
-    onCancel: fn(),
     actions: fakeActions(),
   },
   parameters: { layout: 'fullscreen', docs: { description: { component: 'Все четыре шага подряд. «Проверить» разбирает вставленный YAML; ошибки показываются на первом шаге. Данные пока не сохраняются на сервере.' } } },
@@ -45,11 +44,9 @@ export const FullPath: Story = {
     // 1. Источник: пример на ближайшие вторник и четверг
     await userEvent.click(c.getByRole('button', { name: 'Вставить пример' }));
     await userEvent.click(c.getByRole('button', { name: 'Проверить' }));
-    // 2. Проверка: шесть новых упражнений, не создаём первое
+    // 2. Проверка: шесть новых упражнений, создаём все
     await expect(c.getByRole('heading', { level: 1, name: 'Проверьте, что загружаем' })).toBeVisible();
     await expect(c.getByText('тренировки · 1 неделя')).toBeVisible();
-    const first = within(c.getByRole('group', { name: 'Что сделать с «Обратные отжимания от лавочки»' }));
-    await userEvent.click(first.getByRole('button', { name: 'Не создавать' }));
     await userEvent.click(c.getByRole('button', { name: 'Далее: план' }));
     // 3. План: четверг, 5 нояб, уже занят — конфликт
     await expect(c.getByRole('heading', { level: 1, name: 'План из файла' })).toBeVisible();
@@ -59,7 +56,7 @@ export const FullPath: Story = {
     await expect(c.getByRole('heading', { level: 1, name: 'Импорт завершён' })).toBeVisible();
     await expect(c.getByText(`Сегодня в ${clockTime(CREATED)}`)).toBeVisible();
     await expect(args.actions.commit).toHaveBeenCalledTimes(1);
-    await expect(c.getByRole('heading', { level: 2, name: 'Новые упражнения · 5' })).toBeVisible();
+    await expect(c.getByRole('heading', { level: 2, name: 'Новые упражнения · 6' })).toBeVisible();
     await expect(c.getByText('1 тренировка заменена')).toBeVisible();
     // Внутренняя ссылка не перезагружает страницу
     await userEvent.click(c.getByRole('link', { name: 'Открыть план' }));
@@ -121,13 +118,11 @@ export const FormatPage: Story = {
   },
 };
 
-export const CancelAndFormatLink: Story = {
+export const FormatLink: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('link', { name: 'Полное описание формата' }));
     await expect(args.onNavigate).toHaveBeenCalledWith('/import/format');
-    await userEvent.click(c.getByRole('button', { name: 'Отмена' }));
-    await expect(args.onCancel).toHaveBeenCalled();
   },
 };
 
@@ -136,13 +131,11 @@ export const SendsWhatWasChosen: Story = {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: 'Вставить пример' }));
     await userEvent.click(c.getByRole('button', { name: 'Проверить' }));
-    const first = within(c.getByRole('group', { name: 'Что сделать с «Обратные отжимания от лавочки»' }));
-    await userEvent.click(first.getByRole('button', { name: 'Не создавать' }));
     await userEvent.click(c.getByRole('button', { name: 'Далее: план' }));
     await userEvent.click(within(c.getByRole('group', { name: 'Для всех' })).getByRole('button', { name: 'Оставить мою' }));
     await userEvent.click(c.getByRole('button', { name: 'Импортировать и добавить в план' }));
     const sent = vi.mocked(args.actions.commit).mock.calls[0]![0];
-    await expect(sent.exercises).toHaveLength(5);
+    await expect(sent.exercises).toHaveLength(6);
     await expect(sent.workouts.map((w) => w.title)).toEqual(['Трицепс, пресс, ноги', 'Грудь, кор, спина']);
     // «Оставить мою»: в четверг, 5 нояб, у вас уже стоит тренировка — из файла туда ничего не пишем
     await expect(sent.entries).toEqual([{ date: '2026-11-03', workout: 0 }]);

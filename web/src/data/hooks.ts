@@ -4,9 +4,9 @@ import type { LibraryExercise } from '../features/exercises/types';
 import type { AthleteListResponse, AthleteSessionsResponse, ExerciseCommentItem, SessionReviewResponse, VideoReviewResponse, Workout } from '../../../shared/types';
 import { fetchSessionReview, fetchVideoReview } from '../features/review/api';
 import { toIso } from '../features/plan/plan';
-import { fetchAthleteSessions, fetchAthletes, fetchExerciseComments, fetchPlannedWorkout } from '../features/trainer/api';
+import { fetchAthletePlan, fetchAthletePreview, fetchAthleteSessions, fetchAthletes, fetchExerciseComments, fetchPlannedWorkout } from '../features/trainer/api';
 import type { AthleteFilter } from '../features/trainer/students';
-import { fetchAchievements, fetchExercises, fetchImport, fetchPlan, fetchWorkoutById, fetchSchedule, fetchToday, type WorkoutData } from './api';
+import { fetchAchievements, fetchExercises, fetchImport, fetchPlan, toPlanData, fetchWorkoutById, fetchSchedule, fetchToday, type WorkoutData } from './api';
 import type { AchievementsData, ImportData, PlanData, ScheduleData, TodayData } from './types';
 
 export type Resource<T> = { data: T | null; error: string | null };
@@ -28,10 +28,10 @@ function useResource<T>(load: () => Promise<T>): Resource<T> {
 
 export const useToday = (): Resource<TodayData> => useResource(fetchToday);
 export const useAchievements = (): Resource<AchievementsData> => useResource(fetchAchievements);
-export const useSchedule = (from?: string): Resource<ScheduleData> => useResource(useCallback(() => fetchSchedule(from), [from]));
+export const useSchedule = (from?: string, base?: string): Resource<ScheduleData> => useResource(useCallback(() => fetchSchedule(from, base), [from, base]));
 export const useExercises = (): Resource<LibraryExercise[]> => useResource(fetchExercises);
 export const usePlan = (): Resource<PlanData> => useResource(fetchPlan);
-export const useImport = (): Resource<ImportData> => useResource(fetchImport);
+export const useImport = (base?: string): Resource<ImportData> => useResource(useCallback(() => fetchImport(base), [base]));
 export const useWorkoutById = (id: string): Resource<WorkoutData> => useResource(useCallback(() => fetchWorkoutById(id), [id]));
 export const useSessionReview = (sessionId: number): Resource<SessionReviewResponse> =>
   useResource(useCallback(() => fetchSessionReview(sessionId, toIso(new Date())), [sessionId]));
@@ -43,6 +43,11 @@ export const useVideoReview = (videoId: string): Resource<VideoReviewResponse> =
 
 export const useAthletes = (filter: AthleteFilter, q: string): Resource<AthleteListResponse> =>
   useResource(useCallback(() => fetchAthletes(toIso(new Date()), filter, q), [filter, q]));
+export const useAthletePlan = (athleteId: number, version = 0): Resource<PlanData> =>
+  useResource(useCallback(() => fetchAthletePlan(athleteId).then(toPlanData), [athleteId, version]));
+/** Тренировка ученика для превью: с комментариями и техникой, ученик ничего не «прочитывает» */
+export const useAthletePreview = (athleteId: number, workoutId: number): Resource<WorkoutData> =>
+  useResource(useCallback(() => fetchAthletePreview(athleteId, workoutId), [athleteId, workoutId]));
 export const useAthleteSessions = (athleteId: number, version = 0): Resource<AthleteSessionsResponse> =>
   useResource(useCallback(() => fetchAthleteSessions(athleteId, toIso(new Date())), [athleteId, version]));
 /** Разбор выполненной тренировки глазами тренера; null — выбрана не выполненная */

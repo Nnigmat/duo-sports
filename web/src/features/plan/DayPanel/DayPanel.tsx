@@ -25,12 +25,14 @@ type Props = {
   /** Плашка после копирования */
   notice: { to: string; title: string } | null;
   layout?: 'mobile' | 'desktop';
-  onStart: (date: string) => void;
-  onResults: (date: string) => void;
-  onMove: (date: string) => void;
-  onEdit: (date: string) => void;
+  onStart?: (date: string) => void;
+  /** Просмотр тренировки в режиме превью: только у тренера, на любой день с тренировкой */
+  onPreview?: (date: string) => void;
+  onResults?: (date: string) => void;
+  onMove?: (date: string) => void;
+  onEdit?: (date: string) => void;
   onRemove: (date: string) => void;
-  onCreate: (date: string) => void;
+  onCreate?: (date: string) => void;
   onAdd: (date: string, templateId: string) => void;
   onToggleCopy: () => void;
   onCopyDate: (date: string) => void;
@@ -48,6 +50,7 @@ export function DayPanel({
   notice,
   layout = 'desktop',
   onStart,
+  onPreview,
   onResults,
   onMove,
   onEdit,
@@ -76,9 +79,11 @@ export function DayPanel({
             {texts.title}
           </Text>
         </header>
-        <Button icon="plus" fullWidth onClick={() => onCreate(date)}>
-          {texts.create}
-        </Button>
+        {onCreate && (
+          <Button icon="plus" fullWidth onClick={() => onCreate(date)}>
+            {texts.create}
+          </Button>
+        )}
         <QuickAdd templates={templates} onAdd={(id) => onAdd(date, id)} />
       </aside>
     );
@@ -124,22 +129,27 @@ export function DayPanel({
       <ExerciseList exercises={template.exercises} label={`Упражнения: ${template.title}`} />
 
       <div className={styles.actions}>
-        {actions.start && (
+        {actions.start && onStart && (
           <Button compact icon="play" onClick={() => onStart(date)}>
             Начать
           </Button>
         )}
-        {actions.results && (
+        {onPreview && (
+          <Button compact variant="secondary" icon="play" onClick={() => onPreview(date)} aria-label="Просмотр тренировки в режиме превью">
+            Просмотр
+          </Button>
+        )}
+        {actions.results && onResults && (
           <Button compact variant="secondary" onClick={() => onResults(date)}>
             Посмотреть итоги
           </Button>
         )}
-        {actions.move && (
+        {actions.move && onMove && (
           <Button compact variant="secondary" onClick={() => onMove(date)}>
             Перенести
           </Button>
         )}
-        {actions.edit && (
+        {actions.edit && onEdit && (
           <Button compact variant="secondary" onClick={() => onEdit(date)}>
             Изменить
           </Button>

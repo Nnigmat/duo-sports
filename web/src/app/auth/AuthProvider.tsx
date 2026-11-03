@@ -4,7 +4,8 @@ import { apiLogout, fetchMe } from './authApi';
 
 type AuthState =
   | { status: 'loading' }
-  | { status: 'out' }
+  /** manual — человек сам нажал «Выйти»: после следующего входа ведём на главную, а не туда, где он вышел */
+  | { status: 'out'; manual?: boolean }
   | { status: 'in'; user: AuthUser };
 
 type Ctx = AuthState & {
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signedIn: (user) => setState({ status: 'in', user }),
       signOut: async () => {
         await apiLogout();
-        setState({ status: 'out' });
+        setState({ status: 'out', manual: true });
       },
     }),
     [state, refresh],

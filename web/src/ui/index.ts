@@ -32,6 +32,7 @@ export { ReviewNoticeCard } from './ReviewNoticeCard/ReviewNoticeCard';
 export { Screen } from './Screen/Screen';
 export { SearchField } from './SearchField/SearchField';
 export { SegmentedControl } from './SegmentedControl/SegmentedControl';
+export { Select } from './Select/Select';
 export { Sheet } from './Sheet/Sheet';
 export { SetChip } from './SetChip/SetChip';
 export { StatTile } from './StatTile/StatTile';

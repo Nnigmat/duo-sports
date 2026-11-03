@@ -1,0 +1,12 @@
+/* Ролики 16:9 на белом фоне: по ширине сцены, на низком экране уменьшаются по высоте, как чибик */
+.root {
+  position: relative;
+  width: 100%;
+  max-width: 420px; /* нет токена */
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: var(--rounded-xl);
+  background: var(--canvas);
+  mix-blend-mode: multiply; /* белый фон ролика сливается со страницей */
+}

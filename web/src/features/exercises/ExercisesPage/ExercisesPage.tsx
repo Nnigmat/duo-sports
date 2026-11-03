@@ -7,8 +7,9 @@ import { ExerciseDetailView } from '../ExerciseDetailView/ExerciseDetailView';
 import { ExerciseFormScreen } from '../ExerciseForm/ExerciseFormScreen';
 import { ExerciseHistoryView } from '../ExerciseHistoryView/ExerciseHistoryView';
 import { ExerciseListView } from '../ExerciseListView/ExerciseListView';
-import { createExercise, deleteExercise, updateExercise } from '../api';
+import { createExercise, deleteDemo, deleteExercise, updateExercise, uploadDemo } from '../api';
 import { canManageExercises, type GroupFilter, type HistorySort } from '../library';
+import type { ExerciseDemo, Gender } from '../../../../../shared/types';
 import type { ExerciseDraft, LibraryExercise } from '../types';
 
 const BASE = '/exercises';
@@ -50,6 +51,12 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
     setItems((list) => list.map((e) => (e.id === current.id ? next : e)));
     navigate(`${BASE}/${current.id}`);
   }
+  /** Ролики в списке обновляются сразу: после «Отмена» карточка показывает уже загруженное */
+  async function changeDemo(id: string, action: () => Promise<ExerciseDemo>): Promise<ExerciseDemo> {
+    const demo = await action();
+    setItems((list) => list.map((e) => (e.id === id ? { ...e, demo: Object.keys(demo).length ? demo : undefined } : e)));
+    return demo;
+  }
   async function remove(id: string) {
     await deleteExercise(id);
     setItems((list) => list.filter((e) => e.id !== id));
@@ -88,6 +95,7 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
                 backLabel={desktop ? 'Все упражнения' : 'Упражнения'}
                 onBack={() => navigate(BASE)}
                 onEdit={canManage ? () => navigate(`${BASE}/${ex.id}/edit`) : undefined}
+                onAddVideo={canManage ? () => navigate(`${BASE}/${ex.id}/edit`) : undefined}
                 onOpenHistory={() => {
                   setSort('new');
                   navigate(`${BASE}/${ex.id}/history`);
@@ -110,6 +118,10 @@ function ExercisesRoutes({ initial }: { initial: LibraryExercise[] }) {
                   onCancel={() => navigate(`${BASE}/${ex.id}`)}
                   onSubmit={(d) => save(ex, d)}
                   onDelete={() => remove(ex.id)}
+                  demo={{
+                    onUpload: (g: Gender, file: File) => changeDemo(ex.id, () => uploadDemo(ex.id, g, file)),
+                    onRemove: (g: Gender) => changeDemo(ex.id, () => deleteDemo(ex.id, g)),
+                  }}
                 />
               ) : (
                 <Navigate to={`${BASE}/${ex.id}`} replace />

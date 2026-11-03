@@ -15,6 +15,7 @@ export const athletesFixture: AthleteRow[] = [
     status: 'review',
     waitingSessions: 1,
     waitingVideos: 2,
+    repliedSessions: 0,
     daysSinceLast: 1,
   },
   {
@@ -28,6 +29,7 @@ export const athletesFixture: AthleteRow[] = [
     status: 'inactive',
     waitingSessions: 0,
     waitingVideos: 0,
+    repliedSessions: 0,
     daysSinceLast: 11,
   },
   {
@@ -41,6 +43,7 @@ export const athletesFixture: AthleteRow[] = [
     status: 'ok',
     waitingSessions: 0,
     waitingVideos: 0,
+    repliedSessions: 0,
     daysSinceLast: 3,
   },
 ];

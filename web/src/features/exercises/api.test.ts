@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LibraryEntry } from '../../../../shared/types';
-import { createExercise, deleteExercise, mergeEntry, toLibraryExercise, updateExercise } from './api';
+import { createExercise, deleteDemo, deleteExercise, mergeEntry, toLibraryExercise, updateExercise, uploadDemo } from './api';
 import { draftFromExercise, emptyDraft } from './library';
 import { squat } from './mock';
 
@@ -11,10 +11,11 @@ describe('toLibraryExercise', () => {
     expect(ex.defaults.seconds).toBeGreaterThan(0);
   });
 
-  it('переносит шаги и видео, пустые превращает в отсутствующие', () => {
+  it('переносит шаги и ролики, пустые превращает в отсутствующие', () => {
     const e: LibraryEntry = { id: 'a', name: 'А', aliases: [], kind: 'reps', group: 'core', muscles: [] };
-    expect(toLibraryExercise({ ...e, notes: 'Раз\nДва', video: 'https://x.ru/v' })).toMatchObject({ notes: 'Раз\nДва', video: 'https://x.ru/v' });
-    expect(toLibraryExercise({ ...e, notes: '', video: '' }).notes).toBeUndefined();
+    expect(toLibraryExercise({ ...e, notes: 'Раз\nДва', demo: { female: 'f.mp4' } })).toMatchObject({ notes: 'Раз\nДва', demo: { female: 'f.mp4' } });
+    expect(toLibraryExercise({ ...e, notes: '' }).notes).toBeUndefined();
+    expect(toLibraryExercise(e).demo).toBeUndefined();
   });
 });
 
@@ -38,7 +39,7 @@ describe('createExercise', () => {
     const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/exercises');
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toMatchObject({ name: 'Мост', group: 'legs', kind: 'reps', muscles: ['Ягодицы'], aliases: [], notes: 'Лягте', video: '' });
+    expect(JSON.parse(init.body as string)).toMatchObject({ name: 'Мост', group: 'legs', kind: 'reps', muscles: ['Ягодицы'], aliases: [], notes: 'Лягте' });
     expect(ex).toMatchObject({ id: 'most', notes: 'Лягте', equipment: 'Гиря' });
   });
 
@@ -101,5 +102,32 @@ describe('mergeEntry', () => {
     const out = mergeEntry(squat, { id: squat.id, name: 'Новое', aliases: [], kind: 'weight', group: 'legs', muscles: ['Ноги'] });
     expect(out.name).toBe('Новое');
     expect(out.sessions).toBe(squat.sessions);
+  });
+});
+
+describe('uploadDemo / deleteDemo', () => {
+  const entry = { id: 'plank', name: 'Планка', aliases: [], kind: 'time', group: 'core', muscles: [], demo: { female: 'f.mp4' } };
+
+  it('PUT с файлом как телом и его типом; возвращает ролики', async () => {
+    const fn = mockFetch(json(200, entry));
+    const file = new File([new Uint8Array([1, 2])], 'a.mp4', { type: 'video/mp4' });
+    const demo = await uploadDemo('plank', 'female', file);
+    const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/api/exercises/plank/demo/female');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(file);
+    expect(new Headers(init.headers).get('content-type')).toBe('video/mp4');
+    expect(demo).toEqual({ female: 'f.mp4' });
+  });
+  it('ответ без роликов даёт пустой объект; DELETE шлёт на тот же адрес', async () => {
+    const fn = mockFetch(json(200, { ...entry, demo: undefined }));
+    expect(await deleteDemo('plank', 'male')).toEqual({});
+    const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/api/exercises/plank/demo/male');
+    expect(init.method).toBe('DELETE');
+  });
+  it('413 и 415 приходят текстом сервера', async () => {
+    mockFetch(json(413, { error: 'Видео слишком большое' }));
+    await expect(uploadDemo('plank', 'male', new File([''], 'a.mp4', { type: 'video/mp4' }))).rejects.toThrow('Видео слишком большое');
   });
 });

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import type { AuthUser } from '../shared/types';
-import { changePassword, login, logout, SESSION_DAYS, userBySession } from './auth';
+import { changePassword, login, logout, setGender, SESSION_DAYS, userBySession } from './auth';
 import type { Db } from './db';
 
 const COOKIE = 'session';
@@ -74,6 +74,13 @@ export function authRouter(db: Db) {
     );
     if (!result.ok) return void res.status(result.error === 'weak' ? 400 : 403).json(result);
     if (result.token) setCookie(res, result.token);
+    res.json({ ok: true });
+  });
+
+  r.put('/auth/gender', requireUser(db), (req, res) => {
+    const gender = req.body?.gender;
+    if (gender !== 'female' && gender !== 'male') return void res.status(400).json({ error: 'gender: female или male' });
+    setGender(db, req.user!.email, gender);
     res.json({ ok: true });
   });
 

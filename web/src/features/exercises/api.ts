@@ -1,4 +1,4 @@
-import type { ExercisesResponse, LibraryEntry } from '../../../../shared/types';
+import type { ExerciseDemo, ExercisesResponse, Gender, LibraryEntry } from '../../../../shared/types';
 import { DEFAULT_PARAMS, toExerciseInput, toExercisePatch } from './library';
 import type { ExerciseDraft, LibraryExercise } from './types';
 
@@ -14,7 +14,7 @@ export function toLibraryExercise(e: LibraryEntry): LibraryExercise {
     group: e.group,
     muscles: e.muscles,
     notes: e.notes || undefined,
-    video: e.video || undefined,
+    demo: e.demo,
     equipment: 'Без снаряда',
     defaults: { ...DEFAULT_PARAMS },
     sessionsTotal: 0,
@@ -76,4 +76,22 @@ export async function updateExercise(ex: LibraryExercise, draft: ExerciseDraft):
 
 export async function deleteExercise(id: string): Promise<void> {
   await send(`/api/exercises/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+/** Ролик чибика: файл уходит телом запроса. Возвращает актуальные ролики упражнения. */
+export async function uploadDemo(id: string, gender: Gender, file: File): Promise<ExerciseDemo> {
+  const res = await fetch(`/api/exercises/${encodeURIComponent(id)}/demo/${gender}`, {
+    method: 'PUT',
+    headers: { 'content-type': file.type },
+    body: file,
+    credentials: 'same-origin',
+  }).catch(() => null);
+  if (!res) throw new Error('Нет связи с сервером');
+  if (!res.ok) throw await failure(res);
+  return ((await res.json()) as LibraryEntry).demo ?? {};
+}
+
+export async function deleteDemo(id: string, gender: Gender): Promise<ExerciseDemo> {
+  const res = await send(`/api/exercises/${encodeURIComponent(id)}/demo/${gender}`, 'DELETE');
+  return ((await res.json()) as LibraryEntry).demo ?? {};
 }

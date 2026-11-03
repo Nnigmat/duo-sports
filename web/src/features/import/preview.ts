@@ -18,9 +18,17 @@ export function setGroup(c: ExerciseChoices, key: string, group: string): Exerci
   return { ...c, group: { ...c.group, [key]: group } };
 }
 
+/** Что подставить вместо упражнения, когда выбрано «взять из библиотеки» */
+export const replacementOf = (ex: NewExercise, c: ExerciseChoices): string | undefined => c.target?.[ex.key] ?? ex.similar;
+
+/** «Это упражнение из библиотеки»: заменяем новое названием, которое имелось в виду */
+export function useExisting(c: ExerciseChoices, key: string, name: string): ExerciseChoices {
+  return { ...c, action: { ...c.action, [key]: 'use' }, target: { ...c.target, [key]: name } };
+}
+
 /** «Создать все»: сбрасывает выбор, группы мышц остаются */
 export function createAll(c: ExerciseChoices): ExerciseChoices {
-  return { ...c, action: {} };
+  return { ...c, action: {}, target: {} };
 }
 
 /** «Похожие — из библиотеки»: там, где есть похожее, берём его; остальное не трогаем */
@@ -79,6 +87,16 @@ export function footerText(t: Record<ExerciseAction, number>): string {
 /** Упражнения, которые пользователь решил не создавать: из тренировок они убираются */
 export function skippedNames(list: NewExercise[], c: ExerciseChoices): Set<string> {
   return new Set(list.filter((e) => actionOf(c, e.key) === 'skip').map((e) => e.name));
+}
+
+/** Упражнения, вместо которых выбрано существующее из библиотеки: «название из файла» → «название в библиотеке» */
+export function renamedNames(list: NewExercise[], c: ExerciseChoices): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of list) {
+    const to = actionOf(c, e.key) === 'use' ? replacementOf(e, c) : undefined;
+    if (to) out.set(e.name, to);
+  }
+  return out;
 }
 
 /** Все упражнения тренировки по порядку, без разминки и заминки */

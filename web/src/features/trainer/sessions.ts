@@ -23,6 +23,20 @@ export function defaultSelection(s: AthleteSessionsResponse): Selection | null {
   return plan ? { kind: 'plan', date: plan.date, workoutId: plan.workoutId } : null;
 }
 
+/**
+ * Тренировка дня из плана: workout задан — запланированная с этим номером, иначе выполненная в этот день.
+ * Нет такой — null, и открывается обычный выбор по умолчанию.
+ */
+export function selectionFor(s: AthleteSessionsResponse, date: string | null, workout?: string | null): Selection | null {
+  if (!date) return null;
+  if (workout && /^\d+$/.test(workout)) {
+    const p = s.planned.find((x) => x.kind === 'planned' && x.date === date && x.workoutId === Number(workout));
+    if (p) return { kind: 'plan', date, workoutId: Number(workout) };
+  }
+  const done = s.history.find((h) => h.date === date);
+  return done ? { kind: 'session', sessionId: done.sessionId } : null;
+}
+
 /** «Пт, 6 ноября» */
 const dayLabel = (iso: string): string => {
   const d = parseIso(iso);

@@ -7,6 +7,8 @@ export function RequireAuth() {
   const auth = useAuth();
   const location = useLocation();
   if (auth.status === 'loading') return <Skeleton height={320} />;
-  if (auth.status === 'out') return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (auth.status === 'out') {
+    return <Navigate to="/login" replace state={auth.manual ? undefined : { from: location.pathname }} />;
+  }
   return <Outlet />;
 }

@@ -39,7 +39,6 @@ export const EXAMPLE = [
   '    name: Обратные отжимания от лавочки',
   '    muscles: [трицепс]',
   '    measure: reps',
-  '    video: https://youtu.be/…',
   'workouts:',
   '  - id: w02-tue                 # ключ для повторного импорта',
   '    date: 2026-11-03',
@@ -126,7 +125,6 @@ export const NEW_EXERCISE_FIELDS: FieldRow[] = [
   row('name', 'Обратные отжимания', 'Название во вкладке «Упражнения».', req),
   row('muscles', '[трицепс]', 'Группы мышц. Без них спросим на проверке.', rec()),
   row('measure', 'reps', 'Как считать: weight, reps, time или distance. По умолчанию reps.'),
-  row('video', 'https://youtu.be/…', 'Ссылка на технику — покажем во время тренировки.'),
   row('notes', 'текст', 'Подсказки по технике, видны в каждой тренировке.'),
   row('aliases', '[обратка]', 'Другие названия — по ним тоже найдём.'),
 ];

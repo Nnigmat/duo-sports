@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { planSourceFixture as src } from './fixtures';
 import {
-  buildPlan, calendarNote, commonChoice, dayLabel, DEFAULT_OPTIONS, planCta, planFooter, planSummary, resolveAll, setPast, type PlanOptions,
+  buildPlan, calendarNote, commonChoice, dayLabel, DEFAULT_OPTIONS, planFooter, resolveAll, setPast, type PlanOptions,
 } from './importPlan';
 
 const opts = (o: Partial<PlanOptions> = {}): PlanOptions => ({ ...DEFAULT_OPTIONS, ...o });
@@ -73,32 +73,17 @@ describe('buildPlan: конфликты', () => {
   });
 });
 
-describe('план выключен', () => {
-  it('в календаре только свои тренировки, конфликтов нет', () => {
-    const r = buildPlan(src, opts({ planOn: false }));
-    expect(r.conflicts).toEqual([]);
-    expect(r.inCalendar).toBe(0);
-    expect(r.first).toBeNull();
-    expect(cellAt(r, '2026-11-05')).toMatchObject({ kind: 'mine', title: 'Всё тело' });
-  });
-});
-
 describe('тексты', () => {
-  it('подпись даты и сводка', () => {
+  it('подпись даты', () => {
     expect(dayLabel('2026-11-03')).toBe('3 нояб');
     expect(dayLabel('2027-01-21')).toBe('21 янв');
-    expect(planSummary(buildPlan(src, opts()), true)).toBe('24 тренировки в календаре · 3 нояб — 21 янв');
-    expect(planSummary(buildPlan(src, opts({ planOn: false })), false)).toMatch(/без дат/);
   });
   it('подпись календаря', () => {
     expect(calendarNote('skip', '2026-11-03')).toBe('Первая неделя пропускается, план идёт с 3 ноября');
     expect(calendarNote('shift', '2026-11-03')).toBe('Все даты сдвинуты на 7 дней вперёд — первая тренировка вторник, 3 ноября');
     expect(calendarNote('missed', null)).toBe('Первая неделя попадёт в историю как пропущенная');
   });
-  it('итог и кнопка', () => {
-    expect(planFooter(26, buildPlan(src, opts()), true)).toBe('26 тренировок · в календаре 24 · 2 пропущено');
-    expect(planFooter(26, buildPlan(src, opts({ planOn: false })), false)).toBe('26 тренировок · без дат');
-    expect(planCta(true)).toBe('Импортировать и добавить в план');
-    expect(planCta(false)).toBe('Импортировать без плана');
+  it('итог', () => {
+    expect(planFooter(26, buildPlan(src, opts()))).toBe('26 тренировок · в календаре 24 · 2 пропущено');
   });
 });

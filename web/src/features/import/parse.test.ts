@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { libraryFixture } from './fixtures';
 import { EXAMPLE } from './format';
-import { SAMPLE_YAML, sampleYaml } from './import';
+import { SAMPLE_YAML, newWorkoutYaml, sampleYaml } from './import';
 import { buildPlan, DEFAULT_OPTIONS } from './importPlan';
-import { parseImport, similarTo, type ParseContext, type ParseResult } from './parse';
+import { candidatesFor, parseImport, similarTo, type ParseContext, type ParseResult } from './parse';
 
 const ctx: ParseContext = { library: libraryFixture, today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
 const ok = (r: ParseResult) => {
@@ -37,7 +37,7 @@ describe('пример со страницы «Формат»', () => {
   });
   it('новые упражнения: описанное и два по названию; группа не указана у них', () => {
     expect(r.preview.newExercises.map((e) => [e.name, e.muscles, e.hasVideo])).toEqual([
-      ['Обратные отжимания от лавочки', 'трицепс', true],
+      ['Обратные отжимания от лавочки', 'трицепс', false],
       ['Подтягивание колен в висе', '', false],
       ['Боковая планка', '', false],
     ]);
@@ -90,6 +90,13 @@ describe('библиотека', () => {
     const r = ok(parseImport(wrap('      - type: sets\n        exercises:\n          - { exercise_id: my-plank, time: 30s }\n', 'exercises:\n  - { id: my-plank, name: Планка }\n'), ctx));
     expect(r.preview.newExercises).toEqual([]);
     expect(r.preview.found).toBe(1);
+  });
+  it('кандидаты: опечатка и вложенные названия, самые близкие первыми', () => {
+    expect(candidatesFor('Подтягиваня', libraryFixture)[0]).toBe('Подтягивания');
+    expect(candidatesFor('Планка', libraryFixture)).not.toContain('Планка');
+    expect(candidatesFor('Боковая планка', libraryFixture)).toContain('Планка');
+    expect(candidatesFor('Совсем другое упражнение', libraryFixture)).toEqual([]);
+    expect(candidatesFor('Подтягиваня', libraryFixture).length).toBeLessThanOrEqual(3);
   });
   it('похожее: слова библиотечного названия входят в новое', () => {
     expect(similarTo('Подтягивания с резинкой', libraryFixture)).toBe('Подтягивания');
@@ -250,5 +257,16 @@ describe('блоки для экрана тренировки', () => {
     const r = ok(parseImport(wrap('      - type: sets\n        exercises:\n          - { name: Бег, distance: 5km }\n'), ctx));
     expect(r.warnings.map((w) => w.message)).toEqual(['«Бег» посчитаем по времени']);
     expect(r.workouts[0]!.structure[0]).toMatchObject({ exercises: [{ kind: 'time', target: { min: 300, max: 300 } }] });
+  });
+});
+
+describe('базовый шаблон новой тренировки', () => {
+  it('разбирается без ошибок и ложится на выбранный день', () => {
+    const r = ok(parseImport(newWorkoutYaml('2026-11-10'), ctx));
+    const s = r.preview.weeks[0]!.sessions[0]!;
+    expect(s.date).toBe('Вт, 10 нояб');
+    expect(s.title).toBe('Новая тренировка');
+    expect(s.blocks.map((b) => b.heading)).toEqual(['Разминка · 5 мин', 'Подходами', 'Заминка']);
+    expect(r.plan.workouts).toHaveLength(1);
   });
 });

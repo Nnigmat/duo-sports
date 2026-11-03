@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAthletes, useAthleteSessions, useExercises, usePastComments, usePlannedWorkout, useTrainerReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { toIso } from '../../plan/plan';
@@ -7,7 +7,7 @@ import { markReviewed, postComment, postHint } from '../api';
 import { AthleteView } from '../AthleteView/AthleteView';
 import { PlannedDetail } from '../PlannedDetail/PlannedDetail';
 import { ReviewDetail } from '../ReviewDetail/ReviewDetail';
-import { defaultSelection, firstName, type Selection } from '../sessions';
+import { defaultSelection, firstName, selectionFor, type Selection } from '../sessions';
 
 /** /trainer/athletes/:id — карточка ученика. После записи данные читаются заново, выбранная тренировка и раскрытые видео остаются. */
 export function AthletePage() {
@@ -25,7 +25,10 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
   const list = useAthletes('all', '');
   const sessions = useAthleteSessions(athleteId, version);
   const athlete = list.data?.athletes.find((a) => a.id === athleteId);
-  const selection = picked ?? (sessions.data ? defaultSelection(sessions.data) : null);
+  // ?date=…&workout=… приходит из плана: открываем итоги или запланированную тренировку этого дня
+  const [search] = useSearchParams();
+  const fromPlan = sessions.data ? selectionFor(sessions.data, search.get('date'), search.get('workout')) : null;
+  const selection = picked ?? fromPlan ?? (sessions.data ? defaultSelection(sessions.data) : null);
 
   const reviewId = selection?.kind === 'session' ? selection.sessionId : null;
   const plan = selection?.kind === 'plan' ? sessions.data?.planned.find((p) => p.kind === 'planned' && p.date === selection.date && p.workoutId === selection.workoutId) : undefined;
@@ -94,6 +97,7 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
       onSelect={setPicked}
       backHref="/trainer"
       onBack={() => navigate('/trainer')}
+      onTab={(tab) => navigate(tab === 'plan' ? `/trainer/athletes/${athleteId}/plan` : `/trainer/athletes/${athleteId}`)}
       detail={detail}
     />
   );

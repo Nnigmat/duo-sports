@@ -12,15 +12,17 @@ type Props = {
   data: PlanData;
   state: PlanState;
   dispatch: Dispatch<PlanAction>;
-  onStart: (date: string) => void;
-  onResults: (date: string) => void;
-  onMove: (date: string) => void;
-  onEdit: (date: string) => void;
+  onStart?: (date: string) => void;
+  onPreview?: (date: string) => void;
+  onResults?: (date: string) => void;
+  onMove?: (date: string) => void;
+  onEdit?: (date: string) => void;
   onRemove: (date: string) => void;
-  onCreate: (date: string) => void;
+  onCreate?: (date: string) => void;
   onAdd: (date: string, templateId: string) => void;
   /** Копия тренировки `from` на день `to` (заменяет тренировку, если она там есть) */
   onCopy: (from: string, to: string) => void;
+  /** Без обработчиков кнопки «Начать», «Изменить», «Перенести», «Создать» и импорта не показываются */
   onImport?: () => void;
   layout?: 'mobile' | 'desktop';
 };
@@ -31,6 +33,7 @@ export function PlanView({
   state,
   dispatch,
   onStart,
+  onPreview,
   onResults,
   onMove,
   onEdit,
@@ -102,6 +105,7 @@ export function PlanView({
             notice={notice}
             layout={layout}
             onStart={onStart}
+            onPreview={onPreview}
             onResults={onResults}
             onMove={onMove}
             onEdit={onEdit}

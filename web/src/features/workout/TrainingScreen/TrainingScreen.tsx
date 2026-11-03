@@ -1,11 +1,13 @@
-import type { ComponentProps } from 'react';
+import { useState, type ComponentProps } from 'react';
 import type { Pose } from '../../../../../shared/types';
 import { IconButton } from '../../../ui/IconButton/IconButton';
 import { ProgressSegments } from '../../../ui/ProgressSegments/ProgressSegments';
 import { Screen } from '../../../ui/Screen/Screen';
 import { Text } from '../../../ui/Text/Text';
+import { useMediaQuery } from '../../../shared';
 import { Chibi } from '../chibi/Chibi';
 import { ActionBar } from '../parts/ActionBar/ActionBar';
+import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
 import { CoachNote } from '../parts/CoachNote/CoachNote';
 import { SpeechBubble } from '../parts/SpeechBubble/SpeechBubble';
 import styles from './TrainingScreen.module.css';
@@ -18,6 +20,8 @@ type Props = {
   eyebrow: string;
   line: string;
   pose: Pose;
+  /** Ролик чибика с упражнением вместо статичного; без него (или если не загрузился) стоит чибик */
+  demoUrl?: string;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -42,6 +46,7 @@ export function TrainingScreen({
   eyebrow,
   line,
   pose,
+  demoUrl,
   note,
   techNew,
   recordable,
@@ -53,6 +58,10 @@ export function TrainingScreen({
   onRecord,
   onOpenNotes,
 }: Props) {
+  const still = useMediaQuery('(prefers-reduced-motion: reduce)');
+  // Адрес, на котором ролик упал: смена упражнения даёт новый адрес и новую попытку
+  const [failed, setFailed] = useState<string | null>(null);
+  const playing = demoUrl && !still && failed !== demoUrl ? demoUrl : undefined;
   return (
     <Screen label={blockLabel} back={{ onClick: onBack }} close={{ onClick: onExit }} className={styles.screen}>
       <ProgressSegments
@@ -67,8 +76,14 @@ export function TrainingScreen({
       </div>
 
       <div className={styles.stage}>
-        <span className={styles.disc} aria-hidden="true" />
-        <Chibi pose={pose} size={300} className={styles.chibi} />
+        {playing ? (
+          <DemoVideo src={playing} onFail={() => setFailed(playing)} className={styles.demo} />
+        ) : (
+          <>
+            <span className={styles.disc} aria-hidden="true" />
+            <Chibi pose={pose} size={300} className={styles.chibi} />
+          </>
+        )}
 
         <div className={styles.left}>
           <IconButton

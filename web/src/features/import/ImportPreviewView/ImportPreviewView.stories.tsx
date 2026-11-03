@@ -36,9 +36,9 @@ export const TotalFollowsChoices: Story = {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: 'Похожие — из библиотеки' }));
     await expect(c.getByText(/25 новых упражнений · 6 из библиотеки/)).toBeVisible();
-    const first = within(c.getByRole('group', { name: 'Что сделать с «Обратные отжимания от лавочки»' }));
-    await userEvent.click(first.getByRole('button', { name: 'Не создавать' }));
-    await expect(c.getByText(/24 новых упражнения · 6 из библиотеки · 1 без упражнения/)).toBeVisible();
+    const plank = within(c.getByRole('group', { name: 'Что сделать с «Ягодичный мост с резинкой»' }));
+    await userEvent.click(plank.getByRole('button', { name: 'Создать' }));
+    await expect(c.getByText(/26 новых упражнений · 5 из библиотеки/)).toBeVisible();
   },
 };
 
