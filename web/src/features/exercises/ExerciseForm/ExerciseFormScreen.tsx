@@ -120,9 +120,13 @@ export function ExerciseFormScreen(props: Props) {
           name={create ? 'new-kind' : 'edit-kind'}
         />
 
+        <Button fullWidth disabled={!ok} loading={busy} onClick={() => run(() => onSubmit(draft))}>
+          {busy ? 'Сохраняем' : create ? 'Создать' : 'Сохранить'}
+        </Button>
+
         {props.onDelete && (
           <>
-            <Button variant="danger" fullWidth disabled={busy} onClick={() => setConfirmDelete(true)}>
+            <Button variant="danger-text" fullWidth disabled={busy} onClick={() => setConfirmDelete(true)}>
               Удалить упражнение
             </Button>
             <Dialog
