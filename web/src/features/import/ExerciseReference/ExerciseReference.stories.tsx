@@ -47,9 +47,8 @@ export const Search: Story = {
 export const GroupFilter: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    const groups = within(c.getByRole('group', { name: 'Группа мышц' }));
-    await userEvent.click(groups.getAllByRole('button')[1]);
-    await expect(groups.getAllByRole('button')[1]).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.selectOptions(c.getByRole('combobox', { name: 'Группа мышц' }), 'chest');
+    await expect(c.getByRole('combobox', { name: 'Группа мышц' })).toHaveValue('chest');
     await expect(c.getByRole('status')).toHaveTextContent('Показано');
   },
 };
