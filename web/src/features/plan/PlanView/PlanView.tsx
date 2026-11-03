@@ -3,6 +3,7 @@ import type { PlanData } from '../../../data/types';
 import { Button, Text } from '../../../ui';
 import { CalendarGrid } from '../CalendarGrid/CalendarGrid';
 import { CalendarToolbar } from '../CalendarToolbar/CalendarToolbar';
+import type { CopyAthlete } from '../CopyPanel/CopyPanel';
 import { DayPanel } from '../DayPanel/DayPanel';
 import { ToneLegend } from '../ToneLegend/ToneLegend';
 import { calendarDays, canShift, rangeTitle, usedTemplates, type PlanAction, type PlanState } from '../plan';
@@ -21,7 +22,11 @@ type Props = {
   onCreate?: (date: string) => void;
   onAdd: (date: string, templateId: string) => void;
   /** Копия тренировки `from` на день `to` (заменяет тренировку, если она там есть) */
-  onCopy: (from: string, to: string) => void;
+  onCopy: (from: string, to: string, athlete?: CopyAthlete) => void;
+  /** Другие ученики для копии (кабинет тренера) */
+  copyAthletes?: CopyAthlete[];
+  onCopyTarget?: (athleteId: number | null) => void;
+  targetPlan?: PlanData | null;
   /** Без обработчиков кнопки «Начать», «Изменить», «Перенести», «Создать» и импорта не показываются */
   onImport?: () => void;
   layout?: 'mobile' | 'desktop';
@@ -43,6 +48,9 @@ export function PlanView({
   onCreate,
   onAdd,
   onCopy,
+  copyAthletes,
+  onCopyTarget,
+  targetPlan,
   onImport,
   layout = 'mobile',
   exerciseHref,
@@ -118,9 +126,12 @@ export function PlanView({
             onAdd={onAdd}
             onToggleCopy={() => dispatch({ type: 'toggleCopy' })}
             onCopyDate={(date) => dispatch({ type: 'copyDate', date })}
-            onCopy={(to) => {
-              onCopy(sel, to);
-              dispatch({ type: 'copied', to, title: selectedTemplate?.title ?? '' });
+            copyAthletes={copyAthletes}
+            onCopyTarget={onCopyTarget}
+            targetPlan={targetPlan}
+            onCopy={(to, athlete) => {
+              onCopy(sel, to, athlete);
+              dispatch({ type: 'copied', to, title: selectedTemplate?.title ?? '', athlete: athlete?.name });
             }}
             onOpenCopied={() => dispatch({ type: 'openCopied' })}
             exerciseHref={exerciseHref}

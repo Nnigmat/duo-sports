@@ -65,6 +65,11 @@ export const putAthleteDay = async (athleteId: number, date: string, workoutId: 
   await request(`/api/trainer/athletes/${athleteId}/plan/entries/${date}`, { method: 'PUT', headers: json, body: JSON.stringify({ workoutId: Number(workoutId) }) });
 };
 
+/** Копия тренировки ученика другому ученику на дату */
+export const copyAthleteDay = async (athleteId: number, workoutId: string, toAthleteId: number, date: string): Promise<void> => {
+  await request(`/api/trainer/athletes/${athleteId}/plan/copy`, { method: 'POST', headers: json, body: JSON.stringify({ workoutId: Number(workoutId), toAthleteId, date }) });
+};
+
 export const deleteAthleteDay = async (athleteId: number, date: string): Promise<void> => {
   await request(`/api/trainer/athletes/${athleteId}/plan/entries/${date}`, { method: 'DELETE' });
 };
