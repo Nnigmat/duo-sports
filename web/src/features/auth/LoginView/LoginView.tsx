@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { Button, Checkbox, Notice, PasswordInput, Text, TextInput } from '../../../ui';
-import { Chibi } from '../../workout/chibi/Chibi';
+import { idleUrl } from '../../workout/chibi/idle';
+import { ChibiClip } from '../../workout/parts/ChibiClip/ChibiClip';
 import { loginErrors } from '../auth';
 import styles from './LoginView.module.css';
 
@@ -56,7 +57,7 @@ export function LoginView({ status, onSubmit, forgotHref, initial, layout = 'mob
           <div className={styles.brandRow}>
             <span className={styles.brand}>Workout Tracker</span>
             <span className={styles.disc} aria-hidden="true">
-              <Chibi pose="wave" size={64} />
+              <ChibiClip src={idleUrl()} pose="wave" size={56} />
             </span>
           </div>
         )}
@@ -131,7 +132,7 @@ export function LoginView({ status, onSubmit, forgotHref, initial, layout = 'mob
         <span className={styles.brand}>Workout Tracker</span>
         <div className={styles.hello}>
           <span className={styles.bigDisc} aria-hidden="true">
-            <Chibi pose="wave" size={220} />
+            <ChibiClip src={idleUrl()} pose="wave" size={200} />
           </span>
           <Text variant="display" tag="h2" className={styles.slogan}>
             Каждый подход на счету

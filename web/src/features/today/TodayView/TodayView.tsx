@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react';
+import type { Gender } from '../../../../../shared/types';
 import type { TodayData } from '../../../data/types';
 import { ReviewNoticeCard } from '../../../ui';
 import { AwaitingCard } from '../AwaitingCard/AwaitingCard';
@@ -31,9 +32,10 @@ export type TodayViewActions = TodayHeroActions & {
 
 type Props = TodayViewActions & {
   data: TodayData;
+  gender?: Gender;
 };
 
-export function TodayView({ data, onOpenAchievements, onOpenLatestAchievement, onOpenProgress, onWeekDayAction, onMoveMissed, onResume, reviewHref, onOpenReview, onDismissReview, ...hero }: Props) {
+export function TodayView({ data, gender, onOpenAchievements, onOpenLatestAchievement, onOpenProgress, onWeekDayAction, onMoveMissed, onResume, reviewHref, onOpenReview, onDismissReview, ...hero }: Props) {
   const { insights, reviewNotice, awaitingReview } = data;
   const openReview = (e: MouseEvent<HTMLAnchorElement>) => {
     if (!onOpenReview) return;
@@ -51,7 +53,7 @@ export function TodayView({ data, onOpenAchievements, onOpenLatestAchievement, o
       {onResume && data.pause && <PauseCard pause={data.pause} onResume={onResume} />}
       {reviewHref && reviewNotice && onDismissReview && <ReviewNoticeCard notice={reviewNotice} href={reviewHref} onLinkClick={openReview} onDismiss={onDismissReview} />}
       {awaitingReview && <AwaitingCard awaiting={awaitingReview} />}
-      <TodayHero state={data.state} {...hero} />
+      <TodayHero state={data.state} gender={gender} {...hero} />
       <WeekCard days={data.week} onDayAction={onWeekDayAction} />
       {onMoveMissed && data.missed && <MissedCard items={data.missed} onMove={onMoveMissed} />}
       {insights && (

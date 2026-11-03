@@ -1,0 +1,8 @@
+/* Ролики вертикальные 9:16: по высоте, как рисованный чибик */
+.clip {
+  width: auto;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 9 / 16;
+  border-radius: 0;
+}
