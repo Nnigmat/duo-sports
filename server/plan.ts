@@ -55,6 +55,16 @@ export function setDay(db: Db, userId: number, date: string, workoutId: number):
   })();
 }
 
+/** Копия тренировки другому ученику: ему создаётся своя тренировка с тем же составом и ставится в день, заменяя стоявшую */
+export function copyWorkoutToAthlete(db: Db, fromUserId: number, workoutId: number, toUserId: number, date: string): DayResult {
+  return db.transaction((): DayResult => {
+    const src = db.prepare('SELECT title, blocks, structure FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, fromUserId) as { title: string; blocks: string; structure: string | null } | undefined;
+    if (!src) return { ok: false, error: 'not_found' };
+    const id = Number(db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, import_id, created_at) VALUES (?, NULL, ?, ?, ?, NULL, ?)').run(toUserId, src.title, src.blocks, src.structure, new Date().toISOString()).lastInsertRowid);
+    return setDay(db, toUserId, date, id);
+  })();
+}
+
 export function clearDay(db: Db, userId: number, date: string): void {
   db.prepare('DELETE FROM plan_entries WHERE user_id = ? AND date = ?').run(userId, date);
   db.prepare('DELETE FROM plan_moves WHERE user_id = ? AND to_date = ?').run(userId, date);

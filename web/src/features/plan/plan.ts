@@ -202,6 +202,16 @@ export type CopyCheck = {
   label: string;
 };
 
+/** Чьи дни проверять на замену: свои или выбранного ученика; пока его план не пришёл, дни считаются свободными */
+export function copyTargetLookup(
+  own: { entries: Record<string, PlanEntry>; templates: PlanTemplate[] },
+  toOther: boolean,
+  otherPlan: { entries: Record<string, PlanEntry>; templates: PlanTemplate[] } | null | undefined,
+): { entryAt: (date: string) => PlanEntry | undefined; titleOf: (templateId: string) => string } {
+  const plan = toOther ? otherPlan : own;
+  return { entryAt: (d) => plan?.entries[d], titleOf: (id) => plan?.templates.find((t) => t.id === id)?.title ?? id };
+}
+
 export function checkCopy(
   source: string,
   target: string | null,
@@ -235,8 +245,8 @@ export type PlanState = {
   sel: string;
   copyOpen: boolean;
   copyDate: string | null;
-  /** Плашка после копирования */
-  notice: { to: string; title: string } | null;
+  /** Плашка после копирования; athlete — имя ученика, если копия ушла другому */
+  notice: { to: string; title: string; athlete?: string } | null;
 };
 
 export type PlanAction =
@@ -246,7 +256,7 @@ export type PlanAction =
   | { type: 'pick'; date: string; today: string }
   | { type: 'toggleCopy' }
   | { type: 'copyDate'; date: string | null }
-  | { type: 'copied'; to: string; title: string }
+  | { type: 'copied'; to: string; title: string; athlete?: string }
   | { type: 'openCopied' };
 
 export const initialPlanState = (today: string, sel: string = today): PlanState => ({
@@ -275,7 +285,7 @@ export function planReducer(s: PlanState, a: PlanAction): PlanState {
     case 'copyDate':
       return { ...s, copyDate: a.date };
     case 'copied':
-      return { ...s, copyOpen: false, copyDate: null, notice: { to: a.to, title: a.title } };
+      return { ...s, copyOpen: false, copyDate: null, notice: { to: a.to, title: a.title, athlete: a.athlete } };
     case 'openCopied':
       return s.notice ? { ...s, sel: s.notice.to, anchor: s.notice.to, notice: null } : s;
   }

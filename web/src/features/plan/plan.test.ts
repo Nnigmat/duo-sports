@@ -7,6 +7,7 @@ import {
   cellAriaLabel,
   cellStatusWord,
   checkCopy,
+  copyTargetLookup,
   dayActions,
   displayStatus,
   emptyDayTexts,
@@ -214,6 +215,10 @@ describe('planReducer', () => {
     expect(done).toMatchObject({ copyOpen: false, notice: { to: '2026-11-03', title: 'Ноги и ягодицы' } });
     expect(planReducer(done, { type: 'openCopied' })).toMatchObject({ sel: '2026-11-03', anchor: '2026-11-03', notice: null });
   });
+  it('копия другому ученику запоминает его имя в плашке', () => {
+    const done = planReducer(start, { type: 'copied', to: '2026-11-03', title: 'Верх', athlete: 'Маша' });
+    expect(done.notice).toEqual({ to: '2026-11-03', title: 'Верх', athlete: 'Маша' });
+  });
   it('«Сегодня» возвращает выбор и якорь', () => {
     const s = planReducer({ ...start, sel: '2026-12-01', anchor: '2026-12-01' }, { type: 'today', today: TODAY });
     expect(s).toMatchObject({ sel: TODAY, anchor: TODAY });
@@ -272,5 +277,26 @@ describe('applyMoves: перенос в календаре', () => {
     expect(same).toBe(entries);
     applyMoves(entries, [{ templateId: '3', from: '2026-11-04', to: '2026-11-06' }]);
     expect(entries['2026-11-06']).toEqual(planned('3'));
+  });
+});
+
+describe('copyTargetLookup: чей день проверяется на замену', () => {
+  const tpl = (id: string, title: string) => ({ id, title, minutes: 30, tone: 'primary' as const, exercises: [] });
+  const own = { templates: [tpl('a', 'Моя')], entries: { '2026-11-03': { templateId: 'a', status: 'planned' as const } } };
+  const other = { templates: [tpl('m1', 'Спина Маши')], entries: { '2026-11-05': { templateId: 'm1', status: 'planned' as const } } };
+  const warn = (lookup: ReturnType<typeof copyTargetLookup>, date: string) => checkCopy('2026-10-31', date, TODAY, MAX, lookup.entryAt, lookup.titleOf);
+
+  it('себе: смотрит свой план', () => {
+    const r = warn(copyTargetLookup(own, false, other), '2026-11-03');
+    expect(r.warning).toBe('На 3 ноября уже запланировано «Моя». Копия её заменит.');
+    expect(warn(copyTargetLookup(own, false, other), '2026-11-05').warning).toBe('');
+  });
+  it('другому ученику: смотрит его план и его названия', () => {
+    const lookup = copyTargetLookup(own, true, other);
+    expect(warn(lookup, '2026-11-05')).toMatchObject({ replaces: 'm1', label: 'Заменить копией', warning: 'На 5 ноября уже запланировано «Спина Маши». Копия её заменит.' });
+    expect(warn(lookup, '2026-11-03')).toMatchObject({ replaces: null, warning: '', label: 'Создать копию' });
+  });
+  it('другому ученику, пока его план не пришёл: дни свободны, а не свои', () => {
+    for (const pending of [null, undefined]) expect(warn(copyTargetLookup(own, true, pending), '2026-11-03')).toMatchObject({ replaces: null, warning: '' });
   });
 });

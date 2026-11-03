@@ -64,6 +64,32 @@ export const NoDate: Story = {
   },
 };
 
+const athletes = [
+  { id: 2, name: 'Маша' },
+  { id: 3, name: 'Игорь' },
+];
+function ForAthlete() {
+  const [athleteId, setAthleteId] = useState<number | null>(null);
+  return <CopyPanel {...meta.args} athletes={athletes} athleteId={athleteId} onAthleteChange={setAthleteId} />;
+}
+export const ToAnotherAthlete: Story = {
+  render: () => <ForAthlete />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const select = c.getByLabelText('Кому');
+    await expect(select).toHaveValue('');
+    await userEvent.selectOptions(select, 'Маша');
+    await expect(select).toHaveValue('2');
+    await userEvent.selectOptions(select, 'Этому ученику');
+    await expect(select).toHaveValue('');
+  },
+};
+export const NoAthleteChoice: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByLabelText('Кому')).toBeNull();
+  },
+};
+
 function Live() {
   const [date, setDate] = useState<string | null>(quick[0]?.date ?? null);
   return <CopyPanel {...meta.args} date={date} check={check(date)} onDateChange={setDate} />;

@@ -155,6 +155,35 @@ describe('план ученика', () => {
     expect((await put(nikita, coach, { workoutId: wid }, 'bad')).status).toBe(400);
     expect(db.prepare('SELECT 1 FROM plan_entries').all()).toEqual([]);
   });
+  describe('POST plan/copy', () => {
+    let masha: number;
+    let notMine: number;
+    const copy = (id: number | string, cookie: string, body: unknown) => call(`/trainer/athletes/${id}/plan/copy`, cookie, { method: 'POST', body: JSON.stringify(body) });
+    beforeEach(async () => {
+      masha = await createUser(db, 'masha@example.com', 'trenirovka7', 'athlete');
+      notMine = await createUser(db, 'notmine@example.com', 'trenirovka7', 'athlete');
+      const coachId = (db.prepare("SELECT id FROM users WHERE email = 'coach@example.com'").get() as { id: number }).id;
+      linkAthlete(db, coachId, masha);
+    });
+    it('204: у второго ученика появляется своя копия в плане, у первого ничего не меняется', async () => {
+      expect((await copy(nikita, coach, { workoutId: wid, toAthleteId: masha, date: '2026-11-10' })).status).toBe(204);
+      const row = db.prepare('SELECT w.id, w.title, w.user_id FROM plan_entries e JOIN workouts w ON w.id = e.workout_id WHERE e.user_id = ? AND e.date = ?').get(masha, '2026-11-10') as { id: number; title: string; user_id: number };
+      expect(row).toMatchObject({ title: 'Верх', user_id: masha });
+      expect(row.id).not.toBe(wid);
+      expect(db.prepare('SELECT 1 FROM plan_entries WHERE user_id = ?').all(nikita)).toEqual([]);
+    });
+    it('403 чужому тренеру и ученику не из списка тренера, 404 на чужую тренировку, 400 на кривой ввод', async () => {
+      const body = { workoutId: wid, toAthleteId: masha, date: '2026-11-10' };
+      expect((await copy(nikita, other, body)).status).toBe(403);
+      expect((await copy(nikita, athlete, body)).status).toBe(403);
+      expect((await copy(nikita, coach, { ...body, toAthleteId: notMine })).status).toBe(403);
+      expect((await copy(nikita, coach, { ...body, workoutId: foreign })).status).toBe(404);
+      expect((await copy(nikita, coach, { ...body, date: 'bad' })).status).toBe(400);
+      expect((await copy(nikita, coach, { ...body, toAthleteId: 'x' })).status).toBe(404);
+      expect(db.prepare('SELECT 1 FROM plan_entries').all()).toEqual([]);
+      expect(db.prepare('SELECT COUNT(*) AS n FROM workouts').get()).toEqual({ n: 2 });
+    });
+  });
 });
 
 describe('перенос, импорт и превью для ученика', () => {
