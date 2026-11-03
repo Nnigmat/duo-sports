@@ -115,7 +115,7 @@ export function DayPanel({
         : planStatusWord(status);
   const target = copyAthletes?.find((a) => a.id === copyTo);
   const lookup = copyTargetLookup(data, !!target, targetPlan);
-  const check = checkCopy(date, copyDate, today, max, lookup.entryAt, lookup.titleOf);
+  const check = checkCopy(date, copyDate, today, max, lookup.entryAt, lookup.titleOf, !!target);
 
   return (
     <aside aria-labelledby={titleId} className={styles.root} data-layout={layout}>
@@ -186,7 +186,7 @@ export function DayPanel({
           date={copyDate}
           min={today}
           max={max}
-          quick={quickDates(date, today, max, (d) => !!entries[d])}
+          quick={quickDates(date, today, max, (d) => !!lookup.entryAt(d), !!target)}
           check={check}
           athletes={copyAthletes}
           athleteId={target ? target.id : null}
