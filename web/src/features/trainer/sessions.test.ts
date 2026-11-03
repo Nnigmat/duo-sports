@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AthleteSessionsResponse, Block, TrainerHistoryItem, TrainerPlanItem } from '../../../../shared/types';
-import { buildCommentRequest, defaultSelection, findSlug, firstName, historyBadge, historyMeta, movedText, planSteps, plannedBadge, rowDate, sameSelection, selectionFor } from './sessions';
+import { buildCommentRequest, defaultSelection, findSlug, firstName, groupByMonth, historyBadge, historyMeta, movedText, planSteps, plannedBadge, rowDate, sameSelection, selectionFor } from './sessions';
 
 const NB = '\u00a0';
 const TODAY = '2026-11-02';
@@ -150,5 +150,25 @@ describe('selectionFor: тренировка дня из плана', () => {
     expect(selectionFor(s, '2026-11-05', 'x')).toBeNull();
     expect(selectionFor(s, null, '13')).toBeNull();
     expect(selectionFor(s, '2026-11-09')).toBeNull();
+  });
+});
+
+describe('groupByMonth', () => {
+  const items = [hist({ sessionId: 5, date: '2026-11-01' }), hist({ sessionId: 4, date: '2026-10-31' }), hist({ sessionId: 3, date: '2026-10-02' }), hist({ sessionId: 2, date: '2025-12-30' })];
+
+  it('группирует по месяцам, сохраняя порядок', () => {
+    expect(groupByMonth(items, 10, TODAY).map((g) => [g.label, g.items.map((h) => h.sessionId)])).toEqual([
+      ['Ноябрь', [5]],
+      ['Октябрь', [4, 3]],
+      ['Декабрь 2025', [2]],
+    ]);
+  });
+
+  it('берёт только первые limit записей', () => {
+    expect(groupByMonth(items, 2, TODAY).map((g) => g.items.length)).toEqual([1, 1]);
+  });
+
+  it('пустая история даёт пустой список', () => {
+    expect(groupByMonth([], 10, TODAY)).toEqual([]);
   });
 });

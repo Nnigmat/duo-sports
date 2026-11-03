@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import type { AthleteSessionsResponse } from '../../../../../shared/types';
-import { Icon, StatusBadge, Text } from '../../../ui';
+import { Button, Icon, StatusBadge, Text } from '../../../ui';
 import { cx } from '../../../ui/cx';
-import { historyBadge, historyMeta, movedText, plannedBadge, plannedMeta, rowDate, sameSelection, type Selection } from '../sessions';
+import { groupByMonth, HISTORY_PAGE, historyBadge, historyMeta, movedText, plannedBadge, plannedMeta, rowDate, sameSelection, type Selection } from '../sessions';
 import styles from './SessionsPanel.module.css';
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
 
 /** Слева в карточке ученика: «Запланировано» и «История тренировок». Перенесённые на другой день показаны пунктиром и не открываются. */
 export function SessionsPanel({ today, sessions, selection, onSelect }: Props) {
+  const [shown, setShown] = useState(HISTORY_PAGE);
+  const months = groupByMonth(sessions.history, shown, today);
   return (
     <section className={styles.root} aria-label="Тренировки ученика">
       <div className={styles.group}>
@@ -54,22 +57,32 @@ export function SessionsPanel({ today, sessions, selection, onSelect }: Props) {
           История тренировок
         </Text>
         {sessions.history.length === 0 && <p className={styles.empty}>Тренировок пока не было</p>}
-        {sessions.history.map((h) => {
-          const sel: Selection = { kind: 'session', sessionId: h.sessionId };
-          const moved = movedText(h);
-          return (
-            <button key={h.sessionId} type="button" className={cx(styles.row, sameSelection(selection, sel) && styles.on)} aria-pressed={sameSelection(selection, sel)} onClick={() => onSelect(sel)}>
-              <span className={styles.date}>{rowDate(h.date, today)}</span>
-              <span className={styles.title}>{h.title}</span>
-              <span className={styles.meta}>{historyMeta(h)}</span>
-              <span className={styles.badges}>
-                <StatusBadge status={historyBadge(h)} />
-                {h.newFromAthlete > 0 && <span className={styles.fromAthlete}>{h.newFromAthlete === 1 ? 'Новое от ученика' : `Новых от ученика: ${h.newFromAthlete}`}</span>}
-                {moved && <span className={styles.movedNote}>{moved}</span>}
-              </span>
-            </button>
-          );
-        })}
+        {months.map((m) => (
+          <div key={m.key} className={styles.month}>
+            <h3 className={styles.monthTitle}>{m.label}</h3>
+            {m.items.map((h) => {
+              const sel: Selection = { kind: 'session', sessionId: h.sessionId };
+              const moved = movedText(h);
+              return (
+                <button key={h.sessionId} type="button" className={cx(styles.row, sameSelection(selection, sel) && styles.on)} aria-pressed={sameSelection(selection, sel)} onClick={() => onSelect(sel)}>
+                  <span className={styles.date}>{rowDate(h.date, today)}</span>
+                  <span className={styles.title}>{h.title}</span>
+                  <span className={styles.meta}>{historyMeta(h)}</span>
+                  <span className={styles.badges}>
+                    <StatusBadge status={historyBadge(h)} />
+                    {h.newFromAthlete > 0 && <span className={styles.fromAthlete}>{h.newFromAthlete === 1 ? 'Новое от ученика' : `Новых от ученика: ${h.newFromAthlete}`}</span>}
+                    {moved && <span className={styles.movedNote}>{moved}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+        {sessions.history.length > shown && (
+          <Button variant="secondary" fullWidth onClick={() => setShown((n) => n + HISTORY_PAGE)}>
+            Показать ещё
+          </Button>
+        )}
       </div>
     </section>
   );
