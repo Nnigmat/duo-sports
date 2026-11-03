@@ -33,4 +33,9 @@ jobs:
           chmod 600 ~/.ssh/id
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
       - name: Обновить сервер
-        run: ssh -i ~/.ssh/id sport@${{ secrets.SSH_HOST }} '~/duo-sport/scripts/deploy.sh'
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        run: |
+          ssh -i ~/.ssh/id sport@${{ secrets.SSH_HOST }} \
+            "SENTRY_DSN='$SENTRY_DSN' VITE_SENTRY_DSN='$VITE_SENTRY_DSN' ~/duo-sport/scripts/deploy.sh"
