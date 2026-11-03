@@ -7,6 +7,8 @@ export type BlockMode = Block['mode'];
 export const MODE_LABELS: Record<BlockMode, string> = { timed: 'По таймеру', sets: 'Подходами', circuit: 'По кругу' };
 export const DEFAULT_REST = 90;
 export const DEFAULT_ROUNDS = 3;
+/** Круг для видеозаписи у нового блока «по кругу» */
+const DEFAULT_VIDEO_ROUND = 2;
 const DEFAULT_TIMED_SEC = 60;
 
 /** Минимум данных об упражнении библиотеки для добавления в блок */
@@ -34,7 +36,7 @@ export function newBlock(blocks: Block[], mode: BlockMode): Block {
   const title = MODE_LABELS[mode];
   if (mode === 'timed') return { id, mode, title, exercises: [] };
   if (mode === 'sets') return { id, mode, title, exercises: [], restSec: DEFAULT_REST, videoRounds: [] };
-  return { id, mode, title, exercises: [], rounds: DEFAULT_ROUNDS, restSec: 60, videoRounds: [] };
+  return { id, mode, title, exercises: [], rounds: DEFAULT_ROUNDS, restSec: 60, videoRounds: [DEFAULT_VIDEO_ROUND] };
 }
 
 export const addBlock = (blocks: Block[], mode: BlockMode): Block[] => [...blocks, newBlock(blocks, mode)];
