@@ -29,6 +29,7 @@
 Работа: маленькие шаги, после каждого — npm run build без ошибок типов. Линтер — Biome (biome.json), npm run lint; исключения только через biome-ignore с причиной. Логику сценария тренировки держать чистыми функциями с тестами (vitest).
 
 Git и CI:
+- Сообщения коммитов — по Conventional Commits 1.0.0 (https://www.conventionalcommits.org/en/v1.0.0/): `<type>[(scope)][!]: <описание>`, типы feat, fix, docs, style, refactor, perf, test, build, ci, chore. Breaking change — `!` после типа или футер `BREAKING CHANGE:`.
 - В main напрямую не пушить: ветка → pull request → слияние. Защита main (ruleset protect-main) требует PR и зелёную проверку check.
 - Проверка check (.github/workflows/ci.yml) на каждом PR: npm ci, npm run lint, npm test, npm run build, npm run test:stories. Перед PR прогнать их локально.
 - Слияние в main запускает деплой на сервер (.github/workflows/deploy.yml). Не мержить PR с красной проверкой.

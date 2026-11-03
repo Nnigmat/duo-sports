@@ -12,7 +12,7 @@ describe('добавление', () => {
   it('блок получает свободный id и значения по режиму', () => {
     const blocks = addBlock(addBlock([], 'sets'), 'circuit');
     expect(blocks.map((b) => b.id)).toEqual(['b1', 'b2']);
-    expect(blocks[1]).toMatchObject({ mode: 'circuit', rounds: 3, restSec: 60, videoRounds: [] });
+    expect(blocks[1]).toMatchObject({ mode: 'circuit', rounds: 3, restSec: 60, videoRounds: [2] });
   });
   it('упражнение подставляет значения библиотеки; в «подходами» есть число подходов', () => {
     const [b] = sets() as SetsBlock[];
