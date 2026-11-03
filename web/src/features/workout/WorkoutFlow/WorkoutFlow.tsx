@@ -1,7 +1,7 @@
 import { useReducer, useState, type Dispatch } from 'react';
 import type { CoachComment, Gender, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
-import { idleUrl, restUrl } from '../chibi/idle';
+import { cameraUrl, idleUrl, restUrl, successUrl } from '../chibi/idle';
 import { poseFor } from '../chibi/poseFor';
 import {
   applyLabel,
@@ -93,7 +93,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
 
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    return <FinishScreen stats={stats} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds))} onClose={onExit} />;
+    return <FinishScreen stats={stats} successUrl={successUrl(gender)} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds))} onClose={onExit} />;
   }
 
   if (recording) {
@@ -133,6 +133,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         shown={shown}
         idleUrl={idleUrl(gender)}
         restUrl={restUrl(gender)}
+        cameraUrl={cameraUrl(gender)}
         demoUrl={demoFor({ phase, record: step.record, demoUrl: techniques[shown.exerciseId]?.demoUrl })}
         note={note?.text}
         techNew={hasNewComments(comments, shown.exerciseId)}
@@ -206,6 +207,7 @@ type StageProps = {
   demoUrl?: string;
   idleUrl: string;
   restUrl: string;
+  cameraUrl: string;
   note?: string;
   techNew: boolean;
   onEdit: () => void;
@@ -262,7 +264,7 @@ function TimedStage(props: StageProps) {
   );
 }
 
-function StageView({ session, dispatch, shown, demoUrl, idleUrl, restUrl, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+function StageView({ session, dispatch, shown, demoUrl, idleUrl, restUrl, cameraUrl, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
 }) {
   const step = session.steps[session.index];
@@ -276,6 +278,7 @@ function StageView({ session, dispatch, shown, demoUrl, idleUrl, restUrl, note, 
       demoUrl={demoUrl}
       idleUrl={idleUrl}
       restUrl={restUrl}
+      cameraUrl={cameraUrl}
       pose={poseFor({ phase: resting ? 'rest' : 'work', exercisePose: step.pose, record: step.record })}
       note={note}
       techNew={techNew}
