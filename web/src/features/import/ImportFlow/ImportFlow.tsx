@@ -108,6 +108,7 @@ export function ImportFlow({ data, view, links, actions, onNavigate, onCopy, ini
   const plan = parsed ? buildPlan(parsed.plan, options) : null;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: делегирование кликов по ссылкам внутри вложенного содержимого
     <div onClick={onClick}>
       {view === 'format' ? (
         <ImportFormatView onCopyExample={onCopy} importHref={links.import} />

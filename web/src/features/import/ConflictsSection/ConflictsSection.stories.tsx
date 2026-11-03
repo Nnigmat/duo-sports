@@ -10,7 +10,7 @@ const meta = {
   component: ConflictsSection,
   args: { conflicts: buildPlan(planSourceFixture, DEFAULT_OPTIONS).conflicts, onChoice: () => {}, onChoiceAll: () => {} },
   // Решения живут в состоянии, как в контейнере
-  render: (args) => {
+  render: () => {
     const [res, setRes] = useState<Record<string, ConflictChoice>>({});
     const conflicts = buildPlan(planSourceFixture, { ...DEFAULT_OPTIONS, resolutions: res }).conflicts;
     return (

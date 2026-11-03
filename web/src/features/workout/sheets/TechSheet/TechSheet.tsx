@@ -81,8 +81,7 @@ function TechBody({
   return (
     <>
       {filled && (
-        <>
-          <div className={styles.media}>
+        <div className={styles.media}>
             <Chibi
               key={run}
               pose={pose}
@@ -108,7 +107,6 @@ function TechBody({
               />
             </div>
           </div>
-        </>
       )}
 
       {!filled && (

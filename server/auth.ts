@@ -69,7 +69,9 @@ export async function login(db: Db, email: string, password: string, clock: Cloc
 
   const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim()) as UserRow | undefined;
   // Хеш считаем и для несуществующего email, чтобы время ответа не выдавало, есть ли такой аккаунт
-  const valid = row ? await verifyPassword(password, row.password_hash) : (await hashPassword(password), false);
+  let valid = false;
+  if (row) valid = await verifyPassword(password, row.password_hash);
+  else await hashPassword(password);
   if (!row || !valid) {
     db.prepare('INSERT INTO login_attempts (email, at) VALUES (?, ?)').run(email.trim(), t.toISOString());
     return { ok: false, error: 'wrong_credentials' };

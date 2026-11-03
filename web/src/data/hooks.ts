@@ -44,14 +44,17 @@ export const useVideoReview = (videoId: string): Resource<VideoReviewResponse> =
 export const useAthletes = (filter: AthleteFilter, q: string): Resource<AthleteListResponse> =>
   useResource(useCallback(() => fetchAthletes(toIso(new Date()), filter, q), [filter, q]));
 export const useAthletePlan = (athleteId: number, version = 0): Resource<PlanData> =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
   useResource(useCallback(() => fetchAthletePlan(athleteId).then(toPlanData), [athleteId, version]));
 /** Тренировка ученика для превью: с комментариями и техникой, ученик ничего не «прочитывает» */
 export const useAthletePreview = (athleteId: number, workoutId: number): Resource<WorkoutData> =>
   useResource(useCallback(() => fetchAthletePreview(athleteId, workoutId), [athleteId, workoutId]));
 export const useAthleteSessions = (athleteId: number, version = 0): Resource<AthleteSessionsResponse> =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
   useResource(useCallback(() => fetchAthleteSessions(athleteId, toIso(new Date())), [athleteId, version]));
 /** Разбор выполненной тренировки глазами тренера; null — выбрана не выполненная */
 export const useTrainerReview = (sessionId: number | null, version = 0): Resource<SessionReviewResponse | null> =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
   useResource(useCallback(() => (sessionId === null ? Promise.resolve(null) : fetchSessionReview(sessionId, toIso(new Date()))), [sessionId, version]));
 /** Состав запланированной тренировки; workout: null — состава нет (импорт без блоков). Сам data: null, пока идёт загрузка. */
 export const usePlannedWorkout = (athleteId: number, workoutId: number | null): Resource<{ workout: Workout | null }> =>

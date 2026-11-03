@@ -100,6 +100,7 @@ export function ExerciseReference({
         {shown.length > 0 ? (
           <pre
             className={styles.code}
+            role="region"
             tabIndex={0}
             aria-label="Упражнения в формате YAML"
           >

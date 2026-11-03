@@ -2,7 +2,6 @@
 import type { CoachComment, Gender, PlanResponse, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
 import { fetchLibrary } from '../features/exercises/api';
 import type { LibraryExercise } from '../features/exercises/types';
-import { achievementsFixture, planFixture } from './fixtures';
 import { fetchImportContext } from '../features/import/api';
 import { fetchPlanResponse } from '../features/plan/api';
 import { fetchScheduleResponse } from '../features/schedule/api';

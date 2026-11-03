@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { Button, Chip, Icon, Text } from '../../../ui';
 import {
-  actionOf, createAll, EXERCISES_LIMIT, filterCounts, needsGroup, replacementOf, setAction, setGroup, tally, tallyText, usedText, useAllSimilar, useExisting, visibleExercises,
+  actionOf, createAll, EXERCISES_LIMIT, filterCounts, needsGroup, replacementOf, setAction, setGroup, tally, tallyText, usedText, pickAllSimilar, pickExisting, visibleExercises,
   type ExerciseFilter,
 } from '../preview';
 import type { ExerciseChoices, NewExercise } from '../types';
@@ -47,7 +47,7 @@ export function NewExercisesSection({ exercises, choices, onChoicesChange, group
           <Button variant="secondary" compact onClick={() => onChoicesChange(createAll(choices))}>
             Создать все
           </Button>
-          <Button variant="secondary" compact disabled={counts.similar === 0} onClick={() => onChoicesChange(useAllSimilar(choices, exercises))}>
+          <Button variant="secondary" compact disabled={counts.similar === 0} onClick={() => onChoicesChange(pickAllSimilar(choices, exercises))}>
             Похожие — из библиотеки
           </Button>
         </div>
@@ -92,7 +92,7 @@ export function NewExercisesSection({ exercises, choices, onChoicesChange, group
                         <Chip
                           key={name}
                           pressed={action === 'use' && replacementOf(ex, choices) === name}
-                          onClick={() => onChoicesChange(useExisting(choices, ex.key, name))}
+                          onClick={() => onChoicesChange(pickExisting(choices, ex.key, name))}
                         >
                           {name}
                         </Chip>

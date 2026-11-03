@@ -11,6 +11,7 @@
     "set-gender": "tsx server/setGender.ts",
     "link-user": "tsx server/linkUser.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
+    "lint": "biome lint .",
     "test": "vitest run --project unit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
@@ -26,6 +27,7 @@
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.4",
     "@storybook/addon-a11y": "^10.6.5",
     "@storybook/addon-docs": "^10.6.5",
     "@storybook/addon-vitest": "^10.6.5",

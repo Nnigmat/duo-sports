@@ -5,7 +5,7 @@ import { planFixture } from '../../../data/fixtures';
 import { checkCopy, quickDates } from '../plan';
 import { CopyPanel } from './CopyPanel';
 
-const { today, min, max, entries, templates } = planFixture;
+const { today, max, entries, templates } = planFixture;
 const source = '2026-10-31';
 const titleOf = (id: string) => templates.find((t) => t.id === id)?.title ?? id;
 const quick = quickDates(source, today, max, (d) => !!entries[d]);

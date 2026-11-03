@@ -11,7 +11,7 @@ import { canAddExercises, ensureLibrary, libraryOf } from './imports';
 export function exercisesRouter(db: Db, demoDir?: string) {
   const r = Router();
   const auth = requireUser(db);
-  r.get('/exercises', auth, (req, res) => {
+  r.get('/exercises', auth, (_req, res) => {
     ensureLibrary(db);
     const body: ExercisesResponse = { exercises: libraryOf(db) };
     res.json(body);

@@ -45,7 +45,7 @@ export function badgeText(a: AthleteRow): string {
 
 /** Цель ученика как её задал тренер. Число дней в неделю не выдумываем: в данных его нет */
 export function goalText(goal: string | null): string {
-  return goal && goal.trim() ? goal.trim() : 'Цель не задана';
+  return goal?.trim() ? goal.trim() : 'Цель не задана';
 }
 
 /** «Вчера · Всё тело», «Пт, 23 окт · Всё тело» */

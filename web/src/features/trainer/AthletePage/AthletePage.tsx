@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAthletes, useAthleteSessions, useExercises, usePastComments, usePlannedWorkout, useTrainerReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
@@ -46,7 +46,7 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
   const today = toIso(new Date());
   const historyItem = sessions.data.history.find((h) => h.sessionId === reviewId);
 
-  let detail;
+  let detail: ReactNode;
   if (reviewId !== null) {
     detail = review.error ? (
       <p role="alert">{review.error}</p>

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { ARTIFACT } from '../../../ui/storyKit';
 import { mockCamera } from './mockCamera';
 import { RecordingScreen } from './RecordingScreen';

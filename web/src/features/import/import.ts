@@ -125,7 +125,7 @@ export function exerciseYaml(ex: LibraryEntry, custom = false): string {
 
 /** Весь файл exercises.yaml: его копирует кнопка «Копировать» */
 export function referenceYamlFile(list: LibraryEntry[]): string {
-  return ['exercises:', ...list.map((ex) => exerciseYaml(ex))].join('\n') + '\n';
+  return `${['exercises:', ...list.map((ex) => exerciseYaml(ex))].join('\n')}\n`;
 }
 
 /** Заголовок списка: «Показано 9 из 31 упражнения» или «31 упражнение» */

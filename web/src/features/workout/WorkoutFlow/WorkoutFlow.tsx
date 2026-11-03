@@ -49,7 +49,7 @@ type Props = {
   gender?: Gender;
   /** Загрузить видео подхода. Ошибка (reject) остаётся на экране записи, можно повторить. */
   /** Возвращает id видео на сервере; без него подход всё равно считается записанным */
-  onUploadVideo: (video: Blob, step: Step, durationSec: number) => Promise<string | void>;
+  onUploadVideo: (video: Blob, step: Step, durationSec: number) => Promise<string | undefined>;
   /** «Завершить» на финише: итоги и каждый подход с планом и отметкой «выполнен» */
   onFinish: (stats: FinishStats, steps: SessionStepResult[]) => void;
   /** Выход с экрана старта и ✕ на финише */

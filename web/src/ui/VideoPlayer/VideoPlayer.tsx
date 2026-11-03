@@ -53,6 +53,7 @@ export function VideoPlayer({
   const ready = Boolean(src) && !failed;
 
   useEffect(() => setDuration(durationSec), [durationSec]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: сброс ошибки при смене src
   useEffect(() => setFailed(false), [src]);
 
   const update = (t: number) => {
@@ -106,6 +107,7 @@ export function VideoPlayer({
     <div className={cx(styles.root, className)}>
       <div className={styles.stage}>
         {src && !failed && (
+          // biome-ignore lint/a11y/useMediaCaption: пользовательские видео подходов без субтитров
           <video
             ref={video}
             className={styles.video}
