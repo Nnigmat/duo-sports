@@ -18,7 +18,7 @@ export function splitCode(lines: string[]): CodeLine[] {
 }
 
 /** Исходный текст примера: его копирует кнопка */
-export const joinCode = (lines: string[]): string => lines.join('\n') + '\n';
+export const joinCode = (lines: string[]): string => `${lines.join('\n')}\n`;
 
 export interface FieldRow {
   field: string;
