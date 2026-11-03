@@ -29,7 +29,10 @@ export function planOf(db: Db, userId: number): PlanResponse {
   for (const r of rows) {
     const main = entries[r.date];
     if (!main) entries[r.date] = { templateId: String(r.workout_id), status: statusOf(r), custom: true };
-    else (main.more ??= []).push(titles.get(r.workout_id) ?? '');
+    else {
+      main.more ??= [];
+      main.more.push(titles.get(r.workout_id) ?? '');
+    }
   }
   const moves = (
     db

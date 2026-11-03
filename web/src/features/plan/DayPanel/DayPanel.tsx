@@ -69,7 +69,7 @@ export function DayPanel({
 }: Props) {
   const titleId = useId();
   const copyId = useId();
-  const { today, min, max, templates, entries } = data;
+  const { today, max, templates, entries } = data;
   const entry = entries[date];
   const template = entry && templates.find((t) => t.id === entry.templateId);
   const dateLine = `${date === today ? 'Сегодня · ' : ''}${longDate(date)}`;

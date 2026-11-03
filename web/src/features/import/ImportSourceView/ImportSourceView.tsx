@@ -110,7 +110,7 @@ export function ImportSourceView({ text, onTextChange, exercises, customIds, onC
           <Text variant="body-sm" color="slate">
             Тренировки с датами и, если нужно, новые упражнения.
           </Text>
-          <pre className={styles.skeleton} tabIndex={0} aria-label="Скелет файла в формате YAML">{FORMAT_SKELETON}</pre>
+          <pre className={styles.skeleton} role="region" tabIndex={0} aria-label="Скелет файла в формате YAML">{FORMAT_SKELETON}</pre>
           <a href={formatHref} className={styles.link}>
             Полное описание формата
           </a>

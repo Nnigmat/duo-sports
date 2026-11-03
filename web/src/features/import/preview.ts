@@ -22,7 +22,7 @@ export function setGroup(c: ExerciseChoices, key: string, group: string): Exerci
 export const replacementOf = (ex: NewExercise, c: ExerciseChoices): string | undefined => c.target?.[ex.key] ?? ex.similar;
 
 /** «Это упражнение из библиотеки»: заменяем новое названием, которое имелось в виду */
-export function useExisting(c: ExerciseChoices, key: string, name: string): ExerciseChoices {
+export function pickExisting(c: ExerciseChoices, key: string, name: string): ExerciseChoices {
   return { ...c, action: { ...c.action, [key]: 'use' }, target: { ...c.target, [key]: name } };
 }
 
@@ -32,7 +32,7 @@ export function createAll(c: ExerciseChoices): ExerciseChoices {
 }
 
 /** «Похожие — из библиотеки»: там, где есть похожее, берём его; остальное не трогаем */
-export function useAllSimilar(c: ExerciseChoices, list: NewExercise[]): ExerciseChoices {
+export function pickAllSimilar(c: ExerciseChoices, list: NewExercise[]): ExerciseChoices {
   const action = { ...c.action };
   for (const ex of list) if (ex.similar) action[ex.key] = 'use';
   return { ...c, action };

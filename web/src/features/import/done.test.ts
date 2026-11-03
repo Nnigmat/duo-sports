@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addedList, ADDED_LIMIT, clockTime, buildNotices, datesText, doneSummary, doneTexts, skippedDates, undoneNote, undoText } from './done';
 import { newExercisesFixture as list, planSourceFixture } from './fixtures';
 import { buildPlan, DEFAULT_OPTIONS } from './importPlan';
-import { EMPTY_CHOICES, setAction, useAllSimilar } from './preview';
+import { EMPTY_CHOICES, setAction, pickAllSimilar } from './preview';
 
 const plan = buildPlan(planSourceFixture, DEFAULT_OPTIONS);
 
@@ -29,7 +29,7 @@ describe('addedList', () => {
     expect(addedList(list, c).find((a) => a.title === 'Комплекс на пресс')!.meta).toBe('пресс · видео');
   });
   it('«Похожее» заменяется упражнением библиотеки, «не создавать» пропадает, повторы схлопываются', () => {
-    let c = useAllSimilar(EMPTY_CHOICES, list);
+    let c = pickAllSimilar(EMPTY_CHOICES, list);
     c = setAction(c, 'e0', 'skip');
     const added = addedList(list, c);
     expect(added.find((a) => a.title === 'Обратные отжимания от лавочки')).toBeUndefined();

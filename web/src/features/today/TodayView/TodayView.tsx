@@ -55,8 +55,7 @@ export function TodayView({ data, onOpenAchievements, onOpenLatestAchievement, o
       <WeekCard days={data.week} onDayAction={onWeekDayAction} />
       {onMoveMissed && data.missed && <MissedCard items={data.missed} onMove={onMoveMissed} />}
       {insights && (
-        <>
-          <div className={styles.insights}>
+        <div className={styles.insights}>
             <AchievementsPreview
               data={insights.achievements}
               onOpenAll={onOpenAchievements}
@@ -68,7 +67,6 @@ export function TodayView({ data, onOpenAchievements, onOpenLatestAchievement, o
               <ActivityCard activity={insights.activity} />
             </div>
           </div>
-        </>
       )}
     </div>
   );
