@@ -26,3 +26,9 @@
 - Учитывать prefers-reduced-motion и safe-area-inset снизу.
 
 Работа: маленькие шаги, после каждого — npm run build без ошибок типов. Логику сценария тренировки держать чистыми функциями с тестами (vitest).
+
+Git и CI:
+- В main напрямую не пушить: ветка → pull request → слияние. Защита main (ruleset protect-main) требует PR и зелёную проверку check.
+- Проверка check (.github/workflows/ci.yml) на каждом PR: npm ci, npm test, npm run build. Перед PR прогнать npm test и npm run build локально.
+- Слияние в main запускает деплой на сервер (.github/workflows/deploy.yml). Не мержить PR с красной проверкой.
+- Репозиторий публичный: не коммитить секреты, ключи, содержимое data/ и .env. Секреты деплоя только в GitHub Secrets.
