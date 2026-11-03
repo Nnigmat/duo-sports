@@ -35,6 +35,14 @@
   aspect-ratio: 1;
 }
 
+/* Ролик вертикальный 9:16: по высоте сцены */
+.stage .video {
+  width: auto;
+  max-width: 100%;
+  height: min(380px, 100%); /* нет токена */
+  aspect-ratio: 9 / 16;
+}
+
 /* Три показателя в ряд; значения Fraunces, подпись под значением (в разметке dt идёт первым) */
 .stats {
   display: grid;

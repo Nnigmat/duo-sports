@@ -26,6 +26,8 @@ type Props = {
   idleUrl?: string;
   /** Ролик «чибик отдыхает»: показывается вместо статичного чибика в позе «отдых» */
   restUrl?: string;
+  /** Ролик «чибик держит камеру»: показывается вместо статичного чибика в позе «камера» */
+  cameraUrl?: string;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -53,6 +55,7 @@ export function TrainingScreen({
   demoUrl,
   idleUrl,
   restUrl,
+  cameraUrl,
   note,
   techNew,
   recordable,
@@ -67,7 +70,7 @@ export function TrainingScreen({
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
   // Адрес, на котором ролик упал: смена упражнения даёт новый адрес и новую попытку
   const [failed, setFailed] = useState<string | null>(null);
-  const clip = demoUrl ?? (pose === 'stand' ? idleUrl : pose === 'rest' ? restUrl : undefined);
+  const clip = demoUrl ?? (pose === 'stand' ? idleUrl : pose === 'rest' ? restUrl : pose === 'camera' ? cameraUrl : undefined);
   const playing = clip && !still && failed !== clip ? clip : undefined;
   return (
     <Screen label={blockLabel} back={{ onClick: onBack }} close={{ onClick: onExit }} className={styles.screen}>
@@ -87,7 +90,7 @@ export function TrainingScreen({
           <DemoVideo
             src={playing}
             onFail={() => setFailed(playing)}
-            className={playing === idleUrl ? styles.idle : styles.demo}
+            className={playing === idleUrl || playing === cameraUrl ? styles.idle : styles.demo}
           />
         ) : (
           <>
