@@ -166,23 +166,31 @@ export function emptyDayTexts(date: string, today: string): { title: string; cre
     : { title: 'Ничего не запланировано', create: 'Создать тренировку' };
 }
 
-export type QuickDate = { key: 'tomorrow' | 'free' | 'week'; label: string; date: string };
+export type QuickDate = { key: 'same' | 'tomorrow' | 'free' | 'week'; label: string; date: string };
 
-/** Быстрый выбор даты копии: завтра, ближайший свободный день, через неделю. Одинаковые даты не повторяются. */
-export function quickDates(source: string, today: string, max: string, occupied: (date: string) => boolean): QuickDate[] {
+/** Быстрый выбор даты копии: завтра, ближайший свободный день, через неделю. Одинаковые даты не повторяются.
+ * Для другого ученика исходный день не пропускается и идёт первым («Тот же день»), если он не в прошлом. */
+export function quickDates(
+  source: string,
+  today: string,
+  max: string,
+  occupied: (date: string) => boolean,
+  toOther = false,
+): QuickDate[] {
   const tomorrow = addDays(today, 1);
   let free = tomorrow;
-  while (free <= max && (free === source || occupied(free))) free = addDays(free, 1);
+  while (free <= max && ((free === source && !toOther) || occupied(free))) free = addDays(free, 1);
   if (free > max) free = tomorrow;
   let week = addDays(source, 7);
   while (week <= today) week = addDays(week, 7);
 
   const all: QuickDate[] = [
+    ...(toOther && source >= today && source <= max ? [{ key: 'same' as const, label: 'Тот же день', date: source }] : []),
     { key: 'tomorrow', label: 'Завтра', date: tomorrow },
     { key: 'free', label: 'Ближайший свободный', date: free },
     { key: 'week', label: 'Через неделю', date: week },
   ];
-  const seen = new Set<string>([source]);
+  const seen = new Set<string>(toOther ? [] : [source]);
   return all.filter((q) => {
     if (seen.has(q.date)) return false;
     seen.add(q.date);
@@ -219,8 +227,11 @@ export function checkCopy(
   max: string,
   entryAt: (date: string) => PlanEntry | undefined,
   titleOf: (templateId: string) => string,
+  toOther = false,
 ): CopyCheck {
-  const valid = !!target && target >= today && target <= max && target !== source;
+  // тот же день допустим, если копия уходит другому ученику
+  const sameDay = target === source && !toOther;
+  const valid = !!target && target >= today && target <= max && !sameDay;
   const existing = valid && target ? entryAt(target) : undefined;
   if (existing && target) {
     return {
@@ -232,7 +243,7 @@ export function checkCopy(
     };
   }
   const hint = !target || target === '' ? `Выбери дату с ${shortDate(today)} по ${shortDate(max)}.`
-    : target === source ? 'Это тот же день — выбери другую дату.'
+    : sameDay ? 'Это тот же день — выбери другую дату.'
     : !valid ? `Выбери дату с ${shortDate(today)} по ${shortDate(max)}.`
     : `Копия появится: ${longDate(target).toLowerCase()}.`;
   return { valid, replaces: null, warning: '', hint, label: 'Создать копию' };

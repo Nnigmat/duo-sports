@@ -163,6 +163,20 @@ describe('quickDates', () => {
   });
 });
 
+describe('quickDates для другого ученика', () => {
+  it('тот же день идёт первым и считается занятым по плану ученика', () => {
+    const q = quickDates('2026-11-02', TODAY, MAX, (d) => d === '2026-11-02', true);
+    expect(q.map((x) => [x.key, x.date])).toEqual([
+      ['same', '2026-11-02'],
+      ['tomorrow', '2026-11-01'],
+      ['week', '2026-11-09'],
+    ]);
+  });
+  it('прошедший исходный день не предлагается', () => {
+    expect(quickDates('2026-10-20', TODAY, MAX, () => false, true).some((x) => x.key === 'same')).toBe(false);
+  });
+});
+
 describe('checkCopy', () => {
   const entries: Record<string, PlanEntry> = { '2026-11-01': { templateId: 'full', status: 'planned' } };
   const check = (target: string | null) =>
@@ -181,6 +195,10 @@ describe('checkCopy', () => {
     expect(check('2026-10-20')).toMatchObject({ valid: false, hint: 'Выбери дату с 31 октября по 31 декабря.' });
     expect(check(null).valid).toBe(false);
     expect(check('2027-01-05').valid).toBe(false);
+  });
+  it('тот же день допустим для другого ученика', () => {
+    const r = checkCopy('2026-10-31', '2026-10-31', TODAY, MAX, () => undefined, (id) => id, true);
+    expect(r).toMatchObject({ valid: true, label: 'Создать копию' });
   });
 });
 
