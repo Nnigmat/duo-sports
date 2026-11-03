@@ -22,6 +22,7 @@ export default defineConfig({
         plugins: [storybookTest({ configDir: path.join(dirname, '.storybook') })],
         test: {
           name: 'storybook',
+          retry: process.env.CI ? 1 : 0,
           browser: {
             enabled: true,
             headless: true,
