@@ -2,5 +2,21 @@ node_modules
 dist
 /data/
 
-*storybook.log
+# окружение
+.env
+.env.*
+
+# логи
+*.log
+npm-debug.log*
+
+# macOS и редакторы
+.DS_Store
+.idea
+.vscode
+
+# сборки и инструменты
 storybook-static
+.playwright-mcp
+*.tsbuildinfo
+coverage
