@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
-import type { AuthUser } from '../shared/types';
-import { changePassword, login, logout, setGender, SESSION_DAYS, userBySession } from './auth';
+import { DISPLAY_NAME_MAX, type AuthUser } from '../shared/types';
+import { changePassword, login, logout, setDisplayName, setGender, SESSION_DAYS, userBySession } from './auth';
 import type { Db } from './db';
 
 const COOKIE = 'session';
@@ -81,6 +81,15 @@ export function authRouter(db: Db) {
     const gender = req.body?.gender;
     if (gender !== 'female' && gender !== 'male') return void res.status(400).json({ error: 'gender: female или male' });
     setGender(db, req.user!.email, gender);
+    res.json({ ok: true });
+  });
+
+  r.put('/auth/display-name', requireUser(db), (req, res) => {
+    const name = req.body?.displayName;
+    if (typeof name !== 'string') return void res.status(400).json({ error: 'displayName: строка' });
+    if (name.trim().length > DISPLAY_NAME_MAX)
+      return void res.status(400).json({ error: `displayName: не длиннее ${DISPLAY_NAME_MAX} символов` });
+    setDisplayName(db, req.user!.id, name);
     res.json({ ok: true });
   });
 

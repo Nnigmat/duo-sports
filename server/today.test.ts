@@ -40,6 +40,11 @@ describe('даты', () => {
     expect(addDays('2026-10-31', 2)).toBe('2026-11-02');
   });
   it('имя из почты', () => expect(userNameOf('nikita@example.com')).toBe('Nikita'));
+  it('displayName важнее почты, пустой не считается', () => {
+    expect(userNameOf('nikita@example.com', ' Никита ')).toBe('Никита');
+    expect(userNameOf('nikita@example.com', '  ')).toBe('Nikita');
+    expect(userNameOf('nikita@example.com', null)).toBe('Nikita');
+  });
 });
 
 describe('todayOf: состояние дня', () => {

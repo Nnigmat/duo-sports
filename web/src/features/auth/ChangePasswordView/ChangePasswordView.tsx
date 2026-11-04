@@ -11,6 +11,8 @@ type Props = {
   /** Например «12 августа 2026»; после смены — «только что» */
   lastChanged: string;
   email: string;
+  /** Имя для показа; без него в подписи «Вы вошли как» остаётся email */
+  displayName?: string;
   /** wrongCurrent — сервер не принял текущий пароль; saved — пароль сменён */
   status?: 'wrongCurrent' | 'saved';
   /** Вызывается только когда все три поля заполнены верно */
@@ -21,7 +23,7 @@ type Props = {
 };
 
 /** Блок «Смена пароля» и «Выход из аккаунта» на вкладке «Безопасность» профиля. */
-export function ChangePasswordView({ lastChanged, email, status, onSubmit, onLogout, initial }: Props) {
+export function ChangePasswordView({ lastChanged, email, displayName, status, onSubmit, onLogout, initial }: Props) {
   const [current, setCurrent] = useState(initial?.current ?? '');
   const [next, setNext] = useState(initial?.next ?? '');
   const [confirm, setConfirm] = useState(initial?.confirm ?? '');
@@ -155,7 +157,7 @@ export function ChangePasswordView({ lastChanged, email, status, onSubmit, onLog
             Выход из аккаунта
           </Text>
           <Text variant="body-sm" color="slate">
-            Вы вошли как {email}
+            Вы вошли как {displayName || email}
           </Text>
         </div>
         <Button variant="secondary" compact icon="logout" onClick={onLogout}>
