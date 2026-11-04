@@ -136,7 +136,11 @@ export interface AuthUser {
   passwordChangedAt: string | null;
   /** Не задан, пока админ не указал */
   gender?: Gender;
+  /** Имя для показа; не задано, пока пользователь не указал */
+  displayName?: string;
 }
+
+export const DISPLAY_NAME_MAX = 40;
 
 /** Ответ POST /api/auth/login при отказе */
 export type LoginFailure = { error: 'wrong_credentials' } | { error: 'locked'; retryAfterSec: number };

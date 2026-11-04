@@ -239,7 +239,9 @@ export function buildToday(input: TodayInput): TodayBase {
 
 // ── База ──
 
-export function userNameOf(email: string): string {
+/** Имя для показа: displayName, а если не задано, имя из почты. */
+export function userNameOf(email: string, displayName?: string | null): string {
+  if (displayName?.trim()) return displayName.trim();
   const local = email.split('@')[0] ?? '';
   return local ? local[0]!.toUpperCase() + local.slice(1) : email;
 }
@@ -249,7 +251,7 @@ export function pausesOf(db: Db, userId: number): NonNullable<TodayInput['pauses
 }
 
 export function todayOf(db: Db, userId: number, today: string): TodayResponse {
-  const user = db.prepare('SELECT email FROM users WHERE id = ?').get(userId) as { email: string } | undefined;
+  const user = db.prepare('SELECT email, display_name FROM users WHERE id = ?').get(userId) as { email: string; display_name: string | null } | undefined;
   const rows = db.prepare('SELECT id, title, blocks, structure FROM workouts WHERE user_id = ?').all(userId) as Array<{ id: number; title: string; blocks: string; structure: string | null }>;
   const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: JSON.parse(r.blocks) as CommitBlock[], structure: r.structure ? (JSON.parse(r.structure) as Block[]) : null }]));
   const entries = (db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as Array<{ date: string; workout_id: number }>).map((e) => ({ date: e.date, workoutId: e.workout_id }));
@@ -267,7 +269,7 @@ export function todayOf(db: Db, userId: number, today: string): TodayResponse {
   }
   const skips = new Set((db.prepare('SELECT date, workout_id FROM plan_skips WHERE user_id = ?').all(userId) as Array<{ date: string; workout_id: number }>).map((r) => `${r.date}:${r.workout_id}`));
   const pauses = pausesOf(db, userId);
-  const base = buildToday({ today, userName: userNameOf(user?.email ?? ''), workouts, entries, sessions, skips, pauses, musclesOf: (n) => library.get(n.toLowerCase()) ?? [] });
+  const base = buildToday({ today, userName: userNameOf(user?.email ?? '', user?.display_name), workouts, entries, sessions, skips, pauses, musclesOf: (n) => library.get(n.toLowerCase()) ?? [] });
   const reviewNotice = reviewNoticeOf(db, userId);
   const awaitingReview = awaitingReviewOf(db, userId, today);
   return { ...base, unread: unreadCount(db, userId), ...(reviewNotice && { reviewNotice }), ...(awaitingReview && { awaitingReview }) };

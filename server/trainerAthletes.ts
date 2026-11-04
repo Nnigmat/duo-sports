@@ -25,7 +25,7 @@ export function visibleAthleteIds(db: Db, viewer: Viewer): number[] | null {
 }
 
 function rowOf(db: Db, id: number, today: string): AthleteRow | null {
-  const u = db.prepare('SELECT email, goal, created_at FROM users WHERE id = ?').get(id) as { email: string; goal: string | null; created_at: string } | undefined;
+  const u = db.prepare('SELECT email, display_name, goal, created_at FROM users WHERE id = ?').get(id) as { email: string; display_name: string | null; goal: string | null; created_at: string } | undefined;
   if (!u) return null;
   const last = db.prepare('SELECT date, title FROM sessions_done WHERE user_id = ? AND date <= ? ORDER BY date DESC, id DESC LIMIT 1').get(id, today) as { date: string; title: string } | undefined;
   const from7 = addDays(today, -6);
@@ -53,7 +53,7 @@ function rowOf(db: Db, id: number, today: string): AthleteRow | null {
   const status: AthleteStatus = waiting.sessions > 0 || replied > 0 ? 'review' : idleDays >= INACTIVE_DAYS ? 'inactive' : 'ok';
   return {
     id,
-    name: userNameOf(u.email),
+    name: userNameOf(u.email, u.display_name),
     email: u.email,
     goal: u.goal,
     lastSession: last ?? null,

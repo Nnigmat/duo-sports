@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { changePassword, createUser, login, logout, setGender, userBySession, MAX_ATTEMPTS } from './auth';
+import { changePassword, createUser, login, logout, setDisplayName, setGender, userBySession, MAX_ATTEMPTS } from './auth';
 import { openDb, type Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -101,5 +101,19 @@ describe('пол спортсмена', () => {
   });
   it('setGender для неизвестного email возвращает false', () => {
     expect(setGender(db, 'nobody@example.com', 'male')).toBe(false);
+  });
+  it('без имени поля displayName нет', async () => {
+    expect((await sessionOf('nikita@example.com')).displayName).toBeUndefined();
+  });
+  it('setDisplayName сохраняет имя без пробелов по краям и очищает пустым', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    setDisplayName(db, id, '  Никита ');
+    expect((await sessionOf('nikita@example.com')).displayName).toBe('Никита');
+    setDisplayName(db, id, '   ');
+    expect((await sessionOf('nikita@example.com')).displayName).toBeUndefined();
+  });
+  it('слишком длинное имя отвергается', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    expect(() => setDisplayName(db, id, 'а'.repeat(41))).toThrow();
   });
 });
