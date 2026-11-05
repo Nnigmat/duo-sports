@@ -11,6 +11,9 @@ function canvasStream(): MediaStream {
   const ctx = canvas.getContext('2d')!;
   const stream = canvas.captureStream(30);
   const track = stream.getVideoTracks()[0];
+  // Как у Chrome на Android: зум объявлен в возможностях и принимается через applyConstraints
+  track.getCapabilities = () => ({ zoom: { min: 1, max: 4, step: 0.1 } }) as MediaTrackCapabilities;
+  track.applyConstraints = () => Promise.resolve();
   const draw = (t: number) => {
     ctx.fillStyle = '#0f766e';
     ctx.fillRect(0, 0, 320, 240);

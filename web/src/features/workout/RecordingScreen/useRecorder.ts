@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isFinished, pickMimeType, remainingSec, startCountdown, type Countdown } from '../flow';
+import {
+  clampZoom,
+  isFinished,
+  pickMimeType,
+  remainingSec,
+  startCountdown,
+  zoomRange,
+  type Countdown,
+  type ZoomRange,
+} from '../flow';
 
 export type Facing = 'environment' | 'user';
 
@@ -36,6 +45,9 @@ export function useRecorder() {
   const [countdown, setCountdown] = useState<Countdown | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  // null: камера не умеет зум, контрол не показываем
+  const [range, setRange] = useState<ZoomRange | null>(null);
+  const [zoom, setZoomValue] = useState(1);
 
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -60,6 +72,7 @@ export function useRecorder() {
     setStatus('starting');
     setElapsed(0);
     setCountdown(null);
+    setRange(null);
 
     navigator.mediaDevices
       // Без звука: тренеру нужна картинка, микрофон только добавил бы запрос доступа
@@ -76,6 +89,12 @@ export function useRecorder() {
         };
         streamRef.current = stream;
         recorderRef.current = recorder;
+        // Диапазоны зума у фронтальной и основной камер разные: начинаем с минимума новой камеры
+        const track = stream.getVideoTracks()[0];
+        const caps = track?.getCapabilities?.() as { zoom?: { min?: number; max?: number; step?: number } } | undefined;
+        const zoomCaps = zoomRange(caps?.zoom);
+        setRange(zoomCaps);
+        setZoomValue(zoomCaps?.min ?? 1);
         setStatus('ready');
       })
       .catch((err: unknown) => {
@@ -171,6 +190,19 @@ export function useRecorder() {
     [release],
   );
 
+  /** Зум камеры: меняет и превью, и будущую запись. Без поддержки камеры ничего не делает. */
+  const setZoom = useCallback(
+    (value: number) => {
+      const track = streamRef.current?.getVideoTracks()[0];
+      if (!range || !track) return;
+      const next = clampZoom(value, range);
+      setZoomValue(next);
+      // advanced: зум не обязателен, лучше пропустить, чем упасть на неподдерживаемом
+      track.applyConstraints({ advanced: [{ zoom: next } as MediaTrackConstraintSet] }).catch(() => {});
+    },
+    [range],
+  );
+
   const switchCamera = useCallback(() => setFacing((f) => (f === 'environment' ? 'user' : 'environment')), []);
 
   return {
@@ -184,5 +216,9 @@ export function useRecorder() {
     stop,
     discard: release,
     switchCamera,
+    /** Диапазон зума или null, если камера его не умеет */
+    zoomRange: range,
+    zoom,
+    setZoom,
   };
 }

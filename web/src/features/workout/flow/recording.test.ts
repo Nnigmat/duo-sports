@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickMimeType } from './recording';
+import { clampZoom, formatZoom, pickMimeType, zoomRange } from './recording';
 
 describe('pickMimeType', () => {
   it('Chrome и Android: webm с vp9', () => {
@@ -19,5 +19,43 @@ describe('pickMimeType', () => {
 
   it('ничего не поддерживается: undefined, браузер выберет сам', () => {
     expect(pickMimeType(() => false)).toBeUndefined();
+  });
+});
+
+describe('zoomRange', () => {
+  it('зума нет или он фиксирован: null', () => {
+    expect(zoomRange(undefined)).toBeNull();
+    expect(zoomRange({})).toBeNull();
+    expect(zoomRange({ min: 1, max: 1, step: 0.1 })).toBeNull();
+  });
+
+  it('есть диапазон: отдаёт его, шаг по умолчанию 0,1', () => {
+    expect(zoomRange({ min: 1, max: 5, step: 0.5 })).toEqual({ min: 1, max: 5, step: 0.5 });
+    expect(zoomRange({ min: 1, max: 5 })).toEqual({ min: 1, max: 5, step: 0.1 });
+  });
+});
+
+describe('clampZoom', () => {
+  const range = { min: 1, max: 5, step: 0.5 };
+
+  it('не выходит за границы', () => {
+    expect(clampZoom(0.2, range)).toBe(1);
+    expect(clampZoom(9, range)).toBe(5);
+  });
+
+  it('округляет до шага от минимума', () => {
+    expect(clampZoom(2.3, range)).toBe(2.5);
+    expect(clampZoom(2.1, range)).toBe(2);
+  });
+
+  it('шаг 0,1 не копит ошибку плавающей точки', () => {
+    expect(clampZoom(1.3, { min: 1, max: 3, step: 0.1 })).toBe(1.3);
+  });
+});
+
+describe('formatZoom', () => {
+  it('запятая и пробел перед знаком', () => {
+    expect(formatZoom(1)).toBe('1,0 ×');
+    expect(formatZoom(2.5)).toBe('2,5 ×');
   });
 });
