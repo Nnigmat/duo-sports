@@ -3,7 +3,7 @@ import { Button } from '../../../ui/Button/Button';
 import { IconButton } from '../../../ui/IconButton/IconButton';
 import { Icon } from '../../../ui/Icon/Icon';
 import { Text } from '../../../ui/Text/Text';
-import { formatTime } from '../flow';
+import { formatTime, formatZoom } from '../flow';
 import styles from './RecordingScreen.module.css';
 import { useRecorder, type RecorderStatus } from './useRecorder';
 
@@ -114,6 +114,22 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
               {rec.countdownLeft}
             </span>
           </div>
+        )}
+        {ready && rec.zoomRange && (
+          <label className={styles.zoom}>
+            <span className={styles.zoomValue}>{formatZoom(rec.zoom)}</span>
+            <input
+              type="range"
+              className={styles.zoomSlider}
+              aria-label="Масштаб"
+              aria-valuetext={formatZoom(rec.zoom)}
+              min={rec.zoomRange.min}
+              max={rec.zoomRange.max}
+              step={rec.zoomRange.step}
+              value={rec.zoom}
+              onChange={(e) => rec.setZoom(Number(e.target.value))}
+            />
+          </label>
         )}
         {!live && (
           <div className={styles.placeholder} role={problem ? 'alert' : 'status'}>

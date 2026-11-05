@@ -67,6 +67,35 @@
   display: none;
 }
 
+/* Масштаб поверх картинки: тёмная подложка держит контраст на любом фоне */
+.zoom {
+  position: absolute;
+  right: var(--spacing-sm);
+  bottom: var(--spacing-sm);
+  left: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 44px; /* нет токена */
+  padding: 0 var(--spacing-md);
+  border-radius: var(--rounded-full);
+  background: color-mix(in srgb, var(--ink) 70%, transparent);
+  color: var(--on-ink);
+}
+.zoomValue {
+  min-width: 4ch;
+  font-size: var(--caption-bold-size);
+  font-weight: var(--caption-bold-weight);
+  font-variant-numeric: tabular-nums;
+}
+.zoomSlider {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px; /* нет токена */
+  margin: 0;
+  accent-color: var(--on-ink);
+}
+
 /* Отсчёт поверх картинки камеры: тёмная подложка держит контраст на любом фоне */
 .countdown {
   position: absolute;
