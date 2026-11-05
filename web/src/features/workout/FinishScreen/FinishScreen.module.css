@@ -35,6 +35,15 @@
   aspect-ratio: 1;
 }
 
+/* Ролики разной ориентации (мальчик 9:16, девочка 16:9): размер по самому ролику, в пределах сцены */
+.stage .video {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 380px; /* нет токена */
+  aspect-ratio: auto;
+}
+
 /* Три показателя в ряд; значения Fraunces, подпись под значением (в разметке dt идёт первым) */
 .stats {
   display: grid;

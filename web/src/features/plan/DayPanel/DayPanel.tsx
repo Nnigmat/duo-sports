@@ -1,11 +1,12 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { PlanData } from '../../../data/types';
 import { Badge, Button, Notice, Text } from '../../../ui';
-import { CopyPanel } from '../CopyPanel/CopyPanel';
+import { CopyPanel, type CopyAthlete } from '../CopyPanel/CopyPanel';
 import { ExerciseList } from '../ExerciseList/ExerciseList';
 import { QuickAdd } from '../QuickAdd/QuickAdd';
 import {
   checkCopy,
+  copyTargetLookup,
   dayActions,
   displayStatus,
   emptyDayTexts,
@@ -23,7 +24,7 @@ type Props = {
   copyOpen: boolean;
   copyDate: string | null;
   /** Плашка после копирования */
-  notice: { to: string; title: string } | null;
+  notice: { to: string; title: string; athlete?: string } | null;
   layout?: 'mobile' | 'desktop';
   onStart?: (date: string) => void;
   /** Просмотр тренировки в режиме превью: только у тренера, на любой день с тренировкой */
@@ -36,8 +37,14 @@ type Props = {
   onAdd: (date: string, templateId: string) => void;
   onToggleCopy: () => void;
   onCopyDate: (date: string) => void;
-  /** Подтверждённая копия: куда */
-  onCopy: (to: string) => void;
+  /** Другие ученики, которым можно отправить копию (только у тренера) */
+  copyAthletes?: CopyAthlete[];
+  /** Выбран получатель копии (null — этот же ученик): страница подгружает его план */
+  onCopyTarget?: (athleteId: number | null) => void;
+  /** План выбранного получателя; пока null, замену его дня не показываем */
+  targetPlan?: PlanData | null;
+  /** Подтверждённая копия: куда и кому (athlete не задан — в этот же план) */
+  onCopy: (to: string, athlete?: CopyAthlete) => void;
   onOpenCopied: () => void;
   /** Ссылка с названия упражнения на его карточку */
   exerciseHref?: (name: string) => string | undefined;
@@ -62,6 +69,9 @@ export function DayPanel({
   onAdd,
   onToggleCopy,
   onCopyDate,
+  copyAthletes,
+  onCopyTarget,
+  targetPlan,
   onCopy,
   onOpenCopied,
   exerciseHref,
@@ -69,7 +79,8 @@ export function DayPanel({
 }: Props) {
   const titleId = useId();
   const copyId = useId();
-  const { today, min, max, templates, entries } = data;
+  const [copyTo, setCopyTo] = useState<number | null>(null);
+  const { today, max, templates, entries } = data;
   const entry = entries[date];
   const template = entry && templates.find((t) => t.id === entry.templateId);
   const dateLine = `${date === today ? 'Сегодня · ' : ''}${longDate(date)}`;
@@ -102,14 +113,9 @@ export function DayPanel({
       : entry.movedFrom
         ? `${planStatusWord(status)} · перенесена со ${entry.movedFrom}`
         : planStatusWord(status);
-  const check = checkCopy(
-    date,
-    copyDate,
-    today,
-    max,
-    (d) => entries[d],
-    (id) => templates.find((t) => t.id === id)?.title ?? id,
-  );
+  const target = copyAthletes?.find((a) => a.id === copyTo);
+  const lookup = copyTargetLookup(data, !!target, targetPlan);
+  const check = checkCopy(date, copyDate, today, max, lookup.entryAt, lookup.titleOf, !!target);
 
   return (
     <aside aria-labelledby={titleId} className={styles.root} data-layout={layout}>
@@ -180,10 +186,16 @@ export function DayPanel({
           date={copyDate}
           min={today}
           max={max}
-          quick={quickDates(date, today, max, (d) => !!entries[d])}
+          quick={quickDates(date, today, max, (d) => !!lookup.entryAt(d), !!target)}
           check={check}
+          athletes={copyAthletes}
+          athleteId={target ? target.id : null}
+          onAthleteChange={(id) => {
+            setCopyTo(id);
+            onCopyTarget?.(id);
+          }}
           onDateChange={onCopyDate}
-          onConfirm={() => copyDate && onCopy(copyDate)}
+          onConfirm={() => copyDate && onCopy(copyDate, target)}
           onCancel={onToggleCopy}
         />
       )}
@@ -192,12 +204,14 @@ export function DayPanel({
         <Notice
           tone="success"
           action={
-            <Button compact variant="secondary" onClick={onOpenCopied}>
-              Открыть день
-            </Button>
+            notice.athlete ? undefined : (
+              <Button compact variant="secondary" onClick={onOpenCopied}>
+                Открыть день
+              </Button>
+            )
           }
         >
-          «{notice.title}» скопирована на {longDate(notice.to).toLowerCase()}.
+          «{notice.title}» скопирована {notice.athlete ? `ученику ${notice.athlete} ` : ''}на {longDate(notice.to).toLowerCase()}.
         </Notice>
       )}
     </aside>

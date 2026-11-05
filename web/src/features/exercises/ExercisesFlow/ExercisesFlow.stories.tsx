@@ -32,14 +32,14 @@ export const FullJourney: Story = {
     const name = c.getByLabelText('Название');
     await userEvent.clear(name);
     await userEvent.type(name, 'Подтягивания широким хватом');
-    await userEvent.click(c.getByRole('button', { name: 'Сохранить' }));
+    await userEvent.click(c.getAllByRole('button', { name: 'Сохранить' })[0]);
     await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Подтягивания широким хватом');
     // новое упражнение попадает в список и открывается
     await userEvent.click(c.getByRole('button', { name: 'Упражнения' }));
     await userEvent.click(c.getByRole('button', { name: 'Своё упражнение' }));
     await userEvent.type(c.getByLabelText('Название'), 'Скручивания на пресс');
     await userEvent.click(c.getByRole('button', { name: 'Пресс' }));
-    await userEvent.click(c.getByRole('button', { name: 'Создать' }));
+    await userEvent.click(c.getAllByRole('button', { name: 'Создать' })[0]);
     await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Скручивания на пресс');
     await expect(c.getByText('Ещё не выполнялось')).toBeVisible();
   },
@@ -61,7 +61,7 @@ export const CreateFails: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await userEvent.type(c.getByLabelText('Название'), 'Мост');
-    await userEvent.click(c.getByRole('button', { name: 'Создать' }));
+    await userEvent.click(c.getAllByRole('button', { name: 'Создать' })[0]);
     await expect(await c.findByRole('alert')).toHaveTextContent('Упражнение с таким названием уже есть');
     await expect(args.onCreate).toHaveBeenCalledTimes(1);
     await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Новое упражнение');
@@ -80,7 +80,7 @@ export const SaveAndDelete: Story = {
     const name = c.getByLabelText('Название');
     await userEvent.clear(name);
     await userEvent.type(name, 'Присед');
-    await userEvent.click(c.getByRole('button', { name: 'Сохранить' }));
+    await userEvent.click(c.getAllByRole('button', { name: 'Сохранить' })[0]);
     await expect(await c.findByRole('heading', { level: 1 })).toHaveTextContent('Присед');
     await userEvent.click(c.getByRole('button', { name: 'Редактировать' }));
     await userEvent.click(c.getByRole('button', { name: 'Удалить упражнение' }));

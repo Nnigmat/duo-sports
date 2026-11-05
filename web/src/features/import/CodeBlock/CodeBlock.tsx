@@ -33,7 +33,7 @@ export function CodeBlock({ lines, label, numbered, onCopy }: Props) {
           {copied ? 'Скопировано' : 'Скопировать пример'}
         </Button>
       )}
-      <pre className={styles.pre} tabIndex={0} aria-label={label} data-numbered={numbered || undefined}>
+      <pre className={styles.pre} role="region" tabIndex={0} aria-label={label} data-numbered={numbered || undefined}>
         <code>
           {parsed.map((l) => (
             <span key={l.n} className={styles.line}>

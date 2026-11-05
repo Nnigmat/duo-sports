@@ -43,6 +43,7 @@ export function CommentField({
   const errorId = useId();
   const empty = value.trim() === '';
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: высота пересчитывается при смене value
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;

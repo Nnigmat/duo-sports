@@ -51,9 +51,9 @@ export const CreateScreen: Story = {
   render: () => <ExerciseFormScreen mode="create" onCancel={noop} onSubmit={noop} />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getByRole('button', { name: 'Создать' })).toBeDisabled();
+    await expect(c.getAllByRole('button', { name: 'Создать' })[0]).toBeDisabled();
     await userEvent.type(c.getByLabelText('Название'), 'Болгарские выпады');
-    await expect(c.getByRole('button', { name: 'Создать' })).toBeEnabled();
+    await expect(c.getAllByRole('button', { name: 'Создать' })[0]).toBeEnabled();
   },
 };
 export const EditScreen: Story = {
@@ -86,11 +86,11 @@ export const SubmitError: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await userEvent.type(c.getByLabelText('Название'), 'Мост');
-    await userEvent.click(c.getByRole('button', { name: 'Создать' }));
+    await userEvent.click(c.getAllByRole('button', { name: 'Создать' })[0]);
     await expect(await c.findByRole('alert')).toHaveTextContent('Упражнение с таким названием уже есть');
     // форма не закрылась, значения на месте, кнопка снова доступна
     await expect(c.getByLabelText('Название')).toHaveValue('Мост');
-    await expect(c.getByRole('button', { name: 'Создать' })).toBeEnabled();
+    await expect(c.getAllByRole('button', { name: 'Создать' })[0]).toBeEnabled();
   },
 };
 export const Submitting: Story = {
@@ -98,8 +98,8 @@ export const Submitting: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await userEvent.type(c.getByLabelText('Название'), 'Мост');
-    await userEvent.click(c.getByRole('button', { name: 'Создать' }));
-    const busy = await c.findByRole('button', { name: 'Сохраняем' });
+    await userEvent.click(c.getAllByRole('button', { name: 'Создать' })[0]);
+    const busy = await (await c.findAllByRole('button', { name: 'Сохраняем' }))[0];
     await expect(busy).toBeDisabled();
     await expect(busy).toHaveAttribute('aria-busy', 'true');
     await expect(c.getByRole('button', { name: 'Отмена' })).toBeDisabled();

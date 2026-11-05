@@ -6,7 +6,7 @@ import { isDate } from './imports';
 import { mountImport } from './importRouter';
 import { MAX_PAUSE_DAYS, moveEntry, pausePlan, scheduleOf, skipEntry } from './schedule';
 import { addHint, validateHint } from './hints';
-import { clearDay, planOf, setDay } from './plan';
+import { clearDay, copyWorkoutToAthlete, planOf, setDay } from './plan';
 import { markReviewed } from './reviews';
 import { exerciseCommentsOf, listAthletes, progressOf, sessionsOf, setGoal, type AthleteFilter } from './trainerAthletes';
 import { canAccessAthlete } from './trainerLinks';
@@ -91,6 +91,18 @@ export function trainerRouter(db: Db) {
     if (!canAccessAthlete(db, req.user!, id)) return void res.status(403).json({ error: 'forbidden' });
     if (!isDate(req.params.date) || !Number.isInteger(workoutId)) return void res.status(400).json({ error: 'Ждём дату в адресе и workoutId в теле' });
     const result = setDay(db, id, req.params.date, workoutId);
+    if (!result.ok) return void res.status(404).json({ error: result.error });
+    res.status(204).end();
+  });
+
+  /** Копия тренировки ученика другому ученику тренера на дату; доступ нужен к обоим */
+  r.post('/trainer/athletes/:id/plan/copy', (req, res) => {
+    const id = athleteId(req);
+    const { workoutId, toAthleteId, date } = req.body ?? {};
+    if (!Number.isInteger(id) || !Number.isInteger(toAthleteId)) return void res.status(404).json({ error: 'not_found' });
+    if (!canAccessAthlete(db, req.user!, id) || !canAccessAthlete(db, req.user!, toAthleteId)) return void res.status(403).json({ error: 'forbidden' });
+    if (!isDate(date) || !Number.isInteger(workoutId)) return void res.status(400).json({ error: 'Ждём workoutId, toAthleteId и date вида 2026-11-03' });
+    const result = copyWorkoutToAthlete(db, id, workoutId, toAthleteId, date);
     if (!result.ok) return void res.status(404).json({ error: result.error });
     res.status(204).end();
   });

@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useState } from 'react';
+import { useMemo, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExercises, usePlan, useSchedule } from '../../../data/hooks';
 import type { PlanData } from '../../../data/types';
@@ -7,6 +7,7 @@ import { Notice } from '../../../ui';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
 import { moveWorkout, pausePlan, skipWorkout } from '../../schedule/api';
 import { deleteDay, putDay } from '../api';
+import type { CopyAthlete } from '../CopyPanel/CopyPanel';
 import { PlanView } from '../PlanView/PlanView';
 import { addDays, initialPlanState, planReducer, toIso } from '../plan';
 
@@ -80,6 +81,11 @@ export type PlanNav = {
   onEdit?: (date: string) => void;
   onCreate?: (date: string) => void;
   onImport?: () => void;
+  /** Копия тренировки другому ученику: кому предложить и как отправить */
+  copyAthletes?: CopyAthlete[];
+  /** План ученика-получателя, чтобы предупредить о замене его дня */
+  loadAthletePlan?: (athleteId: number) => Promise<PlanData>;
+  onCopyToAthlete?: (athleteId: number, templateId: string, date: string) => Promise<unknown>;
 };
 
 /**
@@ -95,6 +101,14 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
   }
   const [failure, setFailure] = useState<string | null>(null);
   const [state, dispatch] = useReducer(planReducer, initial.today, (t) => initialPlanState(t));
+  const [targetPlan, setTargetPlan] = useState<PlanData | null>(null);
+  const targetId = useRef<number | null>(null);
+  /** Подгружает план получателя копии; ответ от прежнего выбора отбрасывается */
+  const loadTarget = (id: number | null) => {
+    targetId.current = id;
+    setTargetPlan(null);
+    if (id !== null) nav?.loadAthletePlan?.(id).then((p) => targetId.current === id && setTargetPlan(p), () => {});
+  };
   const navigate = useNavigate();
   const desktop = useMediaQuery('(min-width: 1024px)');
   // Библиотека нужна только для ссылок: пока не пришла (или упала), названия остаются текстом
@@ -155,9 +169,15 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
         onImport={nav ? nav.onImport : () => navigate('/import')}
         onAdd={(date, templateId) => change(date, { templateId, status: 'planned', custom: true }, () => save.put(date, templateId))}
         onRemove={(date) => change(date, null, () => save.remove(date))}
-        onCopy={(from, to) => {
+        copyAthletes={nav?.onCopyToAthlete ? nav.copyAthletes : undefined}
+        onCopyTarget={loadTarget}
+        targetPlan={targetPlan}
+        onCopy={(from, to, athlete) => {
           const src = data.entries[from];
-          if (src) void change(to, { templateId: src.templateId, status: 'planned', custom: true }, () => save.put(to, src.templateId));
+          if (src && athlete) {
+            setFailure(null);
+            nav?.onCopyToAthlete?.(athlete.id, src.templateId, to).then(() => loadTarget(athlete.id), (e: unknown) => setFailure(e instanceof Error ? e.message : 'Не получилось скопировать'));
+          } else if (src) void change(to, { templateId: src.templateId, status: 'planned', custom: true }, () => save.put(to, src.templateId));
         }}
       />
     </>

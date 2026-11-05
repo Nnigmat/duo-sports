@@ -8,7 +8,7 @@ import { applyImport, ensureLibrary, libraryOf, planTitles, redoImport, undoImpo
 let db: Db;
 let t = new Date('2026-11-02T14:20:00Z');
 const clock = () => t;
-const after = (hours: number) => (t = new Date(new Date('2026-11-02T14:20:00Z').getTime() + hours * 3_600_000));
+const advance = (hours: number) => (t = new Date(new Date('2026-11-02T14:20:00Z').getTime() + hours * 3_600_000));
 let me: number;
 let other: number;
 
@@ -149,7 +149,7 @@ describe('права на упражнения', () => {
 describe('отмена и возврат', () => {
   it('отмена убирает созданное: упражнения, тренировки, записи плана', () => {
     const r = applyImport(db, me, commit(), clock);
-    after(1);
+    advance(1);
     const u = undoImport(db, me, r.id, clock);
     expect(u.ok && u.record.undoneAt).toBe('2026-11-02T15:20:00.000Z');
     expect(planTitles(db, me)).toEqual({});
@@ -183,10 +183,10 @@ describe('отмена и возврат', () => {
   });
   it('через 24 часа отмена закрыта', () => {
     const r = applyImport(db, me, commit(), clock);
-    after(24);
+    advance(24);
     expect(undoImport(db, me, r.id, clock).ok).toBe(true);
     const r2 = applyImport(db, me, commit({ exercises: [], workouts: [{ title: 'Другая', blocks: blocks('Планка') }], entries: [] }), clock);
-    after(24 + 25);
+    advance(24 + 25);
     expect(undoImport(db, me, r2.id, clock)).toEqual({ ok: false, error: 'expired' });
     expect(redoImport(db, me, r2.id, clock)).toEqual({ ok: false, error: 'expired' });
   });

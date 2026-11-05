@@ -43,7 +43,10 @@ export function tiersFrom(points: Point[], levels: Levels): { tier: 0 | 1 | 2 | 
 /** Накопительный ряд: значение к каждой дате не убывает */
 const running = (points: Point[]): Point[] => {
   let best = 0;
-  return points.map((p) => ({ date: p.date, value: (best = Math.max(best, p.value)) }));
+  return points.map((p) => {
+    best = Math.max(best, p.value);
+    return { date: p.date, value: best };
+  });
 };
 
 const completedSteps = (s: AchievementSession) => s.steps.filter((x) => x.completed);
@@ -111,10 +114,16 @@ export function buildAchievements(input: AchievementsInput): AchievementsRespons
   };
   const volumes = sessions.map((s) => ({ date: s.date, value: sessionVolume(s.steps) }));
   let total = 0;
-  const tonnage = volumes.map((v) => ({ date: v.date, value: (total += v.value) / 1000 }));
+  const tonnage = volumes.map((v) => {
+    total += v.value;
+    return { date: v.date, value: total / 1000 };
+  });
   const records = recordPoints(sessions);
   let videos = 0;
-  const videoPoints = sessions.map((s) => ({ date: s.date, value: (videos += s.videos) }));
+  const videoPoints = sessions.map((s) => {
+    videos += s.videos;
+    return { date: s.date, value: videos };
+  });
   const last = <T extends Point>(p: T[]) => p.at(-1)?.value ?? 0;
   const round1 = (n: number) => Math.round(n * 10) / 10;
 

@@ -8,7 +8,7 @@ const meta = {
   component: Button,
   args: { children: 'Начать', variant: 'primary', onClick: fn() },
   argTypes: {
-    variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger'] },
+    variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger', 'danger-text'] },
     icon: { control: 'select', options: [undefined, 'play', 'plus', 'check'] },
     compact: { control: 'boolean' },
     disabled: { control: 'boolean' },
@@ -28,6 +28,7 @@ export const Compact: Story = { args: { compact: true, children: 'Сохрани
 export const Secondary: Story = { args: { variant: 'secondary', compact: true, children: 'Показать более ранние' } };
 export const Ghost: Story = { args: { variant: 'ghost', compact: true, icon: 'plus', children: 'Добавить вес' } };
 export const Danger: Story = { args: { variant: 'danger', children: 'Удалить' } };
+export const DangerText: Story = { args: { variant: 'danger-text', fullWidth: true, children: 'Удалить упражнение' } };
 
 export const Focus: Story = {
   play: async ({ canvasElement }) => {
@@ -84,7 +85,7 @@ export const AsLinkDisabled: Story = {
 export const AllVariants: Story = {
   render: () => (
     <Stack>
-      {(['primary', 'secondary', 'ghost', 'danger'] as const).map((variant) => (
+      {(['primary', 'secondary', 'ghost', 'danger', 'danger-text'] as const).map((variant) => (
         <Row key={variant} label={variant}>
           <Button variant={variant}>Обычная</Button>
           <Button variant={variant} compact icon="plus">С иконкой</Button>

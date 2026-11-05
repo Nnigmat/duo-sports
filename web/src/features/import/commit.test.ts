@@ -3,7 +3,7 @@ import { buildCommit, commitExercise, musclesOf } from './commit';
 import { libraryFixture } from './fixtures';
 import { DEFAULT_OPTIONS } from './importPlan';
 import { parseImport, type ParsedImport } from './parse';
-import { EMPTY_CHOICES, setAction, setGroup, useAllSimilar } from './preview';
+import { EMPTY_CHOICES, setAction, setGroup, pickAllSimilar } from './preview';
 
 const ctx = { library: libraryFixture, today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
 const text = `version: 1
@@ -80,7 +80,7 @@ describe('buildCommit', () => {
     expect(c.workouts[1]!.blocks[0]!.items).toEqual([]);
   });
   it('«Использовать похожее» подменяет название и не создаёт упражнение', () => {
-    const c = buildCommit(parsed, useAllSimilar(EMPTY_CHOICES, parsed.preview.newExercises), DEFAULT_OPTIONS);
+    const c = buildCommit(parsed, pickAllSimilar(EMPTY_CHOICES, parsed.preview.newExercises), DEFAULT_OPTIONS);
     expect(c.exercises.map((e) => e.name)).toEqual(['Лодочка']);
     expect(c.workouts[0]!.blocks[1]!.items.map((i) => i.name)).toEqual(['Отжимания', 'Подтягивания', 'Лодочка']);
   });
@@ -107,7 +107,7 @@ describe('buildCommit', () => {
     expect(circuit.exercises.map((e) => e.name)).toEqual(['Обратные отжимания', 'Подтягивания с резинкой']);
     // У второй тренировки остался один блок с одним упражнением; убрали его — блока нет, структуры нет
     expect(skip.workouts[1]!.structure).toBeUndefined();
-    const use = buildCommit(parsed, useAllSimilar(EMPTY_CHOICES, parsed.preview.newExercises), DEFAULT_OPTIONS);
+    const use = buildCommit(parsed, pickAllSimilar(EMPTY_CHOICES, parsed.preview.newExercises), DEFAULT_OPTIONS);
     expect((use.workouts[0]!.structure![1] as { exercises: Array<{ name: string }> }).exercises.map((e) => e.name)).toEqual(['Отжимания', 'Подтягивания', 'Лодочка']);
   });
 });

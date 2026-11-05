@@ -5,7 +5,7 @@ import { planFixture } from '../../../data/fixtures';
 import { checkCopy, quickDates } from '../plan';
 import { CopyPanel } from './CopyPanel';
 
-const { today, min, max, entries, templates } = planFixture;
+const { today, max, entries, templates } = planFixture;
 const source = '2026-10-31';
 const titleOf = (id: string) => templates.find((t) => t.id === id)?.title ?? id;
 const quick = quickDates(source, today, max, (d) => !!entries[d]);
@@ -61,6 +61,32 @@ export const NoDate: Story = {
   args: { date: null, check: check(null) },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('button', { name: 'Создать копию' })).toBeDisabled();
+  },
+};
+
+const athletes = [
+  { id: 2, name: 'Маша' },
+  { id: 3, name: 'Игорь' },
+];
+function ForAthlete() {
+  const [athleteId, setAthleteId] = useState<number | null>(null);
+  return <CopyPanel {...meta.args} athletes={athletes} athleteId={athleteId} onAthleteChange={setAthleteId} />;
+}
+export const ToAnotherAthlete: Story = {
+  render: () => <ForAthlete />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const select = c.getByLabelText('Кому');
+    await expect(select).toHaveValue('');
+    await userEvent.selectOptions(select, 'Маша');
+    await expect(select).toHaveValue('2');
+    await userEvent.selectOptions(select, 'Этому ученику');
+    await expect(select).toHaveValue('');
+  },
+};
+export const NoAthleteChoice: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByLabelText('Кому')).toBeNull();
   },
 };
 

@@ -29,7 +29,10 @@ export function planOf(db: Db, userId: number): PlanResponse {
   for (const r of rows) {
     const main = entries[r.date];
     if (!main) entries[r.date] = { templateId: String(r.workout_id), status: statusOf(r), custom: true };
-    else (main.more ??= []).push(titles.get(r.workout_id) ?? '');
+    else {
+      main.more ??= [];
+      main.more.push(titles.get(r.workout_id) ?? '');
+    }
   }
   const moves = (
     db
@@ -49,6 +52,16 @@ export function setDay(db: Db, userId: number, date: string, workoutId: number):
     db.prepare('DELETE FROM plan_moves WHERE user_id = ? AND to_date = ?').run(userId, date);
     db.prepare('INSERT INTO plan_entries (user_id, date, workout_id, import_id) VALUES (?, ?, ?, NULL)').run(userId, date, workoutId);
     return { ok: true };
+  })();
+}
+
+/** Копия тренировки другому ученику: ему создаётся своя тренировка с тем же составом и ставится в день, заменяя стоявшую */
+export function copyWorkoutToAthlete(db: Db, fromUserId: number, workoutId: number, toUserId: number, date: string): DayResult {
+  return db.transaction((): DayResult => {
+    const src = db.prepare('SELECT title, blocks, structure FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, fromUserId) as { title: string; blocks: string; structure: string | null } | undefined;
+    if (!src) return { ok: false, error: 'not_found' };
+    const id = Number(db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, import_id, created_at) VALUES (?, NULL, ?, ?, ?, NULL, ?)').run(toUserId, src.title, src.blocks, src.structure, new Date().toISOString()).lastInsertRowid);
+    return setDay(db, toUserId, date, id);
   })();
 }
 

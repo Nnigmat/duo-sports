@@ -37,6 +37,16 @@ export async function apiChangePassword(
   throw new Error('Не удалось сменить пароль. Попробуйте ещё раз');
 }
 
+export async function apiSetDisplayName(displayName: string): Promise<void> {
+  const res = await fetch('/api/auth/display-name', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ displayName }),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить имя. Попробуйте ещё раз');
+}
+
 export async function apiSetGender(gender: Gender): Promise<void> {
   const res = await fetch('/api/auth/gender', {
     method: 'PUT',

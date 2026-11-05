@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays, toIso } from '../../plan/plan';
+import { useAuth } from '../../../app/auth/AuthProvider';
 import { useSchedule, useToday } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
@@ -16,6 +17,7 @@ export function TodayPage() {
 
 function TodayContent({ onMoved }: { onMoved: () => void }) {
   const { data, error } = useToday();
+  const auth = useAuth();
   /** День, тренировку которого переносим; null — панель закрыта */
   const [moveFrom, setMoveFrom] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -44,6 +46,7 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
   return (
     <>
       <TodayView
+        gender={auth.status === 'in' ? auth.user.gender : undefined}
         data={view}
         reviewHref={notice ? `/review/${notice.sessionId}` : undefined}
         onOpenReview={notice ? () => navigate(`/review/${notice.sessionId}`) : undefined}

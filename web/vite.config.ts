@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   root: 'web',
   plugins: [react()],
+  define: {
+    __BUILD_ID__: JSON.stringify(Date.now().toString(36)),
+  },
   server: {
     host: true,
     proxy: {

@@ -5,7 +5,7 @@ import type { IconName } from '../Icon/icons';
 import styles from './Button.module.css';
 
 type Common = {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-text';
   /** 44 px вместо 52 px */
   compact?: boolean;
   /** Иконка слева от текста */
@@ -36,7 +36,7 @@ export function Button(props: AsButton | AsLink) {
   const inactive = disabled || loading;
   const cls = cx(
     styles.root,
-    styles[variant],
+    styles[variant === 'danger-text' ? 'dangerText' : variant],
     compact && styles.compact,
     fullWidth && styles.full,
     loading && styles.loading,

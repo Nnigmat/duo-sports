@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { toPlanData } from '../../../data/api';
 import { useAthletePlan, useAthletes, useSchedule } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { PlanScreen } from '../../plan';
 import { addDays, toIso } from '../../plan/plan';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
 import { moveWorkout, pausePlan, skipWorkout } from '../../schedule/api';
-import { athleteBase, deleteAthleteDay, putAthleteDay } from '../api';
+import { athleteBase, copyAthleteDay, deleteAthleteDay, fetchAthletePlan, putAthleteDay } from '../api';
 import { AthleteHeader } from '../AthleteHeader/AthleteHeader';
 import styles from './AthletePlanPage.module.css';
 
@@ -63,6 +64,9 @@ function Content({ athleteId }: { athleteId: number }) {
           onMove: setMoveFrom,
           onCreate: (date) => navigate(`${base}/import?date=${date}`),
           onImport: () => navigate(`${base}/import`),
+          copyAthletes: list.data.athletes.filter((a) => a.id !== athleteId).map((a) => ({ id: a.id, name: a.name })),
+          loadAthletePlan: async (id) => toPlanData(await fetchAthletePlan(id)),
+          onCopyToAthlete: (toId, templateId, date) => copyAthleteDay(athleteId, templateId, toId, date),
         }}
       />
       {moveFrom && (

@@ -54,6 +54,27 @@ export function rowDate(iso: string, today: string): string {
   return dayLabel(iso);
 }
 
+const MONTHS_NOMINATIVE = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+/** Сколько тренировок истории показано сразу и добавляется за один раз по «Показать ещё» */
+export const HISTORY_PAGE = 10;
+
+/** Первые `limit` записей истории (она идёт от свежих к старым), сгруппированные по месяцам: «Ноябрь», «Декабрь 2025» для другого года */
+export function groupByMonth(items: TrainerHistoryItem[], limit: number, today: string): { key: string; label: string; items: TrainerHistoryItem[] }[] {
+  const groups: { key: string; label: string; items: TrainerHistoryItem[] }[] = [];
+  for (const h of items.slice(0, limit)) {
+    const key = h.date.slice(0, 7);
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) {
+      const d = parseIso(h.date);
+      g = { key, label: d.getFullYear() === parseIso(today).getFullYear() ? MONTHS_NOMINATIVE[d.getMonth()]! : `${MONTHS_NOMINATIVE[d.getMonth()]} ${d.getFullYear()}`, items: [] };
+      groups.push(g);
+    }
+    g.items.push(h);
+  }
+  return groups;
+}
+
 /** «46 мин · 4 380 кг · 20 подходов · 2 видео» */
 export function historyMeta(h: TrainerHistoryItem): string {
   return [

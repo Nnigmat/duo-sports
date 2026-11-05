@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { addedList } from '../done';
 import { newExercisesFixture } from '../fixtures';
-import { EMPTY_CHOICES, useAllSimilar } from '../preview';
+import { EMPTY_CHOICES, pickAllSimilar } from '../preview';
 import { AddedExercises } from './AddedExercises';
 
 const meta = {
@@ -24,7 +24,7 @@ export const Default: Story = {
 };
 
 export const WithLibrary: Story = {
-  args: { items: addedList(newExercisesFixture, useAllSimilar(EMPTY_CHOICES, newExercisesFixture)).slice(5, 12), created: 25 },
+  args: { items: addedList(newExercisesFixture, pickAllSimilar(EMPTY_CHOICES, newExercisesFixture)).slice(5, 12), created: 25 },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getAllByText('Из библиотеки').length).toBeGreaterThan(0);
   },

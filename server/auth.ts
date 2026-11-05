@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { AuthUser, Gender, Role } from '../shared/types';
+import { DISPLAY_NAME_MAX, type AuthUser, type Gender, type Role } from '../shared/types';
 import type { Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -11,13 +11,14 @@ type Clock = () => Date;
 const now: Clock = () => new Date();
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null };
+type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null; display_name: string | null };
 const toUser = (r: UserRow): AuthUser => ({
   id: r.id,
   email: r.email,
   role: r.role,
   passwordChangedAt: r.password_changed_at,
   ...(r.gender ? { gender: r.gender } : {}),
+  ...(r.display_name ? { displayName: r.display_name } : {}),
 });
 
 const isGender = (v: unknown): v is Gender => v === 'female' || v === 'male';
@@ -35,6 +36,13 @@ export async function createUser(db: Db, email: string, password: string, role: 
 export function setGender(db: Db, email: string, gender: Gender | null): boolean {
   if (gender !== null && !isGender(gender)) throw new Error('gender: female, male или null');
   return db.prepare('UPDATE users SET gender = ? WHERE email = ?').run(gender, email.trim()).changes === 1;
+}
+
+/** Имя для показа: пробелы по краям убираются, пустое очищает. Бросает, если длиннее DISPLAY_NAME_MAX. */
+export function setDisplayName(db: Db, userId: number, name: string): boolean {
+  const value = name.trim();
+  if (value.length > DISPLAY_NAME_MAX) throw new Error(`displayName: не длиннее ${DISPLAY_NAME_MAX} символов`);
+  return db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(value || null, userId).changes === 1;
 }
 
 function newSession(db: Db, userId: number, clock: Clock): string {
@@ -69,7 +77,9 @@ export async function login(db: Db, email: string, password: string, clock: Cloc
 
   const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim()) as UserRow | undefined;
   // Хеш считаем и для несуществующего email, чтобы время ответа не выдавало, есть ли такой аккаунт
-  const valid = row ? await verifyPassword(password, row.password_hash) : (await hashPassword(password), false);
+  let valid = false;
+  if (row) valid = await verifyPassword(password, row.password_hash);
+  else await hashPassword(password);
   if (!row || !valid) {
     db.prepare('INSERT INTO login_attempts (email, at) VALUES (?, ?)').run(email.trim(), t.toISOString());
     return { ok: false, error: 'wrong_credentials' };

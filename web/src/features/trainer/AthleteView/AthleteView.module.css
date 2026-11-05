@@ -24,3 +24,26 @@
   flex: 3 1 480px;
   min-width: 0;
 }
+.back {
+  display: none;
+}
+
+/* Телефон: список и тренировка по очереди. 768 px — меньше две колонки (260 + 480) не помещаются */
+@media (max-width: 767px) {
+  .list {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .root[data-open='false'] .detail,
+  .root[data-open='true'] .header,
+  .root[data-open='true'] .list {
+    display: none;
+  }
+  .root[data-open='true'] .back {
+    display: block;
+    align-self: flex-start;
+  }
+  .columns {
+    border-top: none;
+  }
+}
