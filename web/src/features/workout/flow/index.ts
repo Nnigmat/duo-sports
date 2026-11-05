@@ -22,7 +22,7 @@ export {
   planFromDraft,
   type EditDraft,
 } from './editPlan';
-export { pickMimeType } from './recording';
+export { clampZoom, formatZoom, pickMimeType, zoomRange, type ZoomRange } from './recording';
 export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';
 export { formatLongDate, joinNumbers, plural } from './ru';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
