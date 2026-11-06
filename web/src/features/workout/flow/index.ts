@@ -26,6 +26,7 @@ export { clampZoom, formatZoom, pickMimeType, zoomRange, type ZoomRange } from '
 export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';
 export { formatLongDate, joinNumbers, plural } from './ru';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
+export { DRAFT_TTL_MS, draftKey, parseDraft, serializeDraft, type Draft } from './draft';
 export { initSession, reduce, type Action, type Phase, type Session } from './session';
 export { hasTechnique } from './technique';
 export { demoFor } from './demo';

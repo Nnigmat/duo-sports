@@ -1,4 +1,4 @@
-import { useReducer, useState, type Dispatch } from 'react';
+import { useEffect, useReducer, useState, type Dispatch } from 'react';
 import type { CoachComment, Gender, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
 import { cameraUrl, idleUrl, restUrl, successUrl } from '../chibi/idle';
@@ -54,6 +54,10 @@ type Props = {
   onFinish: (stats: FinishStats, steps: SessionStepResult[]) => void;
   /** Выход с экрана старта и ✕ на финише */
   onExit: () => void;
+  /** Сохранённое прохождение: тренировка продолжается с него, а не с экрана старта */
+  initialSession?: Session;
+  /** Ход изменился: контейнер сохраняет прохождение, чтобы оно пережило перезагрузку */
+  onSessionChange?: (session: Session) => void;
   /** Секунд до начала записи после «Старт» */
   recordingDelaySec?: number;
   /** Для дат комментариев; в приложении не передаётся */
@@ -67,8 +71,9 @@ type Sheet = 'edit' | 'tech' | 'comments' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, ...rest }: Props) {
-  const [session, dispatch] = useReducer(reduce, workout, (w) => initSession(buildSteps(w.blocks)));
+export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, ...rest }: Props) {
+  const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ?? initSession(buildSteps(w.blocks)));
+  useEffect(() => onSessionChange?.(session), [session, onSessionChange]);
   const [comments, setComments] = useState(rest.comments);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [commentsFromTech, setCommentsFromTech] = useState(false);
