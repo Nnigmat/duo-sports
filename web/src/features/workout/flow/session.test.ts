@@ -219,6 +219,13 @@ describe('факт подхода', () => {
     expect(again.actuals[2]).toEqual({ value: 20, extraWeight: true });
   });
 
+  it('подход с видео не оставляет старый факт после «Назад»', () => {
+    const back = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'back' });
+    const recorded = reduce(back, { type: 'recorded', videoId: 'v-1' });
+    expect(recorded.completed[2]).toBe(true);
+    expect(recorded.actuals[2]).toBeNull();
+  });
+
   it('после «Назад» и «Пропустить» факт стирается', () => {
     const back = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'back' });
     expect(reduce(back, { type: 'skip' }).actuals[2]).toBeNull();

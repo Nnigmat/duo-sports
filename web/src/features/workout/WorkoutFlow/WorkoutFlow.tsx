@@ -265,12 +265,13 @@ function SetStage(props: StageProps) {
 
 /** Идущий таймер упражнения или отдых */
 function TimedStage(props: StageProps) {
-  const { session, dispatch, onDone } = props;
+  const { session, dispatch } = props;
   const step = session.steps[session.index];
   const resting = session.phase === 'rest';
   const t = useCountdown({
     seconds: resting ? step.restAfterSec : timerSeconds(step.plan),
-    onFinish: () => (resting ? dispatch({ type: 'restOver' }) : onDone()),
+    // Конец таймера засчитывает подход сам; шторка для упражнений на время появится вместе с кнопкой «Готово» (отдельная часть)
+    onFinish: () => dispatch({ type: resting ? 'restOver' : 'done' }),
   });
   const onSkip = () => dispatch({ type: 'skip' });
   return (
