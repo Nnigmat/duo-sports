@@ -20,7 +20,7 @@ export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type Fin
 export { formatLongDate, joinNumbers, plural } from './ru';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
 export { DRAFT_TTL_MS, draftKey, parseDraft, serializeDraft, type Draft } from './draft';
-export { elapsedSec, formatElapsed } from './elapsed';
+export { elapsedSec, formatElapsed, totalSec } from './elapsed';
 export { afterReload, canGoBack, initSession, reduce, type Action, type Phase, type Session } from './session';
 export { hasTechnique } from './technique';
 export { demoFor } from './demo';

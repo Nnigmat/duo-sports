@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { elapsedSec, formatElapsed } from './elapsed';
+import { elapsedSec, formatElapsed, totalSec } from './elapsed';
 
 describe('elapsedSec', () => {
   it('целые секунды от метки старта', () => {
@@ -23,5 +23,17 @@ describe('formatElapsed', () => {
     expect(formatElapsed(3600)).toBe('1:00:00');
     expect(formatElapsed(3600 + 12 * 60 + 7)).toBe('1:12:07');
     expect(formatElapsed(10 * 3600)).toBe('10:00:00');
+  });
+});
+
+describe('totalSec', () => {
+  it('пока финиша нет, идёт вместе с часами', () => {
+    expect(totalSec(1_000, null, 62_999)).toBe(61);
+    expect(totalSec(1_000, undefined, 10_000)).toBe(9);
+  });
+
+  it('после финиша замирает на моменте финиша', () => {
+    expect(totalSec(1_000, 31_000, 31_000)).toBe(30);
+    expect(totalSec(1_000, 31_000, 9_999_999)).toBe(30);
   });
 });

@@ -8,7 +8,7 @@ import { toIso } from '../../plan/plan';
 import { useAuth } from '../../../app/auth/AuthProvider';
 import { saveSession, uploadVideo } from '../api';
 import { clearDraft, loadDraft, saveDraft } from '../draftStorage';
-import { draftKey, type Session } from '../flow';
+import { draftKey, totalSec, type Session } from '../flow';
 import { formatLongDate } from '../flow/ru';
 import { parseIso } from '../../plan/plan';
 import { WorkoutFlow } from '../WorkoutFlow/WorkoutFlow';
@@ -57,12 +57,17 @@ function SavedWorkout({ id }: { id: string }) {
   const startedAt = useRef<number | null>(draft?.startedAt ?? null);
   // Копия метки в состоянии: по ней экран перерисовывается и показывает общее время
   const [startedAtMs, setStartedMs] = useState<number | null>(startedAt.current);
+  // Момент финиша: пишется один раз при переходе на экран итогов и хранится в черновике
+  const finishedAt = useRef<number | null>(draft?.finishedAt ?? null);
+  const [finishedAtMs, setFinishedMs] = useState<number | null>(finishedAt.current);
   const onSessionChange = useCallback(
     (session: Session) => {
       if (!key) return;
       if (session.phase === 'start') {
         startedAt.current = null;
         setStartedMs(null);
+        finishedAt.current = null;
+        setFinishedMs(null);
         clearDraft(key);
         return;
       }
@@ -70,7 +75,11 @@ function SavedWorkout({ id }: { id: string }) {
         startedAt.current = Date.now();
         setStartedMs(startedAt.current);
       }
-      saveDraft(key, { session, startedAt: startedAt.current, updatedAt: Date.now() });
+      if (session.phase === 'finish' && finishedAt.current === null) {
+        finishedAt.current = Date.now();
+        setFinishedMs(finishedAt.current);
+      }
+      saveDraft(key, { session, startedAt: startedAt.current, ...(finishedAt.current !== null ? { finishedAt: finishedAt.current } : {}), updatedAt: Date.now() });
     },
     [key],
   );
@@ -89,12 +98,13 @@ function SavedWorkout({ id }: { id: string }) {
         dateLabel={formatLongDate(parseIso(date))}
         initialSession={draft?.session}
         startedAt={startedAtMs}
+        finishedAt={finishedAtMs}
         onSessionChange={onSessionChange}
         onExit={leave}
         onFinish={async (steps, videos) => {
           setFailure(null);
           try {
-            await saveSession(id, { date, steps, videos, durationSec: Math.max(0, Math.round((Date.now() - (startedAt.current ?? Date.now())) / 1000)) });
+            await saveSession(id, { date, steps, videos, durationSec: startedAt.current === null ? 0 : totalSec(startedAt.current, finishedAt.current, Date.now()) });
             leave();
           } catch (e) {
             setFailure(e instanceof Error ? e.message : 'Итоги не сохранены');
@@ -112,10 +122,11 @@ type FlowProps = {
   onExit: () => void;
   initialSession?: Session;
   startedAt: number | null;
+  finishedAt: number | null;
   onSessionChange: (session: Session) => void;
 };
 
-function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, onSessionChange }: FlowProps) {
+function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, finishedAt, onSessionChange }: FlowProps) {
   return (
     <WorkoutFlow
       workout={data.workout}
@@ -127,6 +138,7 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, on
       onFinish={(stats, steps) => void onFinish(steps, stats.videos)}
       initialSession={initialSession}
       startedAt={startedAt}
+      finishedAt={finishedAt}
       onSessionChange={onSessionChange}
       onExit={onExit}
     />

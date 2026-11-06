@@ -74,6 +74,16 @@ describe('draft', () => {
     expect(bad(draft.session.steps.map(() => ({ value: -1 })))).toBeNull();
   });
 
+  it('момент финиша переживает сохранение', () => {
+    const done: Draft = { ...draft, finishedAt: NOW - 500 };
+    expect(parseDraft(serializeDraft(done), NOW)?.finishedAt).toBe(NOW - 500);
+  });
+
+  it('без финиша поля нет, нечисловой финиш — null', () => {
+    expect('finishedAt' in parseDraft(serializeDraft(draft), NOW)!).toBe(false);
+    expect(parseDraft(JSON.stringify({ ...draft, finishedAt: 'вчера' }), NOW)).toBeNull();
+  });
+
   it('без времени начала — null', () => {
     expect(parseDraft(JSON.stringify({ session: draft.session, updatedAt: NOW }), NOW)).toBeNull();
   });
