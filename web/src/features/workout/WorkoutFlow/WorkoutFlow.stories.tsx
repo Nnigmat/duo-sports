@@ -146,11 +146,12 @@ export const FullRun: Story = {
     // Круг 2: первый подход снимаем на видео
     await expect(body().getByText('Подход 4 из 9 · снимаем на видео')).toBeVisible();
     await click('Начать запись');
-    await waitFor(() => expect(body().getByRole('button', { name: 'Старт' })).toBeEnabled(), { timeout: 5000 });
-    await click('Старт');
-    await waitFor(() => expect(body().getByRole('button', { name: 'Стоп' })).toBeVisible(), { timeout: 5000 });
+    await waitFor(() => expect(body().getByRole('button', { name: 'Начать запись' })).toBeEnabled(), { timeout: 5000 });
+    await click('Начать запись');
+    await waitFor(() => expect(body().getByRole('button', { name: 'Остановить' })).toBeVisible(), { timeout: 5000 });
     await new Promise((r) => setTimeout(r, 1300));
-    await click('Готово');
+    await click('Остановить');
+    await click('Отправить');
     // после сохранения подход выполнен, идёт отдых
     await body().findByRole('timer', { name: /отдых/i }, { timeout: 5000 });
     await expect(onUploadVideo).toHaveBeenCalledTimes(1);

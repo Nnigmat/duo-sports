@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../../../ui/Button/Button';
-import { IconButton } from '../../../ui/IconButton/IconButton';
+import { Dialog } from '../../../ui/Dialog/Dialog';
 import { Icon } from '../../../ui/Icon/Icon';
+import { IconButton } from '../../../ui/IconButton/IconButton';
 import { Text } from '../../../ui/Text/Text';
-import { formatTime, formatZoom } from '../flow';
+import { cx } from '../../../ui/cx';
+import { formatZoom } from '../flow';
+import type { Beeper } from '../sound/beeper';
 import styles from './RecordingScreen.module.css';
 import { useRecorder, type RecorderStatus } from './useRecorder';
 
@@ -18,10 +21,12 @@ type Props = {
   /** Загрузить записанное видео и привязать к подходу; экран ждёт промис. Ошибка показывается, повтор возможен. */
   /** durationSec — длина записи в целых секундах */
   onUpload: (video: Blob, durationSec: number) => Promise<void>;
-  /** Записи не будет: «Отмена», «Стоп» или «Назад». Камера выключается, видео отбрасывается. */
+  /** Записи не будет: «Отмена» до начала записи или «Удалить» после неё. Камера выключается, видео отбрасывается. */
   onCancel: () => void;
-  /** Секунд между «Старт» и началом записи; 0 — сразу */
+  /** Секунд между «Начать запись» и началом записи; 0 — сразу */
   startDelaySec?: number;
+  /** Звук отсчёта; без него отсчёт идёт молча */
+  beeper?: Beeper;
 };
 
 type Problem = Exclude<RecorderStatus, 'starting' | 'ready' | 'countdown' | 'recording' | 'stopped'>;
@@ -41,31 +46,43 @@ const PROBLEMS: Record<Problem, { title: string; text: string }> = {
   },
 };
 
-/** Экран записи подхода: превью, «Старт» с отсчётом, REC, «Стоп» и «Готово». */
-export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelaySec = DEFAULT_START_DELAY_SEC }: Props) {
-  const rec = useRecorder();
+/**
+ * Экран записи подхода: «Начать запись» с отсчётом и сигналами, красная рамка и «Идёт запись»,
+ * «Остановить», затем просмотр со звуком по тапу и «Сбросить» / «Отправить».
+ */
+export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelaySec = DEFAULT_START_DELAY_SEC, beeper }: Props) {
+  const rec = useRecorder(beeper?.play);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Файл остаётся после неудачной загрузки: повтор не требует снимать заново
   const [blob, setBlob] = useState<Blob | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   const { status } = rec;
   const ready = status === 'ready';
   const counting = status === 'countdown';
   const recording = status === 'recording';
-  const stopped = status === 'stopped';
+  const stopped = status === 'stopped' && blob !== null;
   const live = ready || counting || recording;
   const problem = status in PROBLEMS ? PROBLEMS[status as Problem] : null;
 
-  async function done() {
+  async function stop() {
+    setError(null);
+    try {
+      setBlob(await rec.stop());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось остановить запись');
+    }
+  }
+
+  async function send() {
+    if (!blob) return;
     setSaving(true);
     setError(null);
     try {
-      const file = blob ?? (await rec.stop());
-      setBlob(file);
-      await onUpload(file, Math.round(rec.elapsed));
+      await onUpload(blob, Math.round(rec.elapsed));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить видео');
+      setError(e instanceof Error ? e.message : 'Не удалось отправить видео');
       setSaving(false);
     }
   }
@@ -77,21 +94,24 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
 
   const hint = ready
     ? startDelaySec > 0
-      ? `Поставьте телефон и нажмите «Старт». Запись начнётся через ${startDelaySec} с.`
-      : 'Поставьте телефон и нажмите «Старт».'
+      ? `Поставьте телефон и нажмите «Начать запись». Запись начнётся через ${startDelaySec} с.`
+      : 'Поставьте телефон и нажмите «Начать запись».'
     : counting
-      ? 'Займите позу: запись начнётся, когда отсчёт дойдёт до нуля.'
-      : '«Готово» сохранит видео к подходу. Если уйти со страницы, запись остановится.';
+      ? 'Займите позу: запись начнётся после длинного сигнала.'
+      : stopped
+        ? 'Нажмите на кадр, чтобы посмотреть запись со звуком.'
+        : null;
 
   return (
     <div className={styles.root}>
       <header className={styles.header}>
         {recording ? (
-          <span className={styles.rec} aria-hidden="true">
-            <span className={styles.dot} />
-            REC
-            <span className={styles.recTime}>{formatTime(rec.elapsed)}</span>
+          <span className={styles.rec} role="status">
+            <span className={styles.dot} aria-hidden="true" />
+            Идёт запись
           </span>
+        ) : ready || status === 'starting' ? (
+          <IconButton bare icon="close" aria-label="Отмена" className={styles.switch} onClick={cancel} />
         ) : (
           <span />
         )}
@@ -106,7 +126,7 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
         )}
       </header>
 
-      <div className={styles.preview}>
+      <div className={styles.preview} data-state={recording ? 'recording' : stopped ? 'review' : 'idle'}>
         <video ref={rec.setVideo} className={styles.video} muted playsInline autoPlay hidden={!live} />
         {counting && (
           <div className={styles.countdown} role="status" aria-label={`Запись начнётся через ${rec.countdownLeft} с`}>
@@ -131,11 +151,12 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
             />
           </label>
         )}
-        {!live && (
+        {stopped && blob && <Review blob={blob} />}
+        {!live && status !== 'stopped' && (
           <div className={styles.placeholder} role={problem ? 'alert' : 'status'}>
             <Icon name="camera" size={24} className={styles.placeholderIcon} />
             <Text variant="h5" tag="p" className={styles.placeholderTitle}>
-              {problem ? problem.title : stopped ? 'Запись остановлена' : 'Включаем камеру'}
+              {problem ? problem.title : 'Включаем камеру'}
             </Text>
             {problem && (
               <Text variant="body-sm" className={styles.placeholderText}>
@@ -160,49 +181,45 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
           </Button>
         ) : (
           <>
-            <div className={styles.controls}>
-              {counting ? (
-                <IconButton size="md" icon="close" aria-label="Отмена" onClick={rec.cancelCountdown} />
-              ) : ready || status === 'starting' ? (
-                <IconButton size="md" icon="close" aria-label="Отмена" onClick={cancel} />
-              ) : (
-                <IconButton size="md" aria-label="Стоп" disabled={saving} onClick={cancel}>
-                  <span className={styles.stopMark} />
-                </IconButton>
-              )}
-
-              <span className={styles.bigTime} role="timer" aria-label={timerLabel(status, rec.elapsed, rec.countdownLeft)}>
-                {counting ? rec.countdownLeft : formatTime(recording || stopped ? rec.elapsed : 0)}
-              </span>
-
-              {recording || stopped ? (
-                <IconButton
-                  size="lg"
-                  icon="check"
-                  aria-label={saving ? 'Сохраняем' : 'Готово'}
-                  caption={saving ? 'Сохраняем' : 'Готово'}
-                  disabled={saving}
-                  onClick={done}
-                />
-              ) : (
-                <IconButton
-                  size="lg"
-                  icon="play"
-                  aria-label="Старт"
-                  caption="Старт"
-                  disabled={!ready}
-                  onClick={() => rec.begin(startDelaySec)}
-                />
-              )}
-            </div>
+            {stopped ? (
+              <div className={styles.actions}>
+                <Button variant="secondary" fullWidth disabled={saving} onClick={() => setConfirmDiscard(true)}>
+                  Сбросить
+                </Button>
+                <Button fullWidth loading={saving} onClick={send}>
+                  Отправить
+                </Button>
+              </div>
+            ) : recording ? (
+              <Button variant="danger" fullWidth onClick={stop}>
+                Остановить
+              </Button>
+            ) : counting ? (
+              <Button variant="secondary" fullWidth onClick={rec.cancelCountdown}>
+                Отмена
+              </Button>
+            ) : (
+              <Button
+                fullWidth
+                disabled={!ready}
+                onClick={() => {
+                  beeper?.unlock();
+                  rec.begin(startDelaySec);
+                }}
+              >
+                Начать запись
+              </Button>
+            )}
             {error ? (
               <Text variant="caption" color="slate" role="alert">
-                {error}. Нажмите «Готово», чтобы повторить.
+                {error}.{stopped ? ' Нажмите «Отправить», чтобы повторить.' : ''}
               </Text>
             ) : (
-              <Text variant="caption" color="slate">
-                {hint}
-              </Text>
+              hint && (
+                <Text variant="caption" color="slate">
+                  {hint}
+                </Text>
+              )
             )}
             {!rec.withAudio && (
               <Text variant="caption" color="slate" role="status">
@@ -212,13 +229,65 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
           </>
         )}
       </div>
+
+      <Dialog
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title="Удалить видео?"
+        description="Запись удалится с телефона, вернуть её не получится."
+        confirmLabel="Удалить"
+        cancelLabel="Оставить"
+        danger
+        onConfirm={() => {
+          setConfirmDiscard(false);
+          cancel();
+        }}
+      />
     </div>
   );
 }
 
-function timerLabel(status: RecorderStatus, elapsed: number, left: number): string {
-  if (status === 'countdown') return `До начала записи ${left} с`;
-  if (status === 'recording') return `Идёт запись ${formatTime(elapsed)}`;
-  if (status === 'stopped') return `Записано ${formatTime(elapsed)}`;
-  return 'Запись не начата';
+/** Просмотр записанного: тап по кадру запускает и ставит на паузу, звук включён */
+function Review({ blob }: { blob: Blob }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const u = URL.createObjectURL(blob);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [blob]);
+
+  function toggle() {
+    if (!video) return;
+    if (video.paused) void video.play().catch(() => {});
+    else video.pause();
+  }
+
+  return (
+    <button
+      type="button"
+      className={styles.reviewTap}
+      aria-label={playing ? 'Поставить запись на паузу' : 'Смотреть запись'}
+      onClick={toggle}
+    >
+      {url && (
+        // biome-ignore lint/a11y/useMediaCaption: короткое видео самого пользователя, субтитров нет
+        <video
+          ref={setVideo}
+          className={styles.video}
+          src={url}
+          playsInline
+          preload="auto"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
+      )}
+      <span className={cx(styles.playMark, playing && styles.playMarkHidden)} aria-hidden="true">
+        <Icon name="play" size={24} />
+      </span>
+    </button>
+  );
 }

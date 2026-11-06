@@ -28,11 +28,6 @@
   background: var(--canvas);
   font-size: var(--caption-bold-size);
   font-weight: var(--caption-bold-weight);
-  letter-spacing: 1px; /* нет токена */
-}
-.recTime {
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
 }
 .dot {
   width: 10px; /* нет токена */
@@ -156,27 +151,46 @@
   gap: var(--spacing-xxs);
 }
 
-.controls {
+.actions {
   display: grid;
-  /* слева кнопка 56 px (колонка 64), справа 88 px: время 44 px между ними должно помещаться на 360 px */
-  grid-template-columns: 64px 1fr var(--size-key-action); /* 64 px: нет токена */
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+/* Красная рамка кадра во время записи; смысл несёт и метка «Идёт запись» */
+.preview {
+  box-sizing: border-box;
+  border: 4px solid transparent; /* 4 px: нет токена */
+}
+.preview[data-state='recording'] {
+  border-color: var(--danger);
+}
+
+/* Весь кадр — кнопка просмотра */
+.reviewTap {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--ink);
+  cursor: pointer;
+}
+.playMark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
   align-items: center;
-  justify-items: center;
-  gap: var(--spacing-xs);
+  justify-content: center;
+  width: 72px; /* нет токена */
+  height: 72px; /* нет токена */
+  transform: translate(-50%, -50%);
+  border-radius: var(--rounded-full);
+  background: color-mix(in srgb, var(--ink) 70%, transparent);
+  color: var(--on-ink);
 }
-
-.bigTime {
-  font-size: 44px; /* нет токена: как время в кольце таймера */
-  line-height: 1;
-  font-weight: var(--timer-display-weight);
-  letter-spacing: var(--timer-display-tracking);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Красный квадрат «стоп»; смысл несёт имя кнопки «Стоп» для скринридера */
-.stopMark {
-  width: 18px; /* нет токена */
-  height: 18px; /* нет токена */
-  border-radius: var(--rounded-xs);
-  background: var(--danger);
+.playMarkHidden {
+  display: none;
 }
