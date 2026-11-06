@@ -34,6 +34,7 @@ import { useCountdown } from '../parts/TimerRing/useCountdown';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { EditSheet } from '../sheets/EditSheet/EditSheet';
+import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
 import { TechSheet } from '../sheets/TechSheet/TechSheet';
 import { StartScreen } from '../StartScreen/StartScreen';
 import { TrainingScreen } from '../TrainingScreen/TrainingScreen';
@@ -64,7 +65,7 @@ type Props = {
   now?: Date;
 };
 
-type Sheet = 'edit' | 'tech' | 'comments' | null;
+type Sheet = 'edit' | 'result' | 'tech' | 'comments' | null;
 
 /**
  * Весь сценарий тренировки: старт → подходы, таймеры, отдых, запись, панели → финиш.
@@ -98,7 +99,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
 
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    return <FinishScreen stats={stats} successUrl={successUrl(gender)} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds))} onClose={onExit} />;
+    return <FinishScreen stats={stats} successUrl={successUrl(gender)} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds, session.actuals))} onClose={onExit} />;
   }
 
   if (recording) {
@@ -143,6 +144,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         note={note?.text}
         techNew={hasNewComments(comments, shown.exerciseId)}
         onEdit={() => setSheet('edit')}
+        // На подходах упражнений «Готово» сначала спрашивает факт; у разминки и заминки шторки нет
+        onDone={() => (step.mode === 'timed' ? dispatch({ type: 'done' }) : setSheet('result'))}
         onTech={() => setSheet('tech')}
         onOpenNotes={() => {
           setCommentsFromTech(false);
@@ -162,6 +165,16 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         applyLabel={applyLabel(step)}
         applyHint={formatFollowing(followingNumbers(steps, index))}
         onSave={(plan, apply) => dispatch({ type: 'editPlan', plan, apply })}
+      />
+
+      <ResultSheet
+        open={sheet === 'result' && phase === 'work'}
+        onOpenChange={(open) => !open && setSheet(null)}
+        eyebrow={eyebrow(step)}
+        kind={step.kind}
+        plan={step.plan}
+        actual={session.actuals[index]}
+        onSave={(actual) => dispatch({ type: 'done', actual })}
       />
 
       <TechSheet
@@ -217,6 +230,8 @@ type StageProps = {
   note?: string;
   techNew: boolean;
   onEdit: () => void;
+  /** «Готово» на подходе: у упражнения откроет шторку факта, у разминки завершит шаг */
+  onDone: () => void;
   onTech: () => void;
   onOpenNotes: () => void;
   onRecord: () => void;
@@ -233,7 +248,7 @@ function Stage(props: StageProps) {
 
 /** Подход на повторы или упражнение на время до «Старт» */
 function SetStage(props: StageProps) {
-  const { session, dispatch, onEdit } = props;
+  const { session, dispatch, onEdit, onDone } = props;
   const step = session.steps[session.index];
   const onSkip = () => dispatch({ type: 'skip' });
   return (
@@ -242,7 +257,7 @@ function SetStage(props: StageProps) {
       bar={
         step.kind === 'time'
           ? { mode: 'start', onStart: () => dispatch({ type: 'startTimer' }), onEdit, onSkip }
-          : { mode: 'set', onDone: () => dispatch({ type: 'done' }), onEdit, onSkip }
+          : { mode: 'set', onDone, onEdit, onSkip }
       }
     />
   );
@@ -250,12 +265,12 @@ function SetStage(props: StageProps) {
 
 /** Идущий таймер упражнения или отдых */
 function TimedStage(props: StageProps) {
-  const { session, dispatch } = props;
+  const { session, dispatch, onDone } = props;
   const step = session.steps[session.index];
   const resting = session.phase === 'rest';
   const t = useCountdown({
     seconds: resting ? step.restAfterSec : timerSeconds(step.plan),
-    onFinish: () => dispatch({ type: resting ? 'restOver' : 'done' }),
+    onFinish: () => (resting ? dispatch({ type: 'restOver' }) : onDone()),
   });
   const onSkip = () => dispatch({ type: 'skip' });
   return (

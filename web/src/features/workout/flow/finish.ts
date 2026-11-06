@@ -1,4 +1,4 @@
-import type { SessionStepResult } from '../../../../../shared/types';
+import type { SessionStepResult, SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 import { plural } from './ru';
 
@@ -23,8 +23,13 @@ export function finishStats(steps: Step[], completed: boolean[], videos: number)
   };
 }
 
-/** Каждый подход тренировки с планом (после правок «Изменить») и отметкой, выполнен ли он */
-export function sessionSteps(steps: Step[], completed: boolean[], videoIds: Array<string | null> = []): SessionStepResult[] {
+/** Каждый подход тренировки с планом, фактом и отметкой, выполнен ли он. Факт уходит только у выполненных подходов. */
+export function sessionSteps(
+  steps: Step[],
+  completed: boolean[],
+  videoIds: Array<string | null> = [],
+  actuals: Array<SetActual | null> = [],
+): SessionStepResult[] {
   return steps.map((s, i) => ({
     exerciseId: s.exerciseId,
     exerciseName: s.exerciseName,
@@ -33,6 +38,7 @@ export function sessionSteps(steps: Step[], completed: boolean[], videoIds: Arra
     rounds: s.rounds,
     kind: s.kind,
     plan: s.plan,
+    ...(completed[i] && actuals[i] ? { actual: actuals[i]! } : {}),
     completed: completed[i] ?? false,
     ...(videoIds[i] ? { videoId: videoIds[i]! } : {}),
   }));

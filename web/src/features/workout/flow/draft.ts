@@ -44,7 +44,22 @@ function isStep(v: unknown): boolean {
   );
 }
 
-function isSession(v: unknown): v is Session {
+function isActual(v: unknown): boolean {
+  return (
+    isObject(v) &&
+    isNum(v.value) &&
+    v.value >= 0 &&
+    (v.weight === undefined || (isNum(v.weight) && v.weight >= 0)) &&
+    (v.extraWeight === undefined || v.extraWeight === true)
+  );
+}
+
+/** Факты: у черновика, сохранённого до появления фактов, поля нет — это допустимо */
+function hasValidActuals(v: Record<string, unknown>, n: number): boolean {
+  return v.actuals === undefined || (Array.isArray(v.actuals) && v.actuals.length === n && v.actuals.every((a) => a === null || isActual(a)));
+}
+
+function isSession(v: unknown): v is Omit<Session, 'actuals'> & { actuals?: Session['actuals'] } {
   if (!isObject(v) || !Array.isArray(v.steps) || v.steps.length === 0) return false;
   const n = v.steps.length;
   return (
@@ -58,6 +73,7 @@ function isSession(v: unknown): v is Session {
     Array.isArray(v.completed) &&
     v.completed.length === n &&
     v.completed.every((c) => typeof c === 'boolean') &&
+    hasValidActuals(v, n) &&
     Array.isArray(v.videoIds) &&
     v.videoIds.length === n &&
     v.videoIds.every((id) => id === null || typeof id === 'string') &&
@@ -81,5 +97,6 @@ export function parseDraft(raw: string | null, now: number): Draft | null {
   }
   if (!isObject(data) || !isNum(data.startedAt) || !isNum(data.updatedAt) || !isSession(data.session)) return null;
   if (now - data.updatedAt > DRAFT_TTL_MS) return null;
-  return { session: data.session, startedAt: data.startedAt, updatedAt: data.updatedAt };
+  const session: Session = { ...data.session, actuals: data.session.actuals ?? data.session.steps.map(() => null) };
+  return { session, startedAt: data.startedAt, updatedAt: data.updatedAt };
 }

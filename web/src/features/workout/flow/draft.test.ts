@@ -43,6 +43,29 @@ describe('draft', () => {
     expect(bad({ timerStarted: 'yes' })).toBeNull();
   });
 
+  it('факты переживают сохранение', () => {
+    const withFact: Draft = {
+      ...draft,
+      session: reduce(started, { type: 'done', actual: { value: 30, extraWeight: true } }),
+    };
+    expect(parseDraft(serializeDraft(withFact), NOW)?.session.actuals[0]).toEqual({ value: 30, extraWeight: true });
+  });
+
+  it('старый черновик без фактов читается, факты пустые', () => {
+    const { actuals: _omit, ...old } = draft.session;
+    const parsed = parseDraft(JSON.stringify({ ...draft, session: old }), NOW);
+    expect(parsed?.session.actuals).toEqual(draft.session.steps.map(() => null));
+    expect(parsed?.session.completed).toEqual(draft.session.completed);
+  });
+
+  it('кривые факты — null', () => {
+    const bad = (actuals: unknown) => parseDraft(JSON.stringify({ ...draft, session: { ...draft.session, actuals } }), NOW);
+    expect(bad([])).toBeNull();
+    expect(bad(draft.session.steps.map(() => 5))).toBeNull();
+    expect(bad(draft.session.steps.map(() => ({ value: 'много' })))).toBeNull();
+    expect(bad(draft.session.steps.map(() => ({ value: -1 })))).toBeNull();
+  });
+
   it('без времени начала — null', () => {
     expect(parseDraft(JSON.stringify({ session: draft.session, updatedAt: NOW }), NOW)).toBeNull();
   });
