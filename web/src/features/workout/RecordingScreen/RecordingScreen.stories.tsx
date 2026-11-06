@@ -50,6 +50,16 @@ export const Ready: Story = {
   },
 };
 
+/** Микрофон не разрешён: запись доступна, но экран честно говорит, что звука не будет */
+export const NoMicrophone: Story = {
+  beforeEach: () => mockCamera('no-mic'),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => expect(c.getByRole('button', { name: 'Старт' })).toBeEnabled(), { timeout: 5000 });
+    await expect(c.getByRole('status')).toHaveTextContent('Нет доступа к микрофону, видео будет без звука');
+  },
+};
+
 /** После «Старт» идёт отсчёт 5 с, затем запись */
 export const Countdown: Story = {
   beforeEach: () => mockCamera('stream'),

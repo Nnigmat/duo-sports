@@ -2,15 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   clampZoom,
   isFinished,
+  openCamera,
   pickMimeType,
   remainingSec,
   startCountdown,
   zoomRange,
   type Countdown,
+  type Facing,
   type ZoomRange,
 } from '../flow';
 
-export type Facing = 'environment' | 'user';
+export type { Facing };
 
 export type RecorderStatus =
   /** ждём доступ к камере */
@@ -48,6 +50,8 @@ export function useRecorder() {
   // null: камера не умеет зум, контрол не показываем
   const [range, setRange] = useState<ZoomRange | null>(null);
   const [zoom, setZoomValue] = useState(1);
+  // false: микрофон не дали, видео запишется без звука
+  const [withAudio, setWithAudio] = useState(true);
 
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -74,10 +78,8 @@ export function useRecorder() {
     setCountdown(null);
     setRange(null);
 
-    navigator.mediaDevices
-      // Без звука: тренеру нужна картинка, микрофон только добавил бы запрос доступа
-      .getUserMedia({ video: { facingMode: { ideal: facing } }, audio: false })
-      .then((stream) => {
+    openCamera((c) => navigator.mediaDevices.getUserMedia(c), facing)
+      .then(({ stream, withAudio: hasAudio }) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -89,6 +91,7 @@ export function useRecorder() {
         };
         streamRef.current = stream;
         recorderRef.current = recorder;
+        setWithAudio(hasAudio);
         // Диапазоны зума у фронтальной и основной камер разные: начинаем с минимума новой камеры
         const track = stream.getVideoTracks()[0];
         const caps = track?.getCapabilities?.() as { zoom?: { min?: number; max?: number; step?: number } } | undefined;
@@ -220,5 +223,7 @@ export function useRecorder() {
     zoomRange: range,
     zoom,
     setZoom,
+    /** В записи будет звук; false, если микрофон не разрешён */
+    withAudio,
   };
 }

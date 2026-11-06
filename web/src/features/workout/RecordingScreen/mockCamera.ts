@@ -1,7 +1,7 @@
 // Только для историй и тестов: подмена камеры, чтобы экран записи работал без реального устройства
 
-/** Что подставить вместо камеры: поток-картинка, вечное ожидание или отказ */
-export type Camera = 'stream' | 'pending' | DOMException['name'] | 'no-api';
+/** Что подставить вместо камеры: поток-картинка, камера без микрофона, вечное ожидание или отказ */
+export type Camera = 'stream' | 'no-mic' | 'pending' | DOMException['name'] | 'no-api';
 
 /** Анимированный поток из canvas: настоящий MediaStream, который умеет писать MediaRecorder */
 function canvasStream(): MediaStream {
@@ -42,7 +42,10 @@ export function mockCamera(kind: Camera) {
   devices.getUserMedia =
     kind === 'stream'
       ? () => Promise.resolve(canvasStream())
-      : kind === 'pending'
+      : kind === 'no-mic'
+        ? (c: MediaStreamConstraints) =>
+            c.audio ? Promise.reject(new DOMException('Подмена в истории', 'NotAllowedError')) : Promise.resolve(canvasStream())
+        : kind === 'pending'
         ? () => new Promise<MediaStream>(() => {})
         : () => Promise.reject(new DOMException('Подмена в истории', kind));
   return () => {
