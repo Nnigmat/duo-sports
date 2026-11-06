@@ -204,6 +204,11 @@ export function RecordingScreen({ eyebrow, line, onUpload, onCancel, startDelayS
                 {hint}
               </Text>
             )}
+            {!rec.withAudio && (
+              <Text variant="caption" color="slate" role="status">
+                Нет доступа к микрофону, видео будет без звука
+              </Text>
+            )}
           </>
         )}
       </div>
