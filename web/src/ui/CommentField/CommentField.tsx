@@ -30,7 +30,7 @@ export function CommentField({
   onChange,
   onSubmit,
   label = 'Комментарий',
-  placeholder = 'Написать комментарий',
+  placeholder = 'Комментарий',
   timecodeSec,
   attached = false,
   onAttachedChange,

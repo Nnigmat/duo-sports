@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { ReviewExercise } from '../../../../../shared/types';
 import { useSessionReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
-import { postReply } from '../api';
+import { deleteComment, postReply } from '../api';
 import { ReviewView } from '../ReviewView/ReviewView';
 
 /** /review/:sessionId — разбор тренировки для ученика. После ответа страница читает разбор заново. */
@@ -42,6 +42,10 @@ function ReviewContent({ sessionId, onChanged }: { sessionId: number; onChanged:
       videoHref={videoHref}
       onOpenVideo={(id, t) => navigate(videoHref(id, t))}
       onReply={reply}
+      onDeleteComment={async (id) => {
+        await deleteComment(data.athleteId, id);
+        onChanged();
+      }}
       planHref="/plan"
       onOpenPlan={() => navigate('/plan')}
     />

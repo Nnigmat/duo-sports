@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { cx } from '../cx';
 import { Icon } from '../Icon/Icon';
 import { formatTime } from '../VideoPlayer/player';
@@ -18,11 +19,16 @@ type Props = {
   reply?: boolean;
   /** Сейчас показан поверх видео */
   active?: boolean;
+  /** Удалить: кнопка только у автора. Нажатие просит подтверждения; промис отклонён — показываем ошибку */
+  onDelete?: () => Promise<void>;
   className?: string;
 };
 
 /** Комментарий в разборе. Элемент списка: оборачивать в <ul>. */
-export function Comment({ author, text, timecodeSec, onSeek, timecodeHref, isNew, reply, active, className }: Props) {
+export function Comment({ author, text, timecodeSec, onSeek, timecodeHref, isNew, reply, active, onDelete, className }: Props) {
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | undefined>();
   const hasTime = typeof timecodeSec === 'number';
   const time = hasTime ? formatTime(timecodeSec) : '';
   const timeAria = `Перейти к ${time}`;
@@ -52,8 +58,36 @@ export function Comment({ author, text, timecodeSec, onSeek, timecodeHref, isNew
             <span>новое</span>
           </span>
         )}
+        {onDelete && (
+          <button
+            type="button"
+            className={cx(styles.delete, confirm && styles.confirm)}
+            disabled={busy}
+            aria-busy={busy || undefined}
+            onBlur={() => setConfirm(false)}
+            onClick={async () => {
+              if (!confirm) return setConfirm(true);
+              setBusy(true);
+              setError(undefined);
+              try {
+                await onDelete();
+              } catch (e) {
+                setError(e instanceof Error ? e.message : 'Не удалось удалить');
+                setConfirm(false);
+                setBusy(false);
+              }
+            }}
+          >
+            {confirm ? 'Точно удалить' : 'Удалить'}
+          </button>
+        )}
       </span>
       <span className={styles.text}>{text}</span>
+      {error && (
+        <span role="alert" className={styles.error}>
+          {error}
+        </span>
+      )}
     </li>
   );
 }
