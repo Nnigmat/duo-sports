@@ -2,6 +2,7 @@ import type { AwaitingReview, ReviewComment, ReviewExercise, ReviewSet, Role, Se
 import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
 import { nextWorkoutHints } from './hints';
+import { factLabel } from '../shared/fact';
 import { sessionVolume, addDays } from './today';
 import { canAccessAthlete } from './trainerLinks';
 
@@ -18,6 +19,15 @@ export function setLabel(s: SessionStepResult): string {
   if (s.kind === 'time') return min === max ? clock(min) : `${clock(min)}–${clock(max)}`;
   if (s.kind === 'weight' && s.plan.weight !== undefined) return `${num(s.plan.weight)}${NBSP}кг × ${range(min, max)}`;
   return `${range(min, max)}${NBSP}повт`;
+}
+
+/** Подход по факту, а без факта по плану: «85 кг × 7», «22 повт», «1:35» */
+export function actualLabel(s: SessionStepResult): string {
+  const a = s.actual;
+  if (!a) return setLabel(s);
+  if (s.kind === 'time') return clock(a.value);
+  if (s.kind === 'weight') return `${num(a.weight ?? s.plan.weight ?? 0)}${NBSP}кг × ${num(a.value)}`;
+  return `${num(a.value)}${NBSP}повт`;
 }
 
 type CommentRow = {
@@ -72,7 +82,8 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
     const id = `${st.blockIndex}:${st.exerciseId}`;
     const g = groups.get(id) ?? { id, name: st.exerciseName, slug: null, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [] };
     const video = st.videoId ? videos.get(st.videoId) : undefined;
-    g.sets.push({ n: g.sets.length + 1, label: setLabel(st), completed: st.completed, ...(video && { videoId: video.id, videoDurationSec: video.duration_sec }) });
+    const fact = st.completed && st.actual ? { actualLabel: actualLabel(st), factMark: factLabel(st.plan, st.actual.value), ...(st.actual.extraWeight && { extraWeight: true as const }) } : {};
+    g.sets.push({ n: g.sets.length + 1, label: setLabel(st), completed: st.completed, ...fact, ...(video && { videoId: video.id, videoDurationSec: video.duration_sec }) });
     g.stepIndexes.push(i);
     groups.set(id, g);
   });

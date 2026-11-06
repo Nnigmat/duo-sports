@@ -4,7 +4,7 @@ import { createUser } from './auth';
 import { addComment } from './comments';
 import { openDb, type Db } from './db';
 import { markReviewed } from './reviews';
-import { awaitingReviewOf, setLabel, sessionReviewOf, videoReviewOf } from './sessionReview';
+import { actualLabel, awaitingReviewOf, setLabel, sessionReviewOf, videoReviewOf } from './sessionReview';
 import { linkAthlete } from './trainerLinks';
 
 let db: Db;
@@ -32,6 +32,15 @@ beforeEach(async () => {
   db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, session_id, step_index, created_at) VALUES (?, ?, 'x.webm', 38, ?, 3, '2026-10-31T17:00:00Z')").run(V, athlete, sid);
 });
 
+describe('actualLabel', () => {
+  it('по факту; без факта по плану', () => {
+    expect(actualLabel(step({ actual: { value: 7, weight: 85 } }))).toBe(`85${NB}кг × 7`);
+    expect(actualLabel(step({ kind: 'reps', plan: { target: { min: 18, max: 20 } }, actual: { value: 22 } }))).toBe(`22${NB}повт`);
+    expect(actualLabel(step({ kind: 'time', plan: { target: { min: 90, max: 90 } }, actual: { value: 95 } }))).toBe('1:35');
+    expect(actualLabel(step({}))).toBe(`80${NB}кг × 5`);
+  });
+});
+
 describe('setLabel', () => {
   it('вес × повторы, повторы, время; диапазон и запятая', () => {
     expect(setLabel(step({}))).toBe(`80${NB}кг × 5`);
@@ -55,6 +64,25 @@ describe('sessionReviewOf', () => {
     expect(r.exercises.map((e) => e.slug)).toEqual(['squat', 'rdl']);
     expect(r.exercises[0]!.sets[3]).toEqual({ n: 4, label: `80${NB}кг × 5`, completed: true, videoId: V, videoDurationSec: 38 });
     expect(r.exercises[0]!.sets[2]!.completed).toBe(false);
+  });
+  it('факт и метка у подхода с фактом; пропущенный и старый подход без них', () => {
+    const steps = [
+      step({ round: 1, actual: { value: 7, weight: 85, extraWeight: true } }),
+      step({ round: 2, actual: { value: 4, weight: 80 } }),
+      step({ round: 3, actual: { value: 5, weight: 80 } }),
+      step({ round: 4, completed: false }),
+      step({ round: 5 }),
+    ];
+    const id = Number(db.prepare("INSERT INTO sessions_done (user_id, workout_id, title, date, steps, videos, finished_at) SELECT user_id, workout_id, title, date, ?, 0, finished_at FROM sessions_done WHERE id = ?").run(JSON.stringify(steps), sid).lastInsertRowid);
+    const r = sessionReviewOf(db, A(), id, '2026-11-02');
+    if (!r.ok) throw new Error(r.error);
+    const sets = r.review.exercises[0]!.sets;
+    expect(sets[0]).toMatchObject({ label: `80${NB}кг × 5`, actualLabel: `85${NB}кг × 7`, factMark: 'Больше плана', extraWeight: true });
+    expect(sets[1]).toMatchObject({ actualLabel: `80${NB}кг × 4`, factMark: 'Меньше плана' });
+    expect(sets[2]).toMatchObject({ factMark: 'В плане' });
+    expect(sets[2]).not.toHaveProperty('extraWeight');
+    expect(sets[3]).toEqual({ n: 4, label: `80${NB}кг × 5`, completed: false });
+    expect(sets[4]).toEqual({ n: 5, label: `80${NB}кг × 5`, completed: true });
   });
   it('комментарии раскладываются: к видео и упражнению по группам, общие отдельно, чужие упражнения нет', () => {
     addComment(db, T(), athlete, { videoId: V, timecodeSec: 21, text: 'Колени внутрь' }, at('2026-11-01T19:31:00Z'));
