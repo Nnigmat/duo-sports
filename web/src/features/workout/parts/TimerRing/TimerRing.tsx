@@ -10,18 +10,39 @@ type Props = {
   /** Всего на этот отсчёт, секунд */
   total: number;
   paused?: boolean;
+  /** Оранжевое кольцо: отсчёт перед стартом и последние секунды */
+  alert?: boolean;
+  /** Подпись под временем вместо «осталось» («старт через», «финиш через») */
+  caption?: string;
+  /** Время вышло: кольцо превращается в залитую кнопку «Готово» */
+  onDone?: () => void;
   /** Если задано, кольцо становится кнопкой: нажатие ставит на паузу и возобновляет */
   onToggle?: () => void;
 };
 
 /** Кольцо таймера 168 px: время мм:сс и подпись в центре. */
-export function TimerRing({ seconds, total, paused, onToggle }: Props) {
+export function TimerRing({ seconds, total, paused, alert, caption, onDone, onToggle }: Props) {
   const time = formatTime(Math.max(0, seconds));
-  const label = paused ? 'пауза' : 'осталось';
+  const label = paused ? 'пауза' : (caption ?? 'осталось');
+
+  if (onDone && seconds <= 0) {
+    return (
+      <div className={styles.root}>
+        <button type="button" className={styles.done} onClick={onDone}>
+          <span className={styles.doneCaption}>время вышло</span>
+          <span className={styles.doneLabel}>
+            Готово
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   const ring = (
     <ProgressRing
       value={total > 0 ? seconds / total : 0}
-      color={paused ? 'muted' : 'primary'}
+      color={paused ? 'muted' : alert ? 'accent' : 'primary'}
       smoothing={paused ? 0 : 1000}
     >
       <span className={cx(styles.time, paused && styles.timePaused)}>{time}</span>

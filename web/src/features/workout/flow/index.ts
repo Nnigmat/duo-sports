@@ -21,6 +21,7 @@ export { formatLongDate, joinNumbers, plural } from './ru';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
 export { DRAFT_TTL_MS, draftKey, parseDraft, serializeDraft, type Draft } from './draft';
 export { elapsedSec, formatElapsed } from './elapsed';
-export { canGoBack, initSession, reduce, type Action, type Phase, type Session } from './session';
+export { afterReload, canGoBack, initSession, reduce, type Action, type Phase, type Session } from './session';
 export { hasTechnique } from './technique';
 export { demoFor } from './demo';
+export { FINAL_SEC, LEAD_SEC, signalAt, timedView, type Signal, type TimedView } from './signals';

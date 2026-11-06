@@ -51,6 +51,28 @@ export const TogglePaused: Story = {
 
 export const Finished: Story = { args: { seconds: 0 } };
 
+export const Lead: Story = {
+  args: { seconds: 3, total: 5, alert: true, caption: 'старт через' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('timer')).toHaveAccessibleName('старт через 00:03');
+  },
+};
+
+export const FinalSeconds: Story = {
+  args: { seconds: 4, total: 30, alert: true, caption: 'финиш через' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('timer')).toHaveAccessibleName('финиш через 00:04');
+  },
+};
+
+export const DoneButton: Story = {
+  args: { seconds: 0, onDone: fn() },
+  play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: /Готово/ }));
+    await expect(args.onDone).toHaveBeenCalledTimes(1);
+  },
+};
+
 const onFinish = fn();
 
 function LiveRing() {
@@ -80,6 +102,11 @@ export const AllVariants: Story = {
         <TimerRing seconds={30} total={30} />
         <TimerRing seconds={18} total={30} />
         <TimerRing seconds={0} total={30} />
+      </Row>
+      <Row label="отсчёт и финиш">
+        <TimerRing alert seconds={3} total={5} caption="старт через" />
+        <TimerRing alert seconds={4} total={30} caption="финиш через" />
+        <TimerRing seconds={0} total={30} onDone={() => {}} />
       </Row>
       <Row label="пауза">
         <TimerRing paused seconds={18} total={30} />

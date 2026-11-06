@@ -15,6 +15,11 @@ type Props =
       seconds: number;
       total: number;
       paused?: boolean;
+      /** Оранжевое кольцо и своя подпись: отсчёт перед стартом и последние секунды */
+      alert?: boolean;
+      caption?: string;
+      /** Есть — по окончании кольцо становится кнопкой «Готово» */
+      onDone?: () => void;
       onPauseToggle: () => void;
     })
   | (Common & {
@@ -50,12 +55,15 @@ function left(p: Props) {
     case 'set':
     case 'start':
       return p.onBack && <IconButton size="md" icon="back" aria-label="Назад" caption="Назад" onClick={p.onBack} />;
-    case 'timer':
+    case 'timer': {
+      // Время вышло: ставить на паузу нечего
+      const over = Boolean(p.onDone) && p.seconds <= 0;
       return p.paused ? (
-        <IconButton size="md" icon="play" aria-label="Продолжить" caption="Продолжить" onClick={p.onPauseToggle} />
+        <IconButton size="md" icon="play" aria-label="Продолжить" caption="Продолжить" disabled={over} onClick={p.onPauseToggle} />
       ) : (
-        <IconButton size="md" icon="pause" aria-label="Пауза" caption="Пауза" onClick={p.onPauseToggle} />
+        <IconButton size="md" icon="pause" aria-label="Пауза" caption="Пауза" disabled={over} onClick={p.onPauseToggle} />
       );
+    }
     case 'rest':
       return (
         <IconButton size="md" aria-label="Добавить 15 секунд" caption="+15 с" onClick={p.onAddTime}>
@@ -72,7 +80,7 @@ function center(p: Props) {
     case 'start':
       return <IconButton size="lg" icon="play" aria-label="Старт" caption="Старт" onClick={p.onStart} />;
     case 'timer':
-      return <TimerRing seconds={p.seconds} total={p.total} paused={p.paused} onToggle={p.onPauseToggle} />;
+      return <TimerRing seconds={p.seconds} total={p.total} paused={p.paused} alert={p.alert} caption={p.caption} onDone={p.onDone} onToggle={p.onPauseToggle} />;
     case 'rest':
       return <RestRing elapsed={p.elapsed} goalSec={p.goalSec} reached={p.reached} progress={p.progress} onStart={p.onStart} />;
   }

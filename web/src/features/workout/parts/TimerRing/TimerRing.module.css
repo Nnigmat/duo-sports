@@ -35,3 +35,43 @@
 .timePaused {
   color: var(--steel);
 }
+
+/* Время вышло: залитая кнопка того же размера, что и кольцо отдыха; состояние несут и подписи */
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xxs);
+  width: 160px; /* нет токена */
+  height: 160px; /* нет токена */
+  margin: 4px; /* нет токена: до диаметра кольца */
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--primary) 14%, transparent); /* нет токена */
+  color: var(--on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.done:focus-visible {
+  outline: 2px solid var(--primary-deep);
+  outline-offset: 10px; /* снаружи ореола */
+}
+
+.doneCaption {
+  font-size: 13px; /* нет токена */
+  line-height: 1.4;
+  font-weight: var(--button-md-weight);
+}
+
+.doneLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  font-size: 20px; /* нет токена */
+  line-height: 1.3;
+  font-weight: 600; /* нет токена */
+}

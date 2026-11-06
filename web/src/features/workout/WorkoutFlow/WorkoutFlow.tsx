@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, type Dispatch } from 'react';
+import { useEffect, useReducer, useRef, useState, type Dispatch } from 'react';
 import type { CoachComment, Gender, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
 import { cameraUrl, idleUrl, restUrl, successUrl } from '../chibi/idle';
@@ -6,6 +6,7 @@ import { poseFor } from '../chibi/poseFor';
 import {
   blockLabel,
   buildSteps,
+  afterReload,
   canGoBack,
   commentsFor,
   demoFor,
@@ -14,12 +15,15 @@ import {
   sessionSteps,
   hasNewComments,
   initSession,
+  LEAD_SEC,
   latestComment,
   markRead,
   recordingEyebrow,
   reduce,
   restEyebrow,
+  signalAt,
   stepLine,
+  timedView,
   timerSeconds,
   type Action,
   type FinishStats,
@@ -29,6 +33,7 @@ import {
 import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
+import { createBeeper, type Beeper } from '../sound/beeper';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
@@ -72,7 +77,10 @@ type Sheet = 'result' | 'tech' | 'comments' | null;
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
 export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, startedAt, ...rest }: Props) {
-  const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ?? initSession(buildSteps(w.blocks)));
+  const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
+  // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
+  const [beeper] = useState(createBeeper);
+  useEffect(() => () => beeper.close(), [beeper]);
   useEffect(() => onSessionChange?.(session), [session, onSessionChange]);
   const [comments, setComments] = useState(rest.comments);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -91,7 +99,10 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         dateLabel={dateLabel}
         idleUrl={idleUrl(gender)}
         onBack={onExit}
-        onStart={() => dispatch({ type: 'begin' })}
+        onStart={() => {
+          beeper.unlock();
+          dispatch({ type: 'begin' });
+        }}
       />
     );
   }
@@ -135,6 +146,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         key={`${index}-${phase}-${session.timerStarted}`}
         session={session}
         dispatch={dispatch}
+        beeper={beeper}
         shown={shown}
         idleUrl={idleUrl(gender)}
         restUrl={restUrl(gender)}
@@ -208,6 +220,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
 type StageProps = {
   session: Session;
   dispatch: Dispatch<Action>;
+  beeper: Beeper;
   /** Шаг, про который экран: текущий или (на отдыхе) следующий */
   shown: Step;
   demoUrl?: string;
@@ -235,7 +248,7 @@ function Stage(props: StageProps) {
 
 /** Подход на повторы или упражнение на время до «Старт» */
 function SetStage(props: StageProps) {
-  const { session, dispatch, onDone } = props;
+  const { session, dispatch, onDone, beeper } = props;
   const step = session.steps[session.index];
   const onSkip = () => dispatch({ type: 'skip' });
   const onBack = canGoBack(session) ? () => dispatch({ type: 'back' }) : undefined;
@@ -244,27 +257,58 @@ function SetStage(props: StageProps) {
       {...props}
       bar={
         step.kind === 'time'
-          ? { mode: 'start', onStart: () => dispatch({ type: 'startTimer' }), onBack, onSkip }
+          ? { mode: 'start', onStart: () => {
+                // Нажатие даёт право на звук; после перезагрузки контекст создаётся заново
+                beeper.unlock();
+                dispatch({ type: 'startTimer' });
+              }, onBack, onSkip }
           : { mode: 'set', onDone, onBack, onSkip }
       }
     />
   );
 }
 
-/** Идущий таймер упражнения на время */
+/**
+ * Идущий таймер. Разминка и заминка просто считают время и засчитываются сами.
+ * Упражнение на время: отсчёт 5 с, работа, финиш; сигналы по расписанию, в конце кнопка «Готово».
+ */
 function TimedStage(props: StageProps) {
-  const { session, dispatch } = props;
+  const { session, dispatch, beeper, onDone } = props;
   const step = session.steps[session.index];
+  const warm = step.mode === 'timed';
+  const workSec = timerSeconds(step.plan);
   const t = useCountdown({
-    seconds: timerSeconds(step.plan),
-    // Конец таймера засчитывает подход сам; шторка для упражнений на время появится вместе с кнопкой «Готово» (отдельная часть)
-    onFinish: () => dispatch({ type: 'done' }),
+    seconds: warm ? workSec : LEAD_SEC + workSec,
+    // Конец таймера разминки засчитывает её сам; у упражнения круг ждёт «Готово»
+    onFinish: warm ? () => dispatch({ type: 'done' }) : undefined,
   });
+  const elapsed = t.total - t.seconds;
+
+  // Сигнал в каждую новую секунду. На паузе секунда не меняется, значит, и звука нет
+  const last = useRef(-1);
+  useEffect(() => {
+    if (warm || elapsed <= last.current) return;
+    last.current = elapsed;
+    const signal = signalAt(workSec, elapsed);
+    if (signal) beeper.play(signal);
+  }, [warm, elapsed, workSec, beeper]);
+
+  const view = warm ? null : timedView(workSec, elapsed);
   return (
     <StageView
       {...props}
       onBack={() => dispatch({ type: 'back' })}
-      bar={{ mode: 'timer', seconds: t.seconds, total: t.total, paused: t.paused, onPauseToggle: t.toggle, onSkip: () => dispatch({ type: 'skip' }) }}
+      bar={{
+        mode: 'timer',
+        seconds: view ? view.seconds : t.seconds,
+        total: view ? view.total : t.total,
+        paused: t.paused,
+        alert: view?.alert,
+        caption: view?.caption,
+        onDone: view ? onDone : undefined,
+        onPauseToggle: t.toggle,
+        onSkip: () => dispatch({ type: 'skip' }),
+      }}
     />
   );
 }
