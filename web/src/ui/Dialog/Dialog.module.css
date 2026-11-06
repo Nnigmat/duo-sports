@@ -1,6 +1,7 @@
 .scrim {
   position: fixed;
   inset: 0;
+  z-index: 10; /* слой затемнения */
   background: var(--scrim);
   animation: fade-in 160ms ease-out;
 }
@@ -10,6 +11,7 @@
 
 .dialog {
   position: fixed;
+  z-index: 11; /* слой окна */
   inset: 0;
   width: calc(100% - 2 * var(--spacing-md));
   max-width: 400px; /* нет токена */
