@@ -208,3 +208,15 @@ export function addComment(db: Db, author: { id: number; role: Role }, athleteId
     .run(athleteId, author.id, c.exerciseId ?? null, name ?? title ?? 'Видео', c.videoId ?? null, c.videoId ? (c.videoLabel ?? null) : null, sessionId, c.timecodeSec ?? null, c.text, clock().toISOString());
   return { ok: true, id: Number(info.lastInsertRowid) };
 }
+
+export type DeleteResult = { ok: true } | { ok: false; error: 'forbidden' | 'not_found' };
+
+/** Удалить комментарий может его автор (тренер или спортсмен) и админ. Чужой комментарий для остальных — «не найден». */
+export function deleteComment(db: Db, user: { id: number; role: Role }, athleteId: number, commentId: number): DeleteResult {
+  const row = db.prepare('SELECT author_id FROM comments WHERE id = ? AND athlete_id = ?').get(commentId, athleteId) as { author_id: number } | undefined;
+  if (!row) return { ok: false, error: 'not_found' };
+  if (!canAccessAthlete(db, user, athleteId)) return { ok: false, error: 'forbidden' };
+  if (user.role !== 'admin' && row.author_id !== user.id) return { ok: false, error: 'forbidden' };
+  db.prepare('DELETE FROM comments WHERE id = ?').run(commentId);
+  return { ok: true };
+}

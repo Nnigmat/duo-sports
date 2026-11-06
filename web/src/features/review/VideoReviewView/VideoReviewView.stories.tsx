@@ -39,7 +39,7 @@ export const ReplyAtMoment: Story = {
   args: { startSec: 3 },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await userEvent.click(c.getByRole('button', { name: /К моменту/ }));
+    await expect(c.getByRole('button', { name: /К моменту/ })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.type(c.getByRole('textbox', { name: 'Ответ тренеру' }), 'Спасибо');
     await userEvent.click(c.getByRole('button', { name: 'Отправить' }));
     await waitFor(() => expect(onReply).toHaveBeenCalledTimes(1));
@@ -50,6 +50,7 @@ export const ReplyAtMoment: Story = {
 export const ReplyWithoutMoment: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: /К моменту/ }));
     await userEvent.type(c.getByRole('textbox', { name: 'Ответ тренеру' }), 'Понял');
     await userEvent.click(c.getByRole('button', { name: 'Отправить' }));
     await waitFor(() => expect(onReply).toHaveBeenCalledWith('Понял', null));

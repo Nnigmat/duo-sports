@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { useAthletes, useAthleteSessions, useExercises, usePastComments, usePlannedWorkout, useTrainerReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { toIso } from '../../plan/plan';
-import { markReviewed, postComment, postHint } from '../api';
+import { markReviewed, deleteComment, postComment, postHint } from '../api';
 import { AthleteView } from '../AthleteView/AthleteView';
 import { PlannedDetail } from '../PlannedDetail/PlannedDetail';
 import { ReviewDetail } from '../ReviewDetail/ReviewDetail';
@@ -63,6 +63,10 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
         videoSrc={(videoId) => `/api/videos/${videoId}`}
         onComment={async (comment) => {
           await postComment(athleteId, comment);
+          reload();
+        }}
+        onDeleteComment={async (commentId) => {
+          await deleteComment(athleteId, commentId);
           reload();
         }}
         onMarkReviewed={async () => {

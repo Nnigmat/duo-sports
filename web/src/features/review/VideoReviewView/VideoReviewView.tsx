@@ -13,17 +13,19 @@ type Props = {
   startSec?: number;
   onBack: () => void;
   /** timecodeSec — момент видео, если ответ привязан; промис отклонён — показываем ошибку */
+  /** Удалить свой ответ; без колбэка кнопки нет */
+  onDeleteComment?: (commentId: string) => Promise<void>;
   onReply: (text: string, timecodeSec: number | null) => Promise<void>;
 };
 
 const author = (c: ReviewComment) => (c.author === 'trainer' ? 'Тренер' : 'Ты');
 
 /** Видео ученика с комментариями тренера: комментарий всплывает в своё время, ответ можно привязать к моменту. */
-export function VideoReviewView({ video, comments, src, startSec, onBack, onReply }: Props) {
+export function VideoReviewView({ video, comments, src, startSec, onBack, onReply, onDeleteComment }: Props) {
   const player = useRef<VideoPlayerHandle>(null);
   const [time, setTime] = useState(startSec ?? 0);
   const [draft, setDraft] = useState('');
-  const [attached, setAttached] = useState(false);
+  const [attached, setAttached] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -44,7 +46,6 @@ export function VideoReviewView({ video, comments, src, startSec, onBack, onRepl
     try {
       await onReply(text, attached ? Math.floor(time) : null);
       setDraft('');
-      setAttached(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось отправить');
     } finally {
@@ -78,6 +79,7 @@ export function VideoReviewView({ video, comments, src, startSec, onBack, onRepl
                 isNew={c.isNew}
                 reply={c.author === 'athlete'}
                 active={c.id === active}
+                onDelete={c.author === 'athlete' && onDeleteComment ? () => onDeleteComment(c.id) : undefined}
                 timecodeSec={c.timecodeSec}
                 onSeek={(sec) => player.current?.seek(sec)}
               />
@@ -91,7 +93,7 @@ export function VideoReviewView({ video, comments, src, startSec, onBack, onRepl
           onChange={setDraft}
           onSubmit={send}
           label="Ответ тренеру"
-          placeholder="Ответить тренеру"
+          placeholder="Ответить"
           timecodeSec={Math.floor(time)}
           attached={attached}
           onAttachedChange={setAttached}

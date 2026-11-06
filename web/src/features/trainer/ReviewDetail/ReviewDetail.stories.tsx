@@ -7,6 +7,7 @@ import { ReviewDetail } from './ReviewDetail';
 
 const V = '11111111-1111-4111-8111-111111111111';
 const onComment = fn();
+const onDeleteComment = fn();
 const onMarkReviewed = fn();
 
 const meta = {
@@ -19,10 +20,12 @@ const meta = {
     past: pastCommentsFixture,
     videoSrc: () => sample,
     onComment,
+    onDeleteComment,
     onMarkReviewed,
   },
   beforeEach: () => {
     onComment.mockReset().mockResolvedValue(undefined);
+    onDeleteComment.mockReset().mockResolvedValue(undefined);
     onMarkReviewed.mockReset().mockResolvedValue(undefined);
   },
   parameters: { layout: 'padded', docs: { description: { component: 'Выполненная тренировка глазами тренера: подходы, видео раскрывающейся панелью, переписка, прошлые комментарии, «Отметить тренировку разобранной».' } } },
@@ -104,12 +107,24 @@ export const VideoPanel: Story = {
     await userEvent.click(open);
     const hide = await c.findByRole('button', { name: 'Скрыть видео' });
     await expect(hide).toHaveAttribute('aria-expanded', 'true');
-    await userEvent.click(c.getByRole('button', { name: /К моменту/ }));
+    await expect(c.getByRole('button', { name: /К моменту/ })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.type(c.getByRole('textbox', { name: /Приседания со штангой/ }), 'Хорошо');
     await userEvent.click(c.getAllByRole('button', { name: 'Отправить' })[0]!);
     await waitFor(() => expect(onComment).toHaveBeenCalledWith({ text: 'Хорошо', videoId: V, timecodeSec: 0 }));
     await userEvent.click(hide);
     await expect(c.queryByRole('button', { name: 'Скрыть видео' })).toBeNull();
+  },
+};
+
+/** Свой комментарий удаляется в два нажатия; комментарий ученика без кнопки */
+export const DeleteOwnComment: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const first = c.getAllByRole('button', { name: 'Удалить' })[0]!;
+    await userEvent.click(first);
+    await expect(onDeleteComment).not.toHaveBeenCalled();
+    await userEvent.click(await c.findByRole('button', { name: 'Точно удалить' }));
+    await waitFor(() => expect(onDeleteComment).toHaveBeenCalledTimes(1));
   },
 };
 

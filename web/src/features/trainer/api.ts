@@ -57,6 +57,11 @@ export const postComment = async (athleteId: number, comment: NewComment): Promi
   await request(`/api/athletes/${athleteId}/comments`, { method: 'POST', headers: json, body: JSON.stringify(comment) });
 };
 
+/** Удалить свой комментарий */
+export const deleteComment = async (athleteId: number, commentId: string): Promise<void> => {
+  await request(`/api/athletes/${athleteId}/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' });
+};
+
 /** План ученика: те же данные, что у спортсмена на /plan */
 export const fetchAthletePlan = async (athleteId: number): Promise<PlanResponse> => (await request(`/api/trainer/athletes/${athleteId}/plan`)).json();
 
