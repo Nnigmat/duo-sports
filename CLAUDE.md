@@ -27,6 +27,7 @@
 
 Git и CI:
 - Коммиты по Conventional Commits 1.0.0; breaking change — `!` или `BREAKING CHANGE:`.
+- Перед коммитом вызывать навык `/mattpocock-skills:pr`.
 - В main напрямую не пушить: ветка → PR → зелёный check (как в ci.yml; перед PR
   прогнать lint, test, build, test:stories локально). Красные PR не мержить.
 - Слияние в main деплоит на сервер (deploy.yml).
