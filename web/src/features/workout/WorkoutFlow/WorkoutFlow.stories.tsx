@@ -171,7 +171,8 @@ export const FullRun: Story = {
     // время запускается по «Старт»
     await expect(body().queryByRole('timer')).toBeNull();
     await click('Старт');
-    await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+    // после «Старт» сначала отсчёт 5 с, кольцо подписано «старт через»
+    await body().findByRole('button', { name: /Пауза, 00:0[1-5] старт через/ });
     await click('Пропустить');
 
     // Заминка

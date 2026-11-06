@@ -128,3 +128,9 @@ export function reduce(s: Session, a: Action): Session {
       return s.phase === 'finish' ? s : { ...s, phase: 'finish' };
   }
 }
+
+/** После перезагрузки таймер упражнения на время начинается заново: снова «Старт», с середины не продолжаем. Разминка и заминка идут сами. */
+export function afterReload(s: Session): Session {
+  const step = s.steps[s.index];
+  return s.phase === 'work' && step?.kind === 'time' && step.mode !== 'timed' ? { ...s, timerStarted: false } : s;
+}

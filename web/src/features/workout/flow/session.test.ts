@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
 import { circuit, setsBlock, warmup } from './fixtures';
-import { canGoBack, initSession, reduce, type Session } from './session';
+import { afterReload, canGoBack, initSession, reduce, type Session } from './session';
 
 // 0–1 разминка (timed), 2–10 круговые подходы (rest 60 с, кроме последнего)
 const steps = buildSteps([warmup, circuit]);
@@ -304,5 +304,25 @@ describe('факт подхода', () => {
   it('после «Назад» и «Пропустить» факт стирается', () => {
     const back = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'back' });
     expect(reduce(back, { type: 'skip' }).actuals[2]).toBeNull();
+  });
+});
+
+describe('afterReload', () => {
+  const plankSteps = buildSteps([setsBlock]); // 0–2 приседания, 3–4 планка
+  const running = (index: number): Session => ({ ...at(initSession(plankSteps), index), timerStarted: true });
+
+  it('упражнение на время после перезагрузки снова ждёт «Старт»', () => {
+    expect(afterReload(running(3)).timerStarted).toBe(false);
+  });
+
+  it('разминка и заминка продолжают идти сами', () => {
+    const s = { ...at(fresh(), 0), timerStarted: true };
+    expect(afterReload(s)).toBe(s);
+  });
+
+  it('отдых и финиш не трогает', () => {
+    const rest = running(3);
+    expect(afterReload({ ...rest, phase: 'rest' })).toMatchObject({ timerStarted: true });
+    expect(afterReload({ ...rest, phase: 'finish' })).toMatchObject({ timerStarted: true });
   });
 });
