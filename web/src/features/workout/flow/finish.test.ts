@@ -80,6 +80,38 @@ describe('sessionSteps: видео подходов', () => {
   });
 });
 
+describe('sessionSteps: факт подходов', () => {
+  const steps = buildSteps([warmup, circuit]);
+  const none = steps.map(() => null);
+  const noVideo = steps.map(() => null);
+  const noRest = steps.map(() => null);
+  const actuals = steps.map((_, i) => (i === 2 ? { value: 17 } : i === 3 ? { value: 30, extraWeight: true as const } : null));
+
+  it('факт лежит рядом с планом, план остаётся прежним', () => {
+    const out = sessionSteps(steps, steps.map(() => true), noVideo, noRest, actuals);
+    expect(out[2]!.actual).toEqual({ value: 17 });
+    expect(out[2]!.plan).toEqual(steps[2]!.plan);
+    expect(out[3]!.actual).toEqual({ value: 30, extraWeight: true });
+  });
+
+  it('у подходов без факта поля нет', () => {
+    const out = sessionSteps(steps, steps.map(() => true), noVideo, noRest, actuals);
+    expect('actual' in out[0]!).toBe(false);
+    expect('actual' in sessionSteps(steps, steps.map(() => true), noVideo, noRest, none)[2]!).toBe(false);
+  });
+
+  it('невыполненный подход уходит без факта, даже если он остался после «Назад»', () => {
+    const completed = steps.map((_, i) => i !== 2);
+    const out = sessionSteps(steps, completed, noVideo, noRest, actuals);
+    expect(out[2]!.completed).toBe(false);
+    expect('actual' in out[2]!).toBe(false);
+  });
+
+  it('без фактов (старый вызов) всё работает как раньше', () => {
+    expect(sessionSteps(steps, steps.map(() => true)).some((s) => 'actual' in s)).toBe(false);
+  });
+});
+
 describe('sessionSteps: фактический отдых', () => {
   const steps = buildSteps([warmup, circuit]);
   it('restSec попадает в свой подход, у остальных поля нет', () => {

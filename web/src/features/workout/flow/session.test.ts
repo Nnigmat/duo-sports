@@ -241,3 +241,68 @@ describe('back через границы', () => {
     expect(again.videoIds[5]).toBe('v-5b');
   });
 });
+
+describe('факт подхода', () => {
+  const working = (index: number) => at(reduce(fresh(), { type: 'begin' }), index);
+
+  it('в начале фактов нет', () => {
+    expect(fresh().actuals).toEqual(steps.map(() => null));
+  });
+
+  it('«Готово» с фактом сохраняет его у шага, план не меняется', () => {
+    const s = reduce(working(2), { type: 'done', actual: { value: 17 } });
+    expect(s.actuals[2]).toEqual({ value: 17 });
+    expect(s.steps).toEqual(steps);
+    expect(s.completed[2]).toBe(true);
+  });
+
+  it('факт одного подхода не попадает в другие', () => {
+    const s = reduce(working(2), { type: 'done', actual: { value: 17 } });
+    expect(s.actuals.filter((a) => a !== null)).toHaveLength(1);
+  });
+
+  it('«Готово» без факта (разминка) оставляет факт пустым', () => {
+    const s = reduce(working(0), { type: 'done' });
+    expect(s.completed[0]).toBe(true);
+    expect(s.actuals[0]).toBeNull();
+  });
+
+  it('«Пропустить» не выполняет подход и не пишет факт', () => {
+    const s = reduce(working(2), { type: 'skip' });
+    expect(s.completed[2]).toBe(false);
+    expect(s.actuals[2]).toBeNull();
+  });
+
+  it('«Назад» с отдыха сохраняет введённый факт, а подход снова не выполнен', () => {
+    const rest = reduce(working(2), { type: 'done', actual: { value: 17 } });
+    const back = reduce(rest, { type: 'back' });
+    expect(back).toMatchObject({ phase: 'work', index: 2 });
+    expect(back.completed[2]).toBe(false);
+    expect(back.actuals[2]).toEqual({ value: 17 });
+  });
+
+  it('«Назад» со следующего подхода возвращает к предыдущему с его фактом', () => {
+    const next = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'restOver', restSec: 60 });
+    const back = reduce(next, { type: 'back' });
+    expect(back.index).toBe(2);
+    expect(back.actuals[2]).toEqual({ value: 17 });
+  });
+
+  it('повторное «Готово» перезаписывает факт', () => {
+    const back = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'back' });
+    const again = reduce(back, { type: 'done', actual: { value: 20, extraWeight: true } });
+    expect(again.actuals[2]).toEqual({ value: 20, extraWeight: true });
+  });
+
+  it('подход с видео не оставляет старый факт после «Назад»', () => {
+    const back = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'back' });
+    const recorded = reduce(back, { type: 'recorded', videoId: 'v-1' });
+    expect(recorded.completed[2]).toBe(true);
+    expect(recorded.actuals[2]).toBeNull();
+  });
+
+  it('после «Назад» и «Пропустить» факт стирается', () => {
+    const back = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'back' });
+    expect(reduce(back, { type: 'skip' }).actuals[2]).toBeNull();
+  });
+});

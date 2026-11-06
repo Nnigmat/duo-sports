@@ -1,0 +1,27 @@
+/* Метка факта: слово в ink, точка лишь усиливает. Состояние читается и без цвета. */
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+  color: var(--ink);
+  font-weight: var(--body-sm-medium-weight);
+  font-variant-numeric: tabular-nums;
+}
+.label::before {
+  content: '';
+  flex: none;
+  width: 10px; /* нет токена */
+  height: 10px; /* нет токена */
+  border-radius: 50%;
+  background: var(--steel);
+}
+.label[data-state='within']::before {
+  background: var(--success);
+}
+.label[data-state='below']::before {
+  background: var(--warning);
+}
+.label[data-state='above']::before {
+  background: var(--primary);
+}

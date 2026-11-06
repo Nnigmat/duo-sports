@@ -14,6 +14,7 @@ export {
 } from './countdown';
 export { addRestGoal, isGoalReached, restElapsedSec, restProgress, startRest, type Rest } from './rest';
 export { commentsFor, formatCommentDate, hasNewComments, latestComment, markRead, sortComments } from './comments';
+export { factDraft, factFromDraft, factLabel, type FactDraft, type FactLabel } from './fact';
 export { clampZoom, formatZoom, openCamera, pickMimeType, zoomRange, type CameraStream, type Facing, type ZoomRange } from './recording';
 export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';
 export { formatLongDate, joinNumbers, plural } from './ru';

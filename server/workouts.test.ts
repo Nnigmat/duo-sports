@@ -135,6 +135,35 @@ describe('validateSession', () => {
   });
 });
 
+describe('validateSession: факт подхода', () => {
+  const withActual = (actual: unknown) => {
+    const r = result();
+    r.steps[1] = { ...r.steps[1]!, actual } as SessionResult['steps'][number];
+    return validateSession(r);
+  };
+  it('принимает факт: повторы, вес и «доп. вес»', () => {
+    expect(withActual({ value: 8 }).ok).toBe(true);
+    expect(withActual({ value: 8, weight: 62.5, extraWeight: true }).ok).toBe(true);
+  });
+  it('без факта (старый клиент, пропуск) тоже можно', () => {
+    expect(validateSession(result()).ok).toBe(true);
+  });
+  it('отказывает по кривому факту', () => {
+    for (const actual of [null, 5, {}, { value: -1 }, { value: 'много' }, { value: 8, weight: -1 }, { value: 8, extraWeight: false }, { value: 8, extraWeight: 'да' }]) {
+      expect(withActual(actual)).toMatchObject({ ok: false, error: 'steps[1]: неверные поля' });
+    }
+  });
+  it('факт сохраняется в Итоге вместе с планом', () => {
+    const r = result();
+    r.steps[1] = { ...r.steps[1]!, actual: { value: 7 } };
+    applyImport(db, me, commit(), clock);
+    const saved = saveSession(db, me, workoutId(), r, clock);
+    expect(saved.ok).toBe(true);
+    const row = db.prepare('SELECT steps FROM sessions_done WHERE id = ?').get((saved as { id: number }).id) as { steps: string };
+    expect(JSON.parse(row.steps)[1]).toMatchObject({ actual: { value: 7 }, plan: r.steps[1]!.plan });
+  });
+});
+
 describe('база, созданная до структуры', () => {
   it('колонка structure добавляется при открытии, данные остаются', async () => {
     const file = `${process.env.TMPDIR ?? '/tmp'}/old-${Date.now()}.db`;

@@ -97,9 +97,17 @@ async function toCircuit() {
   await waitFor(() => expect(body().getByText('Подход 1 из 9')).toBeVisible());
 }
 
-/** «Готово» и пропуск отдыха после него */
-async function doneAndSkipRest() {
+/** «Готово» на подходе упражнения и «Записать» в шторке результата со значением из плана */
+async function done() {
   await click('Готово');
+  await screen.findByRole('dialog');
+  await click('Записать');
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+}
+
+/** «Готово», «Записать» и пропуск отдыха после него */
+async function doneAndSkipRest() {
+  await done();
   await body().findByRole('timer', { name: /отдых/i });
   await click('Пропустить');
 }
@@ -119,7 +127,7 @@ export const Resumed: Story = {
     await expect(body().getByText('Подход 2 из 9')).toBeVisible();
     await expect(body().queryByRole('button', { name: 'Начать тренировку' })).toBeNull();
     // Дальше тренировка идёт как обычно
-    await click('Готово');
+    await done();
     await body().findByRole('timer', { name: /отдых/i });
   },
 };
@@ -153,7 +161,7 @@ export const FullRun: Story = {
     // Круг 3: после последнего подхода блока отдыха нет, сразу силовая
     await doneAndSkipRest();
     await doneAndSkipRest();
-    await click('Готово');
+    await done();
 
     // Силовая: приседания, затем «Планка» на время
     await expect(body().getByText('Приседания с гантелью · 12 кг × 12')).toBeVisible();
@@ -179,9 +187,16 @@ export const FullRun: Story = {
     await click('Завершить');
     await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, rounds: 3, videos: 1 }, expect.any(Array));
     // Вместе с итогами уходит каждый подход: выполненные и пропущенная планка
-    const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean }>;
+    const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean; actual?: { value: number }; plan: { target: { max: number } } }>;
     await expect(steps.some((x) => x.completed)).toBe(true);
     await expect(steps.filter((x) => !x.completed).length).toBeGreaterThan(0);
+    // Факт ушёл в Итог отдельно от плана; пропущенная планка без факта; разминка без шторки и без факта
+    const dips = steps.find((x) => x.exerciseName === 'Обратные отжимания')!;
+    await expect(dips.actual).toEqual({ value: 20 });
+    await expect(dips.plan.target.max).toBe(20);
+    await expect(steps.find((x) => x.exerciseName === 'Планка')).toMatchObject({ completed: false });
+    await expect('actual' in steps.find((x) => x.exerciseName === 'Планка')!).toBe(false);
+    await expect('actual' in steps[0]!).toBe(false);
   },
 };
 
@@ -189,7 +204,7 @@ export const RestIsAboutNextSet: Story = {
   tags: hidden,
   play: async () => {
     await toCircuit();
-    await click('Готово');
+    await done();
     await expect(await body().findByText('Отдых · далее подход 2 из 9')).toBeVisible();
     await expect(body().getByText('Ножницы лёжа · 30–34 повт')).toBeVisible();
     await expect(body().getByRole('button', { name: 'Запись' })).toBeDisabled();
@@ -207,11 +222,68 @@ export const RestOverStartsNextSet: Story = {
   tags: hidden,
   play: async () => {
     await toCircuit();
-    await click('Готово');
+    await done();
     await expect(await body().findByText('Отдых · далее подход 2 из 9')).toBeVisible();
     // Цель в моке 5 с: круг сам превращается в кнопку
     await userEvent.click(await body().findByRole('button', { name: /отдыхаете.*Начать/ }, { timeout: 8000 }));
     await expect(await body().findByText('Подход 2 из 9')).toBeVisible();
+  },
+};
+
+export const FactDoesNotChangePlan: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await click('Готово');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    // Степпер стоит на верхней границе плана 18–20
+    await expect(dialog.getByText('План: 18–20')).toBeVisible();
+    for (let i = 0; i < 3; i++) await userEvent.click(dialog.getByRole('button', { name: 'Меньше повторений' }));
+    await expect(dialog.getByText('Меньше плана')).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
+    await click('Пропустить');
+    // Следующие круги того же упражнения остались с планом 18–20
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await expect(await body().findByText('Обратные отжимания · 18–20 повт')).toBeVisible();
+  },
+};
+
+export const CloseResultSheetSavesNothing: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await click('Готово');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Закрыть' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Подход не засчитан: отдыха нет, мы всё на первом подходе
+    await expect(body().queryByRole('timer')).toBeNull();
+    await expect(body().getByText('Подход 1 из 9')).toBeVisible();
+    await expect(body().getByRole('button', { name: 'Готово' })).toBeVisible();
+  },
+};
+
+export const RedoneFactIsOverwritten: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await click('Готово');
+    const first = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    for (let i = 0; i < 3; i++) await userEvent.click(first.getByRole('button', { name: 'Меньше повторений' }));
+    await userEvent.click(first.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
+
+    // «Назад» с отдыха, снова «Готово»: шторка открыта с введённым фактом (17), а не с планом
+    await click('Шаг назад');
+    await click('Готово');
+    const second = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    await expect(second.getByText('Меньше плана')).toBeVisible();
+    await userEvent.click(second.getByRole('button', { name: 'Больше повторений' }));
+    await expect(second.getByText('В плане')).toBeVisible();
+    await userEvent.click(second.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
   },
 };
 

@@ -313,6 +313,16 @@ export interface PlanResponse {
 
 // ── Выполнение тренировки ─────────────────────────────────
 
+/** Факт подхода: что спортсмен реально сделал. Хранится отдельно от плана. */
+export interface SetActual {
+  /** Повторы или секунды (у упражнения на время) */
+  value: number;
+  /** Вес, кг: только у упражнения «вес × повторы» */
+  weight?: number;
+  /** Отметка «был доп. вес»; нет отметки — поля нет */
+  extraWeight?: true;
+}
+
 /** Один подход тренировки: что было в плане и сделан ли он */
 export interface SessionStepResult {
   exerciseId: string;
@@ -324,6 +334,8 @@ export interface SessionStepResult {
   kind: ExerciseKind;
   /** План подхода с учётом правок «Изменить» */
   plan: SetPlan;
+  /** Факт; нет у пропущенных подходов, разминки, заминки и у старых Итогов */
+  actual?: SetActual;
   completed: boolean;
   /** Видео этого подхода: id из ответа POST /api/videos */
   videoId?: string;

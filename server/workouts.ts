@@ -39,6 +39,10 @@ export const MAX_STEPS = 2000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const MAX_DURATION_SEC = 86_400;
 
+/** Факт подхода: число, необязательный вес и отметка «был доп. вес» (только true). Нет поля — старый клиент или пропуск. */
+const isActual = (v: unknown): boolean =>
+  isObj(v) && nonNeg(v.value) && (v.weight === undefined || nonNeg(v.weight)) && (v.extraWeight === undefined || v.extraWeight === true);
+
 export type ValidSession = { ok: true; result: SessionResult } | { ok: false; error: string };
 
 export function validateSession(body: unknown): ValidSession {
@@ -53,6 +57,7 @@ export function validateSession(body: unknown): ValidSession {
       Number.isInteger(s.blockIndex) && Number.isInteger(s.round) && Number.isInteger(s.rounds) && KINDS.includes(s.kind as ExerciseKind) &&
       typeof s.completed === 'boolean' && isObj(plan) && isObj(plan.target) && nonNeg(plan.target.min) && nonNeg(plan.target.max) &&
       (plan.weight === undefined || nonNeg(plan.weight)) &&
+      (s.actual === undefined || isActual(s.actual)) &&
       (s.restSec === undefined || (Number.isInteger(s.restSec) && (s.restSec as number) >= 0 && (s.restSec as number) <= MAX_DURATION_SEC)) &&
       (s.videoId === undefined || (typeof s.videoId === 'string' && UUID.test(s.videoId)));
     if (!ok) return { ok: false, error: `steps[${i}]: неверные поля` };

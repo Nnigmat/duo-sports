@@ -1,3 +1,4 @@
+import type { SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 
 export type Phase = 'start' | 'work' | 'rest' | 'finish';
@@ -9,6 +10,8 @@ export interface Session {
   phase: Phase;
   /** Выполнен ли шаг i; пропущенные остаются false */
   completed: boolean[];
+  /** Факт подхода i: что реально сделано; null — факта нет (пропуск, разминка, ещё не делали). План не трогает. */
+  actuals: Array<SetActual | null>;
   /** Сколько видео записано */
   videos: number;
   /** id видео подхода i с сервера; null — видео нет или сервер id не вернул */
@@ -22,7 +25,8 @@ export interface Session {
 export type Action =
   | { type: 'begin' }
   | { type: 'startTimer' }
-  | { type: 'done' }
+  /** «Готово»; actual — факт из шторки, у разминки и заминки его нет */
+  | { type: 'done'; actual?: SetActual }
   /** На отдыхе `restSec` — сколько он шёл до нажатия; на подходе не нужен */
   | { type: 'skip'; restSec?: number }
   | { type: 'back' }
@@ -41,6 +45,7 @@ export function initSession(steps: Step[]): Session {
     index: 0,
     phase: 'start',
     completed: steps.map(() => false),
+    actuals: steps.map(() => null),
     videos: 0,
     videoIds: steps.map(() => null),
     restSec: steps.map(() => null),
@@ -62,9 +67,10 @@ function next(s: Session): Session {
   return s.index + 1 >= s.steps.length ? { ...s, phase: 'finish' } : goTo(s, s.index + 1);
 }
 
-function complete(s: Session): Session {
+function complete(s: Session, actual?: SetActual): Session {
   const completed = s.completed.map((c, i) => (i === s.index ? true : c));
-  const done = { ...s, completed };
+  const actuals = s.actuals.map((a, i) => (i === s.index ? (actual ?? null) : a));
+  const done = { ...s, completed, actuals };
   if (s.index + 1 >= s.steps.length) return { ...done, phase: 'finish' };
   return s.steps[s.index].restAfterSec > 0 ? { ...done, phase: 'rest' } : goTo(done, s.index + 1);
 }
@@ -96,7 +102,7 @@ export function reduce(s: Session, a: Action): Session {
       return s.phase === 'work' ? { ...s, timerStarted: true } : s;
 
     case 'done':
-      return s.phase === 'work' ? complete(s) : s;
+      return s.phase === 'work' ? complete(s, a.actual) : s;
 
     case 'recorded':
       return s.phase === 'work'
@@ -105,7 +111,9 @@ export function reduce(s: Session, a: Action): Session {
 
     case 'skip':
       if (s.phase === 'rest') return next(withRest(s, a.restSec));
-      return s.phase === 'work' ? next(s) : s;
+      // Пропуск подхода стирает факт, оставшийся после «Назад»; пропуск отдыха подход не трогает
+      if (s.phase === 'work') return next({ ...s, actuals: s.actuals.map((x, i) => (i === s.index ? null : x)) });
+      return s;
 
     case 'restOver':
       return s.phase === 'rest' ? next(withRest(s, a.restSec)) : s;
