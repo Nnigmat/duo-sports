@@ -6,16 +6,18 @@ export interface Draft {
   startedAt: number;
   /** Когда тренировка закончилась (мс): с этого момента общее время не растёт */
   finishedAt?: number;
+  /** Ключ против дубликата: один на Прохождение, уходит с каждой отправкой итога */
+  submitKey?: string;
   /** Когда черновик обновлялся в последний раз (мс) */
   updatedAt: number;
 }
 
-/** Через сколько без обновлений черновик считается забытым */
+/** Через сколько без обновлений черновик считается забытым. На обратной связи срок не действует: итог ещё не отправлен. */
 export const DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
 
 export const draftKey = (userId: number, workoutId: string, date: string) => `duo-sport:draft:${userId}:${workoutId}:${date}`;
 
-const PHASES = ['work', 'rest', 'finish'];
+const PHASES = ['work', 'rest', 'finish', 'feedback'];
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
@@ -61,7 +63,14 @@ function hasValidActuals(v: Record<string, unknown>, n: number): boolean {
   return v.actuals === undefined || (Array.isArray(v.actuals) && v.actuals.length === n && v.actuals.every((a) => a === null || isActual(a)));
 }
 
-function isSession(v: unknown): v is Omit<Session, 'actuals'> & { actuals?: Session['actuals'] } {
+/** Самочувствие и комментарий: у черновика, сохранённого до обратной связи, полей нет — это допустимо */
+function hasValidFeedback(v: Record<string, unknown>): boolean {
+  return (v.feeling === undefined || v.feeling === null || (Number.isInteger(v.feeling) && (v.feeling as number) >= 1 && (v.feeling as number) <= 5)) && (v.comment === undefined || typeof v.comment === 'string');
+}
+
+type StoredSession = Omit<Session, 'actuals' | 'feeling' | 'comment'> & Partial<Pick<Session, 'actuals' | 'feeling' | 'comment'>>;
+
+function isSession(v: unknown): v is StoredSession {
   if (!isObject(v) || !Array.isArray(v.steps) || v.steps.length === 0) return false;
   const n = v.steps.length;
   return (
@@ -76,6 +85,7 @@ function isSession(v: unknown): v is Omit<Session, 'actuals'> & { actuals?: Sess
     v.completed.length === n &&
     v.completed.every((c) => typeof c === 'boolean') &&
     hasValidActuals(v, n) &&
+    hasValidFeedback(v) &&
     Array.isArray(v.videoIds) &&
     v.videoIds.length === n &&
     v.videoIds.every((id) => id === null || typeof id === 'string') &&
@@ -100,8 +110,19 @@ export function parseDraft(raw: string | null, now: number): Draft | null {
   } catch {
     return null;
   }
-  if (!isObject(data) || !isNum(data.startedAt) || !isNum(data.updatedAt) || (data.finishedAt !== undefined && !isNum(data.finishedAt)) || !isSession(data.session)) return null;
-  if (now - data.updatedAt > DRAFT_TTL_MS) return null;
-  const session: Session = { ...data.session, actuals: data.session.actuals ?? data.session.steps.map(() => null) };
-  return { session, startedAt: data.startedAt, ...(isNum(data.finishedAt) ? { finishedAt: data.finishedAt } : {}), updatedAt: data.updatedAt };
+  if (!isObject(data) || !isNum(data.startedAt) || !isNum(data.updatedAt) || (data.finishedAt !== undefined && !isNum(data.finishedAt)) || (data.submitKey !== undefined && typeof data.submitKey !== 'string') || !isSession(data.session)) return null;
+  if (data.session.phase !== 'feedback' && now - data.updatedAt > DRAFT_TTL_MS) return null;
+  const session: Session = {
+    ...data.session,
+    actuals: data.session.actuals ?? data.session.steps.map(() => null),
+    feeling: data.session.feeling ?? null,
+    comment: data.session.comment ?? '',
+  };
+  return {
+    session,
+    startedAt: data.startedAt,
+    ...(isNum(data.finishedAt) ? { finishedAt: data.finishedAt } : {}),
+    ...(typeof data.submitKey === 'string' ? { submitKey: data.submitKey } : {}),
+    updatedAt: data.updatedAt,
+  };
 }

@@ -31,6 +31,8 @@
 .sInk { stroke: var(--ink); }
 .sSkinShade { stroke: #b8865c; } /* нет токена */
 .sMouth { stroke: #7a3d2c; } /* нет токена: рот */
+.sBrow { stroke: var(--ink-tint); }
+.fMouth { fill: #b5523b; } /* нет токена: открытый рот */
 
 .shadow { fill: var(--ink); opacity: 0.08; }
 

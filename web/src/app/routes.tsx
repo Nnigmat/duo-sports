@@ -7,7 +7,7 @@ import { PlanPage } from '../features/plan';
 import { ReviewPage, VideoReviewPage } from '../features/review';
 import { AthleteImportPage, AthletePage, AthletePlanPage, OwnWorkoutEditPage, StudentsPage, WorkoutEditPage, WorkoutPreviewPage } from '../features/trainer';
 import { TodayPage } from '../features/today';
-import { WorkoutPage } from '../features/workout';
+import { ResumeFeedback, WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
 import { RequireAuth } from './auth/RequireAuth';
 import { HomeRedirect, RequireTrainer } from './auth/RequireRole';
@@ -22,7 +22,9 @@ export function AppRoutes() {
             index
             element={
               <HomeRedirect>
-                <TodayPage />
+                <ResumeFeedback>
+                  <TodayPage />
+                </ResumeFeedback>
               </HomeRedirect>
             }
           />

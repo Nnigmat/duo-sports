@@ -1,7 +1,7 @@
 import type { SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 
-export type Phase = 'start' | 'work' | 'rest' | 'finish';
+export type Phase = 'start' | 'work' | 'rest' | 'finish' | 'feedback';
 
 /** Ход тренировки: где мы, что выполнено. Всё остальное (шторки, камера) — состояние экрана. */
 export interface Session {
@@ -20,6 +20,10 @@ export interface Session {
   restSec: Array<number | null>;
   /** Запущен ли таймер текущего шага: в таймерных блоках сам, у упражнений на время по «Старт» */
   timerStarted: boolean;
+  /** Самочувствие 1–5; null — ещё не выбрано. Без него итог не отправить. */
+  feeling: number | null;
+  /** Комментарий ко всей тренировке, необязательный */
+  comment: string;
 }
 
 export type Action =
@@ -34,7 +38,13 @@ export type Action =
   | { type: 'restOver'; restSec: number }
   /** видео записано и сохранено: подход считается выполненным */
   | { type: 'recorded'; videoId?: string }
-  | { type: 'finishNow' };
+  | { type: 'finishNow' }
+  /** «Дальше» на финише: к обратной связи */
+  | { type: 'toFeedback' }
+  /** Стрелка на обратной связи: назад к итогам */
+  | { type: 'toSummary' }
+  | { type: 'rate'; value: number }
+  | { type: 'comment'; text: string };
 
 /** Разминка и заминка идут сами; упражнение на время в блоке подходами ждёт «Старт». */
 const autoStart = (step: Step) => step.mode === 'timed';
@@ -50,6 +60,8 @@ export function initSession(steps: Step[]): Session {
     videoIds: steps.map(() => null),
     restSec: steps.map(() => null),
     timerStarted: false,
+    feeling: null,
+    comment: '',
   };
 }
 
@@ -125,7 +137,19 @@ export function reduce(s: Session, a: Action): Session {
       return goTo(uncomplete(s, s.index - 1), s.index - 1);
 
     case 'finishNow':
-      return s.phase === 'finish' ? s : { ...s, phase: 'finish' };
+      return s.phase === 'finish' || s.phase === 'feedback' ? s : { ...s, phase: 'finish' };
+
+    case 'toFeedback':
+      return s.phase === 'finish' ? { ...s, phase: 'feedback' } : s;
+
+    case 'toSummary':
+      return s.phase === 'feedback' ? { ...s, phase: 'finish' } : s;
+
+    case 'rate':
+      return s.phase === 'feedback' && Number.isInteger(a.value) && a.value >= 1 && a.value <= 5 ? { ...s, feeling: a.value } : s;
+
+    case 'comment':
+      return s.phase === 'feedback' ? { ...s, comment: a.text } : s;
   }
 }
 

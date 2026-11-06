@@ -3,12 +3,12 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { useToday, useWorkoutById } from '../../../data/hooks';
 import type { WorkoutData } from '../../../data/api';
 import { Skeleton } from '../../../shared';
-import { Button, EmptyState, Notice } from '../../../ui';
+import { Button, EmptyState } from '../../../ui';
 import { toIso } from '../../plan/plan';
 import { useAuth } from '../../../app/auth/AuthProvider';
 import { saveSession, uploadVideo } from '../api';
 import { clearDraft, loadDraft, saveDraft } from '../draftStorage';
-import { draftKey, totalSec, type Session } from '../flow';
+import { draftKey, newSubmitKey, totalSec, type Session } from '../flow';
 import { formatLongDate } from '../flow/ru';
 import { parseIso } from '../../plan/plan';
 import { WorkoutFlow } from '../WorkoutFlow/WorkoutFlow';
@@ -46,7 +46,6 @@ function SavedWorkout({ id }: { id: string }) {
   const { data, error } = useWorkoutById(id);
   const [search] = useSearchParams();
   const navigate = useNavigate();
-  const [failure, setFailure] = useState<string | null>(null);
   const auth = useAuth();
   // День плана: из адреса; без него — сегодня
   const date = /^\d{4}-\d{2}-\d{2}$/.test(search.get('date') ?? '') ? search.get('date')! : toIso(new Date());
@@ -60,6 +59,8 @@ function SavedWorkout({ id }: { id: string }) {
   // Момент финиша: пишется один раз при переходе на экран итогов и хранится в черновике
   const finishedAt = useRef<number | null>(draft?.finishedAt ?? null);
   const [finishedAtMs, setFinishedMs] = useState<number | null>(finishedAt.current);
+  // Ключ против дубликата: один на Прохождение, создаётся при «Начать тренировку» и лежит в черновике
+  const submitKey = useRef<string | null>(draft?.submitKey ?? null);
   const onSessionChange = useCallback(
     (session: Session) => {
       if (!key) return;
@@ -68,6 +69,7 @@ function SavedWorkout({ id }: { id: string }) {
         setStartedMs(null);
         finishedAt.current = null;
         setFinishedMs(null);
+        submitKey.current = null;
         clearDraft(key);
         return;
       }
@@ -75,11 +77,12 @@ function SavedWorkout({ id }: { id: string }) {
         startedAt.current = Date.now();
         setStartedMs(startedAt.current);
       }
-      if (session.phase === 'finish' && finishedAt.current === null) {
+      if (submitKey.current === null) submitKey.current = newSubmitKey();
+      if ((session.phase === 'finish' || session.phase === 'feedback') && finishedAt.current === null) {
         finishedAt.current = Date.now();
         setFinishedMs(finishedAt.current);
       }
-      saveDraft(key, { session, startedAt: startedAt.current, ...(finishedAt.current !== null ? { finishedAt: finishedAt.current } : {}), updatedAt: Date.now() });
+      saveDraft(key, { session, startedAt: startedAt.current, ...(finishedAt.current !== null ? { finishedAt: finishedAt.current } : {}), submitKey: submitKey.current, updatedAt: Date.now() });
     },
     [key],
   );
@@ -91,34 +94,36 @@ function SavedWorkout({ id }: { id: string }) {
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={320} />;
   return (
-    <>
-      {failure && <Notice tone="error">{failure}</Notice>}
-      <Flow
-        data={data}
-        dateLabel={formatLongDate(parseIso(date))}
-        initialSession={draft?.session}
-        startedAt={startedAtMs}
-        finishedAt={finishedAtMs}
-        onSessionChange={onSessionChange}
-        onExit={leave}
-        onFinish={async (steps, videos) => {
-          setFailure(null);
-          try {
-            await saveSession(id, { date, steps, videos, durationSec: startedAt.current === null ? 0 : totalSec(startedAt.current, finishedAt.current, Date.now()) });
-            leave();
-          } catch (e) {
-            setFailure(e instanceof Error ? e.message : 'Итоги не сохранены');
-          }
-        }}
-      />
-    </>
+    <Flow
+      data={data}
+      dateLabel={formatLongDate(parseIso(date))}
+      initialSession={draft?.session}
+      startedAt={startedAtMs}
+      finishedAt={finishedAtMs}
+      onSessionChange={onSessionChange}
+      onExit={leave}
+      onFinish={async (steps, videos, feedback) => {
+        // Черновик чистится только после успеха: при ошибке остаётся ключ, оценка и комментарий, повтор не задвоит итог
+        // Ключ запоминаем до отправки: повтор после обрыва сети должен уйти с тем же
+        const submit = (submitKey.current ??= newSubmitKey());
+        await saveSession(id, {
+          date,
+          steps,
+          videos,
+          durationSec: startedAt.current === null ? 0 : totalSec(startedAt.current, finishedAt.current, Date.now()),
+          ...feedback,
+          key: submit,
+        });
+        leave();
+      }}
+    />
   );
 }
 
 type FlowProps = {
   data: WorkoutData;
   dateLabel: string;
-  onFinish: (steps: import('../../../../../shared/types').SessionStepResult[], videos: number) => Promise<void>;
+  onFinish: (steps: import('../../../../../shared/types').SessionStepResult[], videos: number, feedback: { feeling: number; comment?: string }) => Promise<void>;
   onExit: () => void;
   initialSession?: Session;
   startedAt: number | null;
@@ -135,7 +140,7 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, fi
       gender={data.gender}
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}
-      onFinish={(stats, steps) => void onFinish(steps, stats.videos)}
+      onFinish={(stats, steps, feedback) => onFinish(steps, stats.videos, feedback)}
       initialSession={initialSession}
       startedAt={startedAt}
       finishedAt={finishedAt}

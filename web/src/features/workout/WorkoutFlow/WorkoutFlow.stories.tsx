@@ -31,9 +31,9 @@ function Demo(props: FlowProps) {
     <WorkoutFlow
       key={run}
       {...props}
-      onFinish={(s: FinishStats, steps) => {
-        props.onFinish(s, steps);
-        setResult(`Сохранено: ${s.setsDone} из ${s.setsTotal} подходов, видео ${s.videos}`);
+      onFinish={async (s: FinishStats, steps, feedback) => {
+        await props.onFinish(s, steps, feedback);
+        setResult(`Сохранено: ${s.setsDone} из ${s.setsTotal} подходов, видео ${s.videos}, самочувствие ${feedback.feeling}`);
       }}
       onExit={() => {
         props.onExit();
@@ -60,7 +60,7 @@ const meta = {
   render: (args) => <Demo {...args} />,
   beforeEach: () => {
     onUploadVideo.mockReset().mockImplementation(() => new Promise((r) => setTimeout(r, 300)));
-    onFinish.mockReset();
+    onFinish.mockReset().mockResolvedValue(undefined);
     onExit.mockReset();
     return mockCamera('stream');
   },
@@ -118,6 +118,9 @@ const resumedSession = () =>
     (s, type) => reduce(s, { type } as Action),
     initSession(buildSteps(WORKOUT.blocks)),
   );
+
+/** Прохождение, дошедшее до «Обратной связи» */
+const finishedFeedback = () => reduce(reduce(resumedSession(), { type: 'finishNow' }), { type: 'toFeedback' });
 
 export const Resumed: Story = {
   tags: hidden,
@@ -189,8 +192,11 @@ export const FullRun: Story = {
     await expect(body().getByText('общее время')).toBeVisible();
     await click('Дальше');
     await expect(await body().findByRole('heading', { name: 'Обратная связь' })).toBeVisible();
-    await click('Отправить');
-    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, videos: 1 }, expect.any(Array));
+    // Без оценки отправить нельзя
+    await expect(body().getByRole('button', { name: 'Выберите самочувствие' })).toBeDisabled();
+    await click('Хорошо');
+    await click('Отправить тренеру');
+    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, videos: 1 }, expect.any(Array), { feeling: 4 });
     // Вместе с итогами уходит каждый подход: выполненные и пропущенная планка
     const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean; actual?: { value: number }; plan: { target: { max: number } } }>;
     await expect(steps.some((x) => x.completed)).toBe(true);
@@ -337,6 +343,38 @@ export const TechAndCommentsMarkRead: Story = {
     // после закрытия комментарии прочитаны: точки нет
     await expect(body().getByRole('button', { name: 'Техника' })).toBeVisible();
     await expect(body().queryByRole('button', { name: 'Техника, новый комментарий тренера' })).toBeNull();
+  },
+};
+
+/** Ошибка сети: оценка и комментарий остаются, повтор уходит с теми же данными, ключ и итог не задваиваются на странице-контейнере */
+export const RetryAfterNetworkError: Story = {
+  tags: hidden,
+  args: { initialSession: finishedFeedback() },
+  play: async () => {
+    onFinish.mockReset().mockRejectedValueOnce(new Error('Нет связи с сервером')).mockResolvedValue(undefined);
+    await click('Отлично');
+    await userEvent.type(body().getByLabelText('Комментарий к тренировке'), 'легко');
+    await click('Отправить тренеру');
+    await expect(await body().findByRole('alert')).toHaveTextContent('Нет связи с сервером');
+    // Экран и введённое на месте, кнопка снова доступна
+    await expect(body().getByRole('button', { name: 'Отлично' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(body().getByLabelText('Комментарий к тренировке')).toHaveValue('легко');
+    await click('Отправить тренеру');
+    await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(2));
+    await expect(onFinish.mock.calls[1]![2]).toEqual({ feeling: 5, comment: 'легко' });
+  },
+};
+
+/** Прохождение, закрытое на «Обратной связи»: после открытия сразу этот экран, стрелка ведёт к итогам */
+export const ResumedOnFeedback: Story = {
+  tags: hidden,
+  args: { initialSession: finishedFeedback() },
+  play: async () => {
+    await expect(body().getByRole('heading', { name: 'Обратная связь' })).toBeVisible();
+    await click('К итогам');
+    await expect(await body().findByText('Тренировка пройдена')).toBeVisible();
+    await click('Дальше');
+    await expect(await body().findByRole('heading', { name: 'Обратная связь' })).toBeVisible();
   },
 };
 

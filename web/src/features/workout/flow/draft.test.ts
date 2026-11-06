@@ -88,3 +88,45 @@ describe('draft', () => {
     expect(parseDraft(JSON.stringify({ session: draft.session, updatedAt: NOW }), NOW)).toBeNull();
   });
 });
+
+describe('черновик на обратной связи', () => {
+  const feedback: Draft = {
+    session: { ...draft.session, phase: 'feedback', feeling: 4, comment: 'колено' },
+    startedAt: NOW - 90_000_000,
+    finishedAt: NOW - 86_400_000,
+    submitKey: 'a0b1c2d3-0000-4000-8000-000000000001',
+    updatedAt: NOW - 86_400_000,
+  };
+
+  it('срок 12 часов к нему не применяется: через сутки и через месяц он жив', () => {
+    expect(parseDraft(serializeDraft(feedback), NOW)).toEqual(feedback);
+    expect(parseDraft(serializeDraft({ ...feedback, updatedAt: NOW - 30 * 86_400_000 }), NOW)).not.toBeNull();
+  });
+
+  it('на итогах срок по-прежнему 12 часов', () => {
+    const summary = { ...feedback, session: { ...feedback.session, phase: 'finish' as const }, updatedAt: NOW - DRAFT_TTL_MS - 1 };
+    expect(parseDraft(serializeDraft(summary), NOW)).toBeNull();
+  });
+
+  it('оценка, комментарий и ключ отправки переживают перезагрузку', () => {
+    const parsed = parseDraft(serializeDraft(feedback), NOW)!;
+    expect(parsed.session).toMatchObject({ feeling: 4, comment: 'колено' });
+    expect(parsed.submitKey).toBe(feedback.submitKey);
+  });
+
+  it('старый черновик без самочувствия и ключа читается: оценки нет, комментарий пуст', () => {
+    const { feeling: _f, comment: _c, ...old } = draft.session;
+    const parsed = parseDraft(JSON.stringify({ ...draft, session: old }), NOW)!;
+    expect(parsed.session).toMatchObject({ feeling: null, comment: '' });
+    expect('submitKey' in parsed).toBe(false);
+  });
+
+  it('кривые оценка, комментарий и ключ — null', () => {
+    const bad = (patch: object, top: object = {}) => parseDraft(JSON.stringify({ ...feedback, ...top, session: { ...feedback.session, ...patch } }), NOW);
+    expect(bad({ feeling: 6 })).toBeNull();
+    expect(bad({ feeling: 2.5 })).toBeNull();
+    expect(bad({ feeling: 'хорошо' })).toBeNull();
+    expect(bad({ comment: 5 })).toBeNull();
+    expect(bad({}, { submitKey: 7 })).toBeNull();
+  });
+});
