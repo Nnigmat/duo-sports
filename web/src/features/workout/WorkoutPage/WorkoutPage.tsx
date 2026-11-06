@@ -1,11 +1,14 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useToday, useWorkoutById } from '../../../data/hooks';
 import type { WorkoutData } from '../../../data/api';
 import { Skeleton } from '../../../shared';
 import { Button, EmptyState, Notice } from '../../../ui';
 import { toIso } from '../../plan/plan';
+import { useAuth } from '../../../app/auth/AuthProvider';
 import { saveSession, uploadVideo } from '../api';
+import { clearDraft, loadDraft, saveDraft } from '../draftStorage';
+import { draftKey, type Session } from '../flow';
 import { formatLongDate } from '../flow/ru';
 import { parseIso } from '../../plan/plan';
 import { WorkoutFlow } from '../WorkoutFlow/WorkoutFlow';
@@ -44,11 +47,31 @@ function SavedWorkout({ id }: { id: string }) {
   const [search] = useSearchParams();
   const navigate = useNavigate();
   const [failure, setFailure] = useState<string | null>(null);
-  // Отсчёт времени тренировки: с момента, когда она показана
-  const openedAt = useRef<number | null>(null);
-  if (data && openedAt.current === null) openedAt.current = Date.now();
+  const auth = useAuth();
   // День плана: из адреса; без него — сегодня
   const date = /^\d{4}-\d{2}-\d{2}$/.test(search.get('date') ?? '') ? search.get('date')! : toIso(new Date());
+  const key = auth.status === 'in' ? draftKey(auth.user.id, id, date) : null;
+  // Сохранённое прохождение читаем один раз при открытии: после перезагрузки возвращаемся на тот же шаг
+  const [draft] = useState(() => (key ? loadDraft(key) : null));
+  // Отсчёт времени тренировки: с первого «Старт», после перезагрузки — с сохранённого момента
+  const startedAt = useRef<number | null>(draft?.startedAt ?? null);
+  const onSessionChange = useCallback(
+    (session: Session) => {
+      if (!key) return;
+      if (session.phase === 'start') {
+        startedAt.current = null;
+        clearDraft(key);
+        return;
+      }
+      startedAt.current ??= Date.now();
+      saveDraft(key, { session, startedAt: startedAt.current, updatedAt: Date.now() });
+    },
+    [key],
+  );
+  const leave = () => {
+    if (key) clearDraft(key);
+    navigate('/plan');
+  };
 
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={320} />;
@@ -58,12 +81,14 @@ function SavedWorkout({ id }: { id: string }) {
       <Flow
         data={data}
         dateLabel={formatLongDate(parseIso(date))}
-        onExit={() => navigate('/plan')}
+        initialSession={draft?.session}
+        onSessionChange={onSessionChange}
+        onExit={leave}
         onFinish={async (steps, videos) => {
           setFailure(null);
           try {
-            await saveSession(id, { date, steps, videos, durationSec: Math.max(0, Math.round((Date.now() - (openedAt.current ?? Date.now())) / 1000)) });
-            navigate('/plan');
+            await saveSession(id, { date, steps, videos, durationSec: Math.max(0, Math.round((Date.now() - (startedAt.current ?? Date.now())) / 1000)) });
+            leave();
           } catch (e) {
             setFailure(e instanceof Error ? e.message : 'Итоги не сохранены');
           }
@@ -78,9 +103,11 @@ type FlowProps = {
   dateLabel: string;
   onFinish: (steps: import('../../../../../shared/types').SessionStepResult[], videos: number) => Promise<void>;
   onExit: () => void;
+  initialSession?: Session;
+  onSessionChange: (session: Session) => void;
 };
 
-function Flow({ data, dateLabel, onFinish, onExit }: FlowProps) {
+function Flow({ data, dateLabel, onFinish, onExit, initialSession, onSessionChange }: FlowProps) {
   return (
     <WorkoutFlow
       workout={data.workout}
@@ -90,6 +117,8 @@ function Flow({ data, dateLabel, onFinish, onExit }: FlowProps) {
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}
       onFinish={(stats, steps) => void onFinish(steps, stats.videos)}
+      initialSession={initialSession}
+      onSessionChange={onSessionChange}
       onExit={onExit}
     />
   );
