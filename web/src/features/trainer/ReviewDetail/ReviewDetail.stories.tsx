@@ -39,6 +39,8 @@ export const Reviewed: Story = {
     await expect(c.getByRole('heading', { level: 2, name: 'Ноги и ягодицы' })).toBeVisible();
     await expect(c.getAllByText('Разобрано').length).toBeGreaterThan(0);
     await expect(c.queryByRole('button', { name: 'Отметить тренировку разобранной' })).toBeNull();
+    await expect(c.getByText('Хорошо')).toBeVisible();
+    await expect(c.getByText('Колено после третьего подхода ныло, но терпимо.')).toBeVisible();
     await expect(c.getByText('Ученик написал')).toBeVisible();
     await expect(c.getByText('Понял, попробую с паузой внизу на разминочных.')).toBeVisible();
     await expect(c.getByText('Прошлые комментарии')).toBeVisible();
@@ -52,6 +54,16 @@ export const NotReviewedYet: Story = {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: 'Отметить тренировку разобранной' }));
     await waitFor(() => expect(onMarkReviewed).toHaveBeenCalledTimes(1));
+  },
+};
+
+export const OldSessionWithoutFeedback: Story = {
+  args: { review: { ...reviewPendingFixture, feeling: null, feelingLabel: null, feedbackComment: null } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('heading', { level: 2 })).toBeVisible();
+    await expect(c.queryByText('Самочувствие')).toBeNull();
+    await expect(c.queryByLabelText('Обратная связь спортсмена')).toBeNull();
   },
 };
 

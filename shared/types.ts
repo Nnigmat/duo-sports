@@ -487,6 +487,12 @@ export interface SessionReviewResponse {
   /** День тренировки «2026-10-31» */
   date: string;
   durationSec: number | null;
+  /** Самочувствие 1–5 из «Обратной связи»; null у старых итогов */
+  feeling: number | null;
+  /** «Плохо» … «Отлично»; null, если оценки нет */
+  feelingLabel: string | null;
+  /** Комментарий спортсмена ко всей тренировке из «Обратной связи» */
+  feedbackComment: string | null;
   volumeKg: number;
   /** ISO-время разбора; null — ждёт разбора */
   reviewedAt: string | null;

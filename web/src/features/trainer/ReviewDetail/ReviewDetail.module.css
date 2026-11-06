@@ -123,6 +123,25 @@
   text-transform: uppercase;
   color: var(--steel);
 }
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  border-radius: var(--rounded-md);
+  background: var(--surface);
+  font-size: var(--body-sm-size);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.feelingValue {
+  font-weight: 600;
+}
 .thread {
   display: flex;
   flex-direction: column;

@@ -57,6 +57,13 @@ describe('sessionReviewOf', () => {
     if (!r.ok) throw new Error(r.error);
     return r.review;
   };
+  it('самочувствие и комментарий спортсмена; у старого итога их нет', () => {
+    expect(view(T())).toMatchObject({ feeling: null, feedbackComment: null });
+    db.prepare("UPDATE sessions_done SET feeling = 2, comment = 'колено ныло' WHERE id = ?").run(sid);
+    expect(view(T())).toMatchObject({ feeling: 2, feelingLabel: 'Устал', feedbackComment: 'колено ныло' });
+    db.prepare('UPDATE sessions_done SET comment = NULL WHERE id = ?').run(sid);
+    expect(view(T())).toMatchObject({ feeling: 2, feedbackComment: null });
+  });
   it('шапка и подходы по упражнениям, видео у своего подхода', () => {
     const r = view();
     expect(r).toMatchObject({ sessionId: sid, athleteId: athlete, title: 'Ноги', date: '2026-10-31', durationSec: 2880, volumeKg: 80 * 5 * 3 + 50 * 10, reviewedAt: null, trainerCommentCount: 0, hints: null });
