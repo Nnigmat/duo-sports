@@ -50,6 +50,27 @@ export const Ready: Story = {
   },
 };
 
+/** Микрофон не разрешён: запись доступна, но экран честно говорит, что звука не будет */
+export const NoMicrophone: Story = {
+  beforeEach: () => mockCamera('no-mic'),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => expect(c.getByRole('button', { name: 'Старт' })).toBeEnabled(), { timeout: 5000 });
+    await expect(c.getByRole('status')).toHaveTextContent('Нет доступа к микрофону, видео будет без звука');
+  },
+};
+
+/** Смена камеры: пока новая не открылась, предупреждение о прошлой камере не показываем */
+export const NoMicrophoneClearsOnSwitch: Story = {
+  beforeEach: () => mockCamera('no-mic-then-pending'),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => expect(c.getByRole('status')).toHaveTextContent('Нет доступа к микрофону'), { timeout: 5000 });
+    await userEvent.click(c.getByRole('button', { name: 'Сменить камеру' }));
+    await waitFor(() => expect(c.queryByText(/Нет доступа к микрофону/)).toBeNull());
+  },
+};
+
 /** После «Старт» идёт отсчёт 5 с, затем запись */
 export const Countdown: Story = {
   beforeEach: () => mockCamera('stream'),

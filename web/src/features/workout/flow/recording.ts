@@ -31,3 +31,28 @@ export function clampZoom(value: number, { min, max, step }: ZoomRange): number 
 export function formatZoom(value: number): string {
   return `${value.toFixed(1).replace('.', ',')} ×`;
 }
+
+export type Facing = 'environment' | 'user';
+
+/** Поток камеры и признак, что в нём есть микрофон. */
+export type CameraStream = { stream: MediaStream; withAudio: boolean };
+
+/**
+ * Камера со звуком. Если микрофон не дали, пишем только видео и сообщаем об этом (`withAudio: false`).
+ * Если не вышло и без звука, камера недоступна: пробрасываем первую ошибку.
+ */
+export async function openCamera(
+  getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>,
+  facing: Facing,
+): Promise<CameraStream> {
+  const video = { facingMode: { ideal: facing } };
+  try {
+    return { stream: await getUserMedia({ video, audio: true }), withAudio: true };
+  } catch (first) {
+    try {
+      return { stream: await getUserMedia({ video, audio: false }), withAudio: false };
+    } catch {
+      throw first;
+    }
+  }
+}

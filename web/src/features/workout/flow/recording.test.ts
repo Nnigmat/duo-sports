@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { clampZoom, formatZoom, pickMimeType, zoomRange } from './recording';
+import { describe, expect, it, vi } from 'vitest';
+import { clampZoom, formatZoom, openCamera, pickMimeType, zoomRange } from './recording';
 
 describe('pickMimeType', () => {
   it('Chrome и Android: webm с vp9', () => {
@@ -57,5 +57,31 @@ describe('formatZoom', () => {
   it('запятая и пробел перед знаком', () => {
     expect(formatZoom(1)).toBe('1,0 ×');
     expect(formatZoom(2.5)).toBe('2,5 ×');
+  });
+});
+
+describe('openCamera', () => {
+  const stream = { id: 'stream' } as unknown as MediaStream;
+  const denied = () => new DOMException('denied', 'NotAllowedError');
+
+  it('просит камеру вместе со звуком', async () => {
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    const result = await openCamera(getUserMedia, 'user');
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(getUserMedia).toHaveBeenCalledWith({ video: { facingMode: { ideal: 'user' } }, audio: true });
+    expect(result).toEqual({ stream, withAudio: true });
+  });
+
+  it('микрофон не разрешён: пишем только видео и сообщаем об этом', async () => {
+    const getUserMedia = vi.fn().mockRejectedValueOnce(denied()).mockResolvedValueOnce(stream);
+    const result = await openCamera(getUserMedia, 'environment');
+    expect(getUserMedia).toHaveBeenLastCalledWith({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    expect(result).toEqual({ stream, withAudio: false });
+  });
+
+  it('камера не разрешена: пробрасывает исходную ошибку', async () => {
+    const first = denied();
+    const getUserMedia = vi.fn().mockRejectedValueOnce(first).mockRejectedValueOnce(new DOMException('x', 'NotFoundError'));
+    await expect(openCamera(getUserMedia, 'environment')).rejects.toBe(first);
   });
 });
