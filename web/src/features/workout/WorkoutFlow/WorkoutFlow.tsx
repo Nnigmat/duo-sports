@@ -27,6 +27,7 @@ import {
   type Step,
 } from '../flow';
 import { FinishScreen } from '../FinishScreen/FinishScreen';
+import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
@@ -97,7 +98,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
 
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    return <FinishScreen stats={stats} successUrl={successUrl(gender)} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds, session.actuals))} onClose={onExit} />;
+    return <FinishScreen stats={stats} successUrl={successUrl(gender)} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals))} onClose={onExit} />;
   }
 
   if (recording) {
@@ -224,12 +225,12 @@ type StageProps = {
   onExit: () => void;
 };
 
-/** Экран шага. Таймер нужен только отдыху и упражнению на время, остальным хук не запускаем. */
+/** Экран шага. Часы нужны только отдыху и упражнению на время, остальным хуки не запускаем. */
 function Stage(props: StageProps) {
   const { session } = props;
   const step = session.steps[session.index];
-  const running = session.phase === 'rest' || (step.kind === 'time' && session.timerStarted);
-  return running ? <TimedStage {...props} /> : <SetStage {...props} />;
+  if (session.phase === 'rest') return <RestStage {...props} />;
+  return step.kind === 'time' && session.timerStarted ? <TimedStage {...props} /> : <SetStage {...props} />;
 }
 
 /** Подход на повторы или упражнение на время до «Старт» */
@@ -250,34 +251,54 @@ function SetStage(props: StageProps) {
   );
 }
 
-/** Идущий таймер упражнения или отдых */
+/** Идущий таймер упражнения на время */
 function TimedStage(props: StageProps) {
   const { session, dispatch } = props;
   const step = session.steps[session.index];
-  const resting = session.phase === 'rest';
   const t = useCountdown({
-    seconds: resting ? step.restAfterSec : timerSeconds(step.plan),
+    seconds: timerSeconds(step.plan),
     // Конец таймера засчитывает подход сам; шторка для упражнений на время появится вместе с кнопкой «Готово» (отдельная часть)
-    onFinish: () => dispatch({ type: resting ? 'restOver' : 'done' }),
+    onFinish: () => dispatch({ type: 'done' }),
   });
-  const onSkip = () => dispatch({ type: 'skip' });
   return (
     <StageView
       {...props}
       onBack={() => dispatch({ type: 'back' })}
-      bar={
-        resting
-          ? { mode: 'rest', seconds: t.seconds, total: t.total, onAddTime: () => t.add(15), onSkip }
-          : { mode: 'timer', seconds: t.seconds, total: t.total, paused: t.paused, onPauseToggle: t.toggle, onSkip }
-      }
+      bar={{ mode: 'timer', seconds: t.seconds, total: t.total, paused: t.paused, onPauseToggle: t.toggle, onSkip: () => dispatch({ type: 'skip' }) }}
     />
   );
 }
 
-function StageView({ session, shown, demoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, onBack, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+/** Отдых: считает вверх до цели и дальше; сколько он шёл, уходит в факт при «Начать» и «Пропустить» */
+function RestStage(props: StageProps) {
+  const { session, dispatch } = props;
+  const step = session.steps[session.index];
+  const rest = useRest(step.restAfterSec);
+  return (
+    <StageView
+      {...props}
+      restOver={rest.reached}
+      onBack={() => dispatch({ type: 'back' })}
+      bar={{
+        mode: 'rest',
+        elapsed: rest.elapsed,
+        goalSec: rest.goalSec,
+        reached: rest.reached,
+        progress: rest.progress,
+        onAddTime: () => rest.add(15),
+        onStart: () => dispatch({ type: 'restOver', restSec: rest.elapsedNow() }),
+        onSkip: () => dispatch({ type: 'skip', restSec: rest.elapsedNow() }),
+      }}
+    />
+  );
+}
+
+function StageView({ session, shown, demoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, restOver, onBack, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
   /** Стрелка в шапке: только на таймере и отдыхе */
   onBack?: () => void;
+  /** На отдыхе: цель достигнута, подпись «Отдых окончен» */
+  restOver?: boolean;
 }) {
   const step = session.steps[session.index];
   const resting = session.phase === 'rest';
@@ -285,13 +306,14 @@ function StageView({ session, shown, demoUrl, idleUrl, restUrl, cameraUrl, note,
     <TrainingScreen
       blockLabel={blockLabel(shown)}
       progress={{ count: shown.blockSize, current: shown.indexInBlock - 1 }}
-      eyebrow={resting ? restEyebrow(shown) : eyebrow(step)}
+      eyebrow={resting ? restEyebrow(shown, restOver) : eyebrow(step)}
       line={stepLine(shown)}
       demoUrl={demoUrl}
       idleUrl={idleUrl}
       restUrl={restUrl}
       cameraUrl={cameraUrl}
       pose={poseFor({ phase: resting ? 'rest' : 'work', exercisePose: step.pose, record: step.record })}
+      thinkPose={resting ? (shown.pose ?? 'stand') : undefined}
       note={note}
       techNew={techNew}
       recordable={!resting && step.record}

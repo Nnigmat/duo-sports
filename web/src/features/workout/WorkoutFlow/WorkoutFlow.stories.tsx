@@ -108,7 +108,7 @@ async function done() {
 /** «Готово», «Записать» и пропуск отдыха после него */
 async function doneAndSkipRest() {
   await done();
-  await body().findByRole('timer', { name: /отдых/ });
+  await body().findByRole('timer', { name: /отдых/i });
   await click('Пропустить');
 }
 
@@ -128,7 +128,7 @@ export const Resumed: Story = {
     await expect(body().queryByRole('button', { name: 'Начать тренировку' })).toBeNull();
     // Дальше тренировка идёт как обычно
     await done();
-    await body().findByRole('timer', { name: /отдых/ });
+    await body().findByRole('timer', { name: /отдых/i });
   },
 };
 
@@ -152,7 +152,7 @@ export const FullRun: Story = {
     await new Promise((r) => setTimeout(r, 1300));
     await click('Готово');
     // после сохранения подход выполнен, идёт отдых
-    await body().findByRole('timer', { name: /отдых/ }, { timeout: 5000 });
+    await body().findByRole('timer', { name: /отдых/i }, { timeout: 5000 });
     await expect(onUploadVideo).toHaveBeenCalledTimes(1);
     await click('Пропустить');
     await doneAndSkipRest();
@@ -208,10 +208,25 @@ export const RestIsAboutNextSet: Story = {
     await expect(await body().findByText('Отдых · далее подход 2 из 9')).toBeVisible();
     await expect(body().getByText('Ножницы лёжа · 30–34 повт')).toBeVisible();
     await expect(body().getByRole('button', { name: 'Запись' })).toBeDisabled();
-    // +15 с прибавляет время к отдыху
-    const before = body().getByRole('timer').getAttribute('aria-label');
+    // Отдых считает вверх до цели, «+15 с» двигает цель
+    await expect(body().getByRole('timer', { name: /из 00:05/ })).toBeVisible();
     await click('Добавить 15 секунд');
-    await waitFor(() => expect(body().getByRole('timer').getAttribute('aria-label')).not.toBe(before));
+    await waitFor(() => expect(body().getByRole('timer', { name: /из 00:20/ })).toBeVisible());
+    // Над персонажем облачко с позой следующего упражнения
+    await expect(document.querySelector('[data-pose="scissors"]')).not.toBeNull();
+  },
+};
+
+/** Цель отдыха (в моке 5 с) достигнута: круг становится кнопкой «Начать», она ведёт к следующему подходу */
+export const RestOverStartsNextSet: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await done();
+    await expect(await body().findByText('Отдых · далее подход 2 из 9')).toBeVisible();
+    // Цель в моке 5 с: круг сам превращается в кнопку
+    await userEvent.click(await body().findByRole('button', { name: /отдыхаете.*Начать/ }, { timeout: 8000 }));
+    await expect(await body().findByText('Подход 2 из 9')).toBeVisible();
   },
 };
 
@@ -226,7 +241,7 @@ export const FactDoesNotChangePlan: Story = {
     for (let i = 0; i < 3; i++) await userEvent.click(dialog.getByRole('button', { name: 'Меньше повторений' }));
     await expect(dialog.getByText('Меньше плана')).toBeVisible();
     await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
-    await body().findByRole('timer', { name: /отдых/ });
+    await body().findByRole('timer', { name: /отдых/i });
     await click('Пропустить');
     // Следующие круги того же упражнения остались с планом 18–20
     await doneAndSkipRest();
@@ -258,7 +273,7 @@ export const RedoneFactIsOverwritten: Story = {
     const first = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
     for (let i = 0; i < 3; i++) await userEvent.click(first.getByRole('button', { name: 'Меньше повторений' }));
     await userEvent.click(first.getByRole('button', { name: 'Записать' }));
-    await body().findByRole('timer', { name: /отдых/ });
+    await body().findByRole('timer', { name: /отдых/i });
 
     // «Назад» с отдыха, снова «Готово»: шторка открыта с введённым фактом (17), а не с планом
     await click('Шаг назад');
@@ -268,7 +283,7 @@ export const RedoneFactIsOverwritten: Story = {
     await userEvent.click(second.getByRole('button', { name: 'Больше повторений' }));
     await expect(second.getByText('В плане')).toBeVisible();
     await userEvent.click(second.getByRole('button', { name: 'Записать' }));
-    await body().findByRole('timer', { name: /отдых/ });
+    await body().findByRole('timer', { name: /отдых/i });
   },
 };
 
@@ -283,7 +298,7 @@ export const BackReturnsToPreviousSet: Story = {
     await expect(body().getByText('Подход 2 из 9')).toBeVisible();
     await click('Назад');
     await expect(await body().findByText('Подход 1 из 9')).toBeVisible();
-    await expect(body().queryByRole('timer', { name: /отдых/ })).toBeNull();
+    await expect(body().queryByRole('timer', { name: /отдых/i })).toBeNull();
   },
 };
 

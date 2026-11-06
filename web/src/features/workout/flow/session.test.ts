@@ -59,7 +59,7 @@ describe('rest', () => {
   const resting = () => reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'done' });
 
   it('конец отдыха ведёт к следующему подходу', () => {
-    expect(reduce(resting(), { type: 'restOver' })).toMatchObject({ phase: 'work', index: 3 });
+    expect(reduce(resting(), { type: 'restOver', restSec: 60 })).toMatchObject({ phase: 'work', index: 3 });
   });
 
   it('«Пропустить» на отдыхе делает то же', () => {
@@ -74,7 +74,7 @@ describe('rest', () => {
 
   it('конец отдыха вне отдыха игнорируется', () => {
     const s = at(reduce(fresh(), { type: 'begin' }), 3);
-    expect(reduce(s, { type: 'restOver' })).toBe(s);
+    expect(reduce(s, { type: 'restOver', restSec: 60 })).toBe(s);
   });
 });
 
@@ -92,10 +92,55 @@ describe('skip', () => {
   });
 });
 
+describe('фактическое время отдыха', () => {
+  const resting = () => reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'done' });
+
+  it('в начале ни у кого отдыха нет', () => {
+    expect(fresh().restSec).toEqual(steps.map(() => null));
+  });
+
+  it('конец отдыха пишет секунды в шаг, после которого был отдых, в том числе сверх цели', () => {
+    const s = reduce(resting(), { type: 'restOver', restSec: 72 });
+    expect(s.restSec[2]).toBe(72);
+    expect(s.restSec.filter((v) => v !== null)).toHaveLength(1);
+  });
+
+  it('«Пропустить» на отдыхе пишет время до нажатия', () => {
+    expect(reduce(resting(), { type: 'skip', restSec: 18 }).restSec[2]).toBe(18);
+  });
+
+  it('«Пропустить» подход отдыха не создаёт', () => {
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'skip' });
+    expect(s.restSec[2]).toBeNull();
+  });
+
+  it('«Назад» с отдыха стирает его время: «Готово» запустит отдых заново', () => {
+    const s = reduce(reduce(resting(), { type: 'restOver', restSec: 60 }), { type: 'back' });
+    expect(s.restSec[2]).toBeNull();
+    const again = reduce(reduce(s, { type: 'done' }), { type: 'restOver', restSec: 35 });
+    expect(again.restSec[2]).toBe(35);
+  });
+
+  it('«Назад» на отдыхе без секунд ничего не оставляет', () => {
+    expect(reduce(resting(), { type: 'back' }).restSec[2]).toBeNull();
+  });
+
+  it('у последнего подхода отдыха нет', () => {
+    const last = reduce(at(reduce(fresh(), { type: 'begin' }), steps.length - 1), { type: 'done' });
+    expect(last.phase).toBe('finish');
+    expect(last.restSec[steps.length - 1]).toBeNull();
+  });
+
+  it('конец отдыха вне отдыха время не пишет', () => {
+    const s = at(reduce(fresh(), { type: 'begin' }), 3);
+    expect(reduce(s, { type: 'restOver', restSec: 5 })).toBe(s);
+  });
+});
+
 describe('back', () => {
   it('на предыдущий шаг; он снова не выполнен', () => {
     const base = reduce(at(reduce(fresh(), { type: 'begin' }), 3), { type: 'done' });
-    const s = reduce(reduce(base, { type: 'restOver' }), { type: 'back' });
+    const s = reduce(reduce(base, { type: 'restOver', restSec: 60 }), { type: 'back' });
     expect(s).toMatchObject({ phase: 'work', index: 3 });
     const prev = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'back' });
     expect(prev).toMatchObject({ phase: 'work', index: 4 });
@@ -182,7 +227,7 @@ describe('back через границы', () => {
 
   it('шаг с видео: возвращаем в состояние до записи, счётчик уменьшается', () => {
     const rec = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded', videoId: 'v-5' });
-    const s = reduce(reduce(rec, { type: 'restOver' }), { type: 'back' });
+    const s = reduce(reduce(rec, { type: 'restOver', restSec: 60 }), { type: 'back' });
     expect(s).toMatchObject({ phase: 'work', index: 5, videos: 0 });
     expect(s.videoIds[5]).toBeNull();
     expect(s.completed[5]).toBe(false);
@@ -190,7 +235,7 @@ describe('back через границы', () => {
 
   it('«Назад» и повторная запись не считают видео подхода дважды', () => {
     const rec = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded', videoId: 'v-5' });
-    const back = reduce(reduce(rec, { type: 'restOver' }), { type: 'back' });
+    const back = reduce(reduce(rec, { type: 'restOver', restSec: 60 }), { type: 'back' });
     const again = reduce(back, { type: 'recorded', videoId: 'v-5b' });
     expect(again.videos).toBe(1);
     expect(again.videoIds[5]).toBe('v-5b');
@@ -237,7 +282,7 @@ describe('факт подхода', () => {
   });
 
   it('«Назад» со следующего подхода возвращает к предыдущему с его фактом', () => {
-    const next = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'restOver' });
+    const next = reduce(reduce(working(2), { type: 'done', actual: { value: 17 } }), { type: 'restOver', restSec: 60 });
     const back = reduce(next, { type: 'back' });
     expect(back.index).toBe(2);
     expect(back.actuals[2]).toEqual({ value: 17 });

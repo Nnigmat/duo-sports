@@ -339,6 +339,8 @@ export interface SessionStepResult {
   completed: boolean;
   /** Видео этого подхода: id из ответа POST /api/videos */
   videoId?: string;
+  /** Фактический отдых после подхода, секунд (включая сверх цели); нет у последнего подхода, у пропущенного подхода и в старых итогах; при «Пропустить» на отдыхе это время до нажатия */
+  restSec?: number;
 }
 
 /** Итог выполненной тренировки: POST /api/workouts/:id/sessions */

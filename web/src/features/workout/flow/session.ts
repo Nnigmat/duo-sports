@@ -16,6 +16,8 @@ export interface Session {
   videos: number;
   /** id видео подхода i с сервера; null — видео нет или сервер id не вернул */
   videoIds: Array<string | null>;
+  /** Фактический отдых после шага i в секундах (в том числе сверх цели); null — отдыха не было (последний шаг, пропущенный подход, старый черновик); при «Пропустить» на отдыхе — время до нажатия */
+  restSec: Array<number | null>;
   /** Запущен ли таймер текущего шага: в таймерных блоках сам, у упражнений на время по «Старт» */
   timerStarted: boolean;
 }
@@ -25,9 +27,11 @@ export type Action =
   | { type: 'startTimer' }
   /** «Готово»; actual — факт из шторки, у разминки и заминки его нет */
   | { type: 'done'; actual?: SetActual }
-  | { type: 'skip' }
+  /** На отдыхе `restSec` — сколько он шёл до нажатия; на подходе не нужен */
+  | { type: 'skip'; restSec?: number }
   | { type: 'back' }
-  | { type: 'restOver' }
+  /** Отдых закончен кнопкой «Начать»: `restSec` — сколько он шёл, включая время сверх цели */
+  | { type: 'restOver'; restSec: number }
   /** видео записано и сохранено: подход считается выполненным */
   | { type: 'recorded'; videoId?: string }
   | { type: 'finishNow' };
@@ -44,12 +48,18 @@ export function initSession(steps: Step[]): Session {
     actuals: steps.map(() => null),
     videos: 0,
     videoIds: steps.map(() => null),
+    restSec: steps.map(() => null),
     timerStarted: false,
   };
 }
 
 function goTo(s: Session, index: number): Session {
   return { ...s, phase: 'work', index, timerStarted: autoStart(s.steps[index]) };
+}
+
+function withRest(s: Session, sec: number | undefined): Session {
+  if (sec === undefined) return s;
+  return { ...s, restSec: s.restSec.map((v, i) => (i === s.index ? sec : v)) };
 }
 
 /** К следующему шагу или на финиш, если шаги кончились */
@@ -73,6 +83,8 @@ function uncomplete(s: Session, index: number): Session {
     completed: s.completed.map((c, i) => (i === index ? false : c)),
     videos: hadVideo ? s.videos - 1 : s.videos,
     videoIds: s.videoIds.map((v, i) => (i === index ? null : v)),
+    // Отдых после этого шага начнётся заново при следующем «Готово»
+    restSec: s.restSec.map((v, i) => (i === index ? null : v)),
   };
 }
 
@@ -98,12 +110,13 @@ export function reduce(s: Session, a: Action): Session {
         : s;
 
     case 'skip':
+      if (s.phase === 'rest') return next(withRest(s, a.restSec));
       // Пропуск подхода стирает факт, оставшийся после «Назад»; пропуск отдыха подход не трогает
       if (s.phase === 'work') return next({ ...s, actuals: s.actuals.map((x, i) => (i === s.index ? null : x)) });
-      return s.phase === 'rest' ? next(s) : s;
+      return s;
 
     case 'restOver':
-      return s.phase === 'rest' ? next(s) : s;
+      return s.phase === 'rest' ? next(withRest(s, a.restSec)) : s;
 
     case 'back':
       if (s.phase === 'rest') return goTo(uncomplete(s, s.index), s.index);

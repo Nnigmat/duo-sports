@@ -77,6 +77,9 @@ function isSession(v: unknown): v is Omit<Session, 'actuals'> & { actuals?: Sess
     Array.isArray(v.videoIds) &&
     v.videoIds.length === n &&
     v.videoIds.every((id) => id === null || typeof id === 'string') &&
+    Array.isArray(v.restSec) &&
+    v.restSec.length === n &&
+    v.restSec.every((sec) => sec === null || isNum(sec)) &&
     isNum(v.videos) &&
     typeof v.timerStarted === 'boolean'
   );

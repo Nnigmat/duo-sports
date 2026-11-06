@@ -23,11 +23,12 @@ export function finishStats(steps: Step[], completed: boolean[], videos: number)
   };
 }
 
-/** Каждый подход тренировки с планом, фактом и отметкой, выполнен ли он. Факт уходит только у выполненных подходов. */
+/** Каждый подход тренировки с планом, фактом, отдыхом и отметкой, выполнен ли он. Факт уходит только у выполненных подходов. */
 export function sessionSteps(
   steps: Step[],
   completed: boolean[],
   videoIds: Array<string | null> = [],
+  restSec: Array<number | null> = [],
   actuals: Array<SetActual | null> = [],
 ): SessionStepResult[] {
   return steps.map((s, i) => ({
@@ -41,6 +42,7 @@ export function sessionSteps(
     ...(completed[i] && actuals[i] ? { actual: actuals[i]! } : {}),
     completed: completed[i] ?? false,
     ...(videoIds[i] ? { videoId: videoIds[i]! } : {}),
+    ...(restSec[i] != null ? { restSec: restSec[i]! } : {}),
   }));
 }
 

@@ -1,0 +1,59 @@
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 168px; /* нет токена: диаметр кольца */
+  height: 168px; /* нет токена */
+}
+
+.time {
+  font-size: 44px; /* нет токена */
+  line-height: 1;
+  font-weight: var(--timer-display-weight);
+  letter-spacing: var(--timer-display-tracking);
+  font-variant-numeric: tabular-nums;
+}
+
+.goal {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Цель достигнута: залитая кнопка с «ореолом», состояние несут и подписи, не только цвет */
+.over {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xxs);
+  width: 160px; /* нет токена */
+  height: 160px; /* нет токена */
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-full);
+  background: var(--primary);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--primary) 14%, transparent); /* нет токена */
+  color: var(--on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.over:focus-visible {
+  outline: 2px solid var(--primary-deep);
+  outline-offset: 10px; /* снаружи ореола */
+}
+
+.overCaption {
+  font-size: 13px; /* нет токена */
+  line-height: 1.4;
+  font-weight: var(--button-md-weight);
+}
+
+.start {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  margin-top: 2px; /* нет токена */
+  font-size: 15px; /* нет токена */
+  line-height: 1.4;
+  font-weight: 600; /* нет токена */
+}

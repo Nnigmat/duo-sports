@@ -1,6 +1,9 @@
 export { ActionBar } from './ActionBar/ActionBar';
 export { CoachNote } from './CoachNote/CoachNote';
 export { SpeechBubble } from './SpeechBubble/SpeechBubble';
+export { RestRing } from './RestRing/RestRing';
+export { useRest } from './RestRing/useRest';
+export { ThoughtBubble } from './ThoughtBubble/ThoughtBubble';
 export { TimerRing } from './TimerRing/TimerRing';
 export { useCountdown } from './TimerRing/useCountdown';
 export { ElapsedSince } from './ElapsedTime/ElapsedTime';

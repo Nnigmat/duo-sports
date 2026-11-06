@@ -10,6 +10,7 @@ import { ActionBar } from '../parts/ActionBar/ActionBar';
 import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
 import { CoachNote } from '../parts/CoachNote/CoachNote';
 import { ElapsedSince } from '../parts/ElapsedTime/ElapsedTime';
+import { ThoughtBubble } from '../parts/ThoughtBubble/ThoughtBubble';
 import { SpeechBubble } from '../parts/SpeechBubble/SpeechBubble';
 import styles from './TrainingScreen.module.css';
 
@@ -29,6 +30,8 @@ type Props = {
   restUrl?: string;
   /** Ролик «чибик держит камеру»: показывается вместо статичного чибика в позе «камера» */
   cameraUrl?: string;
+  /** Поза следующего упражнения: на отдыхе над чибиком появляется облачко-мысль с ней */
+  thinkPose?: Pose;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -60,6 +63,7 @@ export function TrainingScreen({
   idleUrl,
   restUrl,
   cameraUrl,
+  thinkPose,
   note,
   techNew,
   recordable,
@@ -108,6 +112,8 @@ export function TrainingScreen({
             <Chibi pose={pose} size={300} className={styles.chibi} />
           </>
         )}
+
+        {thinkPose && <ThoughtBubble pose={thinkPose} className={styles.think} />}
 
         <div className={styles.left}>
           <IconButton

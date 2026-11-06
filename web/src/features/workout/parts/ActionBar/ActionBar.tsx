@@ -1,4 +1,5 @@
 import { IconButton } from '../../../../ui/IconButton/IconButton';
+import { RestRing } from '../RestRing/RestRing';
 import { TimerRing } from '../TimerRing/TimerRing';
 import styles from './ActionBar.module.css';
 
@@ -16,7 +17,17 @@ type Props =
       paused?: boolean;
       onPauseToggle: () => void;
     })
-  | (Common & { mode: 'rest'; seconds: number; total: number; onAddTime: () => void });
+  | (Common & {
+      mode: 'rest';
+      /** Сколько отдыхаете, секунд */
+      elapsed: number;
+      goalSec: number;
+      /** Цель достигнута: в центре кнопка «Начать» */
+      reached: boolean;
+      progress: number;
+      onAddTime: () => void;
+      onStart: () => void;
+    });
 
 /**
  * Нижний ряд экрана тренировки: слева дополнительное действие, в центре ключевое, справа «Пропустить».
@@ -63,6 +74,6 @@ function center(p: Props) {
     case 'timer':
       return <TimerRing seconds={p.seconds} total={p.total} paused={p.paused} onToggle={p.onPauseToggle} />;
     case 'rest':
-      return <TimerRing kind="rest" seconds={p.seconds} total={p.total} />;
+      return <RestRing elapsed={p.elapsed} goalSec={p.goalSec} reached={p.reached} progress={p.progress} onStart={p.onStart} />;
   }
 }
