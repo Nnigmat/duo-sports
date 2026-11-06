@@ -77,16 +77,16 @@ describe('todayOf: состояние дня', () => {
   it('после завершения — «сделано» с объёмом', () => {
     plan([{ date: TODAY, workout: 0 }]);
     finish(ids()[0]!, TODAY, [step(), step({ round: 2 }), step({ round: 3, completed: false })]);
-    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'done', summary: { title: 'Верх', volumeKg: 1200 } });
+    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'done', summary: { title: 'Верх', sessionId: expect.any(Number), volumeKg: 1200 } });
   });
   it('минуты из замера времени; без замера их нет', () => {
     plan([{ date: TODAY, workout: 0 }, { date: '2026-11-03', workout: 1 }]);
     finish(ids()[1]!, '2026-11-03', [step()], 2700);
     finish(ids()[0]!, TODAY);
-    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'done', summary: { title: 'Верх', volumeKg: 600 } });
+    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'done', summary: { title: 'Верх', sessionId: expect.any(Number), volumeKg: 600 } });
     expect(todayOf(db, me, TODAY).week[1]!.meta).toBe('45 мин · 600 кг · 1 подход');
     finish(ids()[0]!, TODAY, [step()], 20);
-    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'done', summary: { title: 'Верх', volumeKg: 1200 } });
+    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'done', summary: { title: 'Верх', sessionId: expect.any(Number), volumeKg: 1200 } });
   });
   it('отдых показывает ближайшую тренировку', () => {
     plan([{ date: '2026-11-05', workout: 1 }, { date: '2026-11-07', workout: 0 }]);

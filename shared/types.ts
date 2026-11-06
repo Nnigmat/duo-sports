@@ -387,6 +387,8 @@ export interface TodayDay {
   title: string;
   meta: string;
   actionLabel?: string;
+  /** У выполненного дня: разбор открывается по /review/:sessionId */
+  sessionId?: number;
 }
 
 /** Невыполненная тренировка с прошлых недель: её можно перенести вперёд */
@@ -405,7 +407,7 @@ export interface TodayResponse {
   state:
     | { kind: 'workout'; workout: TodayWorkoutCard }
     | { kind: 'rest'; next: { whenLabel: string; title: string; minutes: number } | null }
-    | { kind: 'done'; summary: { title: string; volumeKg: number; minutes?: number; records?: number } };
+    | { kind: 'done'; summary: { title: string; sessionId?: number; volumeKg: number; minutes?: number; records?: number } };
   week: TodayDay[];
   /** Пропущенное до начала этой недели, свежие первыми; пропуски текущей недели видны в week */
   missed: TodayMissed[];

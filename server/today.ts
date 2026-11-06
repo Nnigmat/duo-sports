@@ -37,6 +37,8 @@ export interface TodayWorkoutInfo {
   structure: Block[] | null;
 }
 export interface TodaySession {
+  /** id записи sessions_done: по нему открывается разбор */
+  id?: number;
   workoutId: number | null;
   title: string;
   date: string;
@@ -140,7 +142,7 @@ function weekDay(iso: string, input: TodayInput): TodayDay {
   const done = sessions.filter((s) => s.date === iso);
   if (done.length) {
     const title = done[0]!.title;
-    return { ...base, status: 'done', caption: title, title, meta: doneMeta(done), actionLabel: 'Итоги' };
+    return { ...base, status: 'done', caption: title, title, meta: doneMeta(done), actionLabel: 'Итоги', ...(done[0]!.id !== undefined && { sessionId: done[0]!.id }) };
   }
   const entry = entries.find((e) => e.date === iso);
   const w = entry && workouts.get(entry.workoutId);
@@ -231,7 +233,7 @@ export function buildToday(input: TodayInput): TodayBase {
   const entry = input.entries.find((e) => e.date === today);
   const planned = entry && !isSkipped(input, entry) && !pausedOn(input, today) ? input.workouts.get(entry.workoutId) : undefined;
   const state: TodayResponse['state'] = doneToday.length
-    ? { kind: 'done', summary: { title: doneToday[0]!.title, volumeKg: sessionVolume(doneToday.flatMap((s) => s.steps)), ...(sessionsMinutes(doneToday) !== undefined && { minutes: sessionsMinutes(doneToday) }) } }
+    ? { kind: 'done', summary: { title: doneToday[0]!.title, ...(doneToday[0]!.id !== undefined && { sessionId: doneToday[0]!.id }), volumeKg: sessionVolume(doneToday.flatMap((s) => s.steps)), ...(sessionsMinutes(doneToday) !== undefined && { minutes: sessionsMinutes(doneToday) }) } }
     : planned
       ? { kind: 'workout', workout: workoutCard(planned, today, input.musclesOf) }
       : { kind: 'rest', next: nextWorkout(input) };
@@ -264,7 +266,8 @@ export function todayOf(db: Db, userId: number, today: string): TodayResponse {
   const rows = db.prepare('SELECT id, title, blocks, structure FROM workouts WHERE user_id = ?').all(userId) as Array<{ id: number; title: string; blocks: string; structure: string | null }>;
   const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: JSON.parse(r.blocks) as CommitBlock[], structure: r.structure ? (JSON.parse(r.structure) as Block[]) : null }]));
   const entries = (db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as Array<{ date: string; workout_id: number }>).map((e) => ({ date: e.date, workoutId: e.workout_id }));
-  const sessions = (db.prepare('SELECT workout_id, title, date, steps, duration_sec FROM sessions_done WHERE user_id = ? ORDER BY id').all(userId) as Array<{ workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null }>).map((s) => ({
+  const sessions = (db.prepare('SELECT id, workout_id, title, date, steps, duration_sec FROM sessions_done WHERE user_id = ? ORDER BY id').all(userId) as Array<{ id: number; workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null }>).map((s) => ({
+    id: s.id,
     workoutId: s.workout_id,
     title: s.title,
     date: s.date,
