@@ -24,7 +24,7 @@ export function finishStats(steps: Step[], completed: boolean[], videos: number)
 }
 
 /** Каждый подход тренировки с планом (после правок «Изменить») и отметкой, выполнен ли он */
-export function sessionSteps(steps: Step[], completed: boolean[], videoIds: Array<string | null> = []): SessionStepResult[] {
+export function sessionSteps(steps: Step[], completed: boolean[], videoIds: Array<string | null> = [], restSec: Array<number | null> = []): SessionStepResult[] {
   return steps.map((s, i) => ({
     exerciseId: s.exerciseId,
     exerciseName: s.exerciseName,
@@ -35,6 +35,7 @@ export function sessionSteps(steps: Step[], completed: boolean[], videoIds: Arra
     plan: s.plan,
     completed: completed[i] ?? false,
     ...(videoIds[i] ? { videoId: videoIds[i]! } : {}),
+    ...(restSec[i] != null ? { restSec: restSec[i]! } : {}),
   }));
 }
 

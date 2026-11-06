@@ -15,6 +15,11 @@ describe('draft', () => {
     expect(draftKey(1, '5', '2026-11-03')).not.toBe(draftKey(1, '5', '2026-11-04'));
   });
 
+  it('время отдыха переживает перезагрузку', () => {
+    const withRest = { ...draft, session: { ...draft.session, restSec: draft.session.steps.map((_, i) => (i === 2 ? 72 : null)) } };
+    expect(parseDraft(serializeDraft(withRest), NOW)?.session.restSec[2]).toBe(72);
+  });
+
   it('возвращает то, что сохранили', () => {
     expect(parseDraft(serializeDraft(draft), NOW)).toEqual(draft);
   });
@@ -38,6 +43,9 @@ describe('draft', () => {
     expect(bad({ phase: 'unknown' })).toBeNull();
     expect(bad({ completed: [true] })).toBeNull();
     expect(bad({ videoIds: [] })).toBeNull();
+    expect(bad({ restSec: [] })).toBeNull();
+    expect(bad({ restSec: draft.session.steps.map(() => '60') })).toBeNull();
+    expect(bad({ restSec: undefined })).toBeNull();
     expect(bad({ steps: [] })).toBeNull();
     expect(bad({ steps: [{ exerciseId: 'x' }] })).toBeNull();
     expect(bad({ timerStarted: 'yes' })).toBeNull();

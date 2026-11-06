@@ -159,6 +159,27 @@ describe('durationSec', () => {
   });
 });
 
+describe('фактический отдых подхода', () => {
+  const step = { exerciseId: 'a', exerciseName: 'A', blockIndex: 0, round: 1, rounds: 1, kind: 'reps', plan: { target: { min: 1, max: 1 } }, completed: true };
+  const withRest = (restSec: unknown) => validateSession({ date: '2026-11-03', videos: 0, steps: [{ ...step, restSec }] });
+  it('необязателен: старые итоги без него валидны', () => {
+    expect(validateSession({ date: '2026-11-03', videos: 0, steps: [step] }).ok).toBe(true);
+  });
+  it('целое число секунд от 0 до суток, в том числе сверх цели', () => {
+    for (const ok of [0, 72, 86_400]) expect(withRest(ok).ok).toBe(true);
+    for (const bad of [-1, 1.5, 86_401, '60', null]) expect(withRest(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля' });
+  });
+  it('сохраняется в итоге вместе с подходом', () => {
+    applyImport(db, me, commit(), clock);
+    const r = result();
+    r.steps[0] = { ...r.steps[0]!, restSec: 72 };
+    const saved = saveSession(db, me, workoutId(), r, clock);
+    expect(saved.ok).toBe(true);
+    const row = db.prepare('SELECT steps FROM sessions_done').get() as { steps: string };
+    expect(JSON.parse(row.steps)[0].restSec).toBe(72);
+  });
+});
+
 describe('видео подхода', () => {
   const V1 = '11111111-1111-4111-8111-111111111111';
   const V2 = '22222222-2222-4222-8222-222222222222';

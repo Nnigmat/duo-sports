@@ -79,3 +79,17 @@ describe('sessionSteps: видео подходов', () => {
     expect('videoId' in out[0]!).toBe(false);
   });
 });
+
+describe('sessionSteps: фактический отдых', () => {
+  const steps = buildSteps([warmup, circuit]);
+  it('restSec попадает в свой подход, у остальных поля нет', () => {
+    const rest = steps.map((_, i) => (i === 3 ? 72 : null));
+    const out = sessionSteps(steps, steps.map(() => true), [], rest);
+    expect(out[3]!.restSec).toBe(72);
+    expect('restSec' in out[2]!).toBe(false);
+  });
+  it('ноль секунд сохраняется как есть', () => {
+    const out = sessionSteps(steps, steps.map(() => true), [], steps.map(() => 0));
+    expect(out[3]!.restSec).toBe(0);
+  });
+});
