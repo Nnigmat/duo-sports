@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
-import type { FinishStats } from '../flow';
+import { buildSteps, initSession, reduce, type Action, type FinishStats } from '../flow';
 import { Button } from '../../../ui/Button/Button';
 import { Text } from '../../../ui/Text/Text';
 import { ARTIFACT } from '../../../ui/storyKit';
@@ -103,6 +103,26 @@ async function doneAndSkipRest() {
   await body().findByRole('timer', { name: /отдых/ });
   await click('Пропустить');
 }
+
+/** Прохождение, сохранённое на втором подходе круга: как после перезагрузки страницы */
+const resumedSession = () =>
+  (['begin', 'skip', 'skip', 'skip', 'done', 'restOver'] as const).reduce(
+    (s, type) => reduce(s, { type } as Action),
+    initSession(buildSteps(WORKOUT.blocks)),
+  );
+
+export const Resumed: Story = {
+  tags: hidden,
+  args: { initialSession: resumedSession(), onSessionChange: fn() },
+  play: async () => {
+    // Экран старта не показываем: сразу второй подход круга, первый засчитан
+    await expect(body().getByText('Подход 2 из 9')).toBeVisible();
+    await expect(body().queryByRole('button', { name: 'Начать тренировку' })).toBeNull();
+    // Дальше тренировка идёт как обычно
+    await click('Готово');
+    await body().findByRole('timer', { name: /отдых/ });
+  },
+};
 
 export const FullRun: Story = {
   tags: hidden,
