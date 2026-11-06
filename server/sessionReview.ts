@@ -3,6 +3,7 @@ import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
 import { nextWorkoutHints } from './hints';
 import { factLabel } from '../shared/fact';
+import { feelingLabel } from '../shared/feeling';
 import { sessionVolume, addDays } from './today';
 import { canAccessAthlete } from './trainerLinks';
 
@@ -67,7 +68,7 @@ export type SessionReviewResult = { ok: true; review: SessionReviewResponse } | 
  * Открытие помечает прочитанным чужое и гасит уведомление о разборе.
  */
 export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today: string): SessionReviewResult {
-  const s = db.prepare('SELECT user_id, title, date, steps, duration_sec FROM sessions_done WHERE id = ?').get(sessionId) as { user_id: number; title: string; date: string; steps: string; duration_sec: number | null } | undefined;
+  const s = db.prepare('SELECT user_id, title, date, steps, duration_sec, feeling, comment FROM sessions_done WHERE id = ?').get(sessionId) as { user_id: number; title: string; date: string; steps: string; duration_sec: number | null; feeling: number | null; comment: string | null } | undefined;
   if (!s) return { ok: false, error: 'not_found' };
   if (!canAccessAthlete(db, viewer, s.user_id)) return { ok: false, error: 'forbidden' };
 
@@ -122,6 +123,9 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
       title: s.title,
       date: s.date,
       durationSec: s.duration_sec,
+      feeling: s.feeling,
+      feelingLabel: feelingLabel(s.feeling),
+      feedbackComment: s.comment,
       volumeKg: sessionVolume(steps),
       reviewedAt,
       trainerCommentCount,

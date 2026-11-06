@@ -44,6 +44,23 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
       </header>
       {moved && <p className={styles.moved}>{moved}</p>}
 
+      {(review.feelingLabel || review.feedbackComment) && (
+        <section className={styles.feedback} aria-label="Обратная связь спортсмена">
+          {review.feelingLabel && (
+            <p className={styles.field}>
+              <span className={styles.noteHead}>Самочувствие</span>
+              <span className={styles.feelingValue}>{review.feelingLabel}</span>
+            </p>
+          )}
+          {review.feedbackComment && (
+            <p className={styles.field}>
+              <span className={styles.noteHead}>Комментарий</span>
+              <span>{review.feedbackComment}</span>
+            </p>
+          )}
+        </section>
+      )}
+
       {review.general.length > 0 && (
         <ul className={styles.thread} aria-label="Комментарии ко всей тренировке">
           {review.general.map((c) => (

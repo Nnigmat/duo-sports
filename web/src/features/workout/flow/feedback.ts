@@ -1,3 +1,4 @@
+import { FEELING_LABELS } from '../../../../../shared/feeling';
 import type { Face } from '../chibi/faces';
 
 export type { Face };
@@ -11,11 +12,11 @@ export interface Rating {
 
 /** Шкала самочувствия: 1 — «Плохо», 5 — «Отлично». Тексты из макета «Обратная связь». */
 export const RATINGS: Rating[] = [
-  { value: 1, label: 'Плохо', hint: 'было тяжело, нужно восстановиться' },
-  { value: 2, label: 'Устал', hint: 'нагрузка на пределе' },
-  { value: 3, label: 'Нормально', hint: 'обычная тренировка' },
-  { value: 4, label: 'Хорошо', hint: 'приятная усталость' },
-  { value: 5, label: 'Отлично', hint: 'полон сил' },
+  { value: 1, label: FEELING_LABELS[0], hint: 'было тяжело, нужно восстановиться' },
+  { value: 2, label: FEELING_LABELS[1], hint: 'нагрузка на пределе' },
+  { value: 3, label: FEELING_LABELS[2], hint: 'обычная тренировка' },
+  { value: 4, label: FEELING_LABELS[3], hint: 'приятная усталость' },
+  { value: 5, label: FEELING_LABELS[4], hint: 'полон сил' },
 ];
 
 export const COMMENT_MAX = 1000;
