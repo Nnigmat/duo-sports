@@ -7,13 +7,12 @@ import sample from '../parts/DemoVideo/sample.mp4';
 import { TrainingScreen } from './TrainingScreen';
 
 const handlers = {
-  onBack: fn(),
   onExit: fn(),
   onTech: fn(),
   onRecord: fn(),
   onOpenNotes: fn(),
 };
-const barHandlers = { onDone: fn(), onEdit: fn(), onSkip: fn(), onStart: fn(), onPauseToggle: fn(), onAddTime: fn() };
+const barHandlers = { onDone: fn(), onBack: fn(), onSkip: fn(), onStart: fn(), onPauseToggle: fn(), onAddTime: fn() };
 
 const NOTE = 'Локти назад, не разводи в стороны. Спину держи ближе к лавочке.';
 
@@ -27,7 +26,8 @@ const meta = {
     line: 'Обратные отжимания · 18–20 повт',
     pose: 'dips',
     note: NOTE,
-    bar: { mode: 'set', onDone: barHandlers.onDone, onEdit: barHandlers.onEdit, onSkip: barHandlers.onSkip },
+    startedAt: Date.now() - 754_000,
+    bar: { mode: 'set', onDone: barHandlers.onDone, onBack: barHandlers.onBack, onSkip: barHandlers.onSkip },
     ...handlers,
   },
   parameters: {
@@ -51,12 +51,15 @@ export const SetReps: Story = {
     await userEvent.click(c.getByRole('button', { name: 'Готово' }));
     await userEvent.click(c.getByRole('button', { name: 'Техника' }));
     await userEvent.click(c.getByRole('button', { name: /комментарий тренера/i }));
-    await userEvent.click(c.getByRole('button', { name: 'Шаг назад' }));
+    await userEvent.click(c.getByRole('button', { name: 'Назад' }));
     await userEvent.click(c.getByRole('button', { name: 'Закончить тренировку' }));
     await expect(barHandlers.onDone).toHaveBeenCalledTimes(1);
     await expect(handlers.onTech).toHaveBeenCalledTimes(1);
     await expect(handlers.onOpenNotes).toHaveBeenCalledTimes(1);
-    await expect(handlers.onBack).toHaveBeenCalledTimes(1);
+    await expect(barHandlers.onBack).toHaveBeenCalledTimes(1);
+    // На экране подхода стрелки в шапке нет, а время идёт под названием круга
+    await expect(c.queryByRole('button', { name: 'Шаг назад' })).toBeNull();
+    await expect(c.getByRole('timer', { name: 'Время тренировки' })).toHaveTextContent(/^12:\d\d$/);
     await expect(handlers.onExit).toHaveBeenCalledTimes(1);
     await expect(c.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
     // Нижний ряд закреплён: экран не выше окна, кнопка «Готово» целиком в окне
@@ -128,13 +131,16 @@ export const DemoFailed: Story = {
 export const Rest: Story = {
   args: {
     pose: 'rest',
+    onBack: fn(),
     bar: { mode: 'rest', seconds: 60, total: 60, onAddTime: barHandlers.onAddTime, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getByRole('timer')).toHaveAccessibleName('отдых 01:00');
+    await expect(c.getByRole('timer', { name: 'отдых 01:00' })).toBeVisible();
     await userEvent.click(c.getByRole('button', { name: 'Добавить 15 секунд' }));
     await expect(barHandlers.onAddTime).toHaveBeenCalledTimes(1);
+    // На отдыхе стрелка в шапке остаётся
+    await expect(c.getByRole('button', { name: 'Шаг назад' })).toBeVisible();
   },
 };
 
@@ -147,6 +153,7 @@ export const Timer: Story = {
     line: 'Вращения головой · 00:30',
     pose: 'headroll',
     note: undefined,
+    onBack: fn(),
     bar: { mode: 'timer', seconds: 18, total: 30, onPauseToggle: barHandlers.onPauseToggle, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
@@ -170,7 +177,7 @@ export const Start: Story = {
     eyebrow: 'Подход 1 из 2',
     line: 'Планка · 00:45–01:00',
     pose: 'plank',
-    bar: { mode: 'start', onStart: barHandlers.onStart, onEdit: barHandlers.onEdit, onSkip: barHandlers.onSkip },
+    bar: { mode: 'start', onStart: barHandlers.onStart, onBack: barHandlers.onBack, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Старт' }));

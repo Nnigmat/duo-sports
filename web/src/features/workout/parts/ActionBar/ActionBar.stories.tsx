@@ -7,7 +7,7 @@ const handlers = {
   onSkip: fn(),
   onDone: fn(),
   onStart: fn(),
-  onEdit: fn(),
+  onBack: fn(),
   onPauseToggle: fn(),
   onAddTime: fn(),
 };
@@ -29,23 +29,30 @@ export default meta;
 type Story = StoryObj;
 
 export const SetMode: Story = {
-  render: () => <ActionBar mode="set" onDone={handlers.onDone} onEdit={handlers.onEdit} onSkip={handlers.onSkip} />,
+  render: () => <ActionBar mode="set" onDone={handlers.onDone} onBack={handlers.onBack} onSkip={handlers.onSkip} />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await userEvent.click(c.getByRole('button', { name: 'Готово' }));
-    await userEvent.click(c.getByRole('button', { name: 'Изменить' }));
+    await userEvent.click(c.getByRole('button', { name: 'Назад' }));
     await userEvent.click(c.getByRole('button', { name: 'Пропустить' }));
     await expect(handlers.onDone).toHaveBeenCalledTimes(1);
-    await expect(handlers.onEdit).toHaveBeenCalledTimes(1);
+    await expect(handlers.onBack).toHaveBeenCalledTimes(1);
     await expect(handlers.onSkip).toHaveBeenCalledTimes(1);
   },
 };
 
 export const Start: Story = {
-  render: () => <ActionBar mode="start" onStart={handlers.onStart} onEdit={handlers.onEdit} onSkip={handlers.onSkip} />,
+  render: () => <ActionBar mode="start" onStart={handlers.onStart} onBack={handlers.onBack} onSkip={handlers.onSkip} />,
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Старт' }));
     await expect(handlers.onStart).toHaveBeenCalled();
+  },
+};
+
+export const FirstStep: Story = {
+  render: () => <ActionBar mode="set" onDone={handlers.onDone} onSkip={handlers.onSkip} />,
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByRole('button', { name: 'Назад' })).toBeNull();
   },
 };
 
@@ -89,10 +96,10 @@ export const AllVariants: Story = {
   render: () => (
     <Stack>
       <Row label="set">
-        <ActionBar mode="set" onDone={() => {}} onEdit={() => {}} onSkip={() => {}} />
+        <ActionBar mode="set" onDone={() => {}} onBack={() => {}} onSkip={() => {}} />
       </Row>
       <Row label="start">
-        <ActionBar mode="start" onStart={() => {}} onEdit={() => {}} onSkip={() => {}} />
+        <ActionBar mode="start" onStart={() => {}} onBack={() => {}} onSkip={() => {}} />
       </Row>
       <Row label="timer">
         <ActionBar mode="timer" seconds={18} total={30} onPauseToggle={() => {}} onSkip={() => {}} />

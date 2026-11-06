@@ -63,12 +63,6 @@ export function recordingEyebrow(step: Step): string {
   return step.mode === 'circuit' ? `Круг ${step.round} · подход ${n}` : `Подход ${n}`;
 }
 
-/** Надстрочник панели «Изменить»: «Подход 1 из 9 · круг 1» */
-export function editEyebrow(step: Step): string {
-  const set = `Подход ${step.indexInBlock} из ${step.blockSize}`;
-  return step.mode === 'circuit' ? `${set} · круг ${step.round}` : set;
-}
-
 /** Название блока в шапке */
 export function blockLabel(step: Step): string {
   switch (step.mode) {
