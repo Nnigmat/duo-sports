@@ -1,6 +1,7 @@
 .scrim {
   position: fixed;
   inset: 0;
+  z-index: 10; /* слой затемнения: выше любого экрана, ниже панели */
   background: var(--scrim);
   animation: fade-in 160ms ease-out;
 }
@@ -10,6 +11,7 @@
 
 .sheet {
   position: fixed;
+  z-index: 11; /* слой панели */
   left: 0;
   right: 0;
   bottom: 0;

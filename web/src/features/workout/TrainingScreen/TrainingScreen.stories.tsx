@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import { Dialog } from '../../../ui/Dialog/Dialog';
+import { Sheet } from '../../../ui/Sheet/Sheet';
 import { ARTIFACT } from '../../../ui/storyKit';
 import sample from '../parts/DemoVideo/sample.mp4';
 import { TrainingScreen } from './TrainingScreen';
@@ -173,5 +175,54 @@ export const Start: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Старт' }));
     await expect(barHandlers.onStart).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** В центре облачка сверху лежит затемнение, а не облачко */
+async function expectScrimOverBubble(canvasElement: HTMLElement) {
+  const bubble = within(canvasElement).getByText('Подход 1 из 9').parentElement as HTMLElement;
+  const r = bubble.getBoundingClientRect();
+  const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  await expect(bubble.contains(top)).toBe(false);
+  await expect(top).toHaveAttribute('data-state', 'open');
+}
+
+/** Облачко не перекрывает шторку: затемнение (слой 10) и шторка (слой 11) выше экрана */
+export const SheetOverBubble: Story = {
+  render: (args) => (
+    <>
+      <TrainingScreen {...args} />
+      <Sheet open onOpenChange={fn()} title="Сколько повторений сделали?" eyebrow="Подход 1 из 9">
+        <p>Шторка лежит выше облачка</p>
+      </Sheet>
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const sheet = await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' });
+    await expect(getComputedStyle(sheet).zIndex).toBe('11');
+    await expect(getComputedStyle(sheet.previousElementSibling as Element).zIndex).toBe('10');
+    await expectScrimOverBubble(canvasElement);
+  },
+};
+
+/** Облачко не перекрывает модальное окно */
+export const DialogOverBubble: Story = {
+  render: (args) => (
+    <>
+      <TrainingScreen {...args} />
+      <Dialog
+        open
+        onOpenChange={fn()}
+        title="Закончить тренировку?"
+        description="Выполненные подходы сохранятся"
+        confirmLabel="Закончить"
+        onConfirm={fn()}
+      />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = await screen.findByRole('dialog', { name: 'Закончить тренировку?' });
+    await expect(getComputedStyle(dialog).zIndex).toBe('11');
+    await expectScrimOverBubble(canvasElement);
   },
 };
