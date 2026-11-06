@@ -32,6 +32,8 @@ type Props = {
   cameraUrl?: string;
   /** Поза следующего упражнения: на отдыхе над чибиком появляется облачко-мысль с ней */
   thinkPose?: Pose;
+  /** Ролик следующего упражнения для облачка-мысли */
+  thinkDemoUrl?: string;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -64,6 +66,7 @@ export function TrainingScreen({
   restUrl,
   cameraUrl,
   thinkPose,
+  thinkDemoUrl,
   note,
   techNew,
   recordable,
@@ -113,7 +116,7 @@ export function TrainingScreen({
           </>
         )}
 
-        {thinkPose && <ThoughtBubble pose={thinkPose} className={styles.think} />}
+        {thinkPose && <ThoughtBubble pose={thinkPose} demoUrl={thinkDemoUrl} still={still} className={styles.think} />}
 
         <div className={styles.left}>
           <IconButton

@@ -32,3 +32,17 @@
   top: 6px; /* нет токена */
   left: 22px; /* нет токена */
 }
+
+/* Ролик 16:9 обрезается до квадрата по центру: чибик в кадре посередине */
+.root .video {
+  position: absolute;
+  top: 6px; /* нет токена */
+  left: 22px; /* нет токена */
+  width: 88px; /* нет токена */
+  height: 88px; /* нет токена */
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+}
