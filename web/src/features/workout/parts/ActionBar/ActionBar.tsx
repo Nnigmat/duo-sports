@@ -7,8 +7,8 @@ type Common = {
 };
 
 type Props =
-  | (Common & { mode: 'set'; onDone: () => void; onEdit: () => void })
-  | (Common & { mode: 'start'; onStart: () => void; onEdit: () => void })
+  | (Common & { mode: 'set'; onDone: () => void; onBack?: () => void })
+  | (Common & { mode: 'start'; onStart: () => void; onBack?: () => void })
   | (Common & {
       mode: 'timer';
       seconds: number;
@@ -18,7 +18,10 @@ type Props =
     })
   | (Common & { mode: 'rest'; seconds: number; total: number; onAddTime: () => void });
 
-/** Нижний ряд экрана тренировки: слева дополнительное действие, в центре ключевое, справа «Пропустить». */
+/**
+ * Нижний ряд экрана тренировки: слева дополнительное действие, в центре ключевое, справа «Пропустить».
+ * У подхода слева «Назад»; без onBack (первый шаг) кнопки нет, место остаётся.
+ */
 export function ActionBar(props: Props) {
   return (
     <div className={styles.root}>
@@ -35,7 +38,7 @@ function left(p: Props) {
   switch (p.mode) {
     case 'set':
     case 'start':
-      return <IconButton size="md" icon="pencil" aria-label="Изменить" caption="Изменить" onClick={p.onEdit} />;
+      return p.onBack && <IconButton size="md" icon="back" aria-label="Назад" caption="Назад" onClick={p.onBack} />;
     case 'timer':
       return p.paused ? (
         <IconButton size="md" icon="play" aria-label="Продолжить" caption="Продолжить" onClick={p.onPauseToggle} />

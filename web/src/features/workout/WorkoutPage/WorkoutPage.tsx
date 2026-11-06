@@ -55,15 +55,21 @@ function SavedWorkout({ id }: { id: string }) {
   const [draft] = useState(() => (key ? loadDraft(key) : null));
   // Отсчёт времени тренировки: с первого «Старт», после перезагрузки — с сохранённого момента
   const startedAt = useRef<number | null>(draft?.startedAt ?? null);
+  // Копия метки в состоянии: по ней экран перерисовывается и показывает общее время
+  const [startedAtMs, setStartedMs] = useState<number | null>(startedAt.current);
   const onSessionChange = useCallback(
     (session: Session) => {
       if (!key) return;
       if (session.phase === 'start') {
         startedAt.current = null;
+        setStartedMs(null);
         clearDraft(key);
         return;
       }
-      startedAt.current ??= Date.now();
+      if (startedAt.current === null) {
+        startedAt.current = Date.now();
+        setStartedMs(startedAt.current);
+      }
       saveDraft(key, { session, startedAt: startedAt.current, updatedAt: Date.now() });
     },
     [key],
@@ -82,6 +88,7 @@ function SavedWorkout({ id }: { id: string }) {
         data={data}
         dateLabel={formatLongDate(parseIso(date))}
         initialSession={draft?.session}
+        startedAt={startedAtMs}
         onSessionChange={onSessionChange}
         onExit={leave}
         onFinish={async (steps, videos) => {
@@ -104,10 +111,11 @@ type FlowProps = {
   onFinish: (steps: import('../../../../../shared/types').SessionStepResult[], videos: number) => Promise<void>;
   onExit: () => void;
   initialSession?: Session;
+  startedAt: number | null;
   onSessionChange: (session: Session) => void;
 };
 
-function Flow({ data, dateLabel, onFinish, onExit, initialSession, onSessionChange }: FlowProps) {
+function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, onSessionChange }: FlowProps) {
   return (
     <WorkoutFlow
       workout={data.workout}
@@ -118,6 +126,7 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, onSessionChan
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}
       onFinish={(stats, steps) => void onFinish(steps, stats.videos)}
       initialSession={initialSession}
+      startedAt={startedAt}
       onSessionChange={onSessionChange}
       onExit={onExit}
     />

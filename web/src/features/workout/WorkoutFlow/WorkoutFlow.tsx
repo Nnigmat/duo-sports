@@ -4,17 +4,14 @@ import { Dialog } from '../../../ui/Dialog/Dialog';
 import { cameraUrl, idleUrl, restUrl, successUrl } from '../chibi/idle';
 import { poseFor } from '../chibi/poseFor';
 import {
-  applyLabel,
   blockLabel,
   buildSteps,
+  canGoBack,
   commentsFor,
   demoFor,
-  editEyebrow,
   eyebrow,
   finishStats,
   sessionSteps,
-  followingNumbers,
-  formatFollowing,
   hasNewComments,
   initSession,
   latestComment,
@@ -33,7 +30,6 @@ import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
-import { EditSheet } from '../sheets/EditSheet/EditSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
 import { TechSheet } from '../sheets/TechSheet/TechSheet';
 import { StartScreen } from '../StartScreen/StartScreen';
@@ -57,6 +53,8 @@ type Props = {
   onExit: () => void;
   /** Сохранённое прохождение: тренировка продолжается с него, а не с экрана старта */
   initialSession?: Session;
+  /** Метка начала тренировки (мс): от неё идёт общее время. Нет — время не показывается. */
+  startedAt?: number | null;
   /** Ход изменился: контейнер сохраняет прохождение, чтобы оно пережило перезагрузку */
   onSessionChange?: (session: Session) => void;
   /** Секунд до начала записи после «Старт» */
@@ -65,14 +63,14 @@ type Props = {
   now?: Date;
 };
 
-type Sheet = 'edit' | 'result' | 'tech' | 'comments' | null;
+type Sheet = 'result' | 'tech' | 'comments' | null;
 
 /**
  * Весь сценарий тренировки: старт → подходы, таймеры, отдых, запись, панели → финиш.
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, startedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ?? initSession(buildSteps(w.blocks)));
   useEffect(() => onSessionChange?.(session), [session, onSessionChange]);
   const [comments, setComments] = useState(rest.comments);
@@ -143,7 +141,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         demoUrl={demoFor({ phase, record: step.record, demoUrl: techniques[shown.exerciseId]?.demoUrl })}
         note={note?.text}
         techNew={hasNewComments(comments, shown.exerciseId)}
-        onEdit={() => setSheet('edit')}
+        startedAt={startedAt}
         // На подходах упражнений «Готово» сначала спрашивает факт; у разминки и заминки шторки нет
         onDone={() => (step.mode === 'timed' ? dispatch({ type: 'done' }) : setSheet('result'))}
         onTech={() => setSheet('tech')}
@@ -153,18 +151,6 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         }}
         onRecord={() => setRecording(true)}
         onExit={() => setExiting(true)}
-      />
-
-      <EditSheet
-        open={sheet === 'edit' && phase === 'work'}
-        onOpenChange={(open) => !open && setSheet(null)}
-        eyebrow={editEyebrow(step)}
-        title={step.exerciseName}
-        kind={step.kind}
-        plan={step.plan}
-        applyLabel={applyLabel(step)}
-        applyHint={formatFollowing(followingNumbers(steps, index))}
-        onSave={(plan, apply) => dispatch({ type: 'editPlan', plan, apply })}
       />
 
       <ResultSheet
@@ -229,7 +215,7 @@ type StageProps = {
   cameraUrl: string;
   note?: string;
   techNew: boolean;
-  onEdit: () => void;
+  startedAt?: number | null;
   /** «Готово» на подходе: у упражнения откроет шторку факта, у разминки завершит шаг */
   onDone: () => void;
   onTech: () => void;
@@ -248,16 +234,17 @@ function Stage(props: StageProps) {
 
 /** Подход на повторы или упражнение на время до «Старт» */
 function SetStage(props: StageProps) {
-  const { session, dispatch, onEdit, onDone } = props;
+  const { session, dispatch, onDone } = props;
   const step = session.steps[session.index];
   const onSkip = () => dispatch({ type: 'skip' });
+  const onBack = canGoBack(session) ? () => dispatch({ type: 'back' }) : undefined;
   return (
     <StageView
       {...props}
       bar={
         step.kind === 'time'
-          ? { mode: 'start', onStart: () => dispatch({ type: 'startTimer' }), onEdit, onSkip }
-          : { mode: 'set', onDone, onEdit, onSkip }
+          ? { mode: 'start', onStart: () => dispatch({ type: 'startTimer' }), onBack, onSkip }
+          : { mode: 'set', onDone, onBack, onSkip }
       }
     />
   );
@@ -277,6 +264,7 @@ function TimedStage(props: StageProps) {
   return (
     <StageView
       {...props}
+      onBack={() => dispatch({ type: 'back' })}
       bar={
         resting
           ? { mode: 'rest', seconds: t.seconds, total: t.total, onAddTime: () => t.add(15), onSkip }
@@ -286,8 +274,10 @@ function TimedStage(props: StageProps) {
   );
 }
 
-function StageView({ session, dispatch, shown, demoUrl, idleUrl, restUrl, cameraUrl, note, techNew, bar, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+function StageView({ session, shown, demoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, onBack, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
+  /** Стрелка в шапке: только на таймере и отдыхе */
+  onBack?: () => void;
 }) {
   const step = session.steps[session.index];
   const resting = session.phase === 'rest';
@@ -307,7 +297,8 @@ function StageView({ session, dispatch, shown, demoUrl, idleUrl, restUrl, camera
       recordable={!resting && step.record}
       canRecord={!resting}
       bar={bar}
-      onBack={() => dispatch({ type: 'back' })}
+      startedAt={startedAt}
+      onBack={onBack}
       onExit={onExit}
       onTech={onTech}
       onRecord={onRecord}

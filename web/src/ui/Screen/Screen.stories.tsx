@@ -22,6 +22,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+export const WithMeta: Story = { args: { meta: <span>12:05</span> } };
 export const WithoutClose: Story = { args: { close: undefined, label: 'Техника' } };
 export const WithoutBack: Story = { args: { back: undefined, label: 'Финиш' } };
 export const LongLabel: Story = { args: { label: 'Разминка — вращения плечами и головой по кругу' } };

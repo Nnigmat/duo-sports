@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
 import { circuit, setsBlock, warmup } from './fixtures';
-import { initSession, reduce, type Session } from './session';
+import { canGoBack, initSession, reduce, type Session } from './session';
 
 // 0–1 разминка (timed), 2–10 круговые подходы (rest 60 с, кроме последнего)
 const steps = buildSteps([warmup, circuit]);
@@ -151,19 +151,49 @@ describe('finishNow', () => {
   });
 });
 
-describe('editPlan', () => {
-  const plan = { target: { min: 16, max: 16 } };
-
-  it('только текущий шаг', () => {
-    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'editPlan', plan, apply: false });
-    expect(s.steps[2].plan.target.min).toBe(16);
-    expect(s.steps[5].plan.target.min).toBe(18);
+describe('canGoBack', () => {
+  it('на первом шаге кнопки «Назад» нет', () => {
+    expect(canGoBack(reduce(fresh(), { type: 'begin' }))).toBe(false);
   });
 
-  it('с применением к следующим кругам', () => {
-    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'editPlan', plan, apply: true });
-    expect([2, 5, 8].map((i) => s.steps[i].plan.target.min)).toEqual([16, 16, 16]);
-    expect(s.steps[3].plan.target.min).toBe(30);
+  it('на любом следующем шаге есть, в том числе через границу блока', () => {
+    const begun = reduce(fresh(), { type: 'begin' });
+    expect(canGoBack(at(begun, 1))).toBe(true);
+    expect(canGoBack(at(begun, 2))).toBe(true); // первый подход круга после разминки
+  });
+
+  it('на отдыхе и финише кнопки нет: там стрелка в шапке или выход', () => {
+    const begun = reduce(fresh(), { type: 'begin' });
+    expect(canGoBack(at(begun, 4, 'rest'))).toBe(false);
+    expect(canGoBack(at(begun, 4, 'finish'))).toBe(false);
+  });
+});
+
+describe('back через границы', () => {
+  it('с первого подхода круга: на последний шаг разминки, отдых пропущен', () => {
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'back' });
+    expect(s).toMatchObject({ phase: 'work', index: 1 });
+  });
+
+  it('из второго круга в первый: на предыдущий подход, а не на его отдых', () => {
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'back' });
+    expect(s).toMatchObject({ phase: 'work', index: 4 });
+  });
+
+  it('шаг с видео: возвращаем в состояние до записи, счётчик уменьшается', () => {
+    const rec = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded', videoId: 'v-5' });
+    const s = reduce(reduce(rec, { type: 'restOver' }), { type: 'back' });
+    expect(s).toMatchObject({ phase: 'work', index: 5, videos: 0 });
+    expect(s.videoIds[5]).toBeNull();
+    expect(s.completed[5]).toBe(false);
+  });
+
+  it('«Назад» и повторная запись не считают видео подхода дважды', () => {
+    const rec = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded', videoId: 'v-5' });
+    const back = reduce(reduce(rec, { type: 'restOver' }), { type: 'back' });
+    const again = reduce(back, { type: 'recorded', videoId: 'v-5b' });
+    expect(again.videos).toBe(1);
+    expect(again.videoIds[5]).toBe('v-5b');
   });
 });
 

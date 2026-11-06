@@ -9,6 +9,8 @@ type Action = { onClick: () => void; href?: undefined } | { href: string; onClic
 type Props = {
   /** Название в шапке: блок тренировки, «Техника» и т. п. */
   label: string;
+  /** Строка под названием (например, общее время тренировки) */
+  meta?: ReactNode;
   /** Без back (например, на финише) место под стрелку остаётся, и название не смещается. */
   back?: Action;
   /** Без close крестика нет, место под него остаётся, и название не смещается. */
@@ -22,6 +24,7 @@ type Props = {
 /** Экран на всю высоту: шапка (← название ✕) и содержимое под ней. */
 export function Screen({
   label,
+  meta,
   back,
   close,
   backLabel = 'Шаг назад',
@@ -33,9 +36,12 @@ export function Screen({
     <div className={cx(styles.root, className)}>
       <header className={styles.header}>
         {back ? <IconButton bare icon="back" aria-label={backLabel} {...back} /> : <span aria-hidden="true" />}
-        <Text variant="eyebrow" tag="h1" className={styles.label}>
-          {label}
-        </Text>
+        <div className={styles.title}>
+          <Text variant="eyebrow" tag="h1" className={styles.label}>
+            {label}
+          </Text>
+          {meta}
+        </div>
         {close ? <IconButton bare icon="close" aria-label={closeLabel} {...close} /> : <span aria-hidden="true" />}
       </header>
       {children}
