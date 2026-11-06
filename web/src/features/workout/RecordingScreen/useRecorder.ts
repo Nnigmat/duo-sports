@@ -74,6 +74,8 @@ export function useRecorder() {
     if (unsupported()) return;
     let cancelled = false;
     setStatus('starting');
+    // Предупреждение про микрофон относится к прошлому потоку, пока новый не открыт
+    setWithAudio(true);
     setElapsed(0);
     setCountdown(null);
     setRange(null);
