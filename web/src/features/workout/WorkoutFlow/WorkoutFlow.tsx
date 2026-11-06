@@ -193,6 +193,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         restUrl={restUrl(gender)}
         cameraUrl={cameraUrl(gender)}
         demoUrl={demoFor({ phase, record: step.record, demoUrl: techniques[shown.exerciseId]?.demoUrl })}
+        thinkDemoUrl={resting ? techniques[shown.exerciseId]?.demoUrl : undefined}
         note={note?.text}
         techNew={hasNewComments(comments, shown.exerciseId)}
         startedAt={startedAt}
@@ -265,6 +266,8 @@ type StageProps = {
   /** Шаг, про который экран: текущий или (на отдыхе) следующий */
   shown: Step;
   demoUrl?: string;
+  /** Ролик следующего упражнения для облачка на отдыхе */
+  thinkDemoUrl?: string;
   idleUrl: string;
   restUrl: string;
   cameraUrl: string;
@@ -378,7 +381,7 @@ function RestStage(props: StageProps) {
   );
 }
 
-function StageView({ session, shown, demoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, restOver, onBack, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+function StageView({ session, shown, demoUrl, thinkDemoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, restOver, onBack, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
   /** Стрелка в шапке: только на таймере и отдыхе */
   onBack?: () => void;
@@ -399,6 +402,7 @@ function StageView({ session, shown, demoUrl, idleUrl, restUrl, cameraUrl, note,
       cameraUrl={cameraUrl}
       pose={poseFor({ phase: resting ? 'rest' : 'work', exercisePose: step.pose, record: step.record })}
       thinkPose={resting ? (shown.pose ?? 'stand') : undefined}
+      thinkDemoUrl={thinkDemoUrl}
       note={note}
       techNew={techNew}
       recordable={!resting && step.record}
