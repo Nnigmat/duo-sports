@@ -144,6 +144,42 @@
   padding: 0;
   list-style: none;
 }
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* нет токена */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.fact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px; /* нет токена */
+  font-size: var(--caption-bold-size);
+}
+.factN,
+.factPlan {
+  color: var(--ink-tint);
+}
+.factValue {
+  font-weight: 600;
+}
+.factMark,
+.factExtra {
+  padding: 2px 8px; /* нет токена */
+  border: 1px solid var(--ink-tint);
+  border-radius: var(--rounded-full);
+  font-weight: 600;
+}
+.factMark[data-mark='below'] {
+  border-style: dashed;
+}
+.factMark[data-mark='above'] {
+  border-width: 2px;
+}
 .video {
   position: relative;
   display: flex;

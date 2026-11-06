@@ -1,6 +1,6 @@
 import type { ExerciseKind, SetActual, SetPlan } from '../../../../../shared/types';
 
-export type FactLabel = 'Меньше плана' | 'В плане' | 'Больше плана';
+export { factLabel, type FactLabel } from '../../../../../shared/fact';
 
 /** Что правит спортсмен в шторке результата */
 export interface FactDraft {
@@ -9,15 +9,6 @@ export interface FactDraft {
   /** Вес, кг: только у упражнения «вес × повторы» */
   weight?: number;
   extraWeight: boolean;
-}
-
-/** Метка факта против плана: «В плане» внутри min–max включительно. «Макс.» (0–0) границ не имеет. */
-export function factLabel(plan: SetPlan, value: number): FactLabel {
-  const { min, max } = plan.target;
-  if (min === 0 && max === 0) return 'В плане';
-  if (value < min) return 'Меньше плана';
-  if (value > max) return 'Больше плана';
-  return 'В плане';
 }
 
 /** Исходное значение шторки: уже введённый факт, а без него верх диапазона плана. План не меняется. */

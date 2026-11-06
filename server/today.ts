@@ -74,9 +74,18 @@ export function modeLabel(structure: Block[] | null): string {
   return modes.size ? 'По таймеру' : '';
 }
 
-/** Объём — вес × повторы выполненных подходов; повторы берём по нижней границе цели */
+/** Что реально сделано в подходе: факт, а без него (старые Итоги) план; повторы плана берём по нижней границе */
+export function effectiveSet(s: SessionStepResult): { weight: number; value: number } {
+  return { weight: s.actual?.weight ?? s.plan.weight ?? 0, value: s.actual?.value ?? s.plan.target.min };
+}
+
+/** Объём — вес × повторы выполненных подходов по факту, без факта по плану. «Был доп. вес» вес не меняет. */
 export function sessionVolume(steps: SessionStepResult[]): number {
-  return steps.reduce((sum, s) => (s.completed && s.kind === 'weight' ? sum + (s.plan.weight ?? 0) * s.plan.target.min : sum), 0);
+  return steps.reduce((sum, s) => {
+    if (!s.completed || s.kind !== 'weight') return sum;
+    const { weight, value } = effectiveSet(s);
+    return sum + weight * value;
+  }, 0);
 }
 export const doneSets = (steps: SessionStepResult[]) => steps.filter((s) => s.completed).length;
 

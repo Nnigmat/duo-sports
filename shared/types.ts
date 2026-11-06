@@ -428,6 +428,12 @@ export interface ReviewSet {
   n: number;
   label: string;
   completed: boolean;
+  /** Факт подхода: «85 кг × 7». Нет у пропущенных подходов и у старых Итогов */
+  actualLabel?: string;
+  /** Факт против плана; идёт вместе с actualLabel */
+  factMark?: 'Меньше плана' | 'В плане' | 'Больше плана';
+  /** Отметка «был доп. вес»: только метка */
+  extraWeight?: true;
   videoId?: string;
   videoDurationSec?: number;
 }
