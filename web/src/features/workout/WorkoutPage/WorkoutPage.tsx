@@ -105,7 +105,8 @@ function SavedWorkout({ id }: { id: string }) {
       onFinish={async (steps, videos, feedback) => {
         // Черновик чистится только после успеха: при ошибке остаётся ключ, оценка и комментарий, повтор не задвоит итог
         // Ключ запоминаем до отправки: повтор после обрыва сети должен уйти с тем же
-        const submit = (submitKey.current ??= newSubmitKey());
+        const submit = submitKey.current ?? newSubmitKey();
+        submitKey.current = submit;
         await saveSession(id, {
           date,
           steps,
