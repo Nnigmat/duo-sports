@@ -3,6 +3,7 @@ import type { Pose } from '../../../../../shared/types';
 import { cx } from '../../../ui/cx';
 import styles from './Chibi.module.css';
 import { OVERLAY_NODES, PART_NODES } from './parts';
+import { FACES, type Face } from './faces';
 import { POSE_CONFIG } from './poseConfig';
 
 export interface ChibiProps {
@@ -11,6 +12,8 @@ export interface ChibiProps {
   size?: number;
   /** Множитель скорости анимации: 0,5 — замедленно */
   speed?: number;
+  /** Выражение лица; без него обычное (как «нейтральное») */
+  face?: Face;
   /** Медаль на ленте на груди: заглушка до финальной графики */
   medal?: boolean;
   /** Поставить анимацию на паузу */
@@ -18,8 +21,9 @@ export interface ChibiProps {
   className?: string;
 }
 
-export function Chibi({ pose, size = 300, speed, paused, medal, className }: ChibiProps) {
+export function Chibi({ pose, size = 300, speed, paused, face = 'neutral', medal, className }: ChibiProps) {
   const cfg = POSE_CONFIG[pose];
+  const f = FACES[face];
 
   return (
     <svg
@@ -46,9 +50,10 @@ export function Chibi({ pose, size = 300, speed, paused, medal, className }: Chi
           />
           <ellipse cx="-24" cy="20" rx="7" ry="4" opacity="0.9" className={styles.fHighlightSoft} />
           <ellipse cx="24" cy="20" rx="7" ry="4" opacity="0.9" className={styles.fHighlightSoft} />
-          <path d="M-15 8 L-15 8.5" strokeWidth="7" className={cx(styles.line, styles.sInk)} />
-          <path d="M15 8 L15 8.5" strokeWidth="7" className={cx(styles.line, styles.sInk)} />
-          <path d="M-6 24 Q0 29 6 24" strokeWidth="3" className={cx(styles.line, styles.sMouth)} />
+          <path d={f.eyeL} strokeWidth={f.eyeW} className={cx(styles.line, styles.sInk)} />
+          <path d={f.eyeR} strokeWidth={f.eyeW} className={cx(styles.line, styles.sInk)} />
+          {f.brows && <path d={f.brows} strokeWidth="3" className={cx(styles.line, styles.sBrow)} />}
+          <path d={f.mouth} strokeWidth="3" className={cx(styles.line, styles.sMouth, f.mouthFilled && styles.fMouth)} />
         </g>
       </g>
 

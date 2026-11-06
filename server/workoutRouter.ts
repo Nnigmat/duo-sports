@@ -39,7 +39,7 @@ export function workoutRouter(db: Db) {
     if (!v.ok) return void res.status(400).json({ error: v.error });
     const saved = Number.isInteger(id) ? saveSession(db, req.user!.id, id, v.result) : ({ ok: false, error: 'not_found' } as const);
     if (!saved.ok) return void res.status(saved.error === 'bad_video' ? 400 : 404).json({ error: saved.error });
-    res.status(201).json({ id: saved.id });
+    res.status(saved.duplicate ? 200 : 201).json({ id: saved.id });
   });
 
   /** Комментарий тренера или админа спортсмену: к упражнению из его библиотеки или ко всей тренировке */

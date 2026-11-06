@@ -11,6 +11,7 @@ import {
   commentsFor,
   demoFor,
   eyebrow,
+  feedbackOf,
   finishStats,
   sessionSteps,
   hasNewComments,
@@ -55,8 +56,11 @@ type Props = {
   /** Загрузить видео подхода. Ошибка (reject) остаётся на экране записи, можно повторить. */
   /** Возвращает id видео на сервере; без него подход всё равно считается записанным */
   onUploadVideo: (video: Blob, step: Step, durationSec: number) => Promise<string | undefined>;
-  /** «Завершить» на финише: итоги и каждый подход с планом и отметкой «выполнен» */
-  onFinish: (stats: FinishStats, steps: SessionStepResult[]) => void;
+  /**
+   * «Отправить тренеру» на обратной связи: итоги, каждый подход с планом и отметкой «выполнен» и самочувствие.
+   * Reject оставляет экран как есть с текстом ошибки: можно отправить ещё раз, итог не задвоится (ключ тот же).
+   */
+  onFinish: (stats: FinishStats, steps: SessionStepResult[], feedback: { feeling: number; comment?: string }) => Promise<void>;
   /** Выход с экрана старта и ✕ на финише */
   onExit: () => void;
   /** Сохранённое прохождение: тренировка продолжается с него, а не с экрана старта */
@@ -91,8 +95,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
   const [commentsFromTech, setCommentsFromTech] = useState(false);
   const [recording, setRecording] = useState(false);
   const [exiting, setExiting] = useState(false);
-  // После перезагрузки финиш показывается снова: экран обратной связи отдельно не хранится
-  const [feedback, setFeedback] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const { steps, index, phase } = session;
   const step = steps[index];
@@ -113,13 +117,39 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
     );
   }
 
+  if (phase === 'feedback') {
+    const send = async () => {
+      const feedback = feedbackOf(session);
+      // Без оценки итог не уходит, даже если кнопку как-то нажали
+      if (!feedback || sending) return;
+      setSending(true);
+      setSendError(null);
+      try {
+        await onFinish(finishStats(steps, session.completed, session.videos), sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals), feedback);
+      } catch (e) {
+        setSendError(e instanceof Error ? e.message : 'Итоги не отправлены');
+      }
+      setSending(false);
+    };
+    return (
+      <FeedbackScreen
+        feeling={session.feeling}
+        comment={session.comment}
+        sending={sending}
+        error={sendError}
+        onRate={(value) => dispatch({ type: 'rate', value })}
+        onComment={(text) => dispatch({ type: 'comment', text })}
+        onSend={() => void send()}
+        onBack={() => dispatch({ type: 'toSummary' })}
+      />
+    );
+  }
+
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    const send = () => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals));
-    if (feedback) return <FeedbackScreen onSend={send} onBack={() => setFeedback(false)} />;
     // Время на финише то же, что в шапке, и дальше не растёт
     const total = startedAt == null ? 0 : totalSec(startedAt, finishedAt, Date.now());
-    return <FinishScreen stats={stats} totalSec={total} successUrl={successUrl(gender)} onNext={() => setFeedback(true)} onClose={onExit} />;
+    return <FinishScreen stats={stats} totalSec={total} successUrl={successUrl(gender)} onNext={() => dispatch({ type: 'toFeedback' })} onClose={onExit} />;
   }
 
   if (recording) {
