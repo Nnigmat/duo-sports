@@ -118,6 +118,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         eyebrow={recordingEyebrow(step)}
         line={stepLine(step)}
         startDelaySec={recordingDelaySec}
+        beeper={beeper}
         onUpload={async (video, durationSec) => {
           const videoId = await onUploadVideo(video, step, durationSec);
           setRecording(false);

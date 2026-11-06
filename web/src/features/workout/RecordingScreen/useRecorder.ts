@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   clampZoom,
-  isFinished,
   openCamera,
   pickMimeType,
-  remainingSec,
-  startCountdown,
+  recordStartView,
+  startSignalAt,
   zoomRange,
-  type Countdown,
+  type Signal,
   type Facing,
   type ZoomRange,
 } from '../flow';
@@ -40,12 +39,15 @@ function unsupported(): boolean {
  * (время поставить телефон и занять позу), потом запись. Смена камеры доступна до начала записи.
  * Уход со страницы выключает камеру и отбрасывает запись.
  */
-export function useRecorder() {
+export function useRecorder(onSignal?: (signal: Signal) => void) {
   const [status, setStatus] = useState<RecorderStatus>(() => (unsupported() ? 'unsupported' : 'starting'));
   const [facing, setFacing] = useState<Facing>('environment');
   const [elapsed, setElapsed] = useState(0);
-  const [countdown, setCountdown] = useState<Countdown | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // Момент нажатия «Начать запись» и длина отсчёта; null — отсчёта нет
+  const [countdown, setCountdown] = useState<{ startedAt: number; leadSec: number } | null>(null);
+  const [countdownLeft, setCountdownLeft] = useState(0);
+  const signalRef = useRef(onSignal);
+  signalRef.current = onSignal;
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   // null: камера не умеет зум, контрол не показываем
   const [range, setRange] = useState<ZoomRange | null>(null);
@@ -56,6 +58,7 @@ export function useRecorder() {
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordStartRef = useRef(0);
 
   const release = useCallback(() => {
     const recorder = recorderRef.current;
@@ -128,17 +131,28 @@ export function useRecorder() {
 
   const startRecording = useCallback(() => {
     recorderRef.current?.start(1000);
+    recordStartRef.current = Date.now();
     setCountdown(null);
     setStatus('recording');
   }, []);
 
-  // Отсчёт до записи: по часам, чтобы вкладка в фоне не сбивала время
+  // Отсчёт до записи: по часам, чтобы вкладка в фоне не сбивала время. Сигнал звучит один раз на секунду.
   useEffect(() => {
     if (status !== 'countdown' || !countdown) return;
+    const { startedAt, leadSec } = countdown;
+    let lastSecond = 0;
     const id = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      if (isFinished(countdown, t)) startRecording();
+      const elapsedMs = Date.now() - startedAt;
+      const second = Math.floor(elapsedMs / 1000);
+      // Вкладка могла уснуть: звучит только сигнал текущей секунды, без пачки пропущенных
+      if (second > lastSecond) {
+        lastSecond = second;
+        const signal = startSignalAt(leadSec, second);
+        if (signal) signalRef.current?.(signal);
+      }
+      const view = recordStartView(leadSec, elapsedMs);
+      setCountdownLeft(view.left);
+      if (view.record) startRecording();
     }, 100);
     return () => clearInterval(id);
   }, [status, countdown, startRecording]);
@@ -150,7 +164,7 @@ export function useRecorder() {
     return () => clearInterval(id);
   }, [status]);
 
-  /** «Старт»: через delaySec секунд начнётся запись; при 0 — сразу. */
+  /** «Начать запись»: отсчёт delaySec секунд с сигналами, длинный сигнал, затем запись; при 0 — сразу. */
   const begin = useCallback(
     (delaySec: number) => {
       if (!recorderRef.current) return;
@@ -158,9 +172,10 @@ export function useRecorder() {
         startRecording();
         return;
       }
-      const t = Date.now();
-      setNow(t);
-      setCountdown(startCountdown(delaySec, t));
+      const first = startSignalAt(delaySec, 0);
+      if (first) signalRef.current?.(first);
+      setCountdownLeft(delaySec);
+      setCountdown({ startedAt: Date.now(), leadSec: delaySec });
       setStatus('countdown');
     },
     [startRecording],
@@ -187,6 +202,7 @@ export function useRecorder() {
         recorder.onstop = () => {
           const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
           release();
+          setElapsed(Math.round((Date.now() - recordStartRef.current) / 1000));
           setStatus('stopped');
           resolve(blob);
         };
@@ -214,7 +230,7 @@ export function useRecorder() {
     status,
     elapsed,
     /** Секунд до начала записи, пока идёт отсчёт */
-    countdownLeft: countdown ? remainingSec(countdown, now) : 0,
+    countdownLeft,
     setVideo,
     begin,
     cancelCountdown,

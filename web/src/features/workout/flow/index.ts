@@ -25,3 +25,4 @@ export { afterReload, canGoBack, initSession, reduce, type Action, type Phase, t
 export { hasTechnique } from './technique';
 export { demoFor } from './demo';
 export { FINAL_SEC, LEAD_SEC, signalAt, timedView, type Signal, type TimedView } from './signals';
+export { LONG_BEEP_MS, POLL_MARGIN_MS, recordStartView, startSignalAt, type RecordStartView } from './recordStart';
