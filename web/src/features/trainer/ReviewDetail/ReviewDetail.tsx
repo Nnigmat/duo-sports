@@ -4,6 +4,7 @@ import { formatMinutes, formatVolume } from '../../../shared/format';
 import { Button, Comment, CommentField, PastComments, SetChip, StatusBadge, Text, VideoPlayer, type VideoPlayerHandle } from '../../../ui';
 import { formatTime, type PlayerComment } from '../../../ui/VideoPlayer/player';
 import type { NewComment } from '../api';
+import { ExerciseLink } from '../ExerciseLink/ExerciseLink';
 import { buildCommentRequest, movedText, rowDate } from '../sessions';
 import styles from './ReviewDetail.module.css';
 
@@ -17,6 +18,9 @@ type Props = {
   /** Прошлые комментарии по названию упражнения */
   past: Record<string, ExerciseCommentItem[]>;
   videoSrc: (videoId: string) => string;
+  /** Адрес карточки упражнения по названию; нет адреса — название остаётся текстом */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
   /** Промис отклонён — ошибка показывается под полем */
   onComment: (comment: NewComment) => Promise<void>;
   /** Удалить свой комментарий */
@@ -25,7 +29,7 @@ type Props = {
 };
 
 /** Справа в карточке ученика: выполненная тренировка по шагам, видео, переписка и «Отметить разобранной». */
-export function ReviewDetail({ today, athleteName, review, movedFrom, past, videoSrc, onComment, onDeleteComment, onMarkReviewed }: Props) {
+export function ReviewDetail({ today, athleteName, review, movedFrom, past, videoSrc, exerciseHref, onOpenExercise, onComment, onDeleteComment, onMarkReviewed }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
   const moved = movedText({ movedFrom });
   return (
@@ -71,7 +75,7 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
 
       <ol className={styles.steps} aria-label="Шаги тренировки">
         {review.exercises.map((ex, i) => (
-          <Step key={ex.id} index={i + 1} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} onComment={onComment} onDelete={onDeleteComment} />
+          <Step key={ex.id} index={i + 1} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} href={exerciseHref?.(ex.name)} onOpenExercise={onOpenExercise} onComment={onComment} onDelete={onDeleteComment} />
         ))}
       </ol>
 
@@ -126,6 +130,8 @@ function Step({
   athleteName,
   past,
   videoSrc,
+  href,
+  onOpenExercise,
   onComment,
   onDelete,
 }: {
@@ -135,6 +141,8 @@ function Step({
   athleteName: string;
   past: ExerciseCommentItem[];
   videoSrc: Props['videoSrc'];
+  href?: string;
+  onOpenExercise?: Props['onOpenExercise'];
   onComment: Props['onComment'];
   onDelete: Props['onDeleteComment'];
 }) {
@@ -185,7 +193,7 @@ function Step({
       </span>
       <div className={styles.stepBody}>
         <div className={styles.stepHead}>
-          <h3 className={styles.name}>{exercise.name}</h3>
+          <ExerciseLink name={exercise.name} href={href} onOpen={onOpenExercise} />
           {exercise.newCount > 0 && <span className={styles.newBadge}>{exercise.newCount === 1 ? 'Новое' : `Новых: ${exercise.newCount}`}</span>}
         </div>
         <ul className={styles.sets} aria-label="Подходы">

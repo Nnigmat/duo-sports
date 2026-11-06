@@ -76,12 +76,6 @@
   align-items: center;
   gap: var(--spacing-xs);
 }
-.name {
-  margin: 0;
-  font-size: var(--body-md-size);
-  line-height: var(--body-md-line);
-  font-weight: 600;
-}
 .newBadge {
   padding: 2px var(--spacing-xs); /* 2 px: нет токена */
   border-radius: var(--rounded-full);
