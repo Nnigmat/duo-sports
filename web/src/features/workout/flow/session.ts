@@ -1,6 +1,4 @@
-import type { SetPlan } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
-import { applyToFollowing, updatePlan } from './edit';
 
 export type Phase = 'start' | 'work' | 'rest' | 'finish';
 
@@ -28,8 +26,7 @@ export type Action =
   | { type: 'restOver' }
   /** видео записано и сохранено: подход считается выполненным */
   | { type: 'recorded'; videoId?: string }
-  | { type: 'finishNow' }
-  | { type: 'editPlan'; plan: SetPlan; apply: boolean };
+  | { type: 'finishNow' };
 
 /** Разминка и заминка идут сами; упражнение на время в блоке подходами ждёт «Старт». */
 const autoStart = (step: Step) => step.mode === 'timed';
@@ -62,8 +59,20 @@ function complete(s: Session): Session {
   return s.steps[s.index].restAfterSec > 0 ? { ...done, phase: 'rest' } : goTo(done, s.index + 1);
 }
 
+/** Шаг снова не выполнен; записанное на нём видео тоже снимается: повторная запись его заменит. */
 function uncomplete(s: Session, index: number): Session {
-  return { ...s, completed: s.completed.map((c, i) => (i === index ? false : c)) };
+  const hadVideo = s.videoIds[index] !== null;
+  return {
+    ...s,
+    completed: s.completed.map((c, i) => (i === index ? false : c)),
+    videos: hadVideo ? s.videos - 1 : s.videos,
+    videoIds: s.videoIds.map((v, i) => (i === index ? null : v)),
+  };
+}
+
+/** Есть ли у экрана подхода кнопка «Назад»: с первого шага, на отдыхе и на финише её нет */
+export function canGoBack(s: Session): boolean {
+  return s.phase === 'work' && s.index > 0;
 }
 
 export function reduce(s: Session, a: Action): Session {
@@ -96,11 +105,5 @@ export function reduce(s: Session, a: Action): Session {
 
     case 'finishNow':
       return s.phase === 'finish' ? s : { ...s, phase: 'finish' };
-
-    case 'editPlan':
-      return {
-        ...s,
-        steps: a.apply ? applyToFollowing(s.steps, s.index, a.plan) : updatePlan(s.steps, s.index, a.plan),
-      };
   }
 }

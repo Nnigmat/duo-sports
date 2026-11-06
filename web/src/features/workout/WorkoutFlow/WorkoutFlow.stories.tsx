@@ -69,7 +69,7 @@ const meta = {
     bleed: true,
     docs: {
       description: {
-        component: `Весь сценарий на моковых данных: старт → разминка по таймеру → круги с отдыхом → запись видео на круге 2 → силовая (с «Планкой» на время) → заминка → финиш. Работает панель «Изменить» с применением к следующим кругам, «Техника», комментарии тренера и выход с подтверждением. Таймеры короткие (5 с), «Пропустить» перематывает. Камера подменена, видео «загружается» 0,3 с. ${ARTIFACT}`,
+        component: `Весь сценарий на моковых данных: старт → разминка по таймеру → круги с отдыхом → запись видео на круге 2 → силовая (с «Планкой» на время) → заминка → финиш. Работают «Назад» с общим временем тренировки, «Техника», комментарии тренера и выход с подтверждением. Таймеры короткие (5 с), «Пропустить» перематывает. Камера подменена, видео «загружается» 0,3 с. ${ARTIFACT}`,
       },
     },
   },
@@ -200,24 +200,27 @@ export const RestIsAboutNextSet: Story = {
   },
 };
 
-export const EditAppliesToNextRounds: Story = {
+/** «Назад» возвращает на предыдущий подход, пропуская отдых; на первом шаге кнопки нет */
+export const BackReturnsToPreviousSet: Story = {
   tags: hidden,
   play: async () => {
     await toCircuit();
-    await click('Изменить');
-    const dialog = within(await screen.findByRole('dialog', { name: 'Обратные отжимания' }));
-    await userEvent.click(dialog.getByRole('button', { name: 'Меньше повторений' }));
-    await userEvent.click(dialog.getByRole('checkbox', { name: /Применить к следующим кругам/ }));
-    await userEvent.click(dialog.getByRole('button', { name: 'Сохранить' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(body().getByText('Обратные отжимания · 17 повт')).toBeVisible();
+    // Первый подход круга: «Назад» есть (шаг не первый), стрелки в шапке нет
+    await expect(body().queryByRole('button', { name: 'Шаг назад' })).toBeNull();
+    await doneAndSkipRest();
+    await expect(body().getByText('Подход 2 из 9')).toBeVisible();
+    await click('Назад');
+    await expect(await body().findByText('Подход 1 из 9')).toBeVisible();
+    await expect(body().queryByRole('timer', { name: /отдых/ })).toBeNull();
+  },
+};
 
-    // В круге 2 то же упражнение уже с 17 повт, а соседнее не тронуто
-    await doneAndSkipRest();
-    await expect(body().getByText('Ножницы лёжа · 30–34 повт')).toBeVisible();
-    await doneAndSkipRest();
-    await doneAndSkipRest();
-    await expect(await body().findByText('Обратные отжимания · 17 повт')).toBeVisible();
+/** Общее время идёт под названием круга от метки старта */
+export const ShowsElapsedTime: Story = {
+  tags: hidden,
+  args: { initialSession: resumedSession(), startedAt: Date.now() - 3_725_000 },
+  play: async () => {
+    await expect(body().getByRole('timer', { name: 'Время тренировки' })).toHaveTextContent(/^1:02:\d\d$/);
   },
 };
 

@@ -14,11 +14,19 @@
   display: grid;
   grid-template-columns: var(--size-touch) 1fr var(--size-touch);
   align-items: center;
-  height: 52px; /* нет токена */
+  min-height: 52px; /* нет токена */
   flex: none;
 }
 
+.title {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
 .label {
+  max-width: 100%;
   margin: 0;
   overflow: hidden;
   text-align: center;
