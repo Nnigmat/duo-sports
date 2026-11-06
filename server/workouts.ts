@@ -53,6 +53,7 @@ export function validateSession(body: unknown): ValidSession {
       Number.isInteger(s.blockIndex) && Number.isInteger(s.round) && Number.isInteger(s.rounds) && KINDS.includes(s.kind as ExerciseKind) &&
       typeof s.completed === 'boolean' && isObj(plan) && isObj(plan.target) && nonNeg(plan.target.min) && nonNeg(plan.target.max) &&
       (plan.weight === undefined || nonNeg(plan.weight)) &&
+      (s.restSec === undefined || (Number.isInteger(s.restSec) && (s.restSec as number) >= 0 && (s.restSec as number) <= MAX_DURATION_SEC)) &&
       (s.videoId === undefined || (typeof s.videoId === 'string' && UUID.test(s.videoId)));
     if (!ok) return { ok: false, error: `steps[${i}]: неверные поля` };
   }

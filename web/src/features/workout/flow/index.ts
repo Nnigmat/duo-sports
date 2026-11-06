@@ -12,6 +12,7 @@ export {
   startCountdown,
   type Countdown,
 } from './countdown';
+export { addRestGoal, isGoalReached, restElapsedSec, restProgress, startRest, type Rest } from './rest';
 export { commentsFor, formatCommentDate, hasNewComments, latestComment, markRead, sortComments } from './comments';
 export { clampZoom, formatZoom, openCamera, pickMimeType, zoomRange, type CameraStream, type Facing, type ZoomRange } from './recording';
 export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';

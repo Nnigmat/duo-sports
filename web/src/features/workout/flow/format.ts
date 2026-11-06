@@ -52,9 +52,9 @@ export function eyebrow(step: Step): string {
   return step.record ? `${base} · снимаем на видео` : base;
 }
 
-/** Надстрочник на отдыхе: про следующий подход */
-export function restEyebrow(next: Step): string {
-  return `Отдых · далее подход ${next.indexInBlock} из ${next.blockSize}`;
+/** Надстрочник на отдыхе: про следующий подход; после цели отдыха — «Отдых окончен» */
+export function restEyebrow(next: Step, over = false): string {
+  return `${over ? 'Отдых окончен' : 'Отдых'} · далее подход ${next.indexInBlock} из ${next.blockSize}`;
 }
 
 /** Надстрочник экрана записи: «Круг 2 · подход 4 из 9» */

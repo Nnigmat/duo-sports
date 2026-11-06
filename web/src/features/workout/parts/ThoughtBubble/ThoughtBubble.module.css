@@ -1,0 +1,34 @@
+.root {
+  position: relative;
+  width: 128px; /* нет токена */
+  height: 104px; /* нет токена */
+}
+
+.cloud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+}
+
+.outline {
+  fill: none;
+  stroke: var(--hairline);
+  stroke-width: 3px;
+}
+
+.fill {
+  fill: var(--canvas);
+}
+
+.dot {
+  fill: var(--canvas);
+  stroke: var(--hairline);
+  stroke-width: 1.5px;
+}
+
+.pose {
+  position: absolute;
+  top: 6px; /* нет токена */
+  left: 22px; /* нет токена */
+}

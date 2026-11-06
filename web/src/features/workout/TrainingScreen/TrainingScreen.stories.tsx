@@ -131,16 +131,35 @@ export const DemoFailed: Story = {
 export const Rest: Story = {
   args: {
     pose: 'rest',
+    thinkPose: 'scissors',
     onBack: fn(),
-    bar: { mode: 'rest', seconds: 60, total: 60, onAddTime: barHandlers.onAddTime, onSkip: barHandlers.onSkip },
+    bar: { mode: 'rest', elapsed: 0, goalSec: 60, reached: false, progress: 0, onAddTime: barHandlers.onAddTime, onStart: barHandlers.onStart, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getByRole('timer', { name: 'отдых 01:00' })).toBeVisible();
+    await expect(c.getByRole('timer', { name: 'Отдых 00:00 из 01:00' })).toBeVisible();
+    // Облачко-мысль: мини-чибик следующего упражнения рядом с основным
+    await expect(canvasElement.querySelector('[data-pose="scissors"]')).not.toBeNull();
     await userEvent.click(c.getByRole('button', { name: 'Добавить 15 секунд' }));
     await expect(barHandlers.onAddTime).toHaveBeenCalledTimes(1);
     // На отдыхе стрелка в шапке остаётся
     await expect(c.getByRole('button', { name: 'Шаг назад' })).toBeVisible();
+  },
+};
+
+/** Цель отдыха достигнута: залитая кнопка «Начать», время идёт дальше */
+export const RestOver: Story = {
+  args: {
+    pose: 'rest',
+    thinkPose: 'scissors',
+    eyebrow: 'Отдых окончен · далее подход 2 из 9',
+    onBack: fn(),
+    bar: { mode: 'rest', elapsed: 72, goalSec: 60, reached: true, progress: 1, onAddTime: barHandlers.onAddTime, onStart: barHandlers.onStart, onSkip: barHandlers.onSkip },
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: /отдыхаете 01:12 Начать/ }));
+    await expect(barHandlers.onStart).toHaveBeenCalledTimes(1);
   },
 };
 

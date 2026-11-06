@@ -7,13 +7,12 @@ import { useCountdown } from './useCountdown';
 const meta = {
   title: 'Features/Workout/TimerRing',
   component: TimerRing,
-  args: { seconds: 18, total: 30, kind: 'work' },
+  args: { seconds: 18, total: 30 },
   argTypes: {
-    kind: { control: 'inline-radio', options: ['work', 'rest'] },
     paused: { control: 'boolean' },
   },
   parameters: {
-    docs: { description: { component: `Кольцо таймера и отдыха на базе ProgressRing, 168 px. Артборд «Экран тренировки». ${ARTIFACT}` } },
+    docs: { description: { component: `Кольцо таймера упражнения на базе ProgressRing, 168 px. Артборд «Экран тренировки». ${ARTIFACT}` } },
   },
 } satisfies Meta<typeof TimerRing>;
 export default meta;
@@ -24,13 +23,6 @@ export const Work: Story = {
     const timer = within(canvasElement).getByRole('timer');
     await expect(timer).toHaveAccessibleName('осталось 00:18');
     await expect(timer).toHaveTextContent('00:18');
-  },
-};
-
-export const Rest: Story = {
-  args: { kind: 'rest', seconds: 60, total: 90 },
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('timer')).toHaveAccessibleName('отдых 01:00');
   },
 };
 
@@ -88,10 +80,6 @@ export const AllVariants: Story = {
         <TimerRing seconds={30} total={30} />
         <TimerRing seconds={18} total={30} />
         <TimerRing seconds={0} total={30} />
-      </Row>
-      <Row label="отдых">
-        <TimerRing kind="rest" seconds={60} total={60} />
-        <TimerRing kind="rest" seconds={25} total={60} />
       </Row>
       <Row label="пауза">
         <TimerRing paused seconds={18} total={30} />
