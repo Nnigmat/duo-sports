@@ -15,7 +15,7 @@ const onExit = fn();
 
 type FlowProps = React.ComponentProps<typeof WorkoutFlow>;
 
-/** Обёртка для истории: после «Завершить» или выхода показывает итог и даёт пройти заново */
+/** Обёртка для истории: после «Отправить» или выхода показывает итог и даёт пройти заново */
 function Demo(props: FlowProps) {
   const [run, setRun] = useState(0);
   const [result, setResult] = useState<string | null>(null);
@@ -186,8 +186,11 @@ export const FullRun: Story = {
     await expect(await body().findByText('Тренировка пройдена')).toBeVisible();
     await expect(body().getByText('11 из 12')).toBeVisible();
     await expect(body().getByText('видео записано')).toBeVisible();
-    await click('Завершить');
-    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, rounds: 3, videos: 1 }, expect.any(Array));
+    await expect(body().getByText('общее время')).toBeVisible();
+    await click('Дальше');
+    await expect(await body().findByRole('heading', { name: 'Обратная связь' })).toBeVisible();
+    await click('Отправить');
+    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, videos: 1 }, expect.any(Array));
     // Вместе с итогами уходит каждый подход: выполненные и пропущенная планка
     const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean; actual?: { value: number }; plan: { target: { max: number } } }>;
     await expect(steps.some((x) => x.completed)).toBe(true);

@@ -25,11 +25,13 @@ import {
   stepLine,
   timedView,
   timerSeconds,
+  totalSec,
   type Action,
   type FinishStats,
   type Session,
   type Step,
 } from '../flow';
+import { FeedbackScreen } from '../FeedbackScreen/FeedbackScreen';
 import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
@@ -61,6 +63,8 @@ type Props = {
   initialSession?: Session;
   /** Метка начала тренировки (мс): от неё идёт общее время. Нет — время не показывается. */
   startedAt?: number | null;
+  /** Момент финиша (мс): с него общее время замирает. Нет — время идёт, пока тренировка не закончена. */
+  finishedAt?: number | null;
   /** Ход изменился: контейнер сохраняет прохождение, чтобы оно пережило перезагрузку */
   onSessionChange?: (session: Session) => void;
   /** Секунд до начала записи после «Старт» */
@@ -76,7 +80,7 @@ type Sheet = 'result' | 'tech' | 'comments' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, startedAt, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
   // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
   const [beeper] = useState(createBeeper);
@@ -87,6 +91,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
   const [commentsFromTech, setCommentsFromTech] = useState(false);
   const [recording, setRecording] = useState(false);
   const [exiting, setExiting] = useState(false);
+  // После перезагрузки финиш показывается снова: экран обратной связи отдельно не хранится
+  const [feedback, setFeedback] = useState(false);
 
   const { steps, index, phase } = session;
   const step = steps[index];
@@ -109,7 +115,11 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
 
   if (phase === 'finish') {
     const stats = finishStats(steps, session.completed, session.videos);
-    return <FinishScreen stats={stats} successUrl={successUrl(gender)} onFinish={() => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals))} onClose={onExit} />;
+    const send = () => onFinish(stats, sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals));
+    if (feedback) return <FeedbackScreen onSend={send} onBack={() => setFeedback(false)} />;
+    // Время на финише то же, что в шапке, и дальше не растёт
+    const total = startedAt == null ? 0 : totalSec(startedAt, finishedAt, Date.now());
+    return <FinishScreen stats={stats} totalSec={total} successUrl={successUrl(gender)} onNext={() => setFeedback(true)} onClose={onExit} />;
   }
 
   if (recording) {

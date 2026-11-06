@@ -4,6 +4,8 @@ import type { Session } from './session';
 export interface Draft {
   session: Session;
   startedAt: number;
+  /** Когда тренировка закончилась (мс): с этого момента общее время не растёт */
+  finishedAt?: number;
   /** Когда черновик обновлялся в последний раз (мс) */
   updatedAt: number;
 }
@@ -98,8 +100,8 @@ export function parseDraft(raw: string | null, now: number): Draft | null {
   } catch {
     return null;
   }
-  if (!isObject(data) || !isNum(data.startedAt) || !isNum(data.updatedAt) || !isSession(data.session)) return null;
+  if (!isObject(data) || !isNum(data.startedAt) || !isNum(data.updatedAt) || (data.finishedAt !== undefined && !isNum(data.finishedAt)) || !isSession(data.session)) return null;
   if (now - data.updatedAt > DRAFT_TTL_MS) return null;
   const session: Session = { ...data.session, actuals: data.session.actuals ?? data.session.steps.map(() => null) };
-  return { session, startedAt: data.startedAt, updatedAt: data.updatedAt };
+  return { session, startedAt: data.startedAt, ...(isNum(data.finishedAt) ? { finishedAt: data.finishedAt } : {}), updatedAt: data.updatedAt };
 }
