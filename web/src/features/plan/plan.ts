@@ -148,12 +148,13 @@ export function templateMeta(t: Pick<PlanTemplate, 'exercises' | 'minutes'>): st
 
 export type DayActions = { start: boolean; results: boolean; move: boolean; edit: boolean; remove: boolean };
 
-/** Какие кнопки показывать в карточке дня */
-export function dayActions(status: DisplayStatus, custom: boolean): DayActions {
+/** Какие кнопки показывать в карточке дня. Прошедшую невыполненную тренировку можно перенести,
+ * а пропущенную вручную (entryStatus «skipped») — нет: сервер её не переносит. */
+export function dayActions(status: DisplayStatus, custom: boolean, entryStatus: PlanEntry['status'] = 'planned'): DayActions {
   return {
     start: status === 'today',
     results: status === 'done' && !custom,
-    move: status === 'today' || status === 'planned',
+    move: status === 'today' || status === 'planned' || (status === 'skipped' && entryStatus === 'planned'),
     edit: status === 'today' || status === 'planned',
     remove: custom,
   };

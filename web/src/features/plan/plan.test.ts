@@ -131,8 +131,12 @@ describe('dayActions', () => {
     expect(dayActions('done', false).results).toBe(true);
     expect(dayActions('done', true)).toMatchObject({ results: false, remove: true });
   });
-  it('пропущенная и перенесённая без действий над тренировкой', () => {
-    expect(dayActions('skipped', false)).toEqual({ start: false, results: false, move: false, edit: false, remove: false });
+  it('прошедшая невыполненная: можно перенести, повторно тоже', () => {
+    expect(dayActions('skipped', false, 'planned')).toEqual({ start: false, results: false, move: true, edit: false, remove: false });
+  });
+  it('пропущенная вручную и перенесённая без действий над тренировкой', () => {
+    expect(dayActions('skipped', false, 'skipped')).toEqual({ start: false, results: false, move: false, edit: false, remove: false });
+    expect(dayActions('moved', false)).toEqual({ start: false, results: false, move: false, edit: false, remove: false });
   });
 });
 

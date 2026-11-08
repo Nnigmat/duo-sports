@@ -106,7 +106,7 @@ export function DayPanel({
   }
 
   const status = displayStatus(date, entry, today);
-  const actions = dayActions(status, !!entry.custom);
+  const actions = dayActions(status, !!entry.custom, entry.status);
   const statusText =
     status === 'moved' && entry.movedTo
       ? `Перенесена на ${entry.movedTo}`
