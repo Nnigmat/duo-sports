@@ -5,6 +5,10 @@ import { activeComment, clampSeek, formatTime, nextSpeed, prevNext, speedLabel, 
 import styles from './VideoPlayer.module.css';
 
 const SKIP_SEC = 5;
+/** Через сколько controls гаснут во время воспроизведения */
+const HIDE_MS = 2500;
+
+type WebkitVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
 
 export interface VideoPlayerHandle {
   /** Перейти к секунде и поставить на паузу */
@@ -45,16 +49,38 @@ export function VideoPlayer({
   className,
 }: Props) {
   const video = useRef<HTMLVideoElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
   const [failed, setFailed] = useState(false);
   const [duration, setDuration] = useState(durationSec);
+  const [touched, setTouched] = useState(false);
+  const [full, setFull] = useState(false);
   const ready = Boolean(src) && !failed;
 
   useEffect(() => setDuration(durationSec), [durationSec]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: сброс ошибки при смене src
   useEffect(() => setFailed(false), [src]);
+
+  // Во время воспроизведения управление скрыто; касание показывает его на пару секунд
+  useEffect(() => {
+    if (!playing || !touched) return;
+    const id = setTimeout(() => setTouched(false), HIDE_MS);
+    return () => clearTimeout(id);
+  }, [playing, touched]);
+  useEffect(() => {
+    const onChange = () => setFull(document.fullscreenElement === stage.current);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const el = stage.current;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else if (el?.requestFullscreen) void el.requestFullscreen().catch(() => undefined);
+    else (video.current as WebkitVideo | null)?.webkitEnterFullscreen?.();
+  };
 
   const update = (t: number) => {
     setTime(t);
@@ -101,11 +127,12 @@ export function VideoPlayer({
   const active = activeComment(comments, time);
   const nav = prevNext(comments, time);
   const pct = duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
+  const hidden = playing && !touched;
   const speedAria = `Скорость ${speedLabel(rate)}, нажми для смены`;
 
   return (
     <div className={cx(styles.root, className)}>
-      <div className={styles.stage}>
+      <div ref={stage} className={styles.stage}>
         {src && !failed && (
           // biome-ignore lint/a11y/useMediaCaption: пользовательские видео подходов без субтитров
           <video
@@ -137,8 +164,9 @@ export function VideoPlayer({
             {failed ? 'Видео не открылось' : 'Видео не загружено'}
           </p>
         )}
+        {ready && <button type="button" className={styles.tap} aria-label="Показать управление" onClick={() => setTouched((v) => !v)} />}
         <div className={styles.overlay}>
-          <div className={styles.top}>
+          <div className={cx(styles.top, hidden && styles.hidden)}>
             {overlayStart}
             {(title || subtitle) && (
               <div className={styles.titleBox}>
@@ -146,8 +174,11 @@ export function VideoPlayer({
                 {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
               </div>
             )}
+            <button type="button" className={styles.full} disabled={!ready} aria-label={full ? 'Выйти из полного экрана' : 'На весь экран'} onClick={toggleFullscreen}>
+              <Icon name={full ? 'fullscreenExit' : 'fullscreen'} />
+            </button>
           </div>
-          <div className={styles.center}>
+          <div className={cx(styles.center, hidden && styles.hidden)}>
             <button type="button" className={styles.skip} disabled={!ready} aria-label="−5 с, назад" onClick={() => skip(-SKIP_SEC)}>
               −5 с
             </button>

@@ -28,12 +28,14 @@ export type TodayWorkout = WorkoutSummary & {
 export type TodayState =
   | { kind: 'workout'; workout: TodayWorkout }
   | { kind: 'rest'; next: { whenLabel: string; title: string; minutes: number } | null }
-  | { kind: 'done'; summary: { title: string; volumeKg: number; minutes?: number; records?: number } };
+  | { kind: 'done'; summary: { title: string; sessionId?: number; volumeKg: number; minutes?: number; records?: number } };
 
 /** День недели со всем, что показывает карточка выбранного дня */
 export type TodayWeekDay = WeekDay & {
   /** Дата дня «2026-11-03»: с сервера приходит всегда, в фикстурах историй может не быть */
   iso?: string;
+  /** У выполненного дня: id сессии для экрана итогов */
+  sessionId?: number;
   /** «Суббота, 31 октября» */
   fullLabel: string;
   title: string;

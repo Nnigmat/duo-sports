@@ -135,6 +135,35 @@ describe('validateSession', () => {
   });
 });
 
+describe('validateSession: факт подхода', () => {
+  const withActual = (actual: unknown) => {
+    const r = result();
+    r.steps[1] = { ...r.steps[1]!, actual } as SessionResult['steps'][number];
+    return validateSession(r);
+  };
+  it('принимает факт: повторы, вес и «доп. вес»', () => {
+    expect(withActual({ value: 8 }).ok).toBe(true);
+    expect(withActual({ value: 8, weight: 62.5, extraWeight: true }).ok).toBe(true);
+  });
+  it('без факта (старый клиент, пропуск) тоже можно', () => {
+    expect(validateSession(result()).ok).toBe(true);
+  });
+  it('отказывает по кривому факту', () => {
+    for (const actual of [null, 5, {}, { value: -1 }, { value: 'много' }, { value: 8, weight: -1 }, { value: 8, extraWeight: false }, { value: 8, extraWeight: 'да' }]) {
+      expect(withActual(actual)).toMatchObject({ ok: false, error: 'steps[1]: неверные поля' });
+    }
+  });
+  it('факт сохраняется в Итоге вместе с планом', () => {
+    const r = result();
+    r.steps[1] = { ...r.steps[1]!, actual: { value: 7 } };
+    applyImport(db, me, commit(), clock);
+    const saved = saveSession(db, me, workoutId(), r, clock);
+    expect(saved.ok).toBe(true);
+    const row = db.prepare('SELECT steps FROM sessions_done WHERE id = ?').get((saved as { id: number }).id) as { steps: string };
+    expect(JSON.parse(row.steps)[1]).toMatchObject({ actual: { value: 7 }, plan: r.steps[1]!.plan });
+  });
+});
+
 describe('база, созданная до структуры', () => {
   it('колонка structure добавляется при открытии, данные остаются', async () => {
     const file = `${process.env.TMPDIR ?? '/tmp'}/old-${Date.now()}.db`;
@@ -156,6 +185,27 @@ describe('durationSec', () => {
     expect(validateSession(base).ok).toBe(true);
     expect(validateSession({ ...base, durationSec: 2700 }).ok).toBe(true);
     for (const bad of [-1, 1.5, 86_401, '60']) expect(validateSession({ ...base, durationSec: bad }).ok).toBe(false);
+  });
+});
+
+describe('фактический отдых подхода', () => {
+  const step = { exerciseId: 'a', exerciseName: 'A', blockIndex: 0, round: 1, rounds: 1, kind: 'reps', plan: { target: { min: 1, max: 1 } }, completed: true };
+  const withRest = (restSec: unknown) => validateSession({ date: '2026-11-03', videos: 0, steps: [{ ...step, restSec }] });
+  it('необязателен: старые итоги без него валидны', () => {
+    expect(validateSession({ date: '2026-11-03', videos: 0, steps: [step] }).ok).toBe(true);
+  });
+  it('целое число секунд от 0 до суток, в том числе сверх цели', () => {
+    for (const ok of [0, 72, 86_400]) expect(withRest(ok).ok).toBe(true);
+    for (const bad of [-1, 1.5, 86_401, '60', null]) expect(withRest(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля' });
+  });
+  it('сохраняется в итоге вместе с подходом', () => {
+    applyImport(db, me, commit(), clock);
+    const r = result();
+    r.steps[0] = { ...r.steps[0]!, restSec: 72 };
+    const saved = saveSession(db, me, workoutId(), r, clock);
+    expect(saved.ok).toBe(true);
+    const row = db.prepare('SELECT steps FROM sessions_done').get() as { steps: string };
+    expect(JSON.parse(row.steps)[0].restSec).toBe(72);
   });
 });
 
@@ -193,5 +243,57 @@ describe('видео подхода', () => {
     const r = withVideo(V1);
     r.steps[1] = { ...r.steps[1]!, videoId: V1 };
     expect(validateSession(r)).toMatchObject({ ok: false, error: 'videoId: одно видео на один подход' });
+  });
+});
+
+describe('самочувствие и комментарий', () => {
+  const KEY = '0f8fad5b-d9cb-469f-a165-70867728950e';
+  const withFeeling = (patch: Record<string, unknown>) => validateSession({ ...result(), ...patch });
+
+  it('необязательны: итог старого клиента валиден', () => {
+    expect(validateSession(result()).ok).toBe(true);
+  });
+  it('оценка — целое от 1 до 5, комментарий — строка до 1000 знаков, ключ — uuid', () => {
+    expect(withFeeling({ feeling: 4, comment: 'колено', key: KEY }).ok).toBe(true);
+    for (const feeling of [0, 6, 2.5, '4', null]) expect(withFeeling({ feeling })).toMatchObject({ ok: false, error: 'feeling: оценка от 1 до 5' });
+    expect(withFeeling({ comment: 5 })).toMatchObject({ ok: false, error: 'comment: до 1000 знаков' });
+    expect(withFeeling({ comment: 'я'.repeat(1001) })).toMatchObject({ ok: false });
+    for (const key of ['abc', 7, null]) expect(withFeeling({ key })).toMatchObject({ ok: false, error: 'key: uuid' });
+  });
+  it('сохраняются вместе с итогом, у старых строк пустые', () => {
+    applyImport(db, me, commit(), clock);
+    const saved = saveSession(db, me, workoutId(), result({ feeling: 5, comment: 'легко', key: KEY }), clock) as { id: number };
+    saveSession(db, me, workoutId(), result(), clock);
+    const rows = db.prepare('SELECT feeling, comment, client_key FROM sessions_done ORDER BY id').all();
+    expect(rows).toEqual([
+      { feeling: 5, comment: 'легко', client_key: KEY },
+      { feeling: null, comment: null, client_key: null },
+    ]);
+    expect(saved.id).toBeGreaterThan(0);
+  });
+  it('повтор с тем же ключом не создаёт второй итог и возвращает прежний id', () => {
+    applyImport(db, me, commit(), clock);
+    const first = saveSession(db, me, workoutId(), result({ feeling: 3, key: KEY }), clock);
+    const again = saveSession(db, me, workoutId(), result({ feeling: 3, key: KEY }), clock);
+    expect(first.ok && again.ok && again.id === first.id).toBe(true);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM sessions_done').get()).toEqual({ n: 1 });
+  });
+  it('повтор не падает на уже привязанных видео', () => {
+    applyImport(db, me, commit(), clock);
+    const vid = '11111111-1111-4111-8111-111111111111';
+    db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, created_at) VALUES (?, ?, 'f', 5, 'now')").run(vid, me);
+    const r = result({ feeling: 3, key: KEY });
+    r.steps[0] = { ...r.steps[0]!, videoId: vid };
+    expect(saveSession(db, me, workoutId(), r, clock).ok).toBe(true);
+    expect(saveSession(db, me, workoutId(), r, clock).ok).toBe(true);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM sessions_done').get()).toEqual({ n: 1 });
+  });
+  it('тот же ключ у другого спортсмена — отдельный итог', () => {
+    applyImport(db, me, commit(), clock);
+    applyImport(db, other, commit(), clock);
+    const otherWorkout = (db.prepare("SELECT id FROM workouts WHERE slug = 'w1' AND user_id = ?").get(other) as { id: number }).id;
+    saveSession(db, me, workoutId(), result({ feeling: 3, key: KEY }), clock);
+    expect(saveSession(db, other, otherWorkout, result({ feeling: 3, key: KEY }), clock).ok).toBe(true);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM sessions_done').get()).toEqual({ n: 2 });
   });
 });

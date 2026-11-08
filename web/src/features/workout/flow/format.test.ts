@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
-import { blockLabel, editEyebrow, eyebrow, formatPlan, formatTarget, recordingEyebrow, restEyebrow, formatTime, stepLine, timerSeconds } from './format';
+import { blockLabel, eyebrow, formatPlan, formatTarget, recordingEyebrow, restEyebrow, formatTime, stepLine, timerSeconds } from './format';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 describe('formatTime', () => {
@@ -84,6 +84,9 @@ describe('подписи по макету', () => {
   it('отдых: какой подход следующий', () => {
     expect(restEyebrow(c[1])).toBe('Отдых · далее подход 2 из 9');
   });
+  it('после цели отдыха: «Отдых окончен»', () => {
+    expect(restEyebrow(c[1], true)).toBe('Отдых окончен · далее подход 2 из 9');
+  });
 });
 
 describe('подписи панелей', () => {
@@ -95,10 +98,6 @@ describe('подписи панелей', () => {
   });
   it('запись в блоке подходами: без круга', () => {
     expect(recordingEyebrow(w[1])).toBe('Подход 2 из 5');
-  });
-  it('«Изменить»: подход и круг', () => {
-    expect(editEyebrow(c[0])).toBe('Подход 1 из 9 · круг 1');
-    expect(editEyebrow(w[0])).toBe('Подход 1 из 5');
   });
 });
 

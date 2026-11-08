@@ -31,7 +31,7 @@ export async function saveSession(workoutId: string, result: SessionResult): Pro
       body: JSON.stringify(result),
     });
   } catch {
-    throw new Error('Нет связи с сервером: итоги не сохранены, нажмите «Завершить» ещё раз');
+    throw new Error('Нет связи с сервером: итоги не сохранены, нажмите «Отправить тренеру» ещё раз');
   }
   if (!res.ok) throw new Error(res.status === 401 ? 'Сессия закончилась: войдите заново' : `Итоги не сохранены: сервер ответил ${res.status}`);
 }

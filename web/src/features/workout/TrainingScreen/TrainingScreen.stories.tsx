@@ -1,17 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import { Dialog } from '../../../ui/Dialog/Dialog';
+import { Sheet } from '../../../ui/Sheet/Sheet';
 import { ARTIFACT } from '../../../ui/storyKit';
 import sample from '../parts/DemoVideo/sample.mp4';
 import { TrainingScreen } from './TrainingScreen';
 
 const handlers = {
-  onBack: fn(),
   onExit: fn(),
   onTech: fn(),
   onRecord: fn(),
   onOpenNotes: fn(),
 };
-const barHandlers = { onDone: fn(), onEdit: fn(), onSkip: fn(), onStart: fn(), onPauseToggle: fn(), onAddTime: fn() };
+const barHandlers = { onDone: fn(), onBack: fn(), onSkip: fn(), onStart: fn(), onPauseToggle: fn(), onAddTime: fn() };
 
 const NOTE = 'Локти назад, не разводи в стороны. Спину держи ближе к лавочке.';
 
@@ -25,7 +26,8 @@ const meta = {
     line: 'Обратные отжимания · 18–20 повт',
     pose: 'dips',
     note: NOTE,
-    bar: { mode: 'set', onDone: barHandlers.onDone, onEdit: barHandlers.onEdit, onSkip: barHandlers.onSkip },
+    startedAt: Date.now() - 754_000,
+    bar: { mode: 'set', onDone: barHandlers.onDone, onBack: barHandlers.onBack, onSkip: barHandlers.onSkip },
     ...handlers,
   },
   parameters: {
@@ -49,12 +51,15 @@ export const SetReps: Story = {
     await userEvent.click(c.getByRole('button', { name: 'Готово' }));
     await userEvent.click(c.getByRole('button', { name: 'Техника' }));
     await userEvent.click(c.getByRole('button', { name: /комментарий тренера/i }));
-    await userEvent.click(c.getByRole('button', { name: 'Шаг назад' }));
+    await userEvent.click(c.getByRole('button', { name: 'Назад' }));
     await userEvent.click(c.getByRole('button', { name: 'Закончить тренировку' }));
     await expect(barHandlers.onDone).toHaveBeenCalledTimes(1);
     await expect(handlers.onTech).toHaveBeenCalledTimes(1);
     await expect(handlers.onOpenNotes).toHaveBeenCalledTimes(1);
-    await expect(handlers.onBack).toHaveBeenCalledTimes(1);
+    await expect(barHandlers.onBack).toHaveBeenCalledTimes(1);
+    // На экране подхода стрелки в шапке нет, а время идёт под названием круга
+    await expect(c.queryByRole('button', { name: 'Шаг назад' })).toBeNull();
+    await expect(c.getByRole('timer', { name: 'Время тренировки' })).toHaveTextContent(/^12:\d\d$/);
     await expect(handlers.onExit).toHaveBeenCalledTimes(1);
     await expect(c.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
     // Нижний ряд закреплён: экран не выше окна, кнопка «Готово» целиком в окне
@@ -126,13 +131,35 @@ export const DemoFailed: Story = {
 export const Rest: Story = {
   args: {
     pose: 'rest',
-    bar: { mode: 'rest', seconds: 60, total: 60, onAddTime: barHandlers.onAddTime, onSkip: barHandlers.onSkip },
+    thinkPose: 'scissors',
+    onBack: fn(),
+    bar: { mode: 'rest', elapsed: 0, goalSec: 60, reached: false, progress: 0, onAddTime: barHandlers.onAddTime, onStart: barHandlers.onStart, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getByRole('timer')).toHaveAccessibleName('отдых 01:00');
+    await expect(c.getByRole('timer', { name: 'Отдых 00:00 из 01:00' })).toBeVisible();
+    // Облачко-мысль: мини-чибик следующего упражнения рядом с основным
+    await expect(canvasElement.querySelector('[data-pose="scissors"]')).not.toBeNull();
     await userEvent.click(c.getByRole('button', { name: 'Добавить 15 секунд' }));
     await expect(barHandlers.onAddTime).toHaveBeenCalledTimes(1);
+    // На отдыхе стрелка в шапке остаётся
+    await expect(c.getByRole('button', { name: 'Шаг назад' })).toBeVisible();
+  },
+};
+
+/** Цель отдыха достигнута: залитая кнопка «Начать», время идёт дальше */
+export const RestOver: Story = {
+  args: {
+    pose: 'rest',
+    thinkPose: 'scissors',
+    eyebrow: 'Отдых окончен · далее подход 2 из 9',
+    onBack: fn(),
+    bar: { mode: 'rest', elapsed: 72, goalSec: 60, reached: true, progress: 1, onAddTime: barHandlers.onAddTime, onStart: barHandlers.onStart, onSkip: barHandlers.onSkip },
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: /отдыхаете 01:12 Начать/ }));
+    await expect(barHandlers.onStart).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -145,6 +172,7 @@ export const Timer: Story = {
     line: 'Вращения головой · 00:30',
     pose: 'headroll',
     note: undefined,
+    onBack: fn(),
     bar: { mode: 'timer', seconds: 18, total: 30, onPauseToggle: barHandlers.onPauseToggle, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
@@ -168,10 +196,59 @@ export const Start: Story = {
     eyebrow: 'Подход 1 из 2',
     line: 'Планка · 00:45–01:00',
     pose: 'plank',
-    bar: { mode: 'start', onStart: barHandlers.onStart, onEdit: barHandlers.onEdit, onSkip: barHandlers.onSkip },
+    bar: { mode: 'start', onStart: barHandlers.onStart, onBack: barHandlers.onBack, onSkip: barHandlers.onSkip },
   },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Старт' }));
     await expect(barHandlers.onStart).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** В центре облачка сверху лежит затемнение, а не облачко */
+async function expectScrimOverBubble(canvasElement: HTMLElement) {
+  const bubble = within(canvasElement).getByText('Подход 1 из 9').parentElement as HTMLElement;
+  const r = bubble.getBoundingClientRect();
+  const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  await expect(bubble.contains(top)).toBe(false);
+  await expect(top).toHaveAttribute('data-state', 'open');
+}
+
+/** Облачко не перекрывает шторку: затемнение (слой 10) и шторка (слой 11) выше экрана */
+export const SheetOverBubble: Story = {
+  render: (args) => (
+    <>
+      <TrainingScreen {...args} />
+      <Sheet open onOpenChange={fn()} title="Сколько повторений сделали?" eyebrow="Подход 1 из 9">
+        <p>Шторка лежит выше облачка</p>
+      </Sheet>
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const sheet = await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' });
+    await expect(getComputedStyle(sheet).zIndex).toBe('11');
+    await expect(getComputedStyle(sheet.previousElementSibling as Element).zIndex).toBe('10');
+    await expectScrimOverBubble(canvasElement);
+  },
+};
+
+/** Облачко не перекрывает модальное окно */
+export const DialogOverBubble: Story = {
+  render: (args) => (
+    <>
+      <TrainingScreen {...args} />
+      <Dialog
+        open
+        onOpenChange={fn()}
+        title="Закончить тренировку?"
+        description="Выполненные подходы сохранятся"
+        confirmLabel="Закончить"
+        onConfirm={fn()}
+      />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = await screen.findByRole('dialog', { name: 'Закончить тренировку?' });
+    await expect(getComputedStyle(dialog).zIndex).toBe('11');
+    await expectScrimOverBubble(canvasElement);
   },
 };

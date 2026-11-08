@@ -12,16 +12,18 @@ import styles from './FinishScreen.module.css';
 
 type Props = {
   stats: FinishStats;
+  /** Общее время тренировки, с: то же, что было в шапке, на финише оно замирает */
+  totalSec: number;
   /** Ролик «чибик радуется» вместо статичного; без него (или если не загрузился) чибик с фантиками */
   successUrl?: string;
-  /** «Завершить»: сохранить итог и выйти */
-  onFinish: () => void;
+  /** «Дальше»: перейти к обратной связи */
+  onNext: () => void;
   /** ✕ в шапке */
   onClose: () => void;
 };
 
-/** Экран финиша: радующийся чибик, итоги и «Завершить». */
-export function FinishScreen({ stats, successUrl, onFinish, onClose }: Props) {
+/** Экран финиша: радующийся чибик, итоги с общим временем и «Дальше». */
+export function FinishScreen({ stats, totalSec, successUrl, onNext, onClose }: Props) {
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [failed, setFailed] = useState(false);
   const playing = successUrl && !still && !failed ? successUrl : undefined;
@@ -46,7 +48,7 @@ export function FinishScreen({ stats, successUrl, onFinish, onClose }: Props) {
       </div>
 
       <dl className={styles.stats}>
-        {formatFinishStats(stats).map((s) => (
+        {formatFinishStats(stats, totalSec).map((s) => (
           <div key={s.label} className={styles.stat}>
             <dt className={styles.label}>
               <Text variant="caption">{s.label}</Text>
@@ -56,8 +58,8 @@ export function FinishScreen({ stats, successUrl, onFinish, onClose }: Props) {
         ))}
       </dl>
 
-      <Button fullWidth onClick={onFinish}>
-        Завершить
+      <Button fullWidth onClick={onNext}>
+        Дальше
       </Button>
     </Screen>
   );

@@ -3,11 +3,11 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { useAthletes, useAthleteSessions, useExercises, usePastComments, usePlannedWorkout, useTrainerReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { toIso } from '../../plan/plan';
-import { markReviewed, postComment, postHint } from '../api';
+import { markReviewed, deleteComment, postComment, postHint } from '../api';
 import { AthleteView } from '../AthleteView/AthleteView';
 import { PlannedDetail } from '../PlannedDetail/PlannedDetail';
 import { ReviewDetail } from '../ReviewDetail/ReviewDetail';
-import { defaultSelection, firstName, selectionFor, type Selection } from '../sessions';
+import { defaultSelection, findSlug, firstName, selectionFor, type Selection } from '../sessions';
 
 /** /trainer/athletes/:id — карточка ученика. После записи данные читаются заново, выбранная тренировка и раскрытые видео остаются. */
 export function AthletePage() {
@@ -38,6 +38,10 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
   const review = useTrainerReview(reviewId, version);
   const workout = usePlannedWorkout(athleteId, plan ? plan.workoutId : null);
   const library = useExercises();
+  const exerciseHref = (name: string) => {
+    const slug = library.data ? findSlug(name, library.data.map((e) => ({ id: e.id, name: e.name, aliases: e.aliases ?? [] }))) : null;
+    return slug ? `/exercises/${slug}` : undefined;
+  };
   const names = useMemo(() => review.data?.exercises.map((e) => e.name) ?? [], [review.data]);
   const past = usePastComments(athleteId, names, reviewId);
 
@@ -61,8 +65,14 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
         movedFrom={historyItem?.movedFrom}
         past={past.data ?? {}}
         videoSrc={(videoId) => `/api/videos/${videoId}`}
+        exerciseHref={exerciseHref}
+        onOpenExercise={(href) => navigate(href)}
         onComment={async (comment) => {
           await postComment(athleteId, comment);
+          reload();
+        }}
+        onDeleteComment={async (commentId) => {
+          await deleteComment(athleteId, commentId);
           reload();
         }}
         onMarkReviewed={async () => {
@@ -82,6 +92,8 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
         item={plan}
         workout={workout.data.workout}
         library={library.data.map((e) => ({ id: e.id, name: e.name, aliases: e.aliases ?? [] }))}
+        exerciseHref={exerciseHref}
+        onOpenExercise={(href) => navigate(href)}
         onEdit={(workoutId) => navigate(`/trainer/athletes/${athleteId}/workouts/${workoutId}/edit`)}
         onHint={(workoutId, exerciseId, text) => postHint(athleteId, { workoutId, exerciseId, text })}
       />

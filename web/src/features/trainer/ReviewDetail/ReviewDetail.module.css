@@ -76,12 +76,6 @@
   align-items: center;
   gap: var(--spacing-xs);
 }
-.name {
-  margin: 0;
-  font-size: var(--body-md-size);
-  line-height: var(--body-md-line);
-  font-weight: 600;
-}
 .newBadge {
   padding: 2px var(--spacing-xs); /* 2 px: нет токена */
   border-radius: var(--rounded-full);
@@ -122,6 +116,25 @@
   letter-spacing: var(--micro-uppercase-tracking);
   text-transform: uppercase;
   color: var(--steel);
+}
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  border-radius: var(--rounded-md);
+  background: var(--surface);
+  font-size: var(--body-sm-size);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.feelingValue {
+  font-weight: 600;
 }
 .thread {
   display: flex;

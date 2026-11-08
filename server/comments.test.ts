@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Block } from '../shared/types';
 import { createUser } from './auth';
-import { addComment, commentRowsOf, commentsFor, libraryOf, techniqueOf, techniquesFor, validateComment, type LibraryRow } from './comments';
+import { addComment, commentRowsOf, deleteComment, commentsFor, libraryOf, techniqueOf, techniquesFor, validateComment, type LibraryRow } from './comments';
 import { openDb, type Db } from './db';
 import { applyImport, ensureLibrary } from './imports';
 import { sessionReviewOf } from './sessionReview';
@@ -186,6 +186,22 @@ describe('база', () => {
     addComment(db, { id: trainer, role: 'admin' }, stranger, { exerciseId: 'bench', text: 'не тебе' }, clock);
     expect(workoutResponse(db, athlete, wid())!.comments).toEqual([]);
     expect(libraryOf(db).map((e) => e.slug)).toContain('bench');
+  });
+
+  it('удаляет автор и админ; чужой комментарий не удаляется', () => {
+    const add = (who: { id: number; role: 'trainer' | 'athlete' }) => {
+      const r = addComment(db, who, athlete, { exerciseId: 'bench', text: 'a' }, clock);
+      if (!r.ok) throw new Error(r.error);
+      return r.id;
+    };
+    const t = add(asTrainer());
+    const a = add(asAthlete());
+    expect(deleteComment(db, asAthlete(), athlete, t)).toEqual({ ok: false, error: 'forbidden' });
+    expect(deleteComment(db, asTrainer(), athlete, a)).toEqual({ ok: false, error: 'forbidden' });
+    expect(deleteComment(db, { id: stranger, role: 'athlete' }, athlete, a)).toEqual({ ok: false, error: 'forbidden' });
+    expect(deleteComment(db, asTrainer(), athlete, t)).toEqual({ ok: true });
+    expect(deleteComment(db, asTrainer(), athlete, t)).toEqual({ ok: false, error: 'not_found' });
+    expect(deleteComment(db, { id: 1, role: 'admin' }, athlete, a)).toEqual({ ok: true });
   });
 
   describe('цели: тренировка и видео', () => {

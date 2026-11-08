@@ -32,6 +32,11 @@ export const fetchVideoReview = async (videoId: string): Promise<VideoReviewResp
 
 export type NewReply = { text: string; exerciseId?: string; sessionId?: number; videoId?: string; timecodeSec?: number };
 
+/** Удалить свой комментарий */
+export const deleteComment = async (athleteId: number, commentId: string): Promise<void> => {
+  await request(`/api/athletes/${athleteId}/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' });
+};
+
 /** Ответ или заметка спортсмена в его собственных данных */
 export const postReply = async (athleteId: number, reply: NewReply): Promise<void> => {
   await request(`/api/athletes/${athleteId}/comments`, { method: 'POST', headers: json, body: JSON.stringify(reply) });

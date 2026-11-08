@@ -77,12 +77,6 @@
   gap: var(--spacing-sm);
   min-width: 0;
 }
-.name {
-  margin: 0;
-  font-size: var(--body-md-size);
-  line-height: var(--body-md-line);
-  font-weight: 600;
-}
 .sets {
   display: flex;
   flex-wrap: wrap;

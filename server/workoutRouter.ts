@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
-import { addComment, validateComment } from './comments';
+import { addComment, deleteComment, validateComment } from './comments';
 import { updateWorkout } from './workoutEdit';
 import { saveSession, validateSession, workoutOf, workoutResponse } from './workouts';
 
@@ -39,7 +39,7 @@ export function workoutRouter(db: Db) {
     if (!v.ok) return void res.status(400).json({ error: v.error });
     const saved = Number.isInteger(id) ? saveSession(db, req.user!.id, id, v.result) : ({ ok: false, error: 'not_found' } as const);
     if (!saved.ok) return void res.status(saved.error === 'bad_video' ? 400 : 404).json({ error: saved.error });
-    res.status(201).json({ id: saved.id });
+    res.status(saved.duplicate ? 200 : 201).json({ id: saved.id });
   });
 
   /** Комментарий тренера или админа спортсмену: к упражнению из его библиотеки или ко всей тренировке */
@@ -50,6 +50,15 @@ export function workoutRouter(db: Db) {
     const added = Number.isInteger(athleteId) ? addComment(db, req.user!, athleteId, v.comment) : ({ ok: false, error: 'not_found' } as const);
     if (!added.ok) return void res.status(added.error === 'forbidden' ? 403 : added.error === 'not_found' ? 404 : 400).json({ error: added.error });
     res.status(201).json({ id: added.id });
+  });
+
+  /** Удаление комментария его автором (или админом) */
+  r.delete('/athletes/:userId/comments/:id', requireUser(db), (req, res) => {
+    const athleteId = Number(req.params.userId);
+    const id = Number(req.params.id);
+    const done = Number.isInteger(athleteId) && Number.isInteger(id) ? deleteComment(db, req.user!, athleteId, id) : ({ ok: false, error: 'not_found' } as const);
+    if (!done.ok) return void res.status(done.error === 'forbidden' ? 403 : 404).json({ error: done.error });
+    res.status(204).end();
   });
 
   return r;

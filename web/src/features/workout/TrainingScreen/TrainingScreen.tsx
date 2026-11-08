@@ -9,6 +9,8 @@ import { Chibi } from '../chibi/Chibi';
 import { ActionBar } from '../parts/ActionBar/ActionBar';
 import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
 import { CoachNote } from '../parts/CoachNote/CoachNote';
+import { ElapsedSince } from '../parts/ElapsedTime/ElapsedTime';
+import { ThoughtBubble } from '../parts/ThoughtBubble/ThoughtBubble';
 import { SpeechBubble } from '../parts/SpeechBubble/SpeechBubble';
 import styles from './TrainingScreen.module.css';
 
@@ -28,6 +30,10 @@ type Props = {
   restUrl?: string;
   /** Ролик «чибик держит камеру»: показывается вместо статичного чибика в позе «камера» */
   cameraUrl?: string;
+  /** Поза следующего упражнения: на отдыхе над чибиком появляется облачко-мысль с ней */
+  thinkPose?: Pose;
+  /** Ролик следующего упражнения для облачка-мысли */
+  thinkDemoUrl?: string;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -38,7 +44,10 @@ type Props = {
   canRecord?: boolean;
   /** Нижний ряд: режим и его обработчики */
   bar: ComponentProps<typeof ActionBar>;
-  onBack: () => void;
+  /** Метка начала тренировки (мс): под названием круга идёт общее время; без неё времени нет */
+  startedAt?: number | null;
+  /** Стрелка «назад» в шапке; на экранах подходов её нет, там «Назад» в нижнем ряду */
+  onBack?: () => void;
   onExit: () => void;
   onTech: () => void;
   onRecord: () => void;
@@ -56,11 +65,14 @@ export function TrainingScreen({
   idleUrl,
   restUrl,
   cameraUrl,
+  thinkPose,
+  thinkDemoUrl,
   note,
   techNew,
   recordable,
   canRecord = true,
   bar,
+  startedAt,
   onBack,
   onExit,
   onTech,
@@ -73,7 +85,12 @@ export function TrainingScreen({
   const clip = demoUrl ?? (pose === 'stand' ? idleUrl : pose === 'rest' ? restUrl : pose === 'camera' ? cameraUrl : undefined);
   const playing = clip && !still && failed !== clip ? clip : undefined;
   return (
-    <Screen label={blockLabel} back={{ onClick: onBack }} close={{ onClick: onExit }} className={styles.screen}>
+    <Screen
+      label={blockLabel}
+      meta={<ElapsedSince startedAt={startedAt} />}
+      back={onBack && { onClick: onBack }} close={{ onClick: onExit }}
+      className={styles.screen}
+    >
       <ProgressSegments
         count={progress.count}
         current={progress.current}
@@ -98,6 +115,8 @@ export function TrainingScreen({
             <Chibi pose={pose} size={300} className={styles.chibi} />
           </>
         )}
+
+        {thinkPose && <ThoughtBubble pose={thinkPose} demoUrl={thinkDemoUrl} still={still} className={styles.think} />}
 
         <div className={styles.left}>
           <IconButton

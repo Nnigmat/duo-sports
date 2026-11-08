@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useVideoReview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
-import { postReply } from '../api';
+import { deleteComment, postReply } from '../api';
 import { VideoReviewView } from '../VideoReviewView/VideoReviewView';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -46,6 +46,10 @@ function VideoReviewContent({ videoId, resumeAt, onChanged }: { videoId: string;
       src={`/api/videos/${videoId}`}
       startSec={resumeAt ?? (params.has('t') && Number.isFinite(t) && t >= 0 ? t : undefined)}
       onBack={() => navigate(sessionId === null ? '/' : `/review/${sessionId}`)}
+      onDeleteComment={async (id) => {
+        await deleteComment(data.athleteId, id);
+        onChanged(resumeAt);
+      }}
       onReply={async (text, timecodeSec) => {
         await postReply(data.athleteId, { text, videoId, ...(timecodeSec === null ? {} : { timecodeSec }) });
         onChanged(timecodeSec ?? undefined);

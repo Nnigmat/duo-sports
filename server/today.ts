@@ -37,6 +37,8 @@ export interface TodayWorkoutInfo {
   structure: Block[] | null;
 }
 export interface TodaySession {
+  /** id записи sessions_done: по нему открывается разбор */
+  id?: number;
   workoutId: number | null;
   title: string;
   date: string;
@@ -74,9 +76,18 @@ export function modeLabel(structure: Block[] | null): string {
   return modes.size ? 'По таймеру' : '';
 }
 
-/** Объём — вес × повторы выполненных подходов; повторы берём по нижней границе цели */
+/** Что реально сделано в подходе: факт, а без него (старые Итоги) план; повторы плана берём по нижней границе */
+export function effectiveSet(s: SessionStepResult): { weight: number; value: number } {
+  return { weight: s.actual?.weight ?? s.plan.weight ?? 0, value: s.actual?.value ?? s.plan.target.min };
+}
+
+/** Объём — вес × повторы выполненных подходов по факту, без факта по плану. «Был доп. вес» вес не меняет. */
 export function sessionVolume(steps: SessionStepResult[]): number {
-  return steps.reduce((sum, s) => (s.completed && s.kind === 'weight' ? sum + (s.plan.weight ?? 0) * s.plan.target.min : sum), 0);
+  return steps.reduce((sum, s) => {
+    if (!s.completed || s.kind !== 'weight') return sum;
+    const { weight, value } = effectiveSet(s);
+    return sum + weight * value;
+  }, 0);
 }
 export const doneSets = (steps: SessionStepResult[]) => steps.filter((s) => s.completed).length;
 
@@ -131,7 +142,7 @@ function weekDay(iso: string, input: TodayInput): TodayDay {
   const done = sessions.filter((s) => s.date === iso);
   if (done.length) {
     const title = done[0]!.title;
-    return { ...base, status: 'done', caption: title, title, meta: doneMeta(done), actionLabel: 'Итоги' };
+    return { ...base, status: 'done', caption: title, title, meta: doneMeta(done), actionLabel: 'Итоги', ...(done[0]!.id !== undefined && { sessionId: done[0]!.id }) };
   }
   const entry = entries.find((e) => e.date === iso);
   const w = entry && workouts.get(entry.workoutId);
@@ -222,7 +233,7 @@ export function buildToday(input: TodayInput): TodayBase {
   const entry = input.entries.find((e) => e.date === today);
   const planned = entry && !isSkipped(input, entry) && !pausedOn(input, today) ? input.workouts.get(entry.workoutId) : undefined;
   const state: TodayResponse['state'] = doneToday.length
-    ? { kind: 'done', summary: { title: doneToday[0]!.title, volumeKg: sessionVolume(doneToday.flatMap((s) => s.steps)), ...(sessionsMinutes(doneToday) !== undefined && { minutes: sessionsMinutes(doneToday) }) } }
+    ? { kind: 'done', summary: { title: doneToday[0]!.title, ...(doneToday[0]!.id !== undefined && { sessionId: doneToday[0]!.id }), volumeKg: sessionVolume(doneToday.flatMap((s) => s.steps)), ...(sessionsMinutes(doneToday) !== undefined && { minutes: sessionsMinutes(doneToday) }) } }
     : planned
       ? { kind: 'workout', workout: workoutCard(planned, today, input.musclesOf) }
       : { kind: 'rest', next: nextWorkout(input) };
@@ -255,7 +266,8 @@ export function todayOf(db: Db, userId: number, today: string): TodayResponse {
   const rows = db.prepare('SELECT id, title, blocks, structure FROM workouts WHERE user_id = ?').all(userId) as Array<{ id: number; title: string; blocks: string; structure: string | null }>;
   const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: JSON.parse(r.blocks) as CommitBlock[], structure: r.structure ? (JSON.parse(r.structure) as Block[]) : null }]));
   const entries = (db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as Array<{ date: string; workout_id: number }>).map((e) => ({ date: e.date, workoutId: e.workout_id }));
-  const sessions = (db.prepare('SELECT workout_id, title, date, steps, duration_sec FROM sessions_done WHERE user_id = ? ORDER BY id').all(userId) as Array<{ workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null }>).map((s) => ({
+  const sessions = (db.prepare('SELECT id, workout_id, title, date, steps, duration_sec FROM sessions_done WHERE user_id = ? ORDER BY id').all(userId) as Array<{ id: number; workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null }>).map((s) => ({
+    id: s.id,
     workoutId: s.workout_id,
     title: s.title,
     date: s.date,

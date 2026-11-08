@@ -1,0 +1,13 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-variant-numeric: tabular-nums;
+}
+
+.icon {
+  flex: none;
+}

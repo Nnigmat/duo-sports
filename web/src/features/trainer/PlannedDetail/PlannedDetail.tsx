@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TrainerPlanItem, Workout } from '../../../../../shared/types';
 import { Button, IconButton, SetChip, StatusBadge, Text, TextArea } from '../../../ui';
+import { ExerciseLink } from '../ExerciseLink/ExerciseLink';
 import { findSlug, movedText, planSteps, plannedBadge, plannedMeta, rowDate } from '../sessions';
 import styles from './PlannedDetail.module.css';
 
@@ -15,12 +16,15 @@ type Props = {
   library: LibraryName[];
   /** Промис отклонён — ошибка показывается под полем */
   onHint: (workoutId: number, exerciseId: string, text: string) => Promise<void>;
+  /** Адрес карточки упражнения по названию; нет адреса — название остаётся текстом */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
   /** Открыть редактор состава тренировки */
   onEdit?: (workoutId: number) => void;
 };
 
 /** Справа в карточке ученика: состав запланированной тренировки и «Подсказка перед тренировкой» к упражнениям. */
-export function PlannedDetail({ today, item, workout, library, onHint, onEdit }: Props) {
+export function PlannedDetail({ today, item, workout, library, exerciseHref, onOpenExercise, onHint, onEdit }: Props) {
   const moved = movedText(item);
   const steps = workout ? planSteps(workout.blocks) : [];
   return (
@@ -53,7 +57,7 @@ export function PlannedDetail({ today, item, workout, library, onHint, onEdit }:
                 {i + 1}
               </span>
               <div className={styles.stepBody}>
-                <h3 className={styles.name}>{s.name}</h3>
+                <ExerciseLink name={s.name} href={exerciseHref?.(s.name)} onOpen={onOpenExercise} />
                 <ul className={styles.sets} aria-label="Подходы">
                   {s.sets.map((label, n) => (
                     <li key={n}>

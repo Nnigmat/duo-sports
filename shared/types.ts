@@ -313,6 +313,16 @@ export interface PlanResponse {
 
 // ── Выполнение тренировки ─────────────────────────────────
 
+/** Факт подхода: что спортсмен реально сделал. Хранится отдельно от плана. */
+export interface SetActual {
+  /** Повторы или секунды (у упражнения на время) */
+  value: number;
+  /** Вес, кг: только у упражнения «вес × повторы» */
+  weight?: number;
+  /** Отметка «был доп. вес»; нет отметки — поля нет */
+  extraWeight?: true;
+}
+
 /** Один подход тренировки: что было в плане и сделан ли он */
 export interface SessionStepResult {
   exerciseId: string;
@@ -324,9 +334,13 @@ export interface SessionStepResult {
   kind: ExerciseKind;
   /** План подхода с учётом правок «Изменить» */
   plan: SetPlan;
+  /** Факт; нет у пропущенных подходов, разминки, заминки и у старых Итогов */
+  actual?: SetActual;
   completed: boolean;
   /** Видео этого подхода: id из ответа POST /api/videos */
   videoId?: string;
+  /** Фактический отдых после подхода, секунд (включая сверх цели); нет у последнего подхода, у пропущенного подхода и в старых итогах; при «Пропустить» на отдыхе это время до нажатия */
+  restSec?: number;
 }
 
 /** Итог выполненной тренировки: POST /api/workouts/:id/sessions */
@@ -337,6 +351,12 @@ export interface SessionResult {
   videos: number;
   /** Сколько секунд прошло от открытия тренировки до «Завершить», по часам браузера; старые клиенты не шлют */
   durationSec?: number;
+  /** Самочувствие 1–5 («Плохо» … «Отлично»); старые клиенты и старые итоги его не имеют */
+  feeling?: number;
+  /** Комментарий ко всей тренировке, необязательный */
+  comment?: string;
+  /** Ключ против дубликата (uuid): повторная отправка того же итога возвращает уже созданный */
+  key?: string;
 }
 
 // ── «Сегодня» ─────────────────────────────────────────────
@@ -367,6 +387,8 @@ export interface TodayDay {
   title: string;
   meta: string;
   actionLabel?: string;
+  /** У выполненного дня: разбор открывается по /review/:sessionId */
+  sessionId?: number;
 }
 
 /** Невыполненная тренировка с прошлых недель: её можно перенести вперёд */
@@ -385,7 +407,7 @@ export interface TodayResponse {
   state:
     | { kind: 'workout'; workout: TodayWorkoutCard }
     | { kind: 'rest'; next: { whenLabel: string; title: string; minutes: number } | null }
-    | { kind: 'done'; summary: { title: string; volumeKg: number; minutes?: number; records?: number } };
+    | { kind: 'done'; summary: { title: string; sessionId?: number; volumeKg: number; minutes?: number; records?: number } };
   week: TodayDay[];
   /** Пропущенное до начала этой недели, свежие первыми; пропуски текущей недели видны в week */
   missed: TodayMissed[];
@@ -414,6 +436,12 @@ export interface ReviewSet {
   n: number;
   label: string;
   completed: boolean;
+  /** Факт подхода: «85 кг × 7». Нет у пропущенных подходов и у старых Итогов */
+  actualLabel?: string;
+  /** Факт против плана; идёт вместе с actualLabel */
+  factMark?: 'Меньше плана' | 'В плане' | 'Больше плана';
+  /** Отметка «был доп. вес»: только метка */
+  extraWeight?: true;
   videoId?: string;
   videoDurationSec?: number;
 }
@@ -461,6 +489,12 @@ export interface SessionReviewResponse {
   /** День тренировки «2026-10-31» */
   date: string;
   durationSec: number | null;
+  /** Самочувствие 1–5 из «Обратной связи»; null у старых итогов */
+  feeling: number | null;
+  /** «Плохо» … «Отлично»; null, если оценки нет */
+  feelingLabel: string | null;
+  /** Комментарий спортсмена ко всей тренировке из «Обратной связи» */
+  feedbackComment: string | null;
   volumeKg: number;
   /** ISO-время разбора; null — ждёт разбора */
   reviewedAt: string | null;

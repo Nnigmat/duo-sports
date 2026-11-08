@@ -7,6 +7,12 @@ import { formatLongDate } from '../../workout/flow/ru';
 import { parseIso } from '../../plan/plan';
 import styles from './ReviewView.module.css';
 
+const FACT_MARK = {
+  'В плане': { state: 'within', text: 'В плане' },
+  'Меньше плана': { state: 'below', text: 'Меньше' },
+  'Больше плана': { state: 'above', text: 'Больше' },
+} as const;
+
 type Props = {
   review: SessionReviewResponse;
   onBack: () => void;
@@ -15,14 +21,19 @@ type Props = {
   onOpenVideo: (videoId: string, timecodeSec?: number) => void;
   /** Ответ к упражнению; промис отклонён — показываем ошибку под полем */
   onReply: (exercise: ReviewExercise, text: string) => Promise<void>;
+  /** Удалить свой ответ; без колбэка кнопки нет */
+  onDeleteComment?: (commentId: string) => Promise<void>;
   planHref?: string;
   onOpenPlan?: () => void;
 };
 
 const author = (c: ReviewComment) => (c.author === 'trainer' ? 'Тренер' : 'Ты');
 
+/** Ученик удаляет только свои ответы */
+const deleteOf = (c: ReviewComment, onDelete?: (id: string) => Promise<void>) => (c.author === 'athlete' && onDelete ? () => onDelete(c.id) : undefined);
+
 /** Разбор для ученика: комментарии тренера по упражнениям, ответы и подсказки к следующему занятию. */
-export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, planHref, onOpenPlan }: Props) {
+export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, onDeleteComment, planHref, onOpenPlan }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
   return (
     <div className={styles.root}>
@@ -53,14 +64,14 @@ export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, pl
         {review.general.length > 0 && (
           <ul className={styles.thread} aria-label="Комментарии ко всей тренировке">
             {review.general.map((c) => (
-              <Comment key={c.id} author={author(c)} text={c.text} isNew={c.isNew} reply={c.author === 'athlete'} />
+              <Comment key={c.id} author={author(c)} text={c.text} isNew={c.isNew} reply={c.author === 'athlete'} onDelete={deleteOf(c, onDeleteComment)} />
             ))}
           </ul>
         )}
 
         <ol className={styles.exercises} aria-label="Упражнения">
           {review.exercises.map((ex, i) => (
-            <ExerciseCard key={ex.id} index={i + 1} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} />
+            <ExerciseCard key={ex.id} index={i + 1} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
           ))}
         </ol>
 
@@ -109,12 +120,14 @@ function ExerciseCard({
   videoHref,
   onOpenVideo,
   onReply,
+  onDelete,
 }: {
   index: number;
   exercise: ReviewExercise;
   videoHref: Props['videoHref'];
   onOpenVideo: Props['onOpenVideo'];
   onReply: Props['onReply'];
+  onDelete: Props['onDeleteComment'];
 }) {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -151,6 +164,25 @@ function ExerciseCard({
           </li>
         ))}
       </ul>
+      {exercise.sets.some((s) => s.actualLabel) && (
+        <ul className={styles.facts} aria-label="Факт и план">
+          {exercise.sets.map((s) =>
+            s.actualLabel ? (
+              <li key={s.n} className={styles.fact}>
+                <span className={styles.factN}>{s.n}.</span>
+                <span className={styles.factValue}>{s.actualLabel}</span>
+                <span className={styles.factPlan}>план {s.label}</span>
+                {s.factMark && (
+                  <span className={styles.factMark} data-mark={FACT_MARK[s.factMark].state}>
+                    {FACT_MARK[s.factMark].text}
+                  </span>
+                )}
+                {s.extraWeight && <span className={styles.factExtra}>Был доп. вес</span>}
+              </li>
+            ) : null,
+          )}
+        </ul>
+      )}
       {withVideo?.videoId && (
         <a
           className={styles.video}
@@ -192,6 +224,7 @@ function ExerciseCard({
               reply={c.author === 'athlete'}
               timecodeSec={c.videoId ? c.timecodeSec : null}
               onSeek={c.videoId ? (sec) => onOpenVideo(c.videoId!, sec) : undefined}
+              onDelete={deleteOf(c, onDelete)}
             />
           ))}
         </ul>
@@ -203,7 +236,7 @@ function ExerciseCard({
           onChange={setDraft}
           onSubmit={send}
           label={`Ответ тренеру по упражнению «${exercise.name}»`}
-          placeholder="Ответить тренеру"
+          placeholder="Ответить"
           sending={sending}
           error={error}
         />

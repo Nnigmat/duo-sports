@@ -23,7 +23,7 @@
   min-height: var(--size-touch);
   margin: -8px 0 -6px; /* кнопка 44 px не раздувает карточку */
 }
-.root:not(:has(.time)) .head {
+.root:not(:has(.time, .delete)) .head {
   min-height: 0;
   margin: 0;
 }
@@ -89,4 +89,36 @@
   font-size: var(--body-sm-size);
   line-height: var(--body-sm-line);
   overflow-wrap: anywhere;
+}
+.delete {
+  margin-left: auto;
+  min-width: var(--size-touch);
+  min-height: var(--size-touch);
+  padding: 0 var(--spacing-xs);
+  border: 0;
+  border-radius: var(--rounded-md);
+  background: transparent;
+  color: var(--slate);
+  font: inherit;
+  font-size: var(--caption-size);
+  cursor: pointer;
+}
+.delete:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.delete:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+/* состояние подтверждения: не только цветом — меняется подпись и появляется подчёркивание */
+.confirm {
+  color: var(--ink);
+  font-weight: var(--caption-bold-weight);
+  text-decoration: underline;
+}
+.error {
+  color: var(--ink);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
 }

@@ -4,3 +4,4 @@ export { StartScreen } from './StartScreen/StartScreen';
 export { TrainingScreen } from './TrainingScreen/TrainingScreen';
 export { WorkoutFlow } from './WorkoutFlow/WorkoutFlow';
 export { WorkoutPage } from './WorkoutPage/WorkoutPage';
+export { ResumeFeedback } from './ResumeFeedback/ResumeFeedback';

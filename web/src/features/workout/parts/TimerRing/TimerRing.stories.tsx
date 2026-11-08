@@ -7,13 +7,12 @@ import { useCountdown } from './useCountdown';
 const meta = {
   title: 'Features/Workout/TimerRing',
   component: TimerRing,
-  args: { seconds: 18, total: 30, kind: 'work' },
+  args: { seconds: 18, total: 30 },
   argTypes: {
-    kind: { control: 'inline-radio', options: ['work', 'rest'] },
     paused: { control: 'boolean' },
   },
   parameters: {
-    docs: { description: { component: `Кольцо таймера и отдыха на базе ProgressRing, 168 px. Артборд «Экран тренировки». ${ARTIFACT}` } },
+    docs: { description: { component: `Кольцо таймера упражнения на базе ProgressRing, 168 px. Артборд «Экран тренировки». ${ARTIFACT}` } },
   },
 } satisfies Meta<typeof TimerRing>;
 export default meta;
@@ -24,13 +23,6 @@ export const Work: Story = {
     const timer = within(canvasElement).getByRole('timer');
     await expect(timer).toHaveAccessibleName('осталось 00:18');
     await expect(timer).toHaveTextContent('00:18');
-  },
-};
-
-export const Rest: Story = {
-  args: { kind: 'rest', seconds: 60, total: 90 },
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('timer')).toHaveAccessibleName('отдых 01:00');
   },
 };
 
@@ -58,6 +50,28 @@ export const TogglePaused: Story = {
 };
 
 export const Finished: Story = { args: { seconds: 0 } };
+
+export const Lead: Story = {
+  args: { seconds: 3, total: 5, alert: true, caption: 'старт через' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('timer')).toHaveAccessibleName('старт через 00:03');
+  },
+};
+
+export const FinalSeconds: Story = {
+  args: { seconds: 4, total: 30, alert: true, caption: 'финиш через' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('timer')).toHaveAccessibleName('финиш через 00:04');
+  },
+};
+
+export const DoneButton: Story = {
+  args: { seconds: 0, onDone: fn() },
+  play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: /Готово/ }));
+    await expect(args.onDone).toHaveBeenCalledTimes(1);
+  },
+};
 
 const onFinish = fn();
 
@@ -89,9 +103,10 @@ export const AllVariants: Story = {
         <TimerRing seconds={18} total={30} />
         <TimerRing seconds={0} total={30} />
       </Row>
-      <Row label="отдых">
-        <TimerRing kind="rest" seconds={60} total={60} />
-        <TimerRing kind="rest" seconds={25} total={60} />
+      <Row label="отсчёт и финиш">
+        <TimerRing alert seconds={3} total={5} caption="старт через" />
+        <TimerRing alert seconds={4} total={30} caption="финиш через" />
+        <TimerRing seconds={0} total={30} onDone={() => {}} />
       </Row>
       <Row label="пауза">
         <TimerRing paused seconds={18} total={30} />

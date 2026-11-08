@@ -27,6 +27,39 @@ describe('weeklyVolumes', () => {
   });
 });
 
+describe('Факт в объёме и рекордах', () => {
+  const act = (st: SessionStepResult, actual: SessionStepResult['actual']): SessionStepResult => ({ ...st, actual });
+  it('объём по факту: вес и повторы из факта, без факта из плана', () => {
+    const out = weeklyVolumes([s('2026-11-03', act(w('Присед', 100, 10), { value: 8, weight: 90 }), w('Жим', 50, 10))], '2026-11-04', 1);
+    expect(out[0]!.tons).toBe(1.2); // 90 × 8 + 50 × 10
+  });
+  it('«Был доп. вес» не меняет вес в объёме', () => {
+    const out = weeklyVolumes([s('2026-11-03', act(w('Присед', 100, 10), { value: 10, weight: 100, extraWeight: true }))], '2026-11-04', 1);
+    expect(out[0]!.tons).toBe(1);
+  });
+  it('факт 0 повторов считается нулём, а не откатывается к плану', () => {
+    const out = weeklyVolumes([s('2026-11-03', act(w('Присед', 100, 10), { value: 0, weight: 100 }))], '2026-11-04', 1);
+    expect(out[0]!.tons).toBe(0);
+  });
+  it('рекорд по факту, а не по плану', () => {
+    const { records } = recordsOf([s('2026-10-01', w('Присед', 80, 5)), s('2026-10-10', act(w('Присед', 80, 5), { value: 7, weight: 85 }))], '2026-11-02');
+    expect(records).toEqual([{ exerciseName: 'Присед', label: `85${NB}кг × 7`, date: '2026-10-10' }]);
+  });
+  it('факт ниже плана не побивает рекорд плана прошлого Итога', () => {
+    const { records, recordsMonth } = recordsOf([s('2026-10-01', w('Присед', 80, 5)), s('2026-10-10', act(w('Присед', 80, 5), { value: 3, weight: 80 }))], '2026-11-02');
+    expect(records).toEqual([{ exerciseName: 'Присед', label: `80${NB}кг × 5`, date: '2026-10-01' }]);
+    expect(recordsMonth).toBe(0);
+  });
+  it('время в секундах: факт планки против плана', () => {
+    const { records } = recordsOf([s('2026-10-01', t('Планка', 60)), s('2026-10-02', act(t('Планка', 60), { value: 95 }))], '2026-11-02');
+    expect(records[0]!.label).toBe('1:35');
+  });
+  it('повторы: факт против плана', () => {
+    const { records } = recordsOf([s('2026-10-01', r('Отжимания', 18), act(r('Отжимания', 18), { value: 22 }))], '2026-11-02');
+    expect(records[0]!.label).toBe(`22${NB}повт`);
+  });
+});
+
 describe('recordsOf', () => {
   it('лучший подход: больший вес, при равном больше повторов; дата — когда впервые достигнут', () => {
     const { records } = recordsOf([s('2026-10-01', w('Присед', 80, 5)), s('2026-10-20', w('Присед', 80, 5), w('Присед', 80, 6)), s('2026-10-27', w('Присед', 80, 6)), s('2026-10-10', w('Присед', 70, 10))], '2026-11-02');

@@ -1,0 +1,75 @@
+.hero {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.center {
+  margin: 0;
+  text-align: center;
+}
+
+.stage {
+  position: relative;
+  width: 148px; /* нет токена */
+  height: 148px; /* нет токена */
+}
+.disc {
+  position: absolute;
+  inset: var(--spacing-xs);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+}
+.chibi {
+  position: relative;
+}
+
+.rates {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xl);
+}
+.rate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px; /* нет токена */
+  padding: 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-lg);
+  background: var(--canvas);
+  color: var(--slate);
+  cursor: pointer;
+}
+/* Выбранная оценка: толстая рамка, заливка и название под рядом, а не только цвет */
+.rate.on {
+  border: 2px solid var(--primary);
+  background: var(--surface);
+  color: var(--primary-deep);
+}
+.rate:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.caption {
+  min-height: 24px; /* нет токена */
+  margin: var(--spacing-xs) 0 0;
+  color: var(--slate);
+  text-align: center;
+}
+.captionTitle {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.comment {
+  margin-top: var(--spacing-lg);
+}
+.spacer {
+  flex: 1 1 auto;
+  min-height: var(--spacing-md);
+}

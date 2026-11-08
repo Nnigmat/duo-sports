@@ -39,7 +39,7 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
     else if (action === 'Вернуть' && day?.iso) {
       setActionError(null);
       unskipWorkout(day.iso).then(onMoved, (e: Error) => setActionError(e.message));
-    } else if (action === 'Итоги') navigate('/workout/summary');
+    } else if (action === 'Итоги') navigate(day?.sessionId ? `/review/${day.sessionId}` : '/plan');
     else start();
   };
 
@@ -67,7 +67,7 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
         onOpenExercises={open('/exercises')}
         onStretch={open('/workout/stretch')}
         onTrainAnyway={open('/workout')}
-        onOpenSummary={open('/workout/summary')}
+        onOpenSummary={open(data.state.kind === 'done' && data.state.summary.sessionId ? `/review/${data.state.summary.sessionId}` : '/plan')}
         onOpenAchievements={open('/progress/achievements')}
         onOpenLatestAchievement={open('/progress/achievements')}
         onOpenProgress={open('/progress')}

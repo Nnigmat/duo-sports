@@ -4,6 +4,7 @@ import { formatMinutes, formatVolume } from '../../../shared/format';
 import { Button, Comment, CommentField, PastComments, SetChip, StatusBadge, Text, VideoPlayer, type VideoPlayerHandle } from '../../../ui';
 import { formatTime, type PlayerComment } from '../../../ui/VideoPlayer/player';
 import type { NewComment } from '../api';
+import { ExerciseLink } from '../ExerciseLink/ExerciseLink';
 import { buildCommentRequest, movedText, rowDate } from '../sessions';
 import styles from './ReviewDetail.module.css';
 
@@ -17,13 +18,18 @@ type Props = {
   /** Прошлые комментарии по названию упражнения */
   past: Record<string, ExerciseCommentItem[]>;
   videoSrc: (videoId: string) => string;
+  /** Адрес карточки упражнения по названию; нет адреса — название остаётся текстом */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
   /** Промис отклонён — ошибка показывается под полем */
   onComment: (comment: NewComment) => Promise<void>;
+  /** Удалить свой комментарий */
+  onDeleteComment: (commentId: string) => Promise<void>;
   onMarkReviewed: () => Promise<void>;
 };
 
 /** Справа в карточке ученика: выполненная тренировка по шагам, видео, переписка и «Отметить разобранной». */
-export function ReviewDetail({ today, athleteName, review, movedFrom, past, videoSrc, onComment, onMarkReviewed }: Props) {
+export function ReviewDetail({ today, athleteName, review, movedFrom, past, videoSrc, exerciseHref, onOpenExercise, onComment, onDeleteComment, onMarkReviewed }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
   const moved = movedText({ movedFrom });
   return (
@@ -42,17 +48,34 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
       </header>
       {moved && <p className={styles.moved}>{moved}</p>}
 
+      {(review.feelingLabel || review.feedbackComment) && (
+        <section className={styles.feedback} aria-label="Обратная связь спортсмена">
+          {review.feelingLabel && (
+            <p className={styles.field}>
+              <span className={styles.noteHead}>Самочувствие</span>
+              <span className={styles.feelingValue}>{review.feelingLabel}</span>
+            </p>
+          )}
+          {review.feedbackComment && (
+            <p className={styles.field}>
+              <span className={styles.noteHead}>Комментарий</span>
+              <span>{review.feedbackComment}</span>
+            </p>
+          )}
+        </section>
+      )}
+
       {review.general.length > 0 && (
         <ul className={styles.thread} aria-label="Комментарии ко всей тренировке">
           {review.general.map((c) => (
-            <ThreadItem key={c.id} comment={c} athleteName={athleteName} />
+            <ThreadItem key={c.id} comment={c} athleteName={athleteName} onDelete={onDeleteComment} />
           ))}
         </ul>
       )}
 
       <ol className={styles.steps} aria-label="Шаги тренировки">
         {review.exercises.map((ex, i) => (
-          <Step key={ex.id} index={i + 1} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} onComment={onComment} />
+          <Step key={ex.id} index={i + 1} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} href={exerciseHref?.(ex.name)} onOpenExercise={onOpenExercise} onComment={onComment} onDelete={onDeleteComment} />
         ))}
       </ol>
 
@@ -68,7 +91,7 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
 
 const authorOf = (c: ReviewComment, athleteName: string) => (c.author === 'trainer' ? 'Вы' : athleteName);
 
-function ThreadItem({ comment: c, athleteName, onSeek }: { comment: ReviewComment; athleteName: string; onSeek?: (videoId: string, sec: number) => void }) {
+function ThreadItem({ comment: c, athleteName, onSeek, onDelete }: { comment: ReviewComment; athleteName: string; onSeek?: (videoId: string, sec: number) => void; onDelete: (commentId: string) => Promise<void> }) {
   return (
     <Comment
       author={authorOf(c, athleteName)}
@@ -77,6 +100,7 @@ function ThreadItem({ comment: c, athleteName, onSeek }: { comment: ReviewCommen
       reply={c.author === 'athlete'}
       timecodeSec={c.videoId ? c.timecodeSec : null}
       onSeek={c.videoId && onSeek ? (sec) => onSeek(c.videoId!, sec) : undefined}
+      onDelete={c.author === 'trainer' ? () => onDelete(c.id) : undefined}
     />
   );
 }
@@ -106,7 +130,10 @@ function Step({
   athleteName,
   past,
   videoSrc,
+  href,
+  onOpenExercise,
   onComment,
+  onDelete,
 }: {
   index: number;
   exercise: ReviewExercise;
@@ -114,7 +141,10 @@ function Step({
   athleteName: string;
   past: ExerciseCommentItem[];
   videoSrc: Props['videoSrc'];
+  href?: string;
+  onOpenExercise?: Props['onOpenExercise'];
   onComment: Props['onComment'];
+  onDelete: Props['onDeleteComment'];
 }) {
   const panelId = useId();
   const player = useRef<VideoPlayerHandle>(null);
@@ -122,7 +152,8 @@ function Step({
   const [video, setVideo] = useState<{ id: string; startSec?: number } | null>(null);
   const [time, setTime] = useState(0);
   const [draft, setDraft] = useState('');
-  const [attached, setAttached] = useState(false);
+  /** По умолчанию комментарий к видео привязан к моменту; тренер может снять */
+  const [attached, setAttached] = useState(true);
   const videoSets = exercise.sets.filter((s) => s.videoId);
   const openSet = videoSets.find((s) => s.videoId === video?.id);
 
@@ -148,7 +179,6 @@ function Step({
       ),
     () => {
       setDraft('');
-      setAttached(false);
     },
   );
 
@@ -163,7 +193,7 @@ function Step({
       </span>
       <div className={styles.stepBody}>
         <div className={styles.stepHead}>
-          <h3 className={styles.name}>{exercise.name}</h3>
+          <ExerciseLink name={exercise.name} href={href} onOpen={onOpenExercise} />
           {exercise.newCount > 0 && <span className={styles.newBadge}>{exercise.newCount === 1 ? 'Новое' : `Новых: ${exercise.newCount}`}</span>}
         </div>
         <ul className={styles.sets} aria-label="Подходы">
@@ -188,7 +218,7 @@ function Step({
                   aria-controls={open ? panelId : undefined}
                   onClick={() => {
                     setVideo(open ? null : { id: s.videoId! });
-                    setAttached(false);
+                    setAttached(true);
                   }}
                 >
                   {open ? 'Скрыть видео' : `Видео, подход ${s.n}`}
@@ -213,7 +243,7 @@ function Step({
         {exercise.thread.length > 0 && (
           <ul className={styles.thread} aria-label="Переписка по упражнению">
             {exercise.thread.map((c) => (
-              <ThreadItem key={c.id} comment={c} athleteName={athleteName} onSeek={seek} />
+              <ThreadItem key={c.id} comment={c} athleteName={athleteName} onSeek={seek} onDelete={onDelete} />
             ))}
           </ul>
         )}
@@ -223,7 +253,7 @@ function Step({
           onChange={setDraft}
           onSubmit={run}
           label={`Ваш комментарий к упражнению «${exercise.name}»`}
-          placeholder={video ? 'Остановите видео на нужном моменте и привяжите комментарий' : 'Что поправить в этом упражнении'}
+          placeholder={video ? 'Комментарий к моменту' : 'Комментарий к упражнению'}
           timecodeSec={video ? Math.floor(time) : undefined}
           attached={attached}
           onAttachedChange={setAttached}
@@ -243,7 +273,7 @@ function GeneralField({ sessionId, onComment }: { sessionId: number; onComment: 
       <Text variant="h5" tag="h3">
         Ко всей тренировке
       </Text>
-      <CommentField value={draft} onChange={setDraft} onSubmit={run} label="Комментарий ко всей тренировке" placeholder="Общее впечатление, план на следующее занятие" sending={sending} error={error} />
+      <CommentField value={draft} onChange={setDraft} onSubmit={run} label="Комментарий ко всей тренировке" placeholder="Комментарий ко всей тренировке" sending={sending} error={error} />
     </div>
   );
 }

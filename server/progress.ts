@@ -1,6 +1,6 @@
 import type { ProgressRecord, SessionStepResult } from '../shared/types';
-import { setLabel } from './sessionReview';
-import { addDays, sessionVolume, weekStart } from './today';
+import { actualLabel } from './sessionReview';
+import { addDays, effectiveSet, sessionVolume, weekStart } from './today';
 
 export interface ProgressSession {
   date: string;
@@ -23,8 +23,10 @@ export function weeklyVolumes(sessions: ProgressSession[], today: string, weeks 
 }
 
 /** Результат подхода для сравнения: вес и повторы, повторы или секунды; чем больше, тем лучше */
-const score = (s: SessionStepResult): number[] =>
-  s.kind === 'weight' ? [s.plan.weight ?? 0, s.plan.target.min] : [s.plan.target.min];
+const score = (s: SessionStepResult): number[] => {
+  const { weight, value } = effectiveSet(s);
+  return s.kind === 'weight' ? [weight, value] : [value];
+};
 const better = (a: number[], b: number[]) => (a[0]! !== b[0]! ? a[0]! > b[0]! : (a[1] ?? 0) > (b[1] ?? 0));
 
 export const RECORD_WINDOW_DAYS = 30;
@@ -56,6 +58,6 @@ export function recordsOf(sessions: ProgressSession[], today: string, limit = 8)
   const records = [...best.values()]
     .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ru'))
     .slice(0, limit)
-    .map((b) => ({ exerciseName: b.name, label: setLabel(b.step), date: b.date }));
+    .map((b) => ({ exerciseName: b.name, label: actualLabel(b.step), date: b.date }));
   return { records, recordsMonth };
 }

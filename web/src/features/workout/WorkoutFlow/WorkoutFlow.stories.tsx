@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
-import type { FinishStats } from '../flow';
+import { buildSteps, initSession, reduce, type Action, type FinishStats } from '../flow';
 import { Button } from '../../../ui/Button/Button';
 import { Text } from '../../../ui/Text/Text';
 import { ARTIFACT } from '../../../ui/storyKit';
@@ -15,7 +15,7 @@ const onExit = fn();
 
 type FlowProps = React.ComponentProps<typeof WorkoutFlow>;
 
-/** Обёртка для истории: после «Завершить» или выхода показывает итог и даёт пройти заново */
+/** Обёртка для истории: после «Отправить» или выхода показывает итог и даёт пройти заново */
 function Demo(props: FlowProps) {
   const [run, setRun] = useState(0);
   const [result, setResult] = useState<string | null>(null);
@@ -31,9 +31,9 @@ function Demo(props: FlowProps) {
     <WorkoutFlow
       key={run}
       {...props}
-      onFinish={(s: FinishStats, steps) => {
-        props.onFinish(s, steps);
-        setResult(`Сохранено: ${s.setsDone} из ${s.setsTotal} подходов, видео ${s.videos}`);
+      onFinish={async (s: FinishStats, steps, feedback) => {
+        await props.onFinish(s, steps, feedback);
+        setResult(`Сохранено: ${s.setsDone} из ${s.setsTotal} подходов, видео ${s.videos}, самочувствие ${feedback.feeling}`);
       }}
       onExit={() => {
         props.onExit();
@@ -60,7 +60,7 @@ const meta = {
   render: (args) => <Demo {...args} />,
   beforeEach: () => {
     onUploadVideo.mockReset().mockImplementation(() => new Promise((r) => setTimeout(r, 300)));
-    onFinish.mockReset();
+    onFinish.mockReset().mockResolvedValue(undefined);
     onExit.mockReset();
     return mockCamera('stream');
   },
@@ -69,7 +69,7 @@ const meta = {
     bleed: true,
     docs: {
       description: {
-        component: `Весь сценарий на моковых данных: старт → разминка по таймеру → круги с отдыхом → запись видео на круге 2 → силовая (с «Планкой» на время) → заминка → финиш. Работает панель «Изменить» с применением к следующим кругам, «Техника», комментарии тренера и выход с подтверждением. Таймеры короткие (5 с), «Пропустить» перематывает. Камера подменена, видео «загружается» 0,3 с. ${ARTIFACT}`,
+        component: `Весь сценарий на моковых данных: старт → разминка по таймеру → круги с отдыхом → запись видео на круге 2 → силовая (с «Планкой» на время) → заминка → финиш. Работают «Назад» с общим временем тренировки, «Техника», комментарии тренера и выход с подтверждением. Таймеры короткие (5 с), «Пропустить» перематывает. Камера подменена, видео «загружается» 0,3 с. ${ARTIFACT}`,
       },
     },
   },
@@ -97,12 +97,43 @@ async function toCircuit() {
   await waitFor(() => expect(body().getByText('Подход 1 из 9')).toBeVisible());
 }
 
-/** «Готово» и пропуск отдыха после него */
-async function doneAndSkipRest() {
+/** «Готово» на подходе упражнения и «Записать» в шторке результата со значением из плана */
+async function done() {
   await click('Готово');
-  await body().findByRole('timer', { name: /отдых/ });
+  await screen.findByRole('dialog');
+  await click('Записать');
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+}
+
+/** «Готово», «Записать» и пропуск отдыха после него */
+async function doneAndSkipRest() {
+  await done();
+  await body().findByRole('timer', { name: /отдых/i });
   await click('Пропустить');
 }
+
+/** Прохождение, сохранённое на втором подходе круга: как после перезагрузки страницы */
+const resumedSession = () =>
+  (['begin', 'skip', 'skip', 'skip', 'done', 'restOver'] as const).reduce(
+    (s, type) => reduce(s, { type } as Action),
+    initSession(buildSteps(WORKOUT.blocks)),
+  );
+
+/** Прохождение, дошедшее до «Обратной связи» */
+const finishedFeedback = () => reduce(reduce(resumedSession(), { type: 'finishNow' }), { type: 'toFeedback' });
+
+export const Resumed: Story = {
+  tags: hidden,
+  args: { initialSession: resumedSession(), onSessionChange: fn() },
+  play: async () => {
+    // Экран старта не показываем: сразу второй подход круга, первый засчитан
+    await expect(body().getByText('Подход 2 из 9')).toBeVisible();
+    await expect(body().queryByRole('button', { name: 'Начать тренировку' })).toBeNull();
+    // Дальше тренировка идёт как обычно
+    await done();
+    await body().findByRole('timer', { name: /отдых/i });
+  },
+};
 
 export const FullRun: Story = {
   tags: hidden,
@@ -118,13 +149,14 @@ export const FullRun: Story = {
     // Круг 2: первый подход снимаем на видео
     await expect(body().getByText('Подход 4 из 9 · снимаем на видео')).toBeVisible();
     await click('Начать запись');
-    await waitFor(() => expect(body().getByRole('button', { name: 'Старт' })).toBeEnabled(), { timeout: 5000 });
-    await click('Старт');
-    await waitFor(() => expect(body().getByRole('button', { name: 'Стоп' })).toBeVisible(), { timeout: 5000 });
+    await waitFor(() => expect(body().getByRole('button', { name: 'Начать запись' })).toBeEnabled(), { timeout: 5000 });
+    await click('Начать запись');
+    await waitFor(() => expect(body().getByRole('button', { name: 'Остановить' })).toBeVisible(), { timeout: 5000 });
     await new Promise((r) => setTimeout(r, 1300));
-    await click('Готово');
+    await click('Остановить');
+    await click('Отправить');
     // после сохранения подход выполнен, идёт отдых
-    await body().findByRole('timer', { name: /отдых/ }, { timeout: 5000 });
+    await body().findByRole('timer', { name: /отдых/i }, { timeout: 5000 });
     await expect(onUploadVideo).toHaveBeenCalledTimes(1);
     await click('Пропустить');
     await doneAndSkipRest();
@@ -133,7 +165,7 @@ export const FullRun: Story = {
     // Круг 3: после последнего подхода блока отдыха нет, сразу силовая
     await doneAndSkipRest();
     await doneAndSkipRest();
-    await click('Готово');
+    await done();
 
     // Силовая: приседания, затем «Планка» на время
     await expect(body().getByText('Приседания с гантелью · 12 кг × 12')).toBeVisible();
@@ -143,7 +175,8 @@ export const FullRun: Story = {
     // время запускается по «Старт»
     await expect(body().queryByRole('timer')).toBeNull();
     await click('Старт');
-    await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+    // после «Старт» сначала отсчёт 5 с, кольцо подписано «старт через»
+    await body().findByRole('button', { name: /Пауза, 00:0[1-5] старт через/ });
     await click('Пропустить');
 
     // Заминка
@@ -156,12 +189,25 @@ export const FullRun: Story = {
     await expect(await body().findByText('Тренировка пройдена')).toBeVisible();
     await expect(body().getByText('11 из 12')).toBeVisible();
     await expect(body().getByText('видео записано')).toBeVisible();
-    await click('Завершить');
-    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, rounds: 3, videos: 1 }, expect.any(Array));
+    await expect(body().getByText('общее время')).toBeVisible();
+    await click('Дальше');
+    await expect(await body().findByRole('heading', { name: 'Обратная связь' })).toBeVisible();
+    // Без оценки отправить нельзя
+    await expect(body().getByRole('button', { name: 'Выберите самочувствие' })).toBeDisabled();
+    await click('Хорошо');
+    await click('Отправить тренеру');
+    await expect(onFinish).toHaveBeenCalledWith({ setsDone: 11, setsTotal: 12, videos: 1 }, expect.any(Array), { feeling: 4 });
     // Вместе с итогами уходит каждый подход: выполненные и пропущенная планка
-    const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean }>;
+    const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string; completed: boolean; actual?: { value: number }; plan: { target: { max: number } } }>;
     await expect(steps.some((x) => x.completed)).toBe(true);
     await expect(steps.filter((x) => !x.completed).length).toBeGreaterThan(0);
+    // Факт ушёл в Итог отдельно от плана; пропущенная планка без факта; разминка без шторки и без факта
+    const dips = steps.find((x) => x.exerciseName === 'Обратные отжимания')!;
+    await expect(dips.actual).toEqual({ value: 20 });
+    await expect(dips.plan.target.max).toBe(20);
+    await expect(steps.find((x) => x.exerciseName === 'Планка')).toMatchObject({ completed: false });
+    await expect('actual' in steps.find((x) => x.exerciseName === 'Планка')!).toBe(false);
+    await expect('actual' in steps[0]!).toBe(false);
   },
 };
 
@@ -169,35 +215,110 @@ export const RestIsAboutNextSet: Story = {
   tags: hidden,
   play: async () => {
     await toCircuit();
-    await click('Готово');
+    await done();
     await expect(await body().findByText('Отдых · далее подход 2 из 9')).toBeVisible();
     await expect(body().getByText('Ножницы лёжа · 30–34 повт')).toBeVisible();
     await expect(body().getByRole('button', { name: 'Запись' })).toBeDisabled();
-    // +15 с прибавляет время к отдыху
-    const before = body().getByRole('timer').getAttribute('aria-label');
+    // Отдых считает вверх до цели, «+15 с» двигает цель
+    await expect(body().getByRole('timer', { name: /из 00:05/ })).toBeVisible();
     await click('Добавить 15 секунд');
-    await waitFor(() => expect(body().getByRole('timer').getAttribute('aria-label')).not.toBe(before));
+    await waitFor(() => expect(body().getByRole('timer', { name: /из 00:20/ })).toBeVisible());
+    // Над персонажем облачко с позой следующего упражнения
+    await expect(document.querySelector('[data-pose="scissors"]')).not.toBeNull();
   },
 };
 
-export const EditAppliesToNextRounds: Story = {
+/** Цель отдыха (в моке 5 с) достигнута: круг становится кнопкой «Начать», она ведёт к следующему подходу */
+export const RestOverStartsNextSet: Story = {
   tags: hidden,
   play: async () => {
     await toCircuit();
-    await click('Изменить');
-    const dialog = within(await screen.findByRole('dialog', { name: 'Обратные отжимания' }));
-    await userEvent.click(dialog.getByRole('button', { name: 'Меньше повторений' }));
-    await userEvent.click(dialog.getByRole('checkbox', { name: /Применить к следующим кругам/ }));
-    await userEvent.click(dialog.getByRole('button', { name: 'Сохранить' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(body().getByText('Обратные отжимания · 17 повт')).toBeVisible();
+    await done();
+    await expect(await body().findByText('Отдых · далее подход 2 из 9')).toBeVisible();
+    // Цель в моке 5 с: круг сам превращается в кнопку
+    await userEvent.click(await body().findByRole('button', { name: /отдыхаете.*Начать/ }, { timeout: 8000 }));
+    await expect(await body().findByText('Подход 2 из 9')).toBeVisible();
+  },
+};
 
-    // В круге 2 то же упражнение уже с 17 повт, а соседнее не тронуто
+export const FactDoesNotChangePlan: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await click('Готово');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    // Степпер стоит на верхней границе плана 18–20
+    await expect(dialog.getByText('План: 18–20')).toBeVisible();
+    for (let i = 0; i < 3; i++) await userEvent.click(dialog.getByRole('button', { name: 'Меньше повторений' }));
+    await expect(dialog.getByText('Меньше плана')).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
+    await click('Пропустить');
+    // Следующие круги того же упражнения остались с планом 18–20
     await doneAndSkipRest();
-    await expect(body().getByText('Ножницы лёжа · 30–34 повт')).toBeVisible();
     await doneAndSkipRest();
+    await expect(await body().findByText('Обратные отжимания · 18–20 повт')).toBeVisible();
+  },
+};
+
+export const CloseResultSheetSavesNothing: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await click('Готово');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Закрыть' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Подход не засчитан: отдыха нет, мы всё на первом подходе
+    await expect(body().queryByRole('timer')).toBeNull();
+    await expect(body().getByText('Подход 1 из 9')).toBeVisible();
+    await expect(body().getByRole('button', { name: 'Готово' })).toBeVisible();
+  },
+};
+
+export const RedoneFactIsOverwritten: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await click('Готово');
+    const first = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    for (let i = 0; i < 3; i++) await userEvent.click(first.getByRole('button', { name: 'Меньше повторений' }));
+    await userEvent.click(first.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
+
+    // «Назад» с отдыха, снова «Готово»: шторка открыта с введённым фактом (17), а не с планом
+    await click('Шаг назад');
+    await click('Готово');
+    const second = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }));
+    await expect(second.getByText('Меньше плана')).toBeVisible();
+    await userEvent.click(second.getByRole('button', { name: 'Больше повторений' }));
+    await expect(second.getByText('В плане')).toBeVisible();
+    await userEvent.click(second.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
+  },
+};
+
+/** «Назад» возвращает на предыдущий подход, пропуская отдых; на первом шаге кнопки нет */
+export const BackReturnsToPreviousSet: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    // Первый подход круга: «Назад» есть (шаг не первый), стрелки в шапке нет
+    await expect(body().queryByRole('button', { name: 'Шаг назад' })).toBeNull();
     await doneAndSkipRest();
-    await expect(await body().findByText('Обратные отжимания · 17 повт')).toBeVisible();
+    await expect(body().getByText('Подход 2 из 9')).toBeVisible();
+    await click('Назад');
+    await expect(await body().findByText('Подход 1 из 9')).toBeVisible();
+    await expect(body().queryByRole('timer', { name: /отдых/i })).toBeNull();
+  },
+};
+
+/** Общее время идёт под названием круга от метки старта */
+export const ShowsElapsedTime: Story = {
+  tags: hidden,
+  args: { initialSession: resumedSession(), startedAt: Date.now() - 3_725_000 },
+  play: async () => {
+    await expect(body().getByRole('timer', { name: 'Время тренировки' })).toHaveTextContent(/^1:02:\d\d$/);
   },
 };
 
@@ -222,6 +343,38 @@ export const TechAndCommentsMarkRead: Story = {
     // после закрытия комментарии прочитаны: точки нет
     await expect(body().getByRole('button', { name: 'Техника' })).toBeVisible();
     await expect(body().queryByRole('button', { name: 'Техника, новый комментарий тренера' })).toBeNull();
+  },
+};
+
+/** Ошибка сети: оценка и комментарий остаются, повтор уходит с теми же данными, ключ и итог не задваиваются на странице-контейнере */
+export const RetryAfterNetworkError: Story = {
+  tags: hidden,
+  args: { initialSession: finishedFeedback() },
+  play: async () => {
+    onFinish.mockReset().mockRejectedValueOnce(new Error('Нет связи с сервером')).mockResolvedValue(undefined);
+    await click('Отлично');
+    await userEvent.type(body().getByLabelText('Комментарий к тренировке'), 'легко');
+    await click('Отправить тренеру');
+    await expect(await body().findByRole('alert')).toHaveTextContent('Нет связи с сервером');
+    // Экран и введённое на месте, кнопка снова доступна
+    await expect(body().getByRole('button', { name: 'Отлично' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(body().getByLabelText('Комментарий к тренировке')).toHaveValue('легко');
+    await click('Отправить тренеру');
+    await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(2));
+    await expect(onFinish.mock.calls[1]![2]).toEqual({ feeling: 5, comment: 'легко' });
+  },
+};
+
+/** Прохождение, закрытое на «Обратной связи»: после открытия сразу этот экран, стрелка ведёт к итогам */
+export const ResumedOnFeedback: Story = {
+  tags: hidden,
+  args: { initialSession: finishedFeedback() },
+  play: async () => {
+    await expect(body().getByRole('heading', { name: 'Обратная связь' })).toBeVisible();
+    await click('К итогам');
+    await expect(await body().findByText('Тренировка пройдена')).toBeVisible();
+    await click('Дальше');
+    await expect(await body().findByRole('heading', { name: 'Обратная связь' })).toBeVisible();
   },
 };
 

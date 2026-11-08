@@ -85,7 +85,10 @@ CREATE TABLE IF NOT EXISTS sessions_done (
   finished_at TEXT NOT NULL,
   steps TEXT NOT NULL,
   videos INTEGER NOT NULL DEFAULT 0,
-  duration_sec INTEGER
+  duration_sec INTEGER,
+  feeling INTEGER,
+  comment TEXT,
+  client_key TEXT
 );
 CREATE INDEX IF NOT EXISTS sessions_done_user ON sessions_done(user_id, date);
 -- Комментарии к упражнению, видео (с таймкодом) или ко всей тренировке. Пишет тренер или сам спортсмен (ответ);
@@ -235,6 +238,11 @@ function renameCoachComments(db: Db) {
 function migrate(db: Db) {
   const columns = (table: string) => (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name);
   if (!columns('sessions_done').includes('duration_sec')) db.exec('ALTER TABLE sessions_done ADD COLUMN duration_sec INTEGER');
+  if (!columns('sessions_done').includes('feeling')) db.exec('ALTER TABLE sessions_done ADD COLUMN feeling INTEGER');
+  if (!columns('sessions_done').includes('comment')) db.exec('ALTER TABLE sessions_done ADD COLUMN comment TEXT');
+  if (!columns('sessions_done').includes('client_key')) db.exec('ALTER TABLE sessions_done ADD COLUMN client_key TEXT');
+  // Повтор отправки того же итога находит прежнюю строку по ключу; у старых строк ключа нет
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS sessions_done_key ON sessions_done(user_id, client_key) WHERE client_key IS NOT NULL');
   if (!columns('workouts').includes('structure')) db.exec('ALTER TABLE workouts ADD COLUMN structure TEXT');
   if (!columns('users').includes('goal')) db.exec('ALTER TABLE users ADD COLUMN goal TEXT');
   if (!columns('users').includes('display_name')) db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');

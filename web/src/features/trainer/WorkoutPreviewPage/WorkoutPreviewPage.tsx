@@ -33,7 +33,7 @@ function Preview({ athleteId, workoutId }: { athleteId: number; workoutId: numbe
       dateLabel={`Превью · ${formatLongDate(parseIso(day))}`}
       // Видео в превью на сервер не уходит: загрузка отключена, id не возвращается
       onUploadVideo={async () => undefined}
-      onFinish={back}
+      onFinish={async () => back()}
       onExit={back}
     />
   );
