@@ -151,6 +151,13 @@ workouts:
     const block = { id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Разминка', kind: 'time', target: { min: 300, max: 300 } }] } as TimedBlock;
     expect(applyToStructure([block], new Map([['Планка', null]]))).toEqual([block]);
   });
+  it('заголовок блока в blocks не врёт про время, пустой набор из blocks уходит', () => {
+    const one = buildCommit(p, setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), DEFAULT_OPTIONS);
+    expect(one.workouts[0]!.blocks.map((b) => b.heading)).toEqual(['Разминка', 'Разминка']);
+    const none = buildCommit(p, setAction(setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), keyOf('Вращение плечами'), 'skip'), DEFAULT_OPTIONS);
+    expect(none.workouts[0]!.blocks).toHaveLength(1);
+    expect(buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS).workouts[0]!.blocks[0]!.heading).toBe('Разминка · 1:20');
+  });
   it('sides доходят до отправки', () => {
     expect(timed(buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS)).exercises[0]!.sides).toEqual(['вправо', 'влево']);
   });

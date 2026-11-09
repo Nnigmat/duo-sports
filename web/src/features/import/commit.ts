@@ -75,17 +75,16 @@ export function buildCommit(parsed: ParsedImport, choices: ExerciseChoices, opti
   const workouts: CommitWorkout[] = parsed.workouts.map((w) => ({
     ...(w.slug ? { id: w.slug } : {}),
     title: w.title,
-    blocks: w.blocks.map(
-      (b): CommitBlock => ({
-        kind: b.kind,
-        heading: b.heading,
-        ...(b.text ? { text: b.text } : {}),
-        items: b.items.flatMap((i) => {
-          const name = rename.has(i.name) ? rename.get(i.name) : i.name;
-          return name ? [{ name, value: i.value }] : [];
-        }),
-      }),
-    ),
+    blocks: w.blocks.flatMap((b): CommitBlock[] => {
+      const items = b.items.flatMap((i) => {
+        const name = rename.has(i.name) ? rename.get(i.name) : i.name;
+        return name ? [{ name, value: i.value }] : [];
+      });
+      // Набор упражнений: если часть убрали, общее время в заголовке уже неверно; если убрали всё, блока нет
+      const trimmed = b.kind !== 'exercises' && b.items.length > 0 && items.length < b.items.length;
+      if (trimmed && items.length === 0) return [];
+      return [{ kind: b.kind, heading: trimmed ? b.heading.split(' · ')[0]! : b.heading, ...(b.text ? { text: b.text } : {}), items }];
+    }),
     ...structureOf(w.structure, rename),
   }));
 

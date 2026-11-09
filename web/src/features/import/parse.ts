@@ -229,6 +229,8 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
   for (const d of defs.values()) for (const n of [d.name, ...d.aliases]) defByName.set(norm(n), d);
 
   const used = new Map<string, Used>();
+  /** «Номер тренировки» у упражнений набора: они разбираются один раз, настоящие номера добавляются по ссылке */
+  const IN_ROUTINE = -1;
   const foundLib = new Set<string>();
 
   /** Имя для показа или null, если упражнение не нашлось (ошибка уже записана) */
@@ -259,13 +261,15 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       return lib.name;
     }
     const shown = name ?? '';
+    // Для набора «похожее» ищем только среди упражнений на время: иначе замена обойдёт проверку типа
+    const pool = workout === IN_ROUTINE ? ctx.library.filter((l) => l.kind === 'time') : ctx.library;
     const entry = used.get(norm(shown)) ?? {
       name: shown,
       workouts: new Set<number>(),
       hasVideo: !!def?.video,
       muscles: def?.muscles.join(', ') ?? '',
-      similar: similarTo(shown, ctx.library),
-      candidates: candidatesFor(shown, ctx.library),
+      similar: similarTo(shown, pool),
+      candidates: candidatesFor(shown, pool),
       slug: def?.id,
       aliases: def?.aliases ?? [],
       measure: def?.measure ?? inferMeasure(ex),
@@ -390,8 +394,6 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     totalSec: number;
   }
   const routineList = new Map<string, Routine>();
-  /** Упражнения набора разбираем один раз; «номер тренировки» у них условный, настоящие добавляются по ссылке */
-  const IN_ROUTINE = -1;
   if (root.routines !== undefined) {
     if (!Array.isArray(root.routines)) fail(['routines'], 'routines должно быть списком');
     else
@@ -416,6 +418,10 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
           else {
             time = parseDuration(e.time);
             if (!time) fail([...ep, 'time'], `Не понимаю время: ${String(e.time)}`, 'Пишите 45, 45s, 1:30 или 2m.');
+            else if (time.max <= 0) {
+              fail([...ep, 'time'], 'time должно быть больше нуля', 'Упражнение набора идёт хотя бы секунду: 30s.');
+              time = null;
+            }
           }
           let sides: [string, string] | undefined;
           if (e.sides !== undefined) {
