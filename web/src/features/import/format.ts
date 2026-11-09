@@ -61,6 +61,7 @@ export const TOP_FIELDS: FieldRow[] = [
   row('version', '1', 'Версия формата. Сейчас всегда 1.', req),
   row('units', 'kg | lb', 'Единицы веса. По умолчанию — как в профиле.'),
   row('exercises', 'список', 'Новые упражнения с видео и подсказками. Создадим только те, что вы отметите на проверке.'),
+  row('routines', 'список', 'Наборы упражнений для разминки и заминки: описываются один раз, в блоках подключаются через routine.'),
   row('workouts', 'список', 'Тренировки, хотя бы одна. С date — сразу в календарь.', req),
   row('plan', 'объект', 'Повтор по дням недели — для тренировок без date.'),
 ];
@@ -87,6 +88,7 @@ export const BLOCK_TYPES: BlockType[] = [
   { type: 'circuit', title: 'Круг', description: 'Упражнения подряд, отдых после круга. Повторить rounds раз.', code: ['- type: circuit', '  rounds: 3', '  rest: 90s                # после круга', '  exercises: [ … ]'] },
   { type: 'superset', title: 'Суперсет', description: '2–3 упражнения без отдыха между ними.', code: ['- type: superset', '  rounds: 3', '  rest: 60s', '  exercises: [ … ]'] },
   { type: 'warmup | cooldown', title: 'Разминка и заминка', description: 'Свободный текст и время — когда тренер пишет «любым способом», а не список упражнений.', code: ['- type: warmup', '  time: 5-7m', '  text: Скакалка, ОРУ ~10 мин'] },
+  { type: 'warmup | cooldown + routine', title: 'Набор упражнений', description: 'Упражнения на время с видео, отсчётом и сигналами. Набор описывается в routines и подключается по id.', code: ['- type: warmup', '  routine: neck-shoulders'] },
 ];
 
 export const SHORT_FORMS: Array<{ code: string; description: string }> = [
@@ -127,6 +129,39 @@ export const NEW_EXERCISE_FIELDS: FieldRow[] = [
   row('measure', 'reps', 'Как считать: weight, reps, time или distance. По умолчанию reps.'),
   row('notes', 'текст', 'Подсказки по технике, видны в каждой тренировке.'),
   row('aliases', '[обратка]', 'Другие названия — по ним тоже найдём.'),
+];
+
+export const ROUTINE_EXAMPLE = [
+  'version: 1',
+  'routines:',
+  '  - id: neck-shoulders',
+  '    title: Шея и плечи',
+  '    exercises:',
+  '      - { name: Вращение головой, time: 30s, per_side: true }',
+  '      - { name: Вращение плечами, time: 20s, per_side: true, sides: [вперёд, назад] }',
+  '  - id: back-stretch',
+  '    title: Растяжка спины',
+  '    exercises:',
+  '      - { name: Наклон к ногам, time: 45s }',
+  'workouts:',
+  '  - title: Верх тела',
+  '    date: 2026-11-03',
+  '    blocks:',
+  '      - { type: warmup, routine: neck-shoulders }',
+  '      - type: circuit',
+  '        rounds: 2',
+  '        exercises:',
+  '          - { name: Планка, time: 30s }',
+  '      - { type: cooldown, routine: back-stretch }',
+];
+
+export const ROUTINE_FIELDS: FieldRow[] = [
+  row('id', 'neck-shoulders', 'Латиница, цифры и дефис. По нему блок подключает набор: routine: neck-shoulders.', req),
+  row('title', 'Шея и плечи', 'Название набора для себя.'),
+  row('exercises', 'список', 'Упражнения по порядку, хотя бы одно. Смена по таймеру, без пауз.', req),
+  row('time', '30s, 1:30', 'У каждого упражнения набора, на одну сторону.', req),
+  row('per_side', 'true', 'Упражнение в две стороны: два шага подряд, подписи «вправо» и «влево».'),
+  row('sides', '[вперёд, назад]', 'Свои подписи двух сторон. Включает стороны и без per_side.'),
 ];
 
 export const UNITS: Array<{ title: string; values: string[] }> = [
@@ -172,6 +207,7 @@ export const SECTIONS = [
   { id: 'blocks', title: 'Блоки' },
   { id: 'exercise', title: 'Упражнение' },
   { id: 'new-exercises', title: 'Новые упражнения' },
+  { id: 'routines', title: 'Наборы' },
   { id: 'units', title: 'Единицы' },
   { id: 'plan', title: 'Даты и повтор' },
   { id: 'reimport', title: 'Повторный импорт' },
