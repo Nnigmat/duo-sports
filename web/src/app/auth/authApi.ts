@@ -56,3 +56,13 @@ export async function apiSetGender(gender: Gender): Promise<void> {
   });
   if (!res.ok) throw new Error('Не удалось сохранить пол. Попробуйте ещё раз');
 }
+
+export async function apiSetStartDelay(startDelaySec: number): Promise<void> {
+  const res = await fetch('/api/auth/start-delay', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ startDelaySec }),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить отсчёт. Попробуйте ещё раз');
+}

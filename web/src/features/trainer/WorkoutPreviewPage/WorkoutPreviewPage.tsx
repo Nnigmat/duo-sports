@@ -1,4 +1,5 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../../app/auth/AuthProvider';
 import { useAthletePreview } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { parseIso, toIso } from '../../plan/plan';
@@ -17,6 +18,7 @@ export function WorkoutPreviewPage() {
 
 function Preview({ athleteId, workoutId }: { athleteId: number; workoutId: number }) {
   const navigate = useNavigate();
+  const auth = useAuth();
   const [search] = useSearchParams();
   const { data, error } = useAthletePreview(athleteId, workoutId);
   const day = /^\d{4}-\d{2}-\d{2}$/.test(search.get('date') ?? '') ? search.get('date')! : toIso(new Date());
@@ -30,6 +32,7 @@ function Preview({ athleteId, workoutId }: { athleteId: number; workoutId: numbe
       comments={data.comments}
       techniques={data.techniques}
       gender={data.gender}
+      recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
       dateLabel={`Превью · ${formatLongDate(parseIso(day))}`}
       // Видео в превью на сервер не уходит: загрузка отключена, id не возвращается
       onUploadVideo={async () => undefined}

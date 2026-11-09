@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
-import { DISPLAY_NAME_MAX, type AuthUser } from '../shared/types';
-import { changePassword, login, logout, setDisplayName, setGender, SESSION_DAYS, userBySession } from './auth';
+import { DISPLAY_NAME_MAX, MAX_START_DELAY_SEC, type AuthUser } from '../shared/types';
+import { changePassword, login, logout, setDisplayName, setGender, setStartDelay, SESSION_DAYS, userBySession } from './auth';
 import type { Db } from './db';
 
 const COOKIE = 'session';
@@ -81,6 +81,14 @@ export function authRouter(db: Db) {
     const gender = req.body?.gender;
     if (gender !== 'female' && gender !== 'male') return void res.status(400).json({ error: 'gender: female или male' });
     setGender(db, req.user!.email, gender);
+    res.json({ ok: true });
+  });
+
+  r.put('/auth/start-delay', requireUser(db), (req, res) => {
+    const sec = req.body?.startDelaySec;
+    if (!Number.isInteger(sec) || sec < 0 || sec > MAX_START_DELAY_SEC)
+      return void res.status(400).json({ error: `startDelaySec: целое от 0 до ${MAX_START_DELAY_SEC}` });
+    setStartDelay(db, req.user!.id, sec);
     res.json({ ok: true });
   });
 

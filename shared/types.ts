@@ -138,9 +138,15 @@ export interface AuthUser {
   gender?: Gender;
   /** Имя для показа; не задано, пока пользователь не указал */
   displayName?: string;
+  /** Секунд отсчёта перед записью видео; всегда задан (по умолчанию DEFAULT_START_DELAY_SEC) */
+  startDelaySec: number;
 }
 
 export const DISPLAY_NAME_MAX = 40;
+
+/** Отсчёт перед записью видео: время поставить телефон и занять позу, для статики вроде планки без паузы не обойтись */
+export const DEFAULT_START_DELAY_SEC = 5;
+export const MAX_START_DELAY_SEC = 30;
 
 /** Ответ POST /api/auth/login при отказе */
 export type LoginFailure = { error: 'wrong_credentials' } | { error: 'locked'; retryAfterSec: number };
