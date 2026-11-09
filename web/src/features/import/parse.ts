@@ -234,7 +234,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
   const foundLib = new Set<string>();
 
   /** Имя для показа или null, если упражнение не нашлось (ошибка уже записана) */
-  const resolve = (ex: Obj, path: Path, workout: number): string | null => {
+  const resolve = (ex: Obj, path: Path, workout: number, timeOnly = workout === IN_ROUTINE): string | null => {
     let lib: LibraryEntry | undefined;
     let def: Def | undefined;
     let name: string | null = null;
@@ -262,7 +262,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     }
     const shown = name ?? '';
     // Для набора «похожее» ищем только среди упражнений на время: иначе замена обойдёт проверку типа
-    const pool = workout === IN_ROUTINE ? ctx.library.filter((l) => l.kind === 'time') : ctx.library;
+    const pool = timeOnly ? ctx.library.filter((l) => l.kind === 'time') : ctx.library;
     const entry = used.get(norm(shown)) ?? {
       name: shown,
       workouts: new Set<number>(),
@@ -394,6 +394,43 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     totalSec: number;
   }
   const routineList = new Map<string, Routine>();
+  /** Упражнения на время: в наборе и прямо в блоке разминки или заминки. owner — номер тренировки или IN_ROUTINE. */
+  const readTimed = (list: Json[], path: Path, owner: number, where: 'набора' | 'блока'): Routine => {
+    const exercises: RawExercise[] = [];
+    const items: PreviewItem[] = [];
+    let totalSec = 0;
+    list.forEach((e: Json, ei: number) => {
+      const ep: Path = [...path, ei];
+      if (!isObj(e)) return fail(ep, 'Упражнение должно быть набором полей: name, time');
+      const name = resolve(e, ep, owner, true);
+      let time = null;
+      if (e.time === undefined) fail(ep, `У упражнения ${where} нет time`, 'Время обязательно: time: 30s.');
+      else {
+        time = parseDuration(e.time);
+        if (!time) fail([...ep, 'time'], `Не понимаю время: ${String(e.time)}`, 'Пишите 45, 45s, 1:30 или 2m.');
+        else if (time.max <= 0) {
+          fail([...ep, 'time'], 'time должно быть больше нуля', 'Упражнение идёт хотя бы секунду: 30s.');
+          time = null;
+        }
+      }
+      let sides: [string, string] | undefined;
+      if (e.sides !== undefined) {
+        const pair = Array.isArray(e.sides) && e.sides.length === 2 ? e.sides.map(str) : null;
+        if (pair?.every((s): s is string => !!s)) sides = [pair[0]!, pair[1]!];
+        else fail([...ep, 'sides'], 'sides — две подписи сторон', 'Пишите так: sides: [вправо, влево].');
+      } else if (e.per_side === true) sides = ['вправо', 'влево'];
+      if (!name) return;
+      const lib = libByName.get(norm(name));
+      const measure = lib ? lib.kind : defByName.get(norm(name))?.measure;
+      if (measure && measure !== 'time') fail(ep, `«${name}» — не упражнение на время`, 'В разминке и заминке нужны упражнения с измерением time.');
+      if (!time) return;
+      exercises.push({ name, load: { time }, ...(sides ? { sides } : {}) });
+      items.push({ name, value: `${formatDuration(time)}${sides ? ' · на сторону' : ''}` });
+      totalSec += time.max * (sides ? 2 : 1);
+    });
+    return { exercises, items, totalSec };
+  };
+
   if (root.routines !== undefined) {
     if (!Array.isArray(root.routines)) fail(['routines'], 'routines должно быть списком');
     else
@@ -404,41 +441,9 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         if (!id) return fail(p, 'У набора нет id', 'id — латиница, цифры и дефис; по нему блок разминки ссылается через routine.');
         if (!/^[A-Za-z0-9-]+$/.test(id)) fail([...p, 'id'], `id только из латиницы, цифр и дефиса: ${id}`);
         if (routineList.has(id)) return fail([...p, 'id'], `id набора повторяется: ${id}`, 'У каждого набора свой id.');
-        const exercises: RawExercise[] = [];
-        const items: PreviewItem[] = [];
-        let totalSec = 0;
-        routineList.set(id, { exercises, items, totalSec });
+        routineList.set(id, { exercises: [], items: [], totalSec: 0 });
         if (!Array.isArray(r.exercises) || r.exercises.length === 0) return fail([...p, 'exercises'], 'В наборе нет exercises', 'Добавьте хотя бы одно упражнение.');
-        r.exercises.forEach((e: Json, ei: number) => {
-          const ep: Path = [...p, 'exercises', ei];
-          if (!isObj(e)) return fail(ep, 'Упражнение должно быть набором полей: name, time');
-          const name = resolve(e, ep, IN_ROUTINE);
-          let time = null;
-          if (e.time === undefined) fail(ep, 'У упражнения набора нет time', 'Время обязательно: time: 30s.');
-          else {
-            time = parseDuration(e.time);
-            if (!time) fail([...ep, 'time'], `Не понимаю время: ${String(e.time)}`, 'Пишите 45, 45s, 1:30 или 2m.');
-            else if (time.max <= 0) {
-              fail([...ep, 'time'], 'time должно быть больше нуля', 'Упражнение набора идёт хотя бы секунду: 30s.');
-              time = null;
-            }
-          }
-          let sides: [string, string] | undefined;
-          if (e.sides !== undefined) {
-            const pair = Array.isArray(e.sides) && e.sides.length === 2 ? e.sides.map(str) : null;
-            if (pair?.every((s): s is string => !!s)) sides = [pair[0]!, pair[1]!];
-            else fail([...ep, 'sides'], 'sides — две подписи сторон', 'Пишите так: sides: [вправо, влево].');
-          } else if (e.per_side === true) sides = ['вправо', 'влево'];
-          if (!name) return;
-          const lib = libByName.get(norm(name));
-          const measure = lib ? lib.kind : defByName.get(norm(name))?.measure;
-          if (measure && measure !== 'time') fail(ep, `«${name}» — не упражнение на время`, 'В наборе нужны упражнения с измерением time.');
-          if (!time) return;
-          exercises.push({ name, load: { time }, ...(sides ? { sides } : {}) });
-          items.push({ name, value: `${formatDuration(time)}${sides ? ' · на сторону' : ''}` });
-          totalSec += time.max * (sides ? 2 : 1);
-        });
-        routineList.set(id, { exercises, items, totalSec });
+        routineList.set(id, readTimed(r.exercises, [...p, 'exercises'], IN_ROUTINE, 'набора'));
       });
   }
 
@@ -494,11 +499,21 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
           if (routineId) {
             const routine = routineList.get(routineId);
             if (!routine) return fail([...bp, 'routine'], `Неизвестный набор: ${routineId}`, 'Опишите его в routines.');
+            if (b.exercises !== undefined) warn([...bp, 'exercises'], 'exercises рядом с routine не нужны', 'Берётся набор.');
             if (b.time !== undefined) warn([...bp, 'time'], 'time рядом с routine не нужен', 'Время берётся из упражнений набора.');
             for (const e of routine.exercises) used.get(norm(e.name))?.workouts.add(wi);
             const text = str(b.text) ?? undefined;
             blocks.push({ kind: type, heading: `${head} · ${formatDuration({ min: routine.totalSec, max: routine.totalSec })}`, ...(text ? { text } : {}), items: routine.items });
             raws.push({ type, ...(text ? { text } : {}), exercises: routine.exercises });
+            return;
+          }
+          if (b.exercises !== undefined) {
+            if (!Array.isArray(b.exercises) || b.exercises.length === 0) return fail([...bp, 'exercises'], 'В блоке нет exercises', 'Добавьте хотя бы одно упражнение или уберите поле.');
+            if (b.time !== undefined) warn([...bp, 'time'], 'time рядом с exercises не нужен', 'Время берётся из упражнений.');
+            const own = readTimed(b.exercises, [...bp, 'exercises'], wi, 'блока');
+            const text = str(b.text) ?? undefined;
+            blocks.push({ kind: type, heading: `${head} · ${formatDuration({ min: own.totalSec, max: own.totalSec })}`, ...(text ? { text } : {}), items: own.items });
+            raws.push({ type, ...(text ? { text } : {}), exercises: own.exercises });
             return;
           }
           const t = b.time === undefined ? null : parseDuration(b.time);
