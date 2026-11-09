@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Block, Exercise, SetsExercise } from '../../../../../shared/types';
-import { Button, Card, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextInput } from '../../../ui';
+import { Button, Card, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
+import type { ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
 import {
   MODE_LABELS, addBlock, addExercise, changeMode, moveBlock, moveExercise, patchExercise, removeBlock, removeExercise, renameBlock, roundsOf, setRest, setRounds, setTarget,
@@ -8,7 +9,20 @@ import {
 } from './draft';
 import styles from './WorkoutEditView.module.css';
 
+export type EditView = 'form' | 'yaml';
+
+const VIEWS: Array<{ value: EditView; label: string }> = [
+  { value: 'form', label: 'Форма' },
+  { value: 'yaml', label: 'YAML' },
+];
+
+/** Текст режима YAML и то, что в нём не разобралось */
+export type YamlState = { text: string; issues: ParseIssue[]; onText: (text: string) => void };
+
 type Props = {
+  view: EditView;
+  yaml: YamlState;
+  onView: (view: EditView) => void;
   title: string;
   blocks: Block[];
   library: LibraryExercise[];
@@ -25,7 +39,7 @@ type Props = {
 const MODES = (Object.keys(MODE_LABELS) as BlockMode[]).map((value) => ({ value, label: MODE_LABELS[value] }));
 
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
-export function WorkoutEditView({ title, blocks, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel }: Props) {
+export function WorkoutEditView({ view, yaml, onView, title, blocks, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel }: Props) {
   const [pickFor, setPickFor] = useState<string | null>(null);
   const change = (fn: (b: Block[]) => Block[]) => onBlocks(fn(blocks));
 
@@ -43,6 +57,7 @@ export function WorkoutEditView({ title, blocks, library, saving, issues, failur
         Состав тренировки
       </Text>
       <Notice tone="info">Изменения увидят все дни плана с этой тренировкой. Выполненные занятия остаются как были.</Notice>
+      <SegmentedControl label="Как править" options={VIEWS} value={view} onChange={onView} />
       {failure && <Notice tone="error">{failure}</Notice>}
       {issues.length > 0 && (
         <Notice tone="warn">
@@ -54,6 +69,35 @@ export function WorkoutEditView({ title, blocks, library, saving, issues, failur
         </Notice>
       )}
 
+      {view === 'yaml' ? (
+        <>
+          {yaml.issues.length > 0 && (
+            <Notice tone="error">
+              <ul className={styles.issues}>
+                {yaml.issues.map((i) => (
+                  <li key={`${i.line ?? 0}${i.message}`}>
+                    {i.line ? `Строка ${i.line}: ` : ''}
+                    {i.message}
+                    {i.hint ? `. ${i.hint}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </Notice>
+          )}
+          <TextArea
+            label="Тренировка в YAML"
+            hint="Формат тот же, что в импорте. В блок можно дописать title и video_rounds."
+            value={yaml.text}
+            rows={24}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            className={styles.yaml}
+            onChange={(e) => yaml.onText(e.target.value)}
+          />
+        </>
+      ) : (
+        <>
       <TextInput label="Название тренировки" value={title} maxLength={200} onChange={(e) => onTitle(e.target.value)} />
 
       {blocks.map((b, i) => (
@@ -118,6 +162,8 @@ export function WorkoutEditView({ title, blocks, library, saving, issues, failur
           ))}
         </div>
       </section>
+        </>
+      )}
 
       <PickerSheet
         open={pickFor !== null}

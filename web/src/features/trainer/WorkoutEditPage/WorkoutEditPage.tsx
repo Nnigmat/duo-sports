@@ -7,8 +7,11 @@ import { Notice } from '../../../ui';
 import type { LibraryExercise } from '../../exercises/types';
 import { fetchOwnWorkout, putOwnWorkout } from '../../plan/api';
 import { fetchPlannedWorkout, putWorkout } from '../api';
+import { toIso } from '../../plan/plan';
+import type { ParseIssue } from '../../import/parse';
 import { problems } from './draft';
-import { WorkoutEditView } from './WorkoutEditView';
+import { WorkoutEditView, type EditView } from './WorkoutEditView';
+import { workoutFromYaml, workoutToYaml } from './workoutYaml';
 
 /** Откуда брать тренировку и куда её сохранять: у тренера — ученика, у спортсмена — свою */
 type Source = {
@@ -76,15 +79,57 @@ function Editor({ source, workout, library }: { source: Source; workout: Workout
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
+  const [view, setView] = useState<EditView>('form');
+  const [text, setText] = useState('');
+  const [yamlIssues, setYamlIssues] = useState<ParseIssue[]>([]);
   const back = () => navigate(search.get('back') ?? source.back);
   const issues = problems(title, blocks);
 
+  /** Читает YAML; при ошибках показывает их и ничего не меняет */
+  const readYaml = () => {
+    const r = workoutFromYaml(text, library, blocks, toIso(new Date()));
+    if (!r.ok) {
+      setYamlIssues(r.issues);
+      return null;
+    }
+    setYamlIssues([]);
+    return r;
+  };
+
+  const switchView = (next: EditView) => {
+    if (next === view) return;
+    if (next === 'yaml') {
+      setText(workoutToYaml(title, blocks));
+      setYamlIssues([]);
+      setView('yaml');
+      return;
+    }
+    const r = readYaml();
+    if (!r) return;
+    setTitle(r.title);
+    setBlocks(r.blocks);
+    setView('form');
+  };
+
   const save = () => {
     setTried(true);
-    if (issues.length > 0) return;
+    let name = title;
+    let list = blocks;
+    if (view === 'yaml') {
+      const r = readYaml();
+      if (!r) return;
+      name = r.title;
+      list = r.blocks;
+      setTitle(name);
+      setBlocks(list);
+    }
+    if (problems(name, list).length > 0) {
+      if (view === 'yaml') setYamlIssues(problems(name, list).map((message) => ({ message })));
+      return;
+    }
     setSaving(true);
     setFailure(null);
-    source.save(title.trim(), blocks).then(back, (e: unknown) => {
+    source.save(name.trim(), list).then(back, (e: unknown) => {
       setSaving(false);
       setFailure(e instanceof Error ? e.message : 'Не получилось сохранить');
     });
@@ -92,11 +137,14 @@ function Editor({ source, workout, library }: { source: Source; workout: Workout
 
   return (
     <WorkoutEditView
+      view={view}
+      yaml={{ text, issues: yamlIssues, onText: setText }}
+      onView={switchView}
       title={title}
       blocks={blocks}
       library={library}
       saving={saving}
-      issues={tried ? issues : []}
+      issues={tried && view === 'form' ? issues : []}
       failure={failure}
       onTitle={setTitle}
       onBlocks={setBlocks}
