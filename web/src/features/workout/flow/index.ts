@@ -1,7 +1,7 @@
 export { buildSteps, type Step } from './buildSteps';
 export { needsRecording } from './record';
 export { blockProgress, segmentStates, type SegmentState } from './progress';
-export { blockLabel, eyebrow, formatPlan, recordingEyebrow, formatTarget, formatTime, restEyebrow, stepLine, timerSeconds } from './format';
+export { blockLabel, eyebrow, formatPlan, recordingEyebrow, formatTarget, formatTime, restEyebrow, stepLine, stepTitle, timerSeconds } from './format';
 export {
   addTime,
   isFinished,
@@ -24,6 +24,7 @@ export { elapsedSec, formatElapsed, totalSec } from './elapsed';
 export { afterReload, canGoBack, canSwap, initSession, reduce, type Action, type Phase, type Session } from './session';
 export { hasTechnique } from './technique';
 export { demoFor } from './demo';
+export { ROUTINE_FINAL_SEC, routineLeadSec, routineSignalAt, routineView } from './routine';
 export { FINAL_SEC, LEAD_SEC, signalAt, timedView, type Signal, type TimedView } from './signals';
 export { LONG_BEEP_MS, POLL_MARGIN_MS, recordStartView, startSignalAt, type RecordStartView } from './recordStart';
 export { COMMENT_MAX, RATINGS, canSend, faceFor, feedbackOf, newSubmitKey, type Face, type Rating } from './feedback';
