@@ -340,6 +340,8 @@ export interface SessionStepResult {
   kind: ExerciseKind;
   /** План подхода с учётом правок «Изменить» */
   plan: SetPlan;
+  /** Название упражнения из плана, если спортсмен заменил его по ходу тренировки; в `exerciseName` — то, что делал на самом деле */
+  replacedFrom?: string;
   /** Факт; нет у пропущенных подходов, разминки, заминки и у старых Итогов */
   actual?: SetActual;
   completed: boolean;
@@ -469,6 +471,8 @@ export interface ReviewExercise {
   /** Ключ группы подходов: блок и id упражнения из структуры */
   id: string;
   name: string;
+  /** Название из плана, если спортсмен заменил упражнение по ходу тренировки */
+  replacedFrom?: string;
   /** slug упражнения в библиотеке: по нему пишется ответ; null — упражнения нет в библиотеке */
   slug: string | null;
   sets: ReviewSet[];

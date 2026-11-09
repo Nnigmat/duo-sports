@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
 import { circuit, setsBlock, warmup } from './fixtures';
-import { afterReload, canGoBack, initSession, reduce, type Session } from './session';
+import { afterReload, canGoBack, canSwap, initSession, reduce, type Session } from './session';
 
 // 0–1 разминка (timed), 2–10 круговые подходы (rest 60 с, кроме последнего)
 const steps = buildSteps([warmup, circuit]);
@@ -332,5 +332,61 @@ describe('afterReload', () => {
     const rest = running(3);
     expect(afterReload({ ...rest, phase: 'rest' })).toMatchObject({ timerStarted: true });
     expect(afterReload({ ...rest, phase: 'finish' })).toMatchObject({ timerStarted: true });
+  });
+});
+
+describe('swap', () => {
+  const swapTo = { id: 'push-up', name: 'Отжимания', kind: 'reps' as const, group: 'chest' as const, muscles: ['грудь'], defaults: { reps: 12, weight: 0, seconds: 30 } };
+  const working = (index: number) => at(reduce(fresh(), { type: 'begin' }), index);
+
+  it('меняет упражнение текущего подхода и следующих, прошлые остаются', () => {
+    // шаги 2–10: круги по три упражнения; шаг 5 — dips во втором круге
+    const s = reduce(working(5), { type: 'swap', to: swapTo });
+    expect(s.steps.map((x) => x.exerciseId).slice(2)).toEqual(['dips', 'scissors', 'lunge', 'push-up', 'scissors', 'lunge', 'push-up', 'scissors', 'lunge']);
+    expect(s.index).toBe(5);
+    expect(s.phase).toBe('work');
+  });
+
+  it('выполненное, факты, видео и отдых не трогает', () => {
+    const done = reduce(working(2), { type: 'done', actual: { value: 17 } });
+    const s = reduce({ ...done, phase: 'work', index: 5 }, { type: 'swap', to: swapTo });
+    expect(s.completed).toEqual(done.completed);
+    expect(s.actuals).toEqual(done.actuals);
+    expect(s.videoIds).toEqual(done.videoIds);
+    expect(s.restSec).toEqual(done.restSec);
+  });
+
+  it('таймер упражнения на время сбрасывается: новое упражнение ждёт «Старт»', () => {
+    const plank = { ...at(initSession(buildSteps([setsBlock])), 3), timerStarted: true };
+    const s = reduce(plank, { type: 'swap', to: swapTo });
+    expect(s.timerStarted).toBe(false);
+  });
+
+  it('на разминке, отдыхе, старте и финише игнорируется', () => {
+    const w = working(0);
+    expect(reduce(w, { type: 'swap', to: swapTo })).toBe(w);
+    const rest = reduce(working(2), { type: 'done' });
+    expect(reduce(rest, { type: 'swap', to: swapTo })).toBe(rest);
+    expect(reduce(fresh(), { type: 'swap', to: swapTo })).toMatchObject({ phase: 'start' });
+    const fin = { ...working(2), phase: 'finish' as const };
+    expect(reduce(fin, { type: 'swap', to: swapTo })).toBe(fin);
+  });
+
+  it('«Назад» после замены возвращает к прошлому подходу, замена остаётся', () => {
+    const s = reduce(working(5), { type: 'swap', to: swapTo });
+    const back = reduce(s, { type: 'back' });
+    expect(back.index).toBe(4);
+    expect(back.steps[5].exerciseId).toBe('push-up');
+  });
+});
+
+describe('canSwap', () => {
+  it('только на подходе упражнения: не на старте, разминке, отдыхе и финише', () => {
+    const w = (index: number, phase: Session['phase'] = 'work') => at(reduce(fresh(), { type: 'begin' }), index, phase);
+    expect(canSwap(w(2))).toBe(true);
+    expect(canSwap(w(0))).toBe(false);
+    expect(canSwap(w(2, 'rest'))).toBe(false);
+    expect(canSwap(w(2, 'finish'))).toBe(false);
+    expect(canSwap(fresh())).toBe(false);
   });
 });

@@ -91,6 +91,20 @@ describe('sessionReviewOf', () => {
     expect(sets[3]).toEqual({ n: 4, label: `80${NB}кг × 5`, completed: false });
     expect(sets[4]).toEqual({ n: 5, label: `80${NB}кг × 5`, completed: true });
   });
+  it('замена упражнения: отдельная группа с новым названием и пометкой, что стояло в плане', () => {
+    const steps = [
+      step({ round: 1, completed: true }),
+      step({ exerciseId: 'push-up', exerciseName: 'Отжимания', round: 2, replacedFrom: 'Приседания со штангой' }),
+      step({ exerciseId: 'push-up', exerciseName: 'Отжимания', round: 3, replacedFrom: 'Приседания со штангой' }),
+    ];
+    const id = Number(db.prepare("INSERT INTO sessions_done (user_id, workout_id, title, date, steps, videos, finished_at) SELECT user_id, workout_id, title, date, ?, 0, finished_at FROM sessions_done WHERE id = ?").run(JSON.stringify(steps), sid).lastInsertRowid);
+    const r = sessionReviewOf(db, A(), id, '2026-11-02');
+    if (!r.ok) throw new Error(r.error);
+    const [first, swapped] = r.review.exercises;
+    expect(first).not.toHaveProperty('replacedFrom');
+    expect(swapped).toMatchObject({ name: 'Отжимания', replacedFrom: 'Приседания со штангой' });
+    expect(swapped!.sets).toHaveLength(2);
+  });
   it('комментарии раскладываются: к видео и упражнению по группам, общие отдельно, чужие упражнения нет', () => {
     addComment(db, T(), athlete, { videoId: V, timecodeSec: 21, text: 'Колени внутрь' }, at('2026-11-01T19:31:00Z'));
     addComment(db, T(), athlete, { exerciseId: 'rdl', text: 'Спина ровная' }, at('2026-11-01T19:32:00Z'));

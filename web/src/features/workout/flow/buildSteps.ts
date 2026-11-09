@@ -21,6 +21,8 @@ export interface Step {
   /** отдых после шага; 0 — без отдыха (в том числе после последнего шага блока) */
   restAfterSec: number;
   record: boolean;
+  /** Что стояло в плане, если упражнение заменили по ходу тренировки */
+  replaced?: { id: string; name: string };
 }
 
 type Draft = Omit<Step, 'indexInBlock' | 'blockSize' | 'restAfterSec'>;

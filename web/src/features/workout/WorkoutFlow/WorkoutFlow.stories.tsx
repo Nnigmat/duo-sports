@@ -6,7 +6,7 @@ import { Button } from '../../../ui/Button/Button';
 import { Text } from '../../../ui/Text/Text';
 import { ARTIFACT } from '../../../ui/storyKit';
 import { mockCamera } from '../RecordingScreen/mockCamera';
-import { COMMENTS, TECHNIQUES, WORKOUT } from './mockWorkout';
+import { COMMENTS, LIBRARY, TECHNIQUES, WORKOUT } from './mockWorkout';
 import { WorkoutFlow } from './WorkoutFlow';
 
 const onUploadVideo = fn();
@@ -51,6 +51,7 @@ const meta = {
     dateLabel: 'Пятница, 30 октября',
     comments: COMMENTS,
     techniques: TECHNIQUES,
+    library: LIBRARY,
     onUploadVideo,
     onFinish,
     onExit,
@@ -453,6 +454,54 @@ export const ExitFinishesWithWhatIsDone: Story = {
     await userEvent.click(dialog.getByRole('button', { name: 'Закончить' }));
     await expect(await body().findByText('Тренировка пройдена')).toBeVisible();
     await expect(body().getByText('1 из 12')).toBeVisible();
+  },
+};
+
+/** «Заменить»: упражнение меняется в этом и следующих кругах, пройденный подход остаётся */
+export const SwapChangesRemainingRounds: Story = {
+  tags: hidden,
+  play: async () => {
+    await toCircuit();
+    await doneAndSkipRest();
+    await expect(body().getByText(/^Ножницы лёжа/)).toBeVisible();
+    await click('Заменить упражнение');
+    const dialog = within(await screen.findByRole('dialog'));
+    await userEvent.click(dialog.getByRole('button', { name: /Французский жим/ }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Второй подход (ножницы) стал «Французский жим»; пройденные отжимания остались
+    await expect(body().getByText(/^Подход 2 из 9/)).toBeVisible();
+    await expect(body().getByText(/^Французский жим/)).toBeVisible();
+    await click('Назад');
+    await expect(await body().findByText(/^Обратные отжимания/)).toBeVisible();
+  },
+};
+
+/** Заменить можно только на подходе упражнения: на разминке и отдыхе кнопки нет */
+export const SwapOnlyOnExerciseSets: Story = {
+  tags: hidden,
+  play: async () => {
+    await click('Начать тренировку');
+    await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+    await expect(body().queryByRole('button', { name: 'Заменить упражнение' })).toBeNull();
+    for (let i = 0; i < 3; i++) {
+      await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+      await click('Пропустить');
+    }
+    await waitFor(() => expect(body().getByText('Подход 1 из 9')).toBeVisible());
+    await expect(body().getByRole('button', { name: 'Заменить упражнение' })).toBeVisible();
+    await done();
+    await body().findByRole('timer', { name: /отдых/i });
+    await expect(body().queryByRole('button', { name: 'Заменить упражнение' })).toBeNull();
+  },
+};
+
+/** Библиотека не пришла: тренировка идёт без кнопки */
+export const NoLibraryNoSwapButton: Story = {
+  tags: hidden,
+  args: { library: undefined },
+  play: async () => {
+    await toCircuit();
+    await expect(body().queryByRole('button', { name: 'Заменить упражнение' })).toBeNull();
   },
 };
 

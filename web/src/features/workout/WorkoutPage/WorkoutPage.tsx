@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useToday, useWorkoutById } from '../../../data/hooks';
+import { useExercises, useToday, useWorkoutById } from '../../../data/hooks';
 import type { WorkoutData } from '../../../data/api';
 import { Skeleton } from '../../../shared';
 import { Button, EmptyState } from '../../../ui';
@@ -134,12 +134,15 @@ type FlowProps = {
 
 function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, finishedAt, onSessionChange }: FlowProps) {
   const auth = useAuth();
+  // Библиотека нужна только для «Заменить»: пока не пришла или упала, тренировка идёт без этой кнопки
+  const { data: library } = useExercises();
   return (
     <WorkoutFlow
       workout={data.workout}
       comments={data.comments}
       techniques={data.techniques}
       gender={data.gender}
+      library={library ?? undefined}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}

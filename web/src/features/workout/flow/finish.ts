@@ -34,6 +34,7 @@ export function sessionSteps(
     rounds: s.rounds,
     kind: s.kind,
     plan: s.plan,
+    ...(s.replaced ? { replacedFrom: s.replaced.name } : {}),
     ...(completed[i] && actuals[i] ? { actual: actuals[i]! } : {}),
     completed: completed[i] ?? false,
     ...(videoIds[i] ? { videoId: videoIds[i]! } : {}),

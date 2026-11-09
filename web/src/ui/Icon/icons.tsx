@@ -35,6 +35,14 @@ export const icons = {
   ),
   plus: <path d="M5 12h14M12 5v14" />,
   minus: <path d="M5 12h14" />,
+  swap: (
+    <>
+      <path d="M4 8h14" />
+      <path d="M14 4l4 4-4 4" />
+      <path d="M20 16H6" />
+      <path d="M10 12l-4 4 4 4" />
+    </>
+  ),
   replay: (
     <>
       <path d="M4 12a8 8 0 1 0 2.5-5.8" />

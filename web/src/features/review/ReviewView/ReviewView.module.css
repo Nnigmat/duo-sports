@@ -120,6 +120,14 @@
   font-size: var(--caption-size);
   font-weight: 600;
 }
+.replaced {
+  display: block;
+  color: var(--steel);
+  font-size: var(--body-sm-size);
+  font-weight: var(--body-sm-weight);
+  line-height: var(--body-sm-line);
+}
+
 .name {
   flex-grow: 1;
   min-width: 0;

@@ -1,5 +1,6 @@
 import type { SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
+import { swapSteps, type SwapOption } from './swap';
 
 export type Phase = 'start' | 'work' | 'rest' | 'finish' | 'feedback';
 
@@ -34,6 +35,8 @@ export type Action =
   /** На отдыхе `restSec` — сколько он шёл до нажатия; на подходе не нужен */
   | { type: 'skip'; restSec?: number }
   | { type: 'back' }
+  /** «Заменить»: текущее упражнение и его следующие подходы в блоке заменяются упражнением из библиотеки */
+  | { type: 'swap'; to: SwapOption }
   /** Отдых закончен кнопкой «Начать»: `restSec` — сколько он шёл, включая время сверх цели */
   | { type: 'restOver'; restSec: number }
   /** видео записано и сохранено: подход считается выполненным */
@@ -105,6 +108,11 @@ export function canGoBack(s: Session): boolean {
   return s.phase === 'work' && s.index > 0;
 }
 
+/** Заменить упражнение можно на подходе упражнения; у разминки и заминки, на отдыхе и на финише кнопки нет */
+export function canSwap(s: Session): boolean {
+  return s.phase === 'work' && s.steps[s.index].mode !== 'timed';
+}
+
 export function reduce(s: Session, a: Action): Session {
   switch (a.type) {
     case 'begin':
@@ -135,6 +143,10 @@ export function reduce(s: Session, a: Action): Session {
       if (s.phase !== 'work') return s;
       if (s.index === 0) return { ...s, phase: 'start', timerStarted: false };
       return goTo(uncomplete(s, s.index - 1), s.index - 1);
+
+    case 'swap':
+      // Новое упражнение начинается заново: у упражнения на время снова «Старт»
+      return canSwap(s) ? goTo({ ...s, steps: swapSteps(s.steps, s.index, a.to) }, s.index) : s;
 
     case 'finishNow':
       return s.phase === 'finish' || s.phase === 'feedback' ? s : { ...s, phase: 'finish' };

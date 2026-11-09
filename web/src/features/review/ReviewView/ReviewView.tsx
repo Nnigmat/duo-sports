@@ -154,7 +154,10 @@ function ExerciseCard({
         <span className={styles.num} aria-hidden="true">
           {index}
         </span>
-        <h2 className={styles.name}>{exercise.name}</h2>
+        <h2 className={styles.name}>
+          {exercise.name}
+          {exercise.replacedFrom && <span className={styles.replaced}>вместо «{exercise.replacedFrom}»</span>}
+        </h2>
         {exercise.newCount > 0 && <span className={styles.newBadge}>{exercise.newCount} {exercise.newCount === 1 ? 'новый' : 'новых'}</span>}
       </div>
       <ul className={styles.sets} aria-label="Подходы">

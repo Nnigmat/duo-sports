@@ -8,6 +8,7 @@ import {
   buildSteps,
   afterReload,
   canGoBack,
+  canSwap,
   commentsFor,
   demoFor,
   eyebrow,
@@ -31,6 +32,7 @@ import {
   type FinishStats,
   type Session,
   type Step,
+  type SwapOption,
 } from '../flow';
 import { FeedbackScreen } from '../FeedbackScreen/FeedbackScreen';
 import { FinishScreen } from '../FinishScreen/FinishScreen';
@@ -40,6 +42,7 @@ import { createBeeper, type Beeper } from '../sound/beeper';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
+import { SwapSheet } from '../sheets/SwapSheet/SwapSheet';
 import { TechSheet } from '../sheets/TechSheet/TechSheet';
 import { StartScreen } from '../StartScreen/StartScreen';
 import { TrainingScreen } from '../TrainingScreen/TrainingScreen';
@@ -73,18 +76,20 @@ type Props = {
   onSessionChange?: (session: Session) => void;
   /** Секунд до начала записи после «Старт» */
   recordingDelaySec?: number;
+  /** Упражнения библиотеки, на которые можно заменить текущее; нет — кнопки «Заменить» нет */
+  library?: SwapOption[];
   /** Для дат комментариев; в приложении не передаётся */
   now?: Date;
 };
 
-type Sheet = 'result' | 'tech' | 'comments' | null;
+type Sheet = 'result' | 'tech' | 'comments' | 'swap' | null;
 
 /**
  * Весь сценарий тренировки: старт → подходы, таймеры, отдых, запись, панели → финиш.
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, library, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
   // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
   const [beeper] = useState(createBeeper);
@@ -202,6 +207,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         // На подходах упражнений «Готово» сначала спрашивает факт; у разминки и заминки шторки нет
         onDone={() => (step.mode === 'timed' ? dispatch({ type: 'done' }) : setSheet('result'))}
         onTech={() => setSheet('tech')}
+        onSwap={library && library.length > 0 && canSwap(session) ? () => setSheet('swap') : undefined}
         onOpenNotes={() => {
           setCommentsFromTech(false);
           setSheet('comments');
@@ -229,6 +235,20 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
           setRecorded(null);
         }}
       />
+
+      {library && (
+        <SwapSheet
+          open={sheet === 'swap' && phase === 'work'}
+          onOpenChange={(open) => !open && setSheet(null)}
+          currentId={step.exerciseId}
+          currentName={step.exerciseName}
+          library={library}
+          onPick={(to) => {
+            setSheet(null);
+            dispatch({ type: 'swap', to });
+          }}
+        />
+      )}
 
       <TechSheet
         open={sheet === 'tech'}
@@ -289,6 +309,8 @@ type StageProps = {
   /** «Готово» на подходе: у упражнения откроет шторку факта, у разминки завершит шаг */
   onDone: () => void;
   onTech: () => void;
+  /** Нет — кнопки «Заменить» нет */
+  onSwap?: () => void;
   onOpenNotes: () => void;
   onRecord: () => void;
   onExit: () => void;
@@ -393,7 +415,7 @@ function RestStage(props: StageProps) {
   );
 }
 
-function StageView({ session, shown, demoUrl, thinkDemoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, restOver, onBack, onTech, onOpenNotes, onRecord, onExit }: StageProps & {
+function StageView({ session, shown, demoUrl, thinkDemoUrl, idleUrl, restUrl, cameraUrl, note, techNew, startedAt, bar, restOver, onBack, onTech, onSwap, onOpenNotes, onRecord, onExit }: StageProps & {
   bar: React.ComponentProps<typeof TrainingScreen>['bar'];
   /** Стрелка в шапке: только на таймере и отдыхе */
   onBack?: () => void;
@@ -424,6 +446,7 @@ function StageView({ session, shown, demoUrl, thinkDemoUrl, idleUrl, restUrl, ca
       onBack={onBack}
       onExit={onExit}
       onTech={onTech}
+      onSwap={onSwap}
       onRecord={onRecord}
       onOpenNotes={onOpenNotes}
     />
