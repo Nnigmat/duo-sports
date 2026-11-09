@@ -113,3 +113,11 @@
     transition: none;
   }
 }
+
+.yaml {
+  font-family: ui-monospace, Menlo, Consolas, monospace; /* нет токена для моно-шрифта */
+  font-size: var(--body-sm-size);
+  line-height: 1.6;
+  tab-size: 2;
+  font-variant-numeric: tabular-nums;
+}

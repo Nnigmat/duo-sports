@@ -35,7 +35,7 @@ describe('содержимое страницы', () => {
     expect(TOP_FIELDS.filter((r) => r.flag?.kind === 'required').map((r) => r.field)).toEqual(['version', 'workouts']);
   });
   it('у каждого блока есть код и описание; типы не повторяются', () => {
-    expect(BLOCK_TYPES.map((b) => b.type)).toEqual(['sets', 'circuit', 'superset', 'warmup | cooldown', 'warmup | cooldown + routine']);
+    expect(BLOCK_TYPES.map((b) => b.type)).toEqual(['sets', 'circuit', 'superset', 'warmup | cooldown', 'warmup | cooldown + exercises', 'warmup | cooldown + routine']);
     for (const b of BLOCK_TYPES) expect(b.code[0]).toMatch(/^- type: /);
   });
   it('якоря содержания уникальны', () => {

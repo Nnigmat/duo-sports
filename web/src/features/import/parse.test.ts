@@ -355,3 +355,24 @@ describe('наборы разминки и заминки (routines)', () => {
     expect(b.exercises[0]!.name).toBe('Разминка');
   });
 });
+
+describe('упражнения прямо в блоке разминки и заминки', () => {
+  const rows = '          - { name: Вращение головой, time: 30s }\n          - { name: Планка, time: 45s, per_side: true }\n';
+  const block = (type = 'warmup') => `      - type: ${type}\n        exercises:\n${rows}`;
+
+  it('разворачиваются в timed-блок, как набор', () => {
+    const r = ok(parseImport(wrap(block()), ctx));
+    const b = r.workouts[0]!.structure[0]!;
+    expect(b).toMatchObject({ mode: 'timed', title: 'Разминка' });
+    expect(b.exercises.map((e) => e.name)).toEqual(['Вращение головой', 'Планка']);
+    expect(b.exercises[1]).toMatchObject({ sides: ['вправо', 'влево'] });
+    expect(r.workouts[0]!.blocks[0]!.heading).toBe('Разминка · 2 мин');
+  });
+  it('работает и в заминке', () => {
+    expect(ok(parseImport(wrap(block('cooldown')), ctx)).workouts[0]!.structure[0]).toMatchObject({ mode: 'timed', title: 'Заминка' });
+  });
+  it('пустой список и упражнение без time — ошибки', () => {
+    expect(fails(wrap('      - { type: warmup, exercises: [] }\n'))[0]!.message).toContain('exercises');
+    expect(fails(wrap('      - type: warmup\n        exercises:\n          - { name: Планка }\n'))[0]!.message).toContain('time');
+  });
+});
