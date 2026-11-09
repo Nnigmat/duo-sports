@@ -86,6 +86,17 @@ const hidden = ['!dev', '!autodocs'];
 const body = () => within(document.body);
 const click = (name: string | RegExp) => userEvent.click(body().getByRole('button', { name }));
 
+/** Запись подхода на видео до «Отправить» включительно */
+async function recordAndSend() {
+  await click('Начать запись');
+  await waitFor(() => expect(body().getByRole('button', { name: 'Начать запись' })).toBeEnabled(), { timeout: 5000 });
+  await click('Начать запись');
+  await waitFor(() => expect(body().getByRole('button', { name: 'Остановить' })).toBeVisible(), { timeout: 5000 });
+  await new Promise((r) => setTimeout(r, 1300));
+  await click('Остановить');
+  await click('Отправить');
+}
+
 /** «Начать тренировку» и пропуск трёх упражнений разминки */
 async function toCircuit() {
   await click('Начать тренировку');
@@ -155,7 +166,9 @@ export const FullRun: Story = {
     await new Promise((r) => setTimeout(r, 1300));
     await click('Остановить');
     await click('Отправить');
-    // после сохранения подход выполнен, идёт отдых
+    // после загрузки спрашиваем факт; записали, и подход выполнен, идёт отдых
+    const fact = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }, { timeout: 5000 }));
+    await userEvent.click(fact.getByRole('button', { name: 'Записать' }));
     await body().findByRole('timer', { name: /отдых/i }, { timeout: 5000 });
     await expect(onUploadVideo).toHaveBeenCalledTimes(1);
     await click('Пропустить');
@@ -208,6 +221,57 @@ export const FullRun: Story = {
     await expect(steps.find((x) => x.exerciseName === 'Планка')).toMatchObject({ completed: false });
     await expect('actual' in steps.find((x) => x.exerciseName === 'Планка')!).toBe(false);
     await expect('actual' in steps[0]!).toBe(false);
+  },
+};
+
+export const RecordedSetAsksFact: Story = {
+  tags: hidden,
+  args: { recordingDelaySec: 0 },
+  play: async () => {
+    await toCircuit();
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await recordAndSend();
+    // Отдыха ещё нет: сначала факт подхода
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }, { timeout: 5000 }));
+    await expect(body().queryByRole('timer', { name: /отдых/i })).toBeNull();
+    for (let i = 0; i < 2; i++) await userEvent.click(dialog.getByRole('button', { name: 'Меньше повторений' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await body().findByRole('timer', { name: /отдых/i });
+    await expect(onUploadVideo).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const CloseFactAfterRecordCompletesByPlan: Story = {
+  tags: hidden,
+  args: { recordingDelaySec: 0 },
+  play: async () => {
+    await toCircuit();
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await recordAndSend();
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }, { timeout: 5000 }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Закрыть' }));
+    // Видео уже загружено: подход засчитан, идёт отдых
+    await body().findByRole('timer', { name: /отдых/i });
+  },
+};
+
+export const CancelRecordingKeepsSet: Story = {
+  tags: hidden,
+  args: { recordingDelaySec: 0 },
+  play: async () => {
+    await toCircuit();
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await doneAndSkipRest();
+    await click('Начать запись');
+    await click('Отмена');
+    await expect(body().getByText('Подход 4 из 9 · снимаем на видео')).toBeVisible();
+    await expect(screen.queryByRole('dialog')).toBeNull();
+    await expect(onUploadVideo).not.toHaveBeenCalled();
   },
 };
 

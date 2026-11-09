@@ -94,6 +94,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
   const [sheet, setSheet] = useState<Sheet>(null);
   const [commentsFromTech, setCommentsFromTech] = useState(false);
   const [recording, setRecording] = useState(false);
+  // Видео записано и загружено, ждём факт подхода; шаг засчитывается после шторки
+  const [recorded, setRecorded] = useState<{ videoId?: string } | null>(null);
   const [exiting, setExiting] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -162,7 +164,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         onUpload={async (video, durationSec) => {
           const videoId = await onUploadVideo(video, step, durationSec);
           setRecording(false);
-          dispatch({ type: 'recorded', ...(videoId ? { videoId } : {}) });
+          setRecorded(videoId ? { videoId } : {});
         }}
         onCancel={() => setRecording(false)}
       />
@@ -209,13 +211,23 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
       />
 
       <ResultSheet
-        open={sheet === 'result' && phase === 'work'}
-        onOpenChange={(open) => !open && setSheet(null)}
+        open={(sheet === 'result' || recorded !== null) && phase === 'work'}
+        onOpenChange={(open) => {
+          if (open) return;
+          setSheet(null);
+          // Шторку после записи закрыли без факта: видео уже на сервере, подход засчитываем по плану
+          if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}) });
+          setRecorded(null);
+        }}
         eyebrow={eyebrow(step)}
         kind={step.kind}
         plan={step.plan}
         actual={session.actuals[index]}
-        onSave={(actual) => dispatch({ type: 'done', actual })}
+        onSave={(actual) => {
+          if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), actual });
+          else dispatch({ type: 'done', actual });
+          setRecorded(null);
+        }}
       />
 
       <TechSheet

@@ -180,6 +180,14 @@ describe('recorded', () => {
   });
 });
 
+describe('recorded с фактом', () => {
+  it('факт из шторки после записи сохраняется на подходе', () => {
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded', videoId: 'v-5', actual: { value: 8 } });
+    expect(s.actuals[5]).toEqual({ value: 8 });
+    expect(s.completed[5]).toBe(true);
+  });
+});
+
 describe('recorded без id', () => {
   it('сервер id не вернул: подход выполнен, видео посчитано, привязки нет', () => {
     const s = reduce(at(reduce(fresh(), { type: 'begin' }), 5), { type: 'recorded' });

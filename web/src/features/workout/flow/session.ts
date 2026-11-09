@@ -37,7 +37,7 @@ export type Action =
   /** Отдых закончен кнопкой «Начать»: `restSec` — сколько он шёл, включая время сверх цели */
   | { type: 'restOver'; restSec: number }
   /** видео записано и сохранено: подход считается выполненным */
-  | { type: 'recorded'; videoId?: string }
+  | { type: 'recorded'; videoId?: string; actual?: SetActual }
   | { type: 'finishNow' }
   /** «Дальше» на финише: к обратной связи */
   | { type: 'toFeedback' }
@@ -118,7 +118,7 @@ export function reduce(s: Session, a: Action): Session {
 
     case 'recorded':
       return s.phase === 'work'
-        ? complete({ ...s, videos: s.videos + 1, videoIds: s.videoIds.map((v, i) => (i === s.index ? (a.videoId ?? null) : v)) })
+        ? complete({ ...s, videos: s.videos + 1, videoIds: s.videoIds.map((v, i) => (i === s.index ? (a.videoId ?? null) : v)) }, a.actual)
         : s;
 
     case 'skip':
