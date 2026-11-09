@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { DEFAULT_START_DELAY_SEC } from '../../../../../shared/types';
 import { Button } from '../../../ui/Button/Button';
 import { Dialog } from '../../../ui/Dialog/Dialog';
 import { Icon } from '../../../ui/Icon/Icon';
@@ -9,9 +10,6 @@ import { formatZoom } from '../flow';
 import type { Beeper } from '../sound/beeper';
 import styles from './RecordingScreen.module.css';
 import { useRecorder, type RecorderStatus } from './useRecorder';
-
-/** Время поставить телефон и занять позу: для статики вроде планки на 30 с без паузы не обойтись */
-export const DEFAULT_START_DELAY_SEC = 5;
 
 type Props = {
   /** «Круг 2 · подход 4 из 9» */

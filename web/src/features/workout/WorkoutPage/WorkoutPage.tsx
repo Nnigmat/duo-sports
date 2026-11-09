@@ -133,12 +133,14 @@ type FlowProps = {
 };
 
 function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, finishedAt, onSessionChange }: FlowProps) {
+  const auth = useAuth();
   return (
     <WorkoutFlow
       workout={data.workout}
       comments={data.comments}
       techniques={data.techniques}
       gender={data.gender}
+      recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}
       onFinish={(stats, steps, feedback) => onFinish(steps, stats.videos, feedback)}

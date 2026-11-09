@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { changePassword, createUser, login, logout, setDisplayName, setGender, userBySession, MAX_ATTEMPTS } from './auth';
+import { changePassword, createUser, login, logout, setDisplayName, setGender, setStartDelay, userBySession, MAX_ATTEMPTS } from './auth';
 import { openDb, type Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -111,6 +111,20 @@ describe('пол спортсмена', () => {
     expect((await sessionOf('nikita@example.com')).displayName).toBe('Никита');
     setDisplayName(db, id, '   ');
     expect((await sessionOf('nikita@example.com')).displayName).toBeUndefined();
+  });
+  it('без настройки отсчёт 5 с', async () => {
+    expect((await sessionOf('nikita@example.com')).startDelaySec).toBe(5);
+  });
+  it('setStartDelay сохраняет отсчёт, в том числе 0', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    setStartDelay(db, id, 12);
+    expect((await sessionOf('nikita@example.com')).startDelaySec).toBe(12);
+    setStartDelay(db, id, 0);
+    expect((await sessionOf('nikita@example.com')).startDelaySec).toBe(0);
+  });
+  it('отсчёт вне 0–30 и нецелый отвергаются', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    for (const bad of [-1, 31, 2.5, Number.NaN]) expect(() => setStartDelay(db, id, bad)).toThrow();
   });
   it('слишком длинное имя отвергается', async () => {
     const id = (await sessionOf('nikita@example.com')).id;

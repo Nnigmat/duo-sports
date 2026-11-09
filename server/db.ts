@@ -246,6 +246,7 @@ function migrate(db: Db) {
   if (!columns('workouts').includes('structure')) db.exec('ALTER TABLE workouts ADD COLUMN structure TEXT');
   if (!columns('users').includes('goal')) db.exec('ALTER TABLE users ADD COLUMN goal TEXT');
   if (!columns('users').includes('display_name')) db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
+  if (!columns('users').includes('start_delay_sec')) db.exec('ALTER TABLE users ADD COLUMN start_delay_sec INTEGER');
   if (!columns('exercises').includes('demo_female')) db.exec('ALTER TABLE exercises ADD COLUMN demo_female TEXT');
   if (!columns('exercises').includes('demo_male')) db.exec('ALTER TABLE exercises ADD COLUMN demo_male TEXT');
   if (!columns('users').includes('gender')) db.exec("ALTER TABLE users ADD COLUMN gender TEXT CHECK (gender IN ('female', 'male'))");

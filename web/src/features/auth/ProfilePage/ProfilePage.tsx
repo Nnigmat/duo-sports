@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { DISPLAY_NAME_MAX, type Gender } from '../../../../../shared/types';
-import { apiChangePassword, apiSetDisplayName, apiSetGender } from '../../../app/auth/authApi';
+import { DISPLAY_NAME_MAX, MAX_START_DELAY_SEC, type Gender } from '../../../../../shared/types';
+import { apiChangePassword, apiSetDisplayName, apiSetGender, apiSetStartDelay } from '../../../app/auth/authApi';
 import { useAuth } from '../../../app/auth/AuthProvider';
-import { Button, Card, SegmentedControl, Text, TextInput } from '../../../ui';
+import { Button, Card, ParamStepper, SegmentedControl, Text, TextInput } from '../../../ui';
 import styles from './ProfilePage.module.css';
 import { ChangePasswordView } from '../ChangePasswordView/ChangePasswordView';
 
@@ -15,6 +15,8 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [nameSaved, setNameSaved] = useState(false);
+  // Пока идёт сохранение, показываем выбранное значение, а не то, что ещё не вернулось с сервера
+  const [delayDraft, setDelayDraft] = useState<number | null>(null);
   if (auth.status !== 'in') return null;
   const { user } = auth;
   const savedName = user.displayName ?? '';
@@ -35,10 +37,23 @@ export function ProfilePage() {
     }
   }
 
+  async function saveDelay(sec: number) {
+    setError(null);
+    setDelayDraft(sec);
+    try {
+      await apiSetStartDelay(sec);
+      await auth.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось сохранить отсчёт');
+    } finally {
+      setDelayDraft(null);
+    }
+  }
+
   return (
     <>
       {error && <p role="alert">{error}</p>}
-      <Card tone="canvas" role="region" aria-labelledby="profile-name" className={styles.gender}>
+      <Card tone="canvas" role="region" aria-labelledby="profile-name" className={styles.card}>
         <Text variant="h4" tag="h2" id="profile-name">
           Имя
         </Text>
@@ -60,7 +75,7 @@ export function ProfilePage() {
           {nameSaved && <Text variant="body-sm" color="slate" role="status">Имя сохранено</Text>}
         </form>
       </Card>
-      <Card tone="canvas" role="region" aria-labelledby="profile-gender" className={styles.gender}>
+      <Card tone="canvas" role="region" aria-labelledby="profile-gender" className={styles.card}>
         <Text variant="h4" tag="h2" id="profile-gender">
           Пол
         </Text>
@@ -85,6 +100,15 @@ export function ProfilePage() {
             }
           }}
         />
+      </Card>
+      <Card tone="canvas" role="region" aria-labelledby="profile-delay" className={styles.card}>
+        <Text variant="h4" tag="h2" id="profile-delay">
+          Запись видео
+        </Text>
+        <Text variant="body-sm" color="slate">
+          Пауза после «Старт», чтобы поставить телефон. 0 — сразу.
+        </Text>
+        <ParamStepper label="Отсчёт" unit="с" value={delayDraft ?? user.startDelaySec} min={0} max={MAX_START_DELAY_SEC} onChange={(sec) => void saveDelay(sec)} />
       </Card>
       <ChangePasswordView
         email={user.email}
