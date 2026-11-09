@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>;
 export const TopLevel: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getAllByRole('row')).toHaveLength(6);
+    await expect(c.getAllByRole('row')).toHaveLength(7);
     await expect(c.getAllByText('обязательно')).toHaveLength(2);
     await expect(c.getByRole('columnheader', { name: 'Значение' })).toBeVisible();
   },
