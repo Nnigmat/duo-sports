@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
-import { blockLabel, eyebrow, formatPlan, formatTarget, recordingEyebrow, restEyebrow, formatTime, stepLine, timerSeconds } from './format';
+import { blockLabel, eyebrow, formatPlan, formatTarget, recordingEyebrow, restEyebrow, formatTime, stepLine, stepTitle, timerSeconds } from './format';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 describe('formatTime', () => {
@@ -109,5 +109,22 @@ describe('повторы без числа', () => {
   });
   it('время 0 остаётся временем', () => {
     expect(formatTarget('time', { min: 0, max: 0 })).toBe('00:00');
+  });
+});
+
+describe('stepTitle', () => {
+  const sided = buildSteps([
+    { ...warmup, exercises: [{ ...warmup.exercises[0], sides: ['вправо', 'влево'] }] },
+  ]);
+
+  it('со стороной: название, сторона', () => {
+    expect(stepTitle(sided[0])).toBe('Вращения головой, вправо');
+    expect(stepTitle(sided[1])).toBe('Вращения головой, влево');
+  });
+  it('без стороны: просто название', () => {
+    expect(stepTitle(buildSteps([warmup])[0])).toBe('Вращения головой');
+  });
+  it('stepLine для timed возвращает stepTitle', () => {
+    expect(stepLine(sided[1])).toBe(stepTitle(sided[1]));
   });
 });

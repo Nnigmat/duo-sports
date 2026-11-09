@@ -3,7 +3,7 @@ import type { CommitBlock, ImportCommit } from '../shared/types';
 import { createUser } from './auth';
 import { DEFAULT_EXERCISES } from './defaultExercises';
 import { openDb, type Db } from './db';
-import { applyImport, ensureLibrary, libraryOf, planTitles, redoImport, undoImport, validateCommit } from './imports';
+import { applyImport, ensureLibrary, libraryOf, checkStructure, planTitles, redoImport, undoImport, validateCommit } from './imports';
 
 let db: Db;
 let t = new Date('2026-11-02T14:20:00Z');
@@ -219,5 +219,27 @@ describe('validateCommit', () => {
     const many = Array.from({ length: 501 }, (_, i) => ({ title: `Т${i}`, blocks: blocks('Планка') }));
     expect(bad({ workouts: many })).toMatchObject({ ok: false });
     expect(bad({ workouts: [{ title: 'х'.repeat(201), blocks: blocks('Планка') }] })).toMatchObject({ ok: false });
+  });
+});
+
+describe('checkStructure: стороны', () => {
+  const timed = (sides: unknown) => [
+    {
+      id: 'b0',
+      mode: 'timed',
+      title: 'Разминка',
+      exercises: [{ id: 'b0-e0', name: 'Вращения головой', kind: 'time', target: { min: 30, max: 30 }, ...(sides === undefined ? {} : { sides }) }],
+    },
+  ];
+
+  it('принимает sides из двух подписей', () => {
+    expect(checkStructure(timed(['вправо', 'влево']))).toBe(true);
+    expect(checkStructure(timed(undefined))).toBe(true);
+  });
+  it('отклоняет sides из одного элемента, с пустой строкой и не списком', () => {
+    expect(checkStructure(timed(['вправо']))).toBe(false);
+    expect(checkStructure(timed(['вправо', '']))).toBe(false);
+    expect(checkStructure(timed(['а', 'б', 'в']))).toBe(false);
+    expect(checkStructure(timed('вправо'))).toBe(false);
   });
 });

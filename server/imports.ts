@@ -94,6 +94,7 @@ function checkRange(r: unknown): boolean {
 function checkExercise(e: unknown, withSets: boolean): boolean {
   if (!isObj(e) || !isStr(e.id, 100) || !isStr(e.name, LIMITS.name) || !EX_KINDS.includes(String(e.kind)) || !checkRange(e.target)) return false;
   if (e.weight !== undefined && !(typeof e.weight === 'number' && e.weight >= 0 && e.weight <= 1000)) return false;
+  if (e.sides !== undefined && !(Array.isArray(e.sides) && e.sides.length === 2 && e.sides.every((s) => isStr(s, LIMITS.name)))) return false;
   return !withSets || (Number.isInteger(e.sets) && (e.sets as number) >= 1 && (e.sets as number) <= 100);
 }
 

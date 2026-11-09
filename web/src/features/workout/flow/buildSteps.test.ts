@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
+import type { CircuitBlock, SetsBlock, TimedBlock } from '../../../../../shared/types';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 describe('buildSteps', () => {
@@ -56,5 +57,37 @@ describe('buildSteps', () => {
     expect(steps[0].plan).toEqual({ target: { min: 12, max: 12 }, weight: 12 });
     expect(steps[0].plan.target).not.toBe(setsBlock.exercises[0].target);
     expect(steps[0].plan.target).not.toBe(steps[1].plan.target);
+  });
+
+  describe('стороны', () => {
+    const sides: [string, string] = ['вправо', 'влево'];
+    const withSides: TimedBlock = {
+      ...warmup,
+      exercises: [
+        { id: 'head', name: 'Вращения головой', kind: 'time', target: { min: 30, max: 30 }, sides },
+        { id: 'shoulders', name: 'Вращения плечами', kind: 'time', target: { min: 30, max: 30 } },
+      ],
+    };
+
+    it('timed-блок разворачивает упражнение с sides в два шага подряд', () => {
+      const steps = buildSteps([withSides]);
+      expect(steps.map((s) => s.exerciseId)).toEqual(['head', 'head', 'shoulders']);
+      expect(steps[0]).toMatchObject({ side: { index: 1, label: 'вправо' }, indexInBlock: 1, blockSize: 3, round: 1, rounds: 1 });
+      expect(steps[1]).toMatchObject({ side: { index: 2, label: 'влево' }, indexInBlock: 2, blockSize: 3, round: 1, rounds: 1 });
+    });
+
+    it('упражнение без sides остаётся одним шагом', () => {
+      const steps = buildSteps([withSides]);
+      expect(steps[2]).toMatchObject({ exerciseId: 'shoulders', indexInBlock: 3 });
+      expect(steps[2].side).toBeUndefined();
+    });
+
+    it('sides не разворачиваются в sets и circuit', () => {
+      const c: CircuitBlock = { ...circuit, exercises: circuit.exercises.map((e) => ({ ...e, sides })) };
+      const s: SetsBlock = { ...setsBlock, exercises: setsBlock.exercises.map((e) => ({ ...e, sides })) };
+      expect(buildSteps([c])).toHaveLength(9);
+      expect(buildSteps([s])).toHaveLength(5);
+      expect(buildSteps([c, s]).every((st) => st.side === undefined)).toBe(true);
+    });
   });
 });

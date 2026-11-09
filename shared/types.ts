@@ -33,6 +33,8 @@ export interface Exercise {
   target: Range;
   /** кг, только для kind === 'weight' */
   weight?: number;
+  /** Подписи двух сторон по порядку («вправо», «влево»); есть — упражнение в таймерном блоке идёт два раза, по target на сторону */
+  sides?: [string, string];
 }
 
 export interface SetsExercise extends Exercise {
