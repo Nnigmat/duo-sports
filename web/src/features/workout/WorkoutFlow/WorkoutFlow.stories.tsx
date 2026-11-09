@@ -102,8 +102,8 @@ async function recordAndSend() {
 async function toCircuit() {
   await click('Начать тренировку');
   for (let i = 0; i < 3; i++) {
-    // таймер разминки идёт сам
-    await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+    // таймер разминки идёт сам: у первого шага набора отсчёт «старт через», дальше «осталось»
+    await body().findByRole('button', { name: /Пауза, \d\d:\d\d/ });
     await click('Пропустить');
   }
   await waitFor(() => expect(body().getByText('Подход 1 из 9')).toBeVisible());
@@ -195,7 +195,7 @@ export const FullRun: Story = {
 
     // Заминка
     for (let i = 0; i < 2; i++) {
-      await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+      await body().findByRole('button', { name: /Пауза, \d\d:\d\d (старт через|осталось)/ });
       await click('Пропустить');
     }
 
@@ -481,10 +481,10 @@ export const SwapOnlyOnExerciseSets: Story = {
   tags: hidden,
   play: async () => {
     await click('Начать тренировку');
-    await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+    await body().findByRole('button', { name: /Пауза, \d\d:\d\d (старт через|осталось)/ });
     await expect(body().queryByRole('button', { name: 'Заменить упражнение' })).toBeNull();
     for (let i = 0; i < 3; i++) {
-      await body().findByRole('button', { name: /Пауза, \d\d:\d\d осталось/ });
+      await body().findByRole('button', { name: /Пауза, \d\d:\d\d (старт через|осталось)/ });
       await click('Пропустить');
     }
     await waitFor(() => expect(body().getByText('Подход 1 из 9')).toBeVisible());
@@ -513,5 +513,59 @@ export const BackGoesToStart: Story = {
     await expect(await body().findByRole('heading', { name: 'Круговая тренировка' })).toBeVisible();
     await click('Шаг назад');
     await expect(onExit).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** Набор из трёх упражнений: у второго две стороны */
+const ROUTINE_WORKOUT = {
+  ...WORKOUT,
+  blocks: [
+    {
+      id: 'warmup',
+      mode: 'timed' as const,
+      title: 'Разминка',
+      exercises: [
+        { id: 'r1', name: 'Круги руками', kind: 'time' as const, pose: 'shoulders' as const, target: { min: 5, max: 5 } },
+        { id: 'r2', name: 'Вращения головой', kind: 'time' as const, pose: 'headroll' as const, target: { min: 5, max: 5 }, sides: ['вправо', 'влево'] as [string, string] },
+        { id: 'r3', name: 'Стойка на месте', kind: 'time' as const, pose: 'stand' as const, target: { min: 5, max: 5 } },
+      ],
+    },
+    ...WORKOUT.blocks.slice(1),
+  ],
+};
+
+export const RoutineWithSides: Story = {
+  name: 'Разминка: набор с двумя сторонами',
+  tags: hidden,
+  args: { workout: ROUTINE_WORKOUT },
+  play: async () => {
+    await click('Начать тренировку');
+    // первый шаг набора: отсчёт перед стартом
+    const lead = await body().findByRole('button', { name: /Пауза, \d\d:\d\d старт через/ });
+    await expect(lead).toBeVisible();
+    await expect(body().getByText('Круги руками')).toBeVisible();
+    await click('Пропустить');
+    // второй шаг: без отсчёта, первая сторона
+    await expect(await body().findByText('Вращения головой, вправо')).toBeVisible();
+    await expect(body().getByRole('button', { name: /Пауза, \d\d:\d\d осталось/ })).toBeVisible();
+    await click('Пропустить');
+    await expect(await body().findByText('Вращения головой, влево')).toBeVisible();
+    // «Назад» со второй стороны возвращает на первую
+    await click('Шаг назад');
+    await expect(await body().findByText('Вращения головой, вправо')).toBeVisible();
+  },
+};
+
+export const RoutinePauseStopsCount: Story = {
+  tags: hidden,
+  args: { workout: ROUTINE_WORKOUT },
+  play: async () => {
+    await click('Начать тренировку');
+    await click('Пропустить');
+    await click(/Пауза, \d\d:\d\d осталось/);
+    const paused = await body().findByRole('button', { name: /Продолжить, \d\d:\d\d/ });
+    const before = paused.textContent;
+    await new Promise((r) => setTimeout(r, 1200));
+    await expect(body().getByRole('button', { name: /Продолжить, \d\d:\d\d/ }).textContent).toBe(before);
   },
 };

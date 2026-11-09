@@ -23,6 +23,9 @@ import {
   recordingEyebrow,
   reduce,
   restEyebrow,
+  routineLeadSec,
+  routineSignalAt,
+  routineView,
   signalAt,
   stepLine,
   timedView,
@@ -347,43 +350,45 @@ function SetStage(props: StageProps) {
 }
 
 /**
- * Идущий таймер. Разминка и заминка просто считают время и засчитываются сами.
+ * Идущий таймер. Разминка и заминка: отсчёт 5 с перед первым шагом набора, работа, короткие сигналы на 3, 2, 1
+ * и длинный на смене; конец засчитывает шаг сам, «Пропустить» идёт без сигнала.
  * Упражнение на время: отсчёт 5 с, работа, финиш; сигналы по расписанию, в конце кнопка «Готово».
  */
 function TimedStage(props: StageProps) {
   const { session, dispatch, beeper, onDone } = props;
   const step = session.steps[session.index];
-  const warm = step.mode === 'timed';
+  const routine = step.mode === 'timed';
   const workSec = timerSeconds(step.plan);
+  const leadSec = routine ? routineLeadSec(step) : LEAD_SEC;
   const t = useCountdown({
-    seconds: warm ? workSec : LEAD_SEC + workSec,
-    // Конец таймера разминки засчитывает её сам; у упражнения круг ждёт «Готово»
-    onFinish: warm ? () => dispatch({ type: 'done' }) : undefined,
+    seconds: leadSec + workSec,
+    // Конец таймера набора засчитывает шаг сам; у упражнения круг ждёт «Готово»
+    onFinish: routine ? () => dispatch({ type: 'done' }) : undefined,
   });
   const elapsed = t.total - t.seconds;
 
   // Сигнал в каждую новую секунду. На паузе секунда не меняется, значит, и звука нет
   const last = useRef(-1);
   useEffect(() => {
-    if (warm || elapsed <= last.current) return;
+    if (elapsed <= last.current) return;
     last.current = elapsed;
-    const signal = signalAt(workSec, elapsed);
+    const signal = routine ? routineSignalAt(workSec, elapsed, leadSec) : signalAt(workSec, elapsed);
     if (signal) beeper.play(signal);
-  }, [warm, elapsed, workSec, beeper]);
+  }, [routine, elapsed, workSec, leadSec, beeper]);
 
-  const view = warm ? null : timedView(workSec, elapsed);
+  const view = routine ? routineView(workSec, elapsed, leadSec) : timedView(workSec, elapsed);
   return (
     <StageView
       {...props}
       onBack={() => dispatch({ type: 'back' })}
       bar={{
         mode: 'timer',
-        seconds: view ? view.seconds : t.seconds,
-        total: view ? view.total : t.total,
+        seconds: view.seconds,
+        total: view.total,
         paused: t.paused,
-        alert: view?.alert,
-        caption: view?.caption,
-        onDone: view ? onDone : undefined,
+        alert: view.alert,
+        caption: view.caption,
+        onDone: routine ? undefined : onDone,
         onPauseToggle: t.toggle,
         onSkip: () => dispatch({ type: 'skip' }),
       }}
