@@ -270,3 +270,88 @@ describe('базовый шаблон новой тренировки', () => {
     expect(r.plan.workouts).toHaveLength(1);
   });
 });
+
+describe('наборы разминки и заминки (routines)', () => {
+  const routines = (ex: string, id = 'neck') => `routines:\n  - id: ${id}\n    title: Шея\n    exercises:\n${ex}`;
+  const ref = (type = 'warmup', id = 'neck') => `      - { type: ${type}, routine: ${id} }\n`;
+  const full = (ex: string, type = 'warmup') => wrap(ref(type), routines(ex));
+  const rows = '      - { name: Вращение головой, time: 30s, per_side: true }\n      - { name: Планка, time: 45s }\n';
+  const struct = (text: string) => ok(parseImport(text, ctx)).workouts[0]!.structure[0] as import('../../../../shared/types').TimedBlock;
+
+  it('routine разворачивается в timed-блок с упражнениями', () => {
+    const b = struct(full(rows));
+    expect(b).toMatchObject({ id: 'b0', mode: 'timed', title: 'Разминка' });
+    expect(b.exercises.map((e) => [e.id, e.name, e.kind, e.target, e.pose])).toEqual([
+      ['b0-e0', 'Вращение головой', 'time', { min: 30, max: 30 }, 'stand'],
+      ['b0-e1', 'Планка', 'time', { min: 45, max: 45 }, 'stand'],
+    ]);
+  });
+  it('per_side даёт sides по умолчанию вправо и влево', () => {
+    const b = struct(full(rows));
+    expect(b.exercises[0]!.sides).toEqual(['вправо', 'влево']);
+    expect(b.exercises[1]!.sides).toBeUndefined();
+  });
+  it('sides из файла переопределяют подписи', () => {
+    const b = struct(full('      - { name: Плечи, time: 20s, per_side: true, sides: [вперёд, назад] }\n'));
+    expect(b.exercises[0]!.sides).toEqual(['вперёд', 'назад']);
+  });
+  it('заминка растягивается', () => {
+    expect(struct(full(rows, 'cooldown')).exercises[0]!.pose).toBe('stretch');
+  });
+  it('предпросмотр: заголовок с общим временем обеих сторон и строки', () => {
+    const r = ok(parseImport(full(rows), ctx));
+    const block = r.workouts[0]!.blocks[0]!;
+    expect(block.kind).toBe('warmup');
+    expect(block.heading).toBe('Разминка · 1:45');
+    expect(block.items).toEqual([
+      { name: 'Вращение головой', value: '30 с · на сторону' },
+      { name: 'Планка', value: '45 с' },
+    ]);
+  });
+  it('неизвестный routine — ошибка со строкой', () => {
+    const e = fails(wrap(ref('warmup', 'nope'), routines(rows)));
+    expect(e[0]!.message).toContain('nope');
+    expect(e[0]!.line).toBeGreaterThan(0);
+  });
+  it('повтор id набора — ошибка', () => {
+    expect(fails(wrap(ref(), `${routines(rows)}${routines(rows).replace('routines:\n', '')}`))[0]!.message).toContain('повторяется');
+  });
+  it('пустой exercises — ошибка', () => {
+    expect(fails(wrap(ref(), 'routines:\n  - id: neck\n    title: Шея\n    exercises: []\n'))[0]!.message).toContain('exercises');
+  });
+  it('упражнение без time — ошибка', () => {
+    expect(fails(full('      - { name: Планка }\n'))[0]!.message).toContain('time');
+  });
+  it('время 0 — ошибка, а не упражнение нулевой длины', () => {
+    expect(fails(full('      - { name: Планка, time: 0 }\n'))[0]!.message).toContain('time');
+  });
+  it('похожее для упражнения набора ищется только среди упражнений на время', () => {
+    const r = ok(parseImport(full('      - { name: Подтягиваня, time: 30s }\n'), ctx));
+    const e = r.preview.newExercises[0]!;
+    expect(e.candidates).not.toContain('Подтягивания');
+    expect(e.similar).not.toBe('Подтягивания');
+  });
+  it('sides не из двух строк — ошибка', () => {
+    expect(fails(full('      - { name: Планка, time: 30s, sides: [вправо] }\n'))[0]!.message).toContain('sides');
+  });
+  it('упражнение библиотеки с другим kind — ошибка', () => {
+    expect(fails(full('      - { name: Подтягивания, time: 30s }\n'))[0]!.message).toContain('на время');
+  });
+  it('незнакомое упражнение набора попадает в newExercises с measure time', () => {
+    const r = ok(parseImport(full('      - { name: Вращение тазом, time: 30s }\n'), ctx));
+    expect(r.preview.newExercises.map((e) => [e.name, e.measure, e.usedIn])).toEqual([['Вращение тазом', 'time', 1]]);
+  });
+  it('набор, который никто не подключил, упражнений не создаёт', () => {
+    const r = ok(parseImport(wrap('      - { type: warmup, text: Р }\n', routines('      - { name: Вращение тазом, time: 30s }\n')), ctx));
+    expect(r.preview.newExercises).toEqual([]);
+  });
+  it('один набор в двух тренировках: usedIn считает обе', () => {
+    const text = `version: 1\n${routines('      - { name: Вращение тазом, time: 30s }\n')}workouts:\n  - { title: А, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }] }\n  - { title: Б, date: 2026-11-04, blocks: [{ type: warmup, routine: neck }] }\n`;
+    expect(ok(parseImport(text, ctx)).preview.newExercises[0]!.usedIn).toBe(2);
+  });
+  it('warmup со свободным text разбирается как раньше', () => {
+    const b = struct(wrap('      - { type: warmup, time: 5-7m, text: Скакалка }\n'));
+    expect(b.exercises).toHaveLength(1);
+    expect(b.exercises[0]!.name).toBe('Разминка');
+  });
+});

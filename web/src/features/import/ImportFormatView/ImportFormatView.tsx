@@ -2,7 +2,7 @@ import { Button, Notice, Text } from '../../../ui';
 import { CodeBlock } from '../CodeBlock/CodeBlock';
 import { FieldTable } from '../FieldTable/FieldTable';
 import {
-  ALTERNATING, BLOCK_TYPES, ERRORS, EXAMPLE, EXERCISE_FIELDS, LIMITS, NEW_EXERCISE_FIELDS, PLAN_FIELDS, PYRAMID, REIMPORT, SECTIONS,
+  ALTERNATING, BLOCK_TYPES, ERRORS, EXAMPLE, EXERCISE_FIELDS, LIMITS, NEW_EXERCISE_FIELDS, PLAN_FIELDS, PYRAMID, REIMPORT, ROUTINE_EXAMPLE, ROUTINE_FIELDS, SECTIONS,
   SHORT_FORMS, TOP_FIELDS, UNITS, WORKOUT_FIELDS,
 } from '../format';
 import styles from './ImportFormatView.module.css';
@@ -139,6 +139,18 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Упражнения не создаются сами. На шаге «Проверка» новые упражнения создаются, а если в названии опечатка, можно выбрать похожее из библиотеки.
             </Notice>
             <FieldTable rows={NEW_EXERCISE_FIELDS} caption="Поля нового упражнения" />
+          </section>
+
+          <section id="routines" aria-labelledby="h-routines" className={styles.section}>
+            <Text variant="h3" tag="h2" id="h-routines">
+              Наборы разминки и заминки
+            </Text>
+            <Text variant="body-sm" color="slate">
+              Опишите набор один раз в <code>routines</code> и подключите в любом блоке <code>warmup</code> или <code>cooldown</code> через <code>routine</code>. В тренировку набор копируется
+              при импорте: правка набора не меняет уже импортированные тренировки. Упражнения должны быть «на время»; незнакомые предложим создать на проверке.
+            </Text>
+            <CodeBlock lines={ROUTINE_EXAMPLE} label="Пример набора" />
+            <FieldTable rows={ROUTINE_FIELDS} caption="Поля набора и его упражнений" />
           </section>
 
           <section id="units" aria-labelledby="h-units" className={styles.section}>

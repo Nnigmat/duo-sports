@@ -54,7 +54,7 @@ export const MAX_WORKOUTS = 500;
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const WEEKDAY_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const BLOCK_TYPES = ['sets', 'circuit', 'superset', 'warmup', 'cooldown'] as const;
-const TOP_KEYS = new Set(['version', 'units', 'exercises', 'workouts', 'plan']);
+const TOP_KEYS = new Set(['version', 'units', 'exercises', 'routines', 'workouts', 'plan']);
 
 type Json = unknown;
 type Path = Array<string | number>;
@@ -229,6 +229,8 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
   for (const d of defs.values()) for (const n of [d.name, ...d.aliases]) defByName.set(norm(n), d);
 
   const used = new Map<string, Used>();
+  /** «Номер тренировки» у упражнений набора: они разбираются один раз, настоящие номера добавляются по ссылке */
+  const IN_ROUTINE = -1;
   const foundLib = new Set<string>();
 
   /** Имя для показа или null, если упражнение не нашлось (ошибка уже записана) */
@@ -259,13 +261,15 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       return lib.name;
     }
     const shown = name ?? '';
+    // Для набора «похожее» ищем только среди упражнений на время: иначе замена обойдёт проверку типа
+    const pool = workout === IN_ROUTINE ? ctx.library.filter((l) => l.kind === 'time') : ctx.library;
     const entry = used.get(norm(shown)) ?? {
       name: shown,
       workouts: new Set<number>(),
       hasVideo: !!def?.video,
       muscles: def?.muscles.join(', ') ?? '',
-      similar: similarTo(shown, ctx.library),
-      candidates: candidatesFor(shown, ctx.library),
+      similar: similarTo(shown, pool),
+      candidates: candidatesFor(shown, pool),
       slug: def?.id,
       aliases: def?.aliases ?? [],
       measure: def?.measure ?? inferMeasure(ex),
@@ -382,6 +386,62 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     return { text: parts.join(' · '), load };
   };
 
+  // ── Наборы разминки и заминки ───────────────────────────
+  /** Набор, как он стоит в тренировке: упражнения для структуры, строки для проверки, общее время обеих сторон */
+  interface Routine {
+    exercises: RawExercise[];
+    items: PreviewItem[];
+    totalSec: number;
+  }
+  const routineList = new Map<string, Routine>();
+  if (root.routines !== undefined) {
+    if (!Array.isArray(root.routines)) fail(['routines'], 'routines должно быть списком');
+    else
+      root.routines.forEach((r: Json, ri: number) => {
+        const p: Path = ['routines', ri];
+        if (!isObj(r)) return fail(p, 'Набор должен быть набором полей: id, title, exercises');
+        const id = str(r.id);
+        if (!id) return fail(p, 'У набора нет id', 'id — латиница, цифры и дефис; по нему блок разминки ссылается через routine.');
+        if (!/^[A-Za-z0-9-]+$/.test(id)) fail([...p, 'id'], `id только из латиницы, цифр и дефиса: ${id}`);
+        if (routineList.has(id)) return fail([...p, 'id'], `id набора повторяется: ${id}`, 'У каждого набора свой id.');
+        const exercises: RawExercise[] = [];
+        const items: PreviewItem[] = [];
+        let totalSec = 0;
+        routineList.set(id, { exercises, items, totalSec });
+        if (!Array.isArray(r.exercises) || r.exercises.length === 0) return fail([...p, 'exercises'], 'В наборе нет exercises', 'Добавьте хотя бы одно упражнение.');
+        r.exercises.forEach((e: Json, ei: number) => {
+          const ep: Path = [...p, 'exercises', ei];
+          if (!isObj(e)) return fail(ep, 'Упражнение должно быть набором полей: name, time');
+          const name = resolve(e, ep, IN_ROUTINE);
+          let time = null;
+          if (e.time === undefined) fail(ep, 'У упражнения набора нет time', 'Время обязательно: time: 30s.');
+          else {
+            time = parseDuration(e.time);
+            if (!time) fail([...ep, 'time'], `Не понимаю время: ${String(e.time)}`, 'Пишите 45, 45s, 1:30 или 2m.');
+            else if (time.max <= 0) {
+              fail([...ep, 'time'], 'time должно быть больше нуля', 'Упражнение набора идёт хотя бы секунду: 30s.');
+              time = null;
+            }
+          }
+          let sides: [string, string] | undefined;
+          if (e.sides !== undefined) {
+            const pair = Array.isArray(e.sides) && e.sides.length === 2 ? e.sides.map(str) : null;
+            if (pair?.every((s): s is string => !!s)) sides = [pair[0]!, pair[1]!];
+            else fail([...ep, 'sides'], 'sides — две подписи сторон', 'Пишите так: sides: [вправо, влево].');
+          } else if (e.per_side === true) sides = ['вправо', 'влево'];
+          if (!name) return;
+          const lib = libByName.get(norm(name));
+          const measure = lib ? lib.kind : defByName.get(norm(name))?.measure;
+          if (measure && measure !== 'time') fail(ep, `«${name}» — не упражнение на время`, 'В наборе нужны упражнения с измерением time.');
+          if (!time) return;
+          exercises.push({ name, load: { time }, ...(sides ? { sides } : {}) });
+          items.push({ name, value: `${formatDuration(time)}${sides ? ' · на сторону' : ''}` });
+          totalSec += time.max * (sides ? 2 : 1);
+        });
+        routineList.set(id, { exercises, items, totalSec });
+      });
+  }
+
   // ── Тренировки ──────────────────────────────────────────
   interface Built {
     id?: string;
@@ -429,9 +489,20 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
           return fail([...bp, 'type'], `Неизвестный type: ${type ?? 'не указан'}`, 'Допустимо: sets, circuit, superset, warmup, cooldown.');
         }
         if (type === 'warmup' || type === 'cooldown') {
+          const head = type === 'warmup' ? 'Разминка' : 'Заминка';
+          const routineId = str(b.routine);
+          if (routineId) {
+            const routine = routineList.get(routineId);
+            if (!routine) return fail([...bp, 'routine'], `Неизвестный набор: ${routineId}`, 'Опишите его в routines.');
+            if (b.time !== undefined) warn([...bp, 'time'], 'time рядом с routine не нужен', 'Время берётся из упражнений набора.');
+            for (const e of routine.exercises) used.get(norm(e.name))?.workouts.add(wi);
+            const text = str(b.text) ?? undefined;
+            blocks.push({ kind: type, heading: `${head} · ${formatDuration({ min: routine.totalSec, max: routine.totalSec })}`, ...(text ? { text } : {}), items: routine.items });
+            raws.push({ type, ...(text ? { text } : {}), exercises: routine.exercises });
+            return;
+          }
           const t = b.time === undefined ? null : parseDuration(b.time);
           if (b.time !== undefined && !t) fail([...bp, 'time'], `Не понимаю время: ${String(b.time)}`, 'Пишите 5-7m, 45s или 1:30.');
-          const head = type === 'warmup' ? 'Разминка' : 'Заминка';
           blocks.push({ kind: type, heading: t ? `${head} · ${formatDuration(t)}` : head, text: str(b.text) ?? undefined, items: [] });
           raws.push({ type, ...(t ? { time: t } : {}), ...(str(b.text) ? { text: str(b.text)! } : {}), exercises: [] });
           return;
@@ -552,10 +623,12 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       };
     });
 
-  const newExercises: NewExercise[] = [...used.values()].map((u, i) => ({
+  // Набор, который никто не подключил, упражнений не создаёт
+  const usedList = [...used.values()].map((u) => ({ ...u, usedIn: [...u.workouts].filter((n) => n !== IN_ROUTINE).length })).filter((u) => u.usedIn > 0);
+  const newExercises: NewExercise[] = usedList.map((u, i) => ({
     key: `e${i}`,
     name: u.name,
-    usedIn: u.workouts.size,
+    usedIn: u.usedIn,
     hasVideo: u.hasVideo,
     muscles: u.muscles,
     similar: u.similar,

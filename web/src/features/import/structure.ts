@@ -26,6 +26,8 @@ export type BlockType = 'sets' | 'circuit' | 'superset' | 'warmup' | 'cooldown';
 export interface RawExercise {
   name: string;
   load: Load;
+  /** Подписи двух сторон: есть — упражнение набора идёт два раза, время на одну сторону */
+  sides?: [string, string];
 }
 
 export interface RawBlock {
@@ -113,13 +115,31 @@ function setsExercises(blockId: string, exs: RawExercise[]): SetsExercise[] {
 export function buildBlock(raw: RawBlock, blockId: string): Block {
   const title = TITLES[raw.type];
   if (raw.type === 'warmup' || raw.type === 'cooldown') {
+    const pose = raw.type === 'cooldown' ? 'stretch' : 'stand';
+    // Набор упражнений: каждое — отдельный шаг прохождения (или два, если есть стороны)
+    if (raw.exercises.length > 0) {
+      return {
+        id: blockId,
+        mode: 'timed',
+        title,
+        ...(raw.text ? { note: raw.text } : {}),
+        exercises: raw.exercises.map((e, i) => ({
+          id: `${blockId}-e${i}`,
+          name: e.name,
+          kind: 'time' as const,
+          pose,
+          target: targetOf(e.load),
+          ...(e.sides ? { sides: e.sides } : {}),
+        })),
+      };
+    }
     const sec = raw.time ?? { min: DEFAULT_TIMED_SEC, max: DEFAULT_TIMED_SEC };
     return {
       id: blockId,
       mode: 'timed',
       title,
       ...(raw.text ? { note: raw.text } : {}),
-      exercises: [{ id: `${blockId}-e0`, name: title, kind: 'time', pose: raw.type === 'cooldown' ? 'stretch' : 'stand', target: { ...sec } }],
+      exercises: [{ id: `${blockId}-e0`, name: title, kind: 'time', pose, target: { ...sec } }],
     };
   }
   if (raw.type === 'sets') {
