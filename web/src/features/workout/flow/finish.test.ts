@@ -125,3 +125,12 @@ describe('sessionSteps: фактический отдых', () => {
     expect(out[3]!.restSec).toBe(0);
   });
 });
+
+describe('sessionSteps: замена упражнения', () => {
+  it('replacedFrom — название из плана, если упражнение заменили; у остальных поля нет', () => {
+    const steps = buildSteps([circuit]).map((s, i) => (i === 0 ? { ...s, exerciseId: 'push-up', exerciseName: 'Отжимания', replaced: { id: 'dips', name: 'Обратные отжимания' } } : s));
+    const out = sessionSteps(steps, steps.map(() => true));
+    expect(out[0]).toMatchObject({ exerciseId: 'push-up', exerciseName: 'Отжимания', replacedFrom: 'Обратные отжимания' });
+    expect('replacedFrom' in out[1]!).toBe(false);
+  });
+});

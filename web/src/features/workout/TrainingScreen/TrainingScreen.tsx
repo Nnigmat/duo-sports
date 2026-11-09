@@ -50,6 +50,8 @@ type Props = {
   onBack?: () => void;
   onExit: () => void;
   onTech: () => void;
+  /** «Заменить» упражнение; без него кнопки нет (разминка, отдых, библиотека не загрузилась) */
+  onSwap?: () => void;
   onRecord: () => void;
   onOpenNotes: () => void;
 };
@@ -76,6 +78,7 @@ export function TrainingScreen({
   onBack,
   onExit,
   onTech,
+  onSwap,
   onRecord,
   onOpenNotes,
 }: Props) {
@@ -126,6 +129,7 @@ export function TrainingScreen({
             badge={techNew}
             onClick={onTech}
           />
+          {onSwap && <IconButton icon="swap" caption="Заменить" aria-label="Заменить упражнение" onClick={onSwap} />}
         </div>
 
         <div className={styles.right}>

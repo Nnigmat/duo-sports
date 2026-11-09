@@ -36,6 +36,18 @@ describe('draft', () => {
     expect(parseDraft(serializeDraft({ ...draft, updatedAt: NOW - DRAFT_TTL_MS - 1 }), NOW)).toBeNull();
   });
 
+  it('замена упражнения переживает перезагрузку', () => {
+    const replaced = { ...draft, session: { ...draft.session, steps: draft.session.steps.map((st, i) => (i === 2 ? { ...st, exerciseId: 'push-up', exerciseName: 'Отжимания', replaced: { id: st.exerciseId, name: st.exerciseName } } : st)) } };
+    expect(parseDraft(serializeDraft(replaced), NOW)).toEqual(replaced);
+  });
+
+  it('пометка замены неверной формы — null', () => {
+    const withReplaced = (replaced: unknown) => parseDraft(JSON.stringify({ ...draft, session: { ...draft.session, steps: draft.session.steps.map((st, i) => (i === 2 ? { ...st, replaced } : st)) } }), NOW);
+    expect(withReplaced({ id: 'a' })).toBeNull();
+    expect(withReplaced('Приседания')).toBeNull();
+    expect(withReplaced({ id: 1, name: 'A' })).toBeNull();
+  });
+
   it('не подходящая по форме сессия — null', () => {
     const bad = (patch: object) => parseDraft(JSON.stringify({ ...draft, session: { ...draft.session, ...patch } }), NOW);
     expect(bad({ index: 999 })).toBeNull();

@@ -209,6 +209,26 @@ describe('фактический отдых подхода', () => {
   });
 });
 
+describe('замена упражнения', () => {
+  const step = { exerciseId: 'a', exerciseName: 'A', blockIndex: 0, round: 1, rounds: 1, kind: 'reps', plan: { target: { min: 1, max: 1 } }, completed: true };
+  const withReplaced = (replacedFrom: unknown) => validateSession({ date: '2026-11-03', videos: 0, steps: [{ ...step, replacedFrom }] });
+  it('необязательна: итоги без замены валидны', () => {
+    expect(validateSession({ date: '2026-11-03', videos: 0, steps: [step] }).ok).toBe(true);
+  });
+  it('replacedFrom — непустая строка до 200 знаков', () => {
+    expect(withReplaced('Обратные отжимания').ok).toBe(true);
+    for (const bad of ['', 'я'.repeat(201), 5, null]) expect(withReplaced(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля' });
+  });
+  it('сохраняется в итоге вместе с подходом', () => {
+    applyImport(db, me, commit(), clock);
+    const r = result();
+    r.steps[0] = { ...r.steps[0]!, replacedFrom: 'Жим' };
+    expect(saveSession(db, me, workoutId(), r, clock).ok).toBe(true);
+    const row = db.prepare('SELECT steps FROM sessions_done').get() as { steps: string };
+    expect(JSON.parse(row.steps)[0].replacedFrom).toBe('Жим');
+  });
+});
+
 describe('видео подхода', () => {
   const V1 = '11111111-1111-4111-8111-111111111111';
   const V2 = '22222222-2222-4222-8222-222222222222';

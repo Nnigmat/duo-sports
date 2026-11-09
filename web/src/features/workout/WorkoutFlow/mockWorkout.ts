@@ -1,5 +1,6 @@
 // Только для историй и тестов: короткая тренировка на моковых данных, чтобы пройти весь поток за пару минут.
 import type { Technique, Workout } from '../../../../../shared/types';
+import type { SwapOption } from '../flow';
 import { COMMENTS, TECHNIQUE } from '../sheets/storyData';
 
 export { COMMENTS };
@@ -67,3 +68,13 @@ export const TECHNIQUES: Record<string, Technique> = {
     mistake: 'колено уходит внутрь.',
   },
 };
+
+/** Библиотека для «Заменить»: упражнения на трицепс и ещё пара из других групп */
+const DEFAULTS = { reps: 10, weight: 20, seconds: 30 };
+export const LIBRARY: SwapOption[] = [
+  { id: 'dips', name: 'Обратные отжимания', kind: 'reps', group: 'arms', muscles: ['трицепс', 'грудь'], defaults: DEFAULTS },
+  { id: 'french-press', name: 'Французский жим', kind: 'weight', group: 'arms', muscles: ['трицепс'], defaults: DEFAULTS },
+  { id: 'push-up', name: 'Отжимания', kind: 'reps', group: 'chest', muscles: ['грудь', 'трицепс'], defaults: DEFAULTS },
+  { id: 'biceps-curl', name: 'Сгибания на бицепс', kind: 'weight', group: 'arms', muscles: ['бицепс'], defaults: DEFAULTS },
+  { id: 'plank', name: 'Планка', kind: 'time', group: 'core', muscles: ['пресс', 'кор'], defaults: DEFAULTS },
+];

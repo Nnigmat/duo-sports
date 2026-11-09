@@ -44,7 +44,8 @@ function isStep(v: unknown): boolean {
     isNum(v.restAfterSec) &&
     isObject(plan) &&
     isRange(plan.target) &&
-    (plan.weight === undefined || isNum(plan.weight))
+    (plan.weight === undefined || isNum(plan.weight)) &&
+    (v.replaced === undefined || (isObject(v.replaced) && typeof v.replaced.id === 'string' && typeof v.replaced.name === 'string'))
   );
 }
 

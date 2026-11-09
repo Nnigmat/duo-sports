@@ -81,7 +81,7 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
   const groups = new Map<string, ReviewExercise & { stepIndexes: number[] }>();
   steps.forEach((st, i) => {
     const id = `${st.blockIndex}:${st.exerciseId}`;
-    const g = groups.get(id) ?? { id, name: st.exerciseName, slug: null, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [] };
+    const g = groups.get(id) ?? { id, name: st.exerciseName, ...(st.replacedFrom && { replacedFrom: st.replacedFrom }), slug: null, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [] };
     const video = st.videoId ? videos.get(st.videoId) : undefined;
     const fact = st.completed && st.actual ? { actualLabel: actualLabel(st), factMark: factLabel(st.plan, st.actual.value), ...(st.actual.extraWeight && { extraWeight: true as const }) } : {};
     g.sets.push({ n: g.sets.length + 1, label: setLabel(st), completed: st.completed, ...fact, ...(video && { videoId: video.id, videoDurationSec: video.duration_sec }) });
