@@ -98,3 +98,26 @@ describe('buildBlocks', () => {
     expect(blocks.map((b) => b.id)).toEqual(['b0', 'b1', 'b2']);
   });
 });
+
+describe('разминка и заминка со списком упражнений', () => {
+  const raw = (type: 'warmup' | 'cooldown'): RawBlock => ({
+    type,
+    exercises: [
+      { name: 'Вращение головой', load: { time: r(30) }, sides: ['вправо', 'влево'] },
+      { name: 'Планка', load: { time: r(45) } },
+    ],
+  });
+  it('warmup: упражнения timed-блока, стороны и поза', () => {
+    const b = buildBlock(raw('warmup'), 'b0') as TimedBlock;
+    expect(b).toMatchObject({ id: 'b0', mode: 'timed', title: 'Разминка' });
+    expect(b.exercises).toEqual([
+      { id: 'b0-e0', name: 'Вращение головой', kind: 'time', pose: 'stand', target: r(30), sides: ['вправо', 'влево'] },
+      { id: 'b0-e1', name: 'Планка', kind: 'time', pose: 'stand', target: r(45) },
+    ]);
+  });
+  it('cooldown: поза stretch', () => {
+    const b = buildBlock(raw('cooldown'), 'b2') as TimedBlock;
+    expect(b.title).toBe('Заминка');
+    expect(b.exercises.every((e) => e.pose === 'stretch')).toBe(true);
+  });
+});
