@@ -1,5 +1,5 @@
 import type { Block } from '../../../../../shared/types';
-import { formatPlan } from './format';
+import { formatPlan, formatTime } from './format';
 import { joinNumbers, plural } from './ru';
 
 const ROUNDS: [string, string, string] = ['круг', 'круга', 'кругов'];
@@ -25,10 +25,17 @@ export function workoutMeta(blocks: Block[]): string {
   return rounds > 0 ? `${rounds} ${plural(rounds, ROUNDS)} · ${setsLabel}` : setsLabel;
 }
 
-/** «6 упражнений по 30 с»; «по» только если время у всех одинаковое. */
+/**
+ * «6 упражнений по 30 с»; «по» только если время у всех одинаковое.
+ * Если у какого-то упражнения есть стороны, «по X с» соврало бы про время: пишем общее, «3 упражнения · 02:00».
+ */
 export function timedHeadline(block: Block): string {
   const n = block.exercises.length;
   const base = `${n} ${plural(n, EXERCISES)}`;
+  if (block.exercises.some((e) => e.sides)) {
+    const total = block.exercises.reduce((sum, e) => sum + e.target.max * (e.sides ? 2 : 1), 0);
+    return `${base} · ${formatTime(total)}`;
+  }
   const seconds = new Set(block.exercises.map((e) => e.target.max));
   return seconds.size === 1 ? `${base} по ${[...seconds][0]} с` : base;
 }
