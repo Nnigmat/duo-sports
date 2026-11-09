@@ -24,6 +24,7 @@ export function routineSignalAt(workSec: number, elapsed: number, leadSec: numbe
   return null;
 }
 
+/** Что показать в кольце на секунде `elapsed`: отсчёт, работа или конец; последние 3 с подписаны «смена через». */
 export function routineView(workSec: number, elapsed: number, leadSec: number): TimedView {
   const end = leadSec + workSec;
   if (elapsed < leadSec) {

@@ -91,10 +91,15 @@ function checkRange(r: unknown): boolean {
   return isObj(r) && Number.isFinite(r.min) && Number.isFinite(r.max) && (r.min as number) >= 0 && (r.max as number) >= (r.min as number) && (r.max as number) <= 86_400;
 }
 
-function checkExercise(e: unknown, withSets: boolean): boolean {
+function checkSides(sides: unknown): boolean {
+  return Array.isArray(sides) && sides.length === 2 && sides.every((s) => isStr(s, LIMITS.name));
+}
+
+/** `sides` бывает только у упражнений таймерного блока (разминка, заминка) */
+function checkExercise(e: unknown, withSets: boolean, timed: boolean): boolean {
   if (!isObj(e) || !isStr(e.id, 100) || !isStr(e.name, LIMITS.name) || !EX_KINDS.includes(String(e.kind)) || !checkRange(e.target)) return false;
   if (e.weight !== undefined && !(typeof e.weight === 'number' && e.weight >= 0 && e.weight <= 1000)) return false;
-  if (e.sides !== undefined && !(Array.isArray(e.sides) && e.sides.length === 2 && e.sides.every((s) => isStr(s, LIMITS.name)))) return false;
+  if (e.sides !== undefined && !(timed && checkSides(e.sides))) return false;
   return !withSets || (Number.isInteger(e.sets) && (e.sets as number) >= 1 && (e.sets as number) <= 100);
 }
 
@@ -104,7 +109,7 @@ export function checkStructure(blocks: unknown): boolean {
   return blocks.every((b) => {
     if (!isObj(b) || !MODES.includes(String(b.mode)) || !isStr(b.id, 100) || !isStr(b.title, LIMITS.name)) return false;
     if (!Array.isArray(b.exercises) || b.exercises.length === 0 || b.exercises.length > LIMITS.items) return false;
-    if (!b.exercises.every((e) => checkExercise(e, b.mode === 'sets'))) return false;
+    if (!b.exercises.every((e) => checkExercise(e, b.mode === 'sets', b.mode === 'timed'))) return false;
     if (b.mode === 'timed') return true;
     const rest = Number.isInteger(b.restSec) && (b.restSec as number) >= 0 && (b.restSec as number) <= 3600;
     const video = Array.isArray(b.videoRounds) && b.videoRounds.every((n) => Number.isInteger(n));

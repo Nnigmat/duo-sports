@@ -3,7 +3,7 @@ import type { CommitBlock, ImportCommit } from '../shared/types';
 import { createUser } from './auth';
 import { DEFAULT_EXERCISES } from './defaultExercises';
 import { openDb, type Db } from './db';
-import { applyImport, ensureLibrary, libraryOf, checkStructure, planTitles, redoImport, undoImport, validateCommit } from './imports';
+import { applyImport, checkStructure, ensureLibrary, libraryOf, planTitles, redoImport, undoImport, validateCommit } from './imports';
 
 let db: Db;
 let t = new Date('2026-11-02T14:20:00Z');
@@ -241,5 +241,14 @@ describe('checkStructure: стороны', () => {
     expect(checkStructure(timed(['вправо', '']))).toBe(false);
     expect(checkStructure(timed(['а', 'б', 'в']))).toBe(false);
     expect(checkStructure(timed('вправо'))).toBe(false);
+  });
+  it('отклоняет sides вне таймерного блока', () => {
+    const sets = [
+      {
+        id: 'b0', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [],
+        exercises: [{ id: 'b0-e0', name: 'Приседания', kind: 'reps', target: { min: 10, max: 10 }, sets: 3, sides: ['вправо', 'влево'] }],
+      },
+    ];
+    expect(checkStructure(sets)).toBe(false);
   });
 });
