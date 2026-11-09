@@ -58,10 +58,6 @@ export function applyToStructure(blocks: Block[], rename: Map<string, string | n
   const name = (n: string) => (rename.has(n) ? rename.get(n) : n);
   const out: Block[] = [];
   for (const b of blocks) {
-    if (b.mode === 'timed') {
-      out.push(b);
-      continue;
-    }
     const exercises = (b.exercises as Array<{ name: string }>).flatMap((e) => {
       const n = name(e.name);
       return n ? [{ ...e, name: n }] : [];

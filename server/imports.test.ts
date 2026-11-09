@@ -222,6 +222,17 @@ describe('validateCommit', () => {
   });
 });
 
+describe('импорт: набор со сторонами', () => {
+  it('structure с sides записывается и читается без потерь', () => {
+    const structure = [
+      { id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Вращение головой', kind: 'time', pose: 'stand', target: { min: 30, max: 30 }, sides: ['вправо', 'влево'] }] },
+    ] as never;
+    applyImport(db, me, commit({ workouts: [{ id: 'w1', title: 'Т', blocks: blocks('Подтягивания'), structure }], entries: [], replaceDates: [] }), clock);
+    const row = db.prepare("SELECT structure FROM workouts WHERE slug = 'w1'").get() as { structure: string };
+    expect(JSON.parse(row.structure)).toEqual(structure);
+  });
+});
+
 describe('checkStructure: стороны', () => {
   const timed = (sides: unknown) => [
     {

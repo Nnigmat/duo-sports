@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildCommit, commitExercise, musclesOf } from './commit';
+import type { TimedBlock } from '../../../../shared/types';
+import { applyToStructure, buildCommit, commitExercise, musclesOf } from './commit';
 import { libraryFixture } from './fixtures';
 import { DEFAULT_OPTIONS } from './importPlan';
 import { parseImport, type ParsedImport } from './parse';
@@ -109,5 +110,48 @@ describe('buildCommit', () => {
     expect(skip.workouts[1]!.structure).toBeUndefined();
     const use = buildCommit(parsed, pickAllSimilar(EMPTY_CHOICES, parsed.preview.newExercises), DEFAULT_OPTIONS);
     expect((use.workouts[0]!.structure![1] as { exercises: Array<{ name: string }> }).exercises.map((e) => e.name)).toEqual(['Отжимания', 'Подтягивания', 'Лодочка']);
+  });
+});
+
+describe('наборы разминки на проверке', () => {
+  const routineText = `version: 1
+routines:
+  - id: neck
+    title: Шея
+    exercises:
+      - { name: Вращение тазом, time: 30s, per_side: true }
+      - { name: Вращение плечами, time: 20s }
+workouts:
+  - { title: Т, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }, { type: warmup, text: Скакалка }] }
+`;
+  const p = (() => {
+    const r = parseImport(routineText, ctx);
+    if (!r.ok) throw new Error(r.errors.map((e) => e.message).join());
+    return r;
+  })();
+  const keyOf = (name: string) => p.preview.newExercises.find((e) => e.name === name)!.key;
+  const timed = (c: ReturnType<typeof buildCommit>, i = 0) => c.workouts[0]!.structure![i] as TimedBlock;
+
+  it('«Не создавать» убирает упражнение из набора', () => {
+    const c = buildCommit(p, setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), DEFAULT_OPTIONS);
+    expect(timed(c).exercises.map((e) => e.name)).toEqual(['Вращение плечами']);
+  });
+  it('пустой набор исчезает, блок «Разминка» без списка остаётся', () => {
+    const choices = setAction(setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), keyOf('Вращение плечами'), 'skip');
+    const c = buildCommit(p, choices, DEFAULT_OPTIONS);
+    expect(c.workouts[0]!.structure).toHaveLength(1);
+    expect(timed(c).exercises.map((e) => e.name)).toEqual(['Разминка']);
+  });
+  it('«Использовать похожее» подменяет название в timed-блоке', () => {
+    const blocks = [{ id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Планка1', kind: 'time', target: { min: 30, max: 30 } }] }] as TimedBlock[];
+    const out = applyToStructure(blocks, new Map([['Планка1', 'Планка']])) as TimedBlock[];
+    expect(out[0]!.exercises[0]!.name).toBe('Планка');
+  });
+  it('блок «Разминка» без списка не затрагивается', () => {
+    const block = { id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Разминка', kind: 'time', target: { min: 300, max: 300 } }] } as TimedBlock;
+    expect(applyToStructure([block], new Map([['Планка', null]]))).toEqual([block]);
+  });
+  it('sides доходят до отправки', () => {
+    expect(timed(buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS)).exercises[0]!.sides).toEqual(['вправо', 'влево']);
   });
 });
