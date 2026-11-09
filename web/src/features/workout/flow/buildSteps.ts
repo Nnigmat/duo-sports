@@ -21,6 +21,8 @@ export interface Step {
   /** отдых после шага; 0 — без отдыха (в том числе после последнего шага блока) */
   restAfterSec: number;
   record: boolean;
+  /** Сторона упражнения в две стороны (только timed) */
+  side?: { index: 1 | 2; label: string };
   /** Что стояло в плане, если упражнение заменили по ходу тренировки */
   replaced?: { id: string; name: string };
 }
@@ -51,7 +53,11 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
 
   switch (block.mode) {
     case 'timed':
-      return block.exercises.map((e) => make(e, 1, 1));
+      return block.exercises.flatMap((e) =>
+        e.sides
+          ? e.sides.map((label, i): Draft => ({ ...make(e, 1, 1), side: { index: i === 0 ? 1 : 2, label } }))
+          : [make(e, 1, 1)],
+      );
     case 'sets':
       return block.exercises.flatMap((e) =>
         Array.from({ length: e.sets }, (_, i) => make(e, i + 1, e.sets)),

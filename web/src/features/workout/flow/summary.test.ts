@@ -26,6 +26,14 @@ describe('timedHeadline', () => {
     const mixed = { ...warmup, exercises: [warmup.exercises[0], { ...warmup.exercises[1], target: { min: 45, max: 45 } }] };
     expect(timedHeadline(mixed)).toBe('2 упражнения');
   });
+  it('блок со сторонами показывает общее время обеих сторон', () => {
+    const [a, b] = warmup.exercises;
+    const sided = { ...warmup, exercises: [a, { ...b, sides: ['вправо', 'влево'] as [string, string] }, { ...a, id: 'c' }] };
+    expect(timedHeadline(sided)).toBe('3 упражнения · 02:00');
+  });
+  it('блок без сторон не меняется', () => {
+    expect(timedHeadline(warmup)).toBe('2 упражнения по 30 с');
+  });
   it('склонение: 1, 4 и 6 упражнений', () => {
     const n = (k: number) => ({ ...warmup, exercises: Array.from({ length: k }, () => warmup.exercises[0]) });
     expect(timedHeadline(n(1))).toBe('1 упражнение по 30 с');

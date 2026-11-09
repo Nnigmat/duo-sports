@@ -40,9 +40,14 @@ export function timerSeconds(plan: SetPlan): number {
   return plan.target.max;
 }
 
+/** Название шага: «Вращение головой, вправо»; без стороны просто название упражнения */
+export function stepTitle(step: Step): string {
+  return step.side ? `${step.exerciseName}, ${step.side.label}` : step.exerciseName;
+}
+
 /** Строка данных в облачке: «Обратные отжимания · 18–20 повт». У таймерных блоков только название: время показывает кольцо. */
 export function stepLine(step: Step): string {
-  return step.mode === 'timed' ? step.exerciseName : `${step.exerciseName} · ${formatPlan(step.kind, step.plan)}`;
+  return step.mode === 'timed' ? stepTitle(step) : `${step.exerciseName} · ${formatPlan(step.kind, step.plan)}`;
 }
 
 /** Надстрочник облачка: «Подход 4 из 9 · снимаем на видео», «Разминка · 1 из 6» */
