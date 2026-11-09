@@ -34,6 +34,16 @@ export function formatZoom(value: number): string {
 
 export type Facing = 'environment' | 'user';
 
+/** Звук без голосовой обработки: шумоподавление и автоусиление в зале портят звук штанги и голоса. */
+export const AUDIO_CONSTRAINTS = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+} as const;
+
+/** Битрейт звука в записи, бит/с */
+export const AUDIO_BITS_PER_SECOND = 128_000;
+
 /** Поток камеры и признак, что в нём есть микрофон. */
 export type CameraStream = { stream: MediaStream; withAudio: boolean };
 
@@ -47,7 +57,7 @@ export async function openCamera(
 ): Promise<CameraStream> {
   const video = { facingMode: { ideal: facing } };
   try {
-    return { stream: await getUserMedia({ video, audio: true }), withAudio: true };
+    return { stream: await getUserMedia({ video, audio: AUDIO_CONSTRAINTS }), withAudio: true };
   } catch (first) {
     try {
       return { stream: await getUserMedia({ video, audio: false }), withAudio: false };
