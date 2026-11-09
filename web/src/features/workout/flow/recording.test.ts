@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clampZoom, formatZoom, openCamera, pickMimeType, zoomRange } from './recording';
+import { AUDIO_CONSTRAINTS, clampZoom, formatZoom, openCamera, pickMimeType, zoomRange } from './recording';
 
 describe('pickMimeType', () => {
   it('Chrome и Android: webm с vp9', () => {
@@ -68,7 +68,7 @@ describe('openCamera', () => {
     const getUserMedia = vi.fn().mockResolvedValue(stream);
     const result = await openCamera(getUserMedia, 'user');
     expect(getUserMedia).toHaveBeenCalledTimes(1);
-    expect(getUserMedia).toHaveBeenCalledWith({ video: { facingMode: { ideal: 'user' } }, audio: true });
+    expect(getUserMedia).toHaveBeenCalledWith({ video: { facingMode: { ideal: 'user' } }, audio: AUDIO_CONSTRAINTS });
     expect(result).toEqual({ stream, withAudio: true });
   });
 

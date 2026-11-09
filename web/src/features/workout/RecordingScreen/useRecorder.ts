@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AUDIO_BITS_PER_SECOND,
   clampZoom,
   openCamera,
   pickMimeType,
@@ -90,7 +91,7 @@ export function useRecorder(onSignal?: (signal: Signal) => void) {
           return;
         }
         const mimeType = pickMimeType((t) => MediaRecorder.isTypeSupported(t));
-        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        const recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: AUDIO_BITS_PER_SECOND });
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0) chunksRef.current.push(e.data);
         };
