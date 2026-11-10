@@ -16,6 +16,7 @@ type Props = {
   onStart?: (date: string) => void;
   onPreview?: (date: string) => void;
   onResults?: (date: string) => void;
+  onOpenReview?: (sessionId: number) => void;
   onMove?: (date: string) => void;
   onEdit?: (date: string) => void;
   onRemove: (date: string) => void;
@@ -42,6 +43,7 @@ export function PlanView({
   onStart,
   onPreview,
   onResults,
+  onOpenReview,
   onMove,
   onEdit,
   onRemove,
@@ -119,6 +121,7 @@ export function PlanView({
             onStart={onStart}
             onPreview={onPreview}
             onResults={onResults}
+            onOpenReview={onOpenReview}
             onMove={onMove}
             onEdit={onEdit}
             onRemove={onRemove}

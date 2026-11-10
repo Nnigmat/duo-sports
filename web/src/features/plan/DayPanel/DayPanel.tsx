@@ -30,6 +30,8 @@ type Props = {
   /** Просмотр тренировки в режиме превью: только у тренера, на любой день с тренировкой */
   onPreview?: (date: string) => void;
   onResults?: (date: string) => void;
+  /** Разбор выполненного дня (только у спортсмена): открывается по /review/:sessionId */
+  onOpenReview?: (sessionId: number) => void;
   onMove?: (date: string) => void;
   onEdit?: (date: string) => void;
   onRemove: (date: string) => void;
@@ -62,6 +64,7 @@ export function DayPanel({
   onStart,
   onPreview,
   onResults,
+  onOpenReview,
   onMove,
   onEdit,
   onRemove,
@@ -158,6 +161,19 @@ export function DayPanel({
         {actions.results && onResults && (
           <Button compact variant="secondary" onClick={() => onResults(date)}>
             Посмотреть итоги
+          </Button>
+        )}
+        {status === 'done' && entry.sessionId !== undefined && onOpenReview && (
+          <Button
+            compact
+            variant="secondary"
+            href={`/review/${entry.sessionId}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onOpenReview(entry.sessionId as number);
+            }}
+          >
+            Посмотреть разбор
           </Button>
         )}
         {actions.move && onMove && (

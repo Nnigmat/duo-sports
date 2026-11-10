@@ -23,13 +23,17 @@ export function planOf(db: Db, userId: number): PlanResponse {
   const workouts = db.prepare('SELECT id, title, blocks FROM workouts WHERE user_id = ? ORDER BY id').all(userId) as WorkoutRow[];
   const titles = new Map(workouts.map((w) => [w.id, w.title]));
   const rows = db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as EntryRow[];
-  const done = new Set((db.prepare('SELECT workout_id, date FROM sessions_done WHERE user_id = ? AND workout_id IS NOT NULL').all(userId) as Array<{ workout_id: number; date: string }>).map((d) => `${d.date}:${d.workout_id}`));
+  // Порядок по id: у двух занятий в один день разбор ведёт на последнее
+  const done = new Map((db.prepare('SELECT id, workout_id, date FROM sessions_done WHERE user_id = ? AND workout_id IS NOT NULL ORDER BY id').all(userId) as Array<{ id: number; workout_id: number; date: string }>).map((d) => [`${d.date}:${d.workout_id}`, d.id]));
   const skipped = new Set((db.prepare('SELECT workout_id, date FROM plan_skips WHERE user_id = ?').all(userId) as Array<{ workout_id: number; date: string }>).map((d) => `${d.date}:${d.workout_id}`));
   const statusOf = (r: EntryRow): PlanEntry['status'] => (done.has(`${r.date}:${r.workout_id}`) ? 'done' : skipped.has(`${r.date}:${r.workout_id}`) ? 'skipped' : 'planned');
   const entries: Record<string, PlanEntry> = {};
   for (const r of rows) {
     const main = entries[r.date];
-    if (!main) entries[r.date] = { templateId: String(r.workout_id), status: statusOf(r), custom: true };
+    if (!main) {
+      const sessionId = done.get(`${r.date}:${r.workout_id}`);
+      entries[r.date] = { templateId: String(r.workout_id), status: statusOf(r), custom: true, ...(sessionId !== undefined && { sessionId }) };
+    }
     else {
       main.more ??= [];
       main.more.push(titles.get(r.workout_id) ?? '');

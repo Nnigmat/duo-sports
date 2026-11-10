@@ -16,6 +16,7 @@ const meta = {
     notice: null,
     onStart: fn(),
     onResults: fn(),
+    onOpenReview: fn(),
     onMove: fn(),
     onEdit: fn(),
     onRemove: fn(),
@@ -66,6 +67,18 @@ export const Done: Story = {
     await expect(c.queryByRole('button', { name: 'Изменить' })).toBeNull();
     await userEvent.click(c.getByRole('button', { name: 'Посмотреть итоги' }));
     await expect(args.onResults).toHaveBeenCalledWith('2026-10-26');
+  },
+};
+export const DoneWithReview: Story = {
+  args: {
+    date: '2026-10-26',
+    data: { ...planFixture, entries: { ...planFixture.entries, '2026-10-26': { ...planFixture.entries['2026-10-26']!, sessionId: 7 } } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const link = within(canvasElement).getByRole('link', { name: 'Посмотреть разбор' });
+    await expect(link).toHaveAttribute('href', '/review/7');
+    await userEvent.click(link);
+    await expect(args.onOpenReview).toHaveBeenCalledWith(7);
   },
 };
 export const Moved: Story = {

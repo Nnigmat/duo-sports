@@ -297,6 +297,8 @@ export interface PlanEntry {
   movedFrom?: string;
   /** Добавлена или скопирована вручную: её можно убрать */
   custom?: boolean;
+  /** У выполненного дня: разбор открывается по /review/:sessionId */
+  sessionId?: number;
   /** Названия других тренировок в этот же день («Оставить обе» при импорте) */
   more?: string[];
 }
