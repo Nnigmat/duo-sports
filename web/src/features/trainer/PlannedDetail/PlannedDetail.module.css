@@ -106,3 +106,23 @@
   align-items: center;
   gap: var(--spacing-xs);
 }
+.fold {
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+}
+.foldSummary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--spacing-md);
+  font-size: var(--body-md-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.fold[open] > .foldSummary {
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.fold > .steps {
+  padding: var(--spacing-md);
+}
