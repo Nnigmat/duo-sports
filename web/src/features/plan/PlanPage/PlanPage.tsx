@@ -163,6 +163,7 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
         onStart={nav ? nav.onStart : start}
         onPreview={nav?.onPreview}
         onResults={nav ? nav.onResults : () => navigate('/workout/summary')}
+        onOpenReview={nav ? undefined : (id) => navigate(`/review/${id}`)}
         onMove={onMove ?? (nav ? nav.onMove : () => navigate('/'))}
         onEdit={nav ? nav.onEdit : edit}
         onCreate={nav ? nav.onCreate : (date) => navigate(`/import?date=${date}`)}

@@ -52,6 +52,14 @@ describe('planOf', () => {
     expect(t!.exercises).toEqual([{ name: 'Выпады', detail: '16–20 повт' }]);
     expect(t!.minutes).toBe(15);
   });
+  it('у выполненного дня в записи есть sessionId разбора', () => {
+    importTwo(me);
+    const верх = planOf(db, me).templates[0]!.id;
+    const sid = Number(db.prepare("INSERT INTO sessions_done (user_id, workout_id, title, date, finished_at, steps, videos) VALUES (?, ?, 'Верх', '2026-11-03', 'x', '[]', 0)").run(me, Number(верх)).lastInsertRowid);
+    const { entries } = planOf(db, me);
+    expect(entries['2026-11-03']).toMatchObject({ status: 'done', sessionId: sid });
+    expect(entries['2026-11-05']!.sessionId).toBeUndefined();
+  });
   it('записи по дням; вторая тренировка дня попадает в more', () => {
     importTwo(me);
     const { entries, templates } = planOf(db, me);
