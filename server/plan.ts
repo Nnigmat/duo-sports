@@ -13,7 +13,8 @@ export function estimateMinutes(exercises: number): number {
 
 function template(w: WorkoutRow): PlanTemplate {
   const blocks = JSON.parse(w.blocks) as CommitBlock[];
-  const exercises = blocks.flatMap((b) => b.items.map((i) => ({ name: i.name, detail: i.value })));
+  // Разминка и заминка в составе не показываем: в них десятки коротких упражнений, а смысл дня — основная часть
+  const exercises = blocks.filter((b) => b.kind === 'exercises').flatMap((b) => b.items.map((i) => ({ name: i.name, detail: i.value })));
   return { id: String(w.id), title: w.title, minutes: estimateMinutes(exercises.length), tone: TONES[(w.id - 1) % TONES.length]!, exercises };
 }
 
