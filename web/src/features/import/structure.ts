@@ -21,7 +21,7 @@ export interface Load {
   setList?: PerSet[];
 }
 
-export type BlockType = 'sets' | 'circuit' | 'superset' | 'warmup' | 'cooldown';
+export type BlockType = 'sets' | 'circuit' | 'superset' | 'warmup' | 'cooldown' | 'timed';
 
 export interface RawExercise {
   name: string;
@@ -52,6 +52,7 @@ const TITLES: Record<BlockType, string> = {
   superset: 'Суперсет',
   warmup: 'Разминка',
   cooldown: 'Заминка',
+  timed: 'По таймеру',
 };
 
 /** фунты → кг с точностью до половины килограмма */
@@ -114,6 +115,16 @@ function setsExercises(blockId: string, exs: RawExercise[]): SetsExercise[] {
 /** Собирает блок экрана тренировки. blockId уникален в тренировке. */
 export function buildBlock(raw: RawBlock, blockId: string): Block {
   const title = TITLES[raw.type];
+  // Упражнения на время в основной части (планка): те же шаги по таймеру, но без kind, это не разминка
+  if (raw.type === 'timed') {
+    return {
+      id: blockId,
+      mode: 'timed',
+      title,
+      ...(raw.text ? { note: raw.text } : {}),
+      exercises: raw.exercises.map((e, i) => ({ id: `${blockId}-e${i}`, name: e.name, kind: 'time' as const, target: targetOf(e.load), ...(e.sides ? { sides: e.sides } : {}) })),
+    };
+  }
   if (raw.type === 'warmup' || raw.type === 'cooldown') {
     const pose = raw.type === 'cooldown' ? 'stretch' : 'stand';
     // Набор упражнений: каждое — отдельный шаг прохождения (или два, если есть стороны)

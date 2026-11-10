@@ -55,6 +55,20 @@ describe('workoutToYaml', () => {
   });
 });
 
+describe('блок по таймеру в основной части', () => {
+  const plank: Block[] = [{ id: 'b0', mode: 'timed', title: 'По таймеру', exercises: [{ id: 'b0-e0', name: 'Планка', kind: 'time', target: { min: 45, max: 45 } }] }];
+  it('пишется как type: timed и читается обратно без kind', () => {
+    const text = workoutToYaml('Кор', plank);
+    expect(text).toContain('type: timed');
+    expect(text).not.toMatch(/warmup|cooldown/);
+    expect(workoutFromYaml(text, library, plank, TODAY)).toEqual({ ok: true, title: 'Кор', blocks: plank });
+  });
+  it('старая разминка без kind остаётся разминкой', () => {
+    const old: Block[] = [{ id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] }];
+    expect(workoutToYaml('Ноги', old)).toContain('type: warmup');
+  });
+});
+
 describe('круг блоки → YAML → блоки', () => {
   it('ничего не теряет', () => {
     const back = workoutFromYaml(workoutToYaml('Ноги', blocks), library, blocks, TODAY);

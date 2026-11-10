@@ -368,6 +368,16 @@ describe('упражнения прямо в блоке разминки и за
     expect(b.exercises[1]).toMatchObject({ sides: ['вправо', 'влево'] });
     expect(r.workouts[0]!.blocks[0]!.heading).toBe('Разминка · 2 мин');
   });
+  it('type: timed — блок по таймеру без kind, в составе дня остаётся', () => {
+    const r = ok(parseImport(wrap('      - type: timed\n        exercises:\n          - { name: Планка, time: 45s }\n'), ctx));
+    const b = r.workouts[0]!.structure[0]!;
+    expect(b).toMatchObject({ mode: 'timed', title: 'По таймеру' });
+    expect(b).not.toHaveProperty('kind');
+    expect(r.workouts[0]!.blocks[0]).toMatchObject({ kind: 'exercises', heading: 'По таймеру · 45 с' });
+  });
+  it('type: timed без exercises — ошибка', () => {
+    expect(fails(wrap('      - type: timed\n')).length).toBeGreaterThan(0);
+  });
   it('работает и в заминке', () => {
     expect(ok(parseImport(wrap(block('cooldown')), ctx)).workouts[0]!.structure[0]).toMatchObject({ mode: 'timed', title: 'Заминка' });
   });

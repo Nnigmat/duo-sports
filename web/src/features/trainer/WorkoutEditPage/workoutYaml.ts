@@ -14,6 +14,9 @@ const isOpen = (r: Range) => r.min === 0 && r.max === 0;
 /** Таймерный блок из одного шага с названием блока — то, что импорт делает из `time: 5m` без набора */
 const isPlainTimed = (b: Block): boolean => b.mode === 'timed' && b.exercises.length === 1 && /^(разминка|заминка)$/i.test(b.exercises[0]!.name);
 
+/** Блок по таймеру без kind из старых данных: разминка или заминка, если у упражнений есть поза (её ставил импорт) или так назван блок */
+const isLegacyRoutine = (b: Block): boolean => b.exercises.some((e) => e.pose !== undefined) || /разминк|заминк/i.test(b.title);
+
 const isCooldown = (b: Block): boolean => b.exercises.some((e) => e.pose === 'stretch') || /заминк/i.test(b.title);
 
 function exerciseYaml(e: Exercise, withSets: boolean): Record<string, unknown> {
@@ -29,6 +32,9 @@ function exerciseYaml(e: Exercise, withSets: boolean): Record<string, unknown> {
 export function workoutToYaml(title: string, blocks: Block[]): string {
   const out = blocks.map((b) => {
     const head = { title: b.title, ...(b.mode !== 'timed' && b.videoRounds.length ? { video_rounds: b.videoRounds } : {}) };
+    if (b.mode === 'timed' && !b.kind && !isLegacyRoutine(b)) {
+      return { type: 'timed', ...head, ...(b.note ? { text: b.note } : {}), exercises: b.exercises.map((e) => ({ name: e.name, time: rangeText(e.target, 's'), ...(e.sides ? { sides: e.sides } : {}) })) };
+    }
     if (b.mode === 'timed') {
       // В формате импорта у блока по таймеру два типа; без kind (старые данные) берём по позе и названию
       const type = b.kind ?? (isCooldown(b) ? 'cooldown' : 'warmup');
