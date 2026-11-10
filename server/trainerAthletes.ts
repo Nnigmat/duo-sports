@@ -112,7 +112,7 @@ export function sessionsOf(db: Db, viewer: Viewer, athleteId: number, today: str
   if (!access.ok) return access;
   const moves = planOf(db, athleteId).moves;
   const workouts = new Map(
-    (db.prepare('SELECT id, title, blocks FROM workouts WHERE user_id = ?').all(athleteId) as Array<{ id: number; title: string; blocks: string }>).map((w) => [w.id, { title: w.title, count: (JSON.parse(w.blocks) as CommitBlock[]).reduce((n, b) => n + b.items.length, 0) }]),
+    (db.prepare('SELECT id, title, blocks FROM workouts WHERE user_id = ?').all(athleteId) as Array<{ id: number; title: string; blocks: string }>).map((w) => [w.id, { title: w.title, count: (JSON.parse(w.blocks) as CommitBlock[]).reduce((n, b) => (b.kind === 'exercises' ? n + b.items.length : n), 0) }]),
   );
   const info = (id: number) => workouts.get(id) ?? { title: '', count: 0 };
 

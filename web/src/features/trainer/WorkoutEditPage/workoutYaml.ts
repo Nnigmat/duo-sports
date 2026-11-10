@@ -30,7 +30,8 @@ export function workoutToYaml(title: string, blocks: Block[]): string {
   const out = blocks.map((b) => {
     const head = { title: b.title, ...(b.mode !== 'timed' && b.videoRounds.length ? { video_rounds: b.videoRounds } : {}) };
     if (b.mode === 'timed') {
-      const type = isCooldown(b) ? 'cooldown' : 'warmup';
+      // В формате импорта у блока по таймеру два типа; без kind (старые данные) берём по позе и названию
+      const type = b.kind ?? (isCooldown(b) ? 'cooldown' : 'warmup');
       const note = b.note ? { text: b.note } : {};
       if (isPlainTimed(b)) return { type, ...head, time: rangeText(b.exercises[0]!.target, 's'), ...note };
       if (b.exercises.length === 0) return { type, ...head, ...note };

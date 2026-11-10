@@ -145,6 +145,16 @@ describe('sessionsOf: вкладка «Тренировки»', () => {
     entry('2026-10-20', upper);
     expect(view().planned.map((p) => [p.date, p.title, p.kind, p.exerciseCount])).toEqual([['2026-11-02', 'Верх', 'planned', 2], ['2026-11-05', 'Ноги', 'planned', 2]]);
   });
+  it('в числе упражнений нет разминки и заминки', () => {
+    const blocks = JSON.stringify([
+      { kind: 'warmup', heading: 'Разминка', items: [{ name: 'Круги головой', value: '30 с' }, { name: 'Круги плечами', value: '30 с' }] },
+      { kind: 'exercises', heading: 'Круг', items: [{ name: 'Выпады', value: '16' }] },
+      { kind: 'cooldown', heading: 'Заминка', items: [{ name: 'Поза ребёнка', value: '45 с' }] },
+    ]);
+    const w = Number(db.prepare('INSERT INTO workouts (user_id, title, blocks, created_at) VALUES (?, ?, ?, ?)').run(nikita, 'С разминкой', blocks, 'x').lastInsertRowid);
+    entry('2026-11-03', w);
+    expect(view().planned.map((p) => p.exerciseCount)).toEqual([1]);
+  });
   it('перенос: на старом дне «перенесена», на новом «со дня»', () => {
     const cardio = wk('Кардио');
     entry('2026-11-04', cardio);

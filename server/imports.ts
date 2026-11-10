@@ -110,7 +110,7 @@ export function checkStructure(blocks: unknown): boolean {
     if (!isObj(b) || !MODES.includes(String(b.mode)) || !isStr(b.id, 100) || !isStr(b.title, LIMITS.name)) return false;
     if (!Array.isArray(b.exercises) || b.exercises.length === 0 || b.exercises.length > LIMITS.items) return false;
     if (!b.exercises.every((e) => checkExercise(e, b.mode === 'sets', b.mode === 'timed'))) return false;
-    if (b.mode === 'timed') return true;
+    if (b.mode === 'timed') return b.kind === undefined || b.kind === 'warmup' || b.kind === 'cooldown';
     const rest = Number.isInteger(b.restSec) && (b.restSec as number) >= 0 && (b.restSec as number) <= 3600;
     const video = Array.isArray(b.videoRounds) && b.videoRounds.every((n) => Number.isInteger(n));
     return rest && video && (b.mode === 'sets' || (Number.isInteger(b.rounds) && (b.rounds as number) >= 1 && (b.rounds as number) <= 100));

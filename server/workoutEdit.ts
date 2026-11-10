@@ -17,7 +17,7 @@ function valueText(e: Exercise, sets?: number): string {
 /** Список для подсказок и карточки ученика (колонка blocks) собирается из структуры, чтобы они не расходились */
 export function displayBlocks(blocks: Block[]): CommitBlock[] {
   return blocks.map((b) => ({
-    kind: 'exercises',
+    kind: b.mode === 'timed' && b.kind ? b.kind : 'exercises',
     heading: b.title,
     items: b.exercises.map((e) => ({ name: e.name, value: valueText(e, b.mode === 'sets' ? (e as { sets: number }).sets : undefined) })),
   }));

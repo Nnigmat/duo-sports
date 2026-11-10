@@ -121,6 +121,7 @@ export function buildBlock(raw: RawBlock, blockId: string): Block {
       return {
         id: blockId,
         mode: 'timed',
+        kind: raw.type,
         title,
         ...(raw.text ? { note: raw.text } : {}),
         exercises: raw.exercises.map((e, i) => ({
@@ -137,6 +138,7 @@ export function buildBlock(raw: RawBlock, blockId: string): Block {
     return {
       id: blockId,
       mode: 'timed',
+      kind: raw.type,
       title,
       ...(raw.text ? { note: raw.text } : {}),
       exercises: [{ id: `${blockId}-e0`, name: title, kind: 'time', pose, target: { ...sec } }],
