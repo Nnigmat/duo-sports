@@ -126,12 +126,21 @@ export function buildCommentRequest(a: { text: string; sessionId: number; slug: 
 
 export type PlanStep = { key: string; name: string; sets: string[] };
 
+function blockSteps(b: Block): PlanStep[] {
+  return b.exercises.map((e) => {
+    const count = b.mode === 'sets' ? (e as { sets: number }).sets : b.mode === 'circuit' ? b.rounds : 1;
+    return { key: e.id, name: e.name, sets: Array.from({ length: count }, () => formatPlan(e.kind, { target: e.target, weight: e.weight })) };
+  });
+}
+
 /** Шаги запланированной тренировки: подходы по блокам (timed — один, sets — по числу подходов, circuit — по числу кругов) */
 export function planSteps(blocks: Block[]): PlanStep[] {
-  return blocks.flatMap((b) =>
-    b.exercises.map((e) => {
-      const count = b.mode === 'sets' ? (e as { sets: number }).sets : b.mode === 'circuit' ? b.rounds : 1;
-      return { key: e.id, name: e.name, sets: Array.from({ length: count }, () => formatPlan(e.kind, { target: e.target, weight: e.weight })) };
-    }),
-  );
+  return blocks.flatMap(blockSteps);
+}
+
+export type PlanSection = { key: string; title: string; /** разминка и заминка: десятки коротких упражнений, по умолчанию свёрнуты */ folded: boolean; steps: PlanStep[] };
+
+/** Блоки по порядку; timed (разминка, заминка) помечены как сворачиваемые */
+export function planSections(blocks: Block[]): PlanSection[] {
+  return blocks.map((b) => ({ key: b.id, title: b.title, folded: b.mode === 'timed', steps: blockSteps(b) })).filter((s) => s.steps.length > 0);
 }
