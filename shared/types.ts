@@ -281,7 +281,7 @@ export interface PlanTemplate {
   /** Ориентировочная длительность: оценка по числу упражнений, пока тренировки не знают своей */
   minutes: number;
   tone: PlanTone;
-  /** detail: «4 × 8 · 50 кг» */
+  /** Основная часть, без разминки и заминки. detail: «4 × 8 · 50 кг» */
   exercises: Array<{ name: string; detail: string }>;
 }
 

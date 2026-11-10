@@ -38,6 +38,20 @@ describe('planOf', () => {
     expect(templates[0]!.exercises[0]).toEqual({ name: 'Упр 1', detail: '10' });
     expect(templates.map((t) => t.tone)).toEqual(['primary', 'teal']);
   });
+  it('разминка и заминка не попадают в состав и в оценку', () => {
+    applyImport(db, me, {
+      exercises: [],
+      workouts: [{ title: 'Ноги', blocks: [
+        { kind: 'warmup', heading: 'Разминка', items: Array.from({ length: 20 }, (_, i) => ({ name: `Р${i}`, value: '00:30' })) },
+        { kind: 'exercises', heading: 'Круг', items: [{ name: 'Выпады', value: '16–20 повт' }] },
+        { kind: 'cooldown', heading: 'Заминка', items: [{ name: 'Бабочка', value: '00:45' }] },
+      ] }],
+      entries: [], replaceDates: [],
+    }, clock);
+    const [t] = planOf(db, me).templates;
+    expect(t!.exercises).toEqual([{ name: 'Выпады', detail: '16–20 повт' }]);
+    expect(t!.minutes).toBe(15);
+  });
   it('записи по дням; вторая тренировка дня попадает в more', () => {
     importTwo(me);
     const { entries, templates } = planOf(db, me);
