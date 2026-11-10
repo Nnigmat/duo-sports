@@ -53,7 +53,7 @@ export const MAX_WORKOUTS = 500;
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const WEEKDAY_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const BLOCK_TYPES = ['sets', 'circuit', 'superset', 'warmup', 'cooldown'] as const;
+const BLOCK_TYPES = ['sets', 'circuit', 'superset', 'warmup', 'cooldown', 'timed'] as const;
 const TOP_KEYS = new Set(['version', 'units', 'exercises', 'routines', 'workouts', 'plan']);
 
 type Json = unknown;
@@ -491,7 +491,15 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         if (!isObj(b)) return fail(bp, 'Блок должен быть набором полей: type, exercises');
         const type = str(b.type);
         if (!type || !(BLOCK_TYPES as readonly string[]).includes(type)) {
-          return fail([...bp, 'type'], `Неизвестный type: ${type ?? 'не указан'}`, 'Допустимо: sets, circuit, superset, warmup, cooldown.');
+          return fail([...bp, 'type'], `Неизвестный type: ${type ?? 'не указан'}`, 'Допустимо: sets, circuit, superset, warmup, cooldown, timed.');
+        }
+        if (type === 'timed') {
+          if (!Array.isArray(b.exercises) || b.exercises.length === 0) return fail([...bp, 'exercises'], 'В блоке нет exercises', 'Добавьте хотя бы одно упражнение.');
+          const own = readTimed(b.exercises, [...bp, 'exercises'], wi, 'блока');
+          const text = str(b.text) ?? undefined;
+          blocks.push({ kind: 'exercises', heading: `По таймеру · ${formatDuration({ min: own.totalSec, max: own.totalSec })}`, ...(text ? { text } : {}), items: own.items });
+          raws.push({ type, ...(text ? { text } : {}), exercises: own.exercises });
+          return;
         }
         if (type === 'warmup' || type === 'cooldown') {
           const head = type === 'warmup' ? 'Разминка' : 'Заминка';

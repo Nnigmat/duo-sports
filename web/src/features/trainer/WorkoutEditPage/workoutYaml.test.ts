@@ -13,6 +13,7 @@ const blocks: Block[] = [
   {
     id: 'b0',
     mode: 'timed',
+    kind: 'warmup',
     title: 'Разминка',
     exercises: [
       { id: 'b0-e0', name: 'Вращения плечами', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } },
@@ -39,7 +40,7 @@ const blocks: Block[] = [
     videoRounds: [2],
     exercises: [{ id: 'b2-e0', name: 'Отжимания', kind: 'reps', target: { min: 0, max: 0 } }],
   },
-  { id: 'b3', mode: 'timed', title: 'Заминка', exercises: [{ id: 'b3-e0', name: 'Заминка', kind: 'time', pose: 'stretch', target: { min: 300, max: 300 } }] },
+  { id: 'b3', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [{ id: 'b3-e0', name: 'Заминка', kind: 'time', pose: 'stretch', target: { min: 300, max: 300 } }] },
 ];
 
 describe('workoutToYaml', () => {
@@ -51,6 +52,20 @@ describe('workoutToYaml', () => {
     expect(text).toContain('type: cooldown');
     expect(text).toContain('time: 300');
     expect(text).toMatch(/video_rounds:\n\s+- 3/);
+  });
+});
+
+describe('блок по таймеру в основной части', () => {
+  const plank: Block[] = [{ id: 'b0', mode: 'timed', title: 'По таймеру', exercises: [{ id: 'b0-e0', name: 'Планка', kind: 'time', target: { min: 45, max: 45 } }] }];
+  it('пишется как type: timed и читается обратно без kind', () => {
+    const text = workoutToYaml('Кор', plank);
+    expect(text).toContain('type: timed');
+    expect(text).not.toMatch(/warmup|cooldown/);
+    expect(workoutFromYaml(text, library, plank, TODAY)).toEqual({ ok: true, title: 'Кор', blocks: plank });
+  });
+  it('старая разминка без kind остаётся разминкой', () => {
+    const old: Block[] = [{ id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] }];
+    expect(workoutToYaml('Ноги', old)).toContain('type: warmup');
   });
 });
 
