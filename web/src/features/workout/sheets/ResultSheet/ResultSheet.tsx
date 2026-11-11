@@ -59,11 +59,12 @@ function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' 
   return (
     <>
       {kind === 'time' ? (
-        <ParamStepper label="Время" unit="с" mode="duration" step={5} max={86_400} value={draft.value} onChange={setValue} describedBy={`${hintId}-main`} />
+        <ParamStepper label="Время" unit="с" mode="duration" live step={5} max={86_400} value={draft.value} onChange={setValue} describedBy={`${hintId}-main`} />
       ) : (
         <ParamStepper
           label="Повторения"
           unit="повт"
+          live
           value={draft.value}
           onChange={setValue}
           decreaseLabel="Меньше повторений"
@@ -80,6 +81,7 @@ function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' 
           <ParamStepper
             label="Вес"
             unit="кг"
+            live
             value={draft.weight ?? 0}
             step={WEIGHT_STEP}
             onChange={(weight) => setDraft((d) => ({ ...d, weight }))}

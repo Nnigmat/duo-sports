@@ -21,7 +21,7 @@ type Props = {
   increaseLabel?: string;
   /** id строки с подсказкой под полем */
   describedBy?: string;
-  /** Валидное число из поля уходит в onChange на каждый символ. false: только по blur или Enter (для сохранения на сервер) */
+  /** Валидное число из поля уходит в onChange на каждый символ. true: только в ResultSheet, где «Записать» может сработать без blur. По умолчанию число применяется по blur или Enter: правки зависимых полей (границы диапазона, круги) не должны срабатывать на полпути */
   live?: boolean;
   className?: string;
 };
@@ -29,7 +29,7 @@ type Props = {
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
 /** Строка параметра: подпись слева, справа − значение +. Число можно ввести руками. */
-export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, decreaseLabel, increaseLabel, describedBy, live = true, className }: Props) {
+export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, decreaseLabel, increaseLabel, describedBy, live = false, className }: Props) {
   const id = useId();
   const duration = mode === 'duration';
   const delta = step ?? (duration ? 5 : 1);

@@ -46,7 +46,7 @@ export const AllVariants: Story = {
 
 export const LiveTyping: Story = {
   tags: ['!dev', '!autodocs'],
-  args: { label: 'Повторы', unit: 'повт', value: 10, onChange: fn() },
+  args: { label: 'Повторы', unit: 'повт', value: 10, live: true, onChange: fn() },
   play: async ({ canvasElement, args }) => {
     const input = within(canvasElement).getByLabelText('Повторы');
     await userEvent.clear(input);
@@ -59,9 +59,10 @@ export const LiveTyping: Story = {
   },
 };
 
+/** По умолчанию число применяется только по blur или Enter */
 export const DeferredTyping: Story = {
   tags: ['!dev', '!autodocs'],
-  args: { label: 'Отсчёт', unit: 'с', value: 3, live: false, onChange: fn() },
+  args: { label: 'Отсчёт', unit: 'с', value: 3, onChange: fn() },
   play: async ({ canvasElement, args }) => {
     const input = within(canvasElement).getByLabelText('Отсчёт');
     await userEvent.clear(input);
@@ -70,5 +71,19 @@ export const DeferredTyping: Story = {
     await userEvent.tab();
     await expect(args.onChange).toHaveBeenCalledTimes(1);
     await expect(args.onChange).toHaveBeenLastCalledWith(12);
+  },
+};
+
+export const DeferredEnter: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { label: 'Круги', unit: '', value: 3, onChange: fn() },
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByLabelText('Круги');
+    await userEvent.clear(input);
+    await userEvent.type(input, '20');
+    await expect(args.onChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onChange).toHaveBeenCalledTimes(1);
+    await expect(args.onChange).toHaveBeenLastCalledWith(20);
   },
 };
