@@ -1,5 +1,5 @@
 import type {
-  Block, CommitBlock, Range, Routine, RoutineDetail, RoutineInput, RoutineItem, RoutineKind, RoutineSummary,
+  Block, CommitBlock, Range, Routine, RoutineDetail, RoutineInput, RoutineItem, RoutineKind, RoutineSummary, Workout,
 } from '../shared/types';
 import { composeBlocks, routineBlock } from '../shared/routines';
 import type { Db } from './db';
@@ -236,4 +236,15 @@ export function composeDisplay(db: Db, row: RoutineLinks & { blocks: string }): 
   const { warmup, cooldown } = linkedBlocks(db, row);
   const wrap = (b: ReturnType<typeof routineBlock> | null) => (b && b.exercises.length > 0 ? displayBlocks([b]) : []);
   return [...wrap(warmup), ...main, ...wrap(cooldown)];
+}
+
+/** Slug и название подключённых разминки и заминки; undefined, если ссылок нет */
+export function linkedRoutines(db: Db, links: RoutineLinks): Workout['routines'] {
+  const at = (id: number | null) => {
+    const r = db.prepare('SELECT slug, title FROM routines WHERE id = ?').get(id ?? -1) as { slug: string; title: string } | undefined;
+    return r ? { id: r.slug, title: r.title } : undefined;
+  };
+  const warmup = at(links.warmup_routine_id);
+  const cooldown = at(links.cooldown_routine_id);
+  return warmup || cooldown ? { ...(warmup ? { warmup } : {}), ...(cooldown ? { cooldown } : {}) } : undefined;
 }

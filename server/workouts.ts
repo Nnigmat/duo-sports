@@ -2,7 +2,7 @@ import type { ExerciseKind, Gender, SessionResult, Workout, WorkoutResponse } fr
 import { commentRowsOf, commentsFor, libraryOf, markSeen, techniquesFor } from './comments';
 import type { Db } from './db';
 import { isDate } from './imports';
-import { composeStructure, type RoutineLinks } from './routines';
+import { composeStructure, linkedRoutines, type RoutineLinks } from './routines';
 
 type Clock = () => Date;
 const now: Clock = () => new Date();
@@ -14,7 +14,8 @@ export function workoutOf(db: Db, userId: number, id: number): Workout | null {
     | undefined;
   const blocks = row ? composeStructure(db, row) : null;
   if (!row || !blocks) return null;
-  return { id: String(row.id), title: row.title, blocks };
+  const routines = linkedRoutines(db, row);
+  return { id: String(row.id), title: row.title, blocks, ...(routines ? { routines } : {}) };
 }
 
 /** Тренировка с комментариями тренера и техникой из библиотеки. Показанные комментарии помечаются прочитанными. */

@@ -162,7 +162,10 @@ export interface Technique {
 export interface Workout {
   id: string;
   title: string;
+  /** Для экрана: разминка и заминка по ссылке уже стоят в начале и в конце */
   blocks: Block[];
+  /** Подключённые разминка и заминка (slug и название); редактор показывает их строками-ссылками */
+  routines?: { warmup?: { id: string; title: string }; cooldown?: { id: string; title: string } };
 }
 
 /** Ответ GET /api/workouts/:id: тренировка, комментарии тренера и техника по id упражнений тренировки */
