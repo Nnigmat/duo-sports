@@ -106,7 +106,7 @@
   gap: 2px; /* нет токена */
   min-width: 0;
   padding: var(--spacing-xxs) 10px; /* нет токена */
-  border-radius: 10px;
+  border-radius: var(--rounded-lg);
   background: color-mix(in srgb, var(--ink) 55%, transparent);
   color: var(--on-ink);
 }
@@ -119,6 +119,12 @@
   font-size: var(--caption-size);
   line-height: var(--caption-line);
   font-variant-numeric: tabular-nums;
+}
+.subtitleNote {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
 }
 .center {
   display: flex;

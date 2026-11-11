@@ -489,6 +489,14 @@ export interface ReviewExercise {
   newCount: number;
 }
 
+/** Блок тренировки в разборе; разминка и заминка свёрнуты */
+export interface ReviewSection {
+  key: string;
+  title: string;
+  folded: boolean;
+  exercises: ReviewExercise[];
+}
+
 /** Подсказки тренера к следующему занятию */
 export interface ReviewHints {
   date: string;
@@ -516,7 +524,10 @@ export interface SessionReviewResponse {
   reviewedAt: string | null;
   /** Сколько комментариев написал тренер */
   trainerCommentCount: number;
+  /** Плоский список упражнений всех блоков */
   exercises: ReviewExercise[];
+  /** Те же упражнения по блокам тренировки */
+  sections: ReviewSection[];
   /** Комментарии ко всей тренировке */
   general: ReviewComment[];
   /** Только для спортсмена; null, если подсказок нет */
@@ -527,7 +538,13 @@ export interface SessionReviewResponse {
 export interface VideoReviewResponse {
   /** Чьё видео: ему адресуются ответы */
   athleteId: number;
-  video: { id: string; durationSec: number; exerciseName: string; /** «Подход 4 · 80 кг × 5» */ label: string; sessionId: number | null };
+  video: { id: string; durationSec: number; exerciseName: string; /** «Подход 4 · 80 кг × 5» (план) */ label: string;
+    /** Факт подхода: «85 кг × 7». Нет у пропущенных подходов, старых Итогов и видео без тренировки */
+    actualLabel?: string;
+    /** Факт против плана; идёт вместе с actualLabel */
+    factMark?: 'Меньше плана' | 'В плане' | 'Больше плана';
+    sessionId: number | null;
+  };
   comments: ReviewComment[];
 }
 

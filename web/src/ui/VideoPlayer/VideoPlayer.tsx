@@ -24,6 +24,8 @@ type Props = {
   title?: string;
   /** «Подход 4 · 80 кг × 5» */
   subtitle?: string;
+  /** Вторая, более мелкая строка под подзаголовком: «план 80 кг × 5 · Больше» */
+  subtitleNote?: string;
   /** Слева сверху поверх видео, например кнопка «назад» */
   overlayStart?: ReactNode;
   onTimeChange?: (sec: number) => void;
@@ -41,6 +43,7 @@ export function VideoPlayer({
   comments,
   title,
   subtitle,
+  subtitleNote,
   overlayStart,
   onTimeChange,
   onPlayingChange,
@@ -168,10 +171,11 @@ export function VideoPlayer({
         <div className={styles.overlay}>
           <div className={cx(styles.top, hidden && styles.hidden)}>
             {overlayStart}
-            {(title || subtitle) && (
+            {(title || subtitle || subtitleNote) && (
               <div className={styles.titleBox}>
                 {title && <span className={styles.title}>{title}</span>}
                 {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
+                {subtitleNote && <span className={styles.subtitleNote}>{subtitleNote}</span>}
               </div>
             )}
             <button type="button" className={styles.full} disabled={!ready} aria-label={full ? 'Выйти из полного экрана' : 'На весь экран'} onClick={toggleFullscreen}>

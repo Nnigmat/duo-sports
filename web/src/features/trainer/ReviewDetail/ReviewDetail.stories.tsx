@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import sample from '../../../ui/VideoPlayer/sample.webm';
-import { reviewFixture, reviewPendingFixture } from '../../review/fixtures';
+import { reviewFixture, reviewFoldedFixture, reviewPendingFixture } from '../../review/fixtures';
 import { pastCommentsFixture, TODAY } from '../fixtures';
 import { ReviewDetail } from './ReviewDetail';
 
@@ -155,5 +155,19 @@ export const Touch44: Story = {
     for (const el of [...c.getAllByRole('button'), ...c.getAllByRole('textbox')]) {
       await expect(el.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
     }
+  },
+};
+
+export const FoldedWarmupCooldown: Story = {
+  args: { review: reviewFoldedFixture },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const warm = c.getByText('Разминка · 3');
+    await expect(warm.closest('details')).not.toHaveAttribute('open');
+    await expect(c.getByText('Кошка-корова')).not.toBeVisible();
+    await expect(c.getByText('Приседания со штангой')).toBeVisible();
+    await userEvent.click(warm);
+    await expect(c.getByText('Кошка-корова')).toBeVisible();
+    await expect(c.getByText('Растяжка бедра')).not.toBeVisible();
   },
 };

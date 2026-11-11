@@ -208,12 +208,19 @@
   position: absolute;
   top: 10px;
   left: 10px;
+  display: flex;
+  flex-direction: column;
   padding: 3px 9px;
-  border-radius: var(--rounded-full);
+  border-radius: var(--rounded-lg);
   background: rgba(255, 255, 255, 0.14);
   font-size: var(--caption-size);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+.videoTagPlan {
+  font-size: var(--caption-size);
+  font-weight: 400;
+  opacity: 0.8;
 }
 .play {
   display: flex;

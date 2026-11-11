@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ExerciseKind, SetActual, SetPlan } from '../../../../../../shared/types';
 import { Button } from '../../../../ui/Button/Button';
 import { Checkbox } from '../../../../ui/Checkbox/Checkbox';
 import { Sheet } from '../../../../ui/Sheet/Sheet';
-import { Stepper } from '../../../../ui/Stepper/Stepper';
+import { ParamStepper } from '../../../../ui/ParamStepper/ParamStepper';
 import { Text } from '../../../../ui/Text/Text';
 import { factDraft, factFromDraft, factLabel, formatTarget, type FactDraft } from '../../flow';
 import styles from './ResultSheet.module.css';
@@ -29,6 +29,9 @@ const TITLES: Record<ExerciseKind, string> = {
 };
 
 const WEIGHT_STEP = 1;
+// Пределы ввода: опечатка вроде «120» не должна попасть в объём и прогресс
+const MAX_REPS = 999;
+const MAX_WEIGHT_KG = 500;
 const LABEL_STATE = { 'Меньше плана': 'below', 'В плане': 'within', 'Больше плана': 'above' } as const;
 
 /** Шторка после «Готово»: сколько спортсмен реально сделал. План подхода она не меняет. */
@@ -51,6 +54,7 @@ export function ResultSheet({ open, onOpenChange, eyebrow, kind, plan, actual, o
 
 function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' | 'actual' | 'onSave'>) {
   const [draft, setDraft] = useState<FactDraft>(() => factDraft(kind, plan, actual));
+  const hintId = useId();
   const label = factLabel(plan, draft.value);
   const planHint = `План: ${formatTarget(kind, plan.target)}`;
   const setValue = (value: number) => setDraft((d) => ({ ...d, value }));
@@ -58,28 +62,43 @@ function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' 
   return (
     <>
       {kind === 'time' ? (
-        <Stepper label="Время, мм:сс" mode="duration" value={draft.value} onChange={setValue} hint={planHint} />
+        <ParamStepper label="Время" unit="с" mode="duration" live step={5} max={86_400} value={draft.value} onChange={setValue} describedBy={`${hintId}-main`} />
       ) : (
-        <Stepper
+        <ParamStepper
           label="Повторения"
+          unit="повт"
+          live
+          integer
+          max={MAX_REPS}
           value={draft.value}
           onChange={setValue}
-          hint={planHint}
           decreaseLabel="Меньше повторений"
           increaseLabel="Больше повторений"
+          describedBy={`${hintId}-main`}
         />
       )}
+      <Text variant="body-sm" tag="p" id={`${hintId}-main`} className={styles.hint}>
+        {planHint}
+      </Text>
 
       {kind === 'weight' && (
-        <Stepper
-          label="Вес, кг"
-          value={draft.weight ?? 0}
-          step={WEIGHT_STEP}
-          onChange={(weight) => setDraft((d) => ({ ...d, weight }))}
-          hint={`План: ${plan.weight ?? 0} кг · шаг ${WEIGHT_STEP} кг`}
-          decreaseLabel="Меньше вес"
-          increaseLabel="Больше вес"
-        />
+        <>
+          <ParamStepper
+            label="Вес"
+            unit="кг"
+            live
+            max={MAX_WEIGHT_KG}
+            value={draft.weight ?? 0}
+            step={WEIGHT_STEP}
+            onChange={(weight) => setDraft((d) => ({ ...d, weight }))}
+            decreaseLabel="Меньше вес"
+            increaseLabel="Больше вес"
+            describedBy={`${hintId}-weight`}
+          />
+          <Text variant="body-sm" tag="p" id={`${hintId}-weight`} className={styles.hint}>
+            {`План: ${plan.weight ?? 0}\u00a0кг · шаг ${WEIGHT_STEP}\u00a0кг`}
+          </Text>
+        </>
       )}
 
       {/* Статус только текстом: цвет лишь усиливает, он не единственный признак */}
