@@ -43,6 +43,7 @@ export function exercisesRouter(db: Db, demoDir?: string) {
     if (!canAddExercises(req.user!.role)) return void res.status(403).json({ error: EXERCISES_WRITE_FORBIDDEN });
     const files = deleteExercise(db, String(req.params.id));
     if (files === null) return void res.status(404).json({ error: 'Упражнение не найдено' });
+    if (files === 'in_use') return void res.status(409).json({ error: 'Упражнение стоит в разминке' });
     if (demoDir) await Promise.all(files.map((f) => rm(path.join(demoDir, f), { force: true })));
     res.status(204).end();
   });

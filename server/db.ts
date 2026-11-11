@@ -65,6 +65,27 @@ CREATE TABLE IF NOT EXISTS exercises (
   import_id INTEGER REFERENCES imports(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL
 );
+-- Разминки и заминки: общий набор упражнений по времени; тренировка подключает их ссылкой
+CREATE TABLE IF NOT EXISTS routines (
+  id INTEGER PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL CHECK (kind IN ('warmup', 'cooldown')),
+  title TEXT NOT NULL,
+  note TEXT,
+  import_id INTEGER REFERENCES imports(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS routine_items (
+  routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL,
+  exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE RESTRICT,
+  min_sec INTEGER NOT NULL,
+  max_sec INTEGER NOT NULL,
+  sides TEXT,
+  PRIMARY KEY (routine_id, position)
+);
+CREATE INDEX IF NOT EXISTS routine_items_exercise ON routine_items(exercise_id);
 CREATE TABLE IF NOT EXISTS workouts (
   id INTEGER PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -253,5 +274,7 @@ function migrate(db: Db) {
   if (!columns('comments').includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id INTEGER REFERENCES sessions_done(id) ON DELETE CASCADE');
   if (!columns('comments').includes('timecode_sec')) db.exec('ALTER TABLE comments ADD COLUMN timecode_sec INTEGER');
   db.exec('CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at); CREATE INDEX IF NOT EXISTS comments_session ON comments(session_id)');
+  if (!columns('workouts').includes('warmup_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN warmup_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
+  if (!columns('workouts').includes('cooldown_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN cooldown_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
   migrateSharedExercises(db);
 }
