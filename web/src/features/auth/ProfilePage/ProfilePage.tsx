@@ -108,7 +108,7 @@ export function ProfilePage() {
         <Text variant="body-sm" color="slate">
           Пауза после «Старт», чтобы поставить телефон. 0 — сразу.
         </Text>
-        <ParamStepper label="Отсчёт" unit="с" value={delayDraft ?? user.startDelaySec} min={0} max={MAX_START_DELAY_SEC} onChange={(sec) => void saveDelay(sec)} />
+        <ParamStepper label="Отсчёт" unit="с" live={false} value={delayDraft ?? user.startDelaySec} min={0} max={MAX_START_DELAY_SEC} onChange={(sec) => void saveDelay(sec)} />
       </Card>
       <ChangePasswordView
         email={user.email}

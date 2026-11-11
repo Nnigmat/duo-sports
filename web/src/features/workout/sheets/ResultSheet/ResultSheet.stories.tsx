@@ -133,8 +133,10 @@ export const RepsTypeAndSave: Story = {
     const input = dialog.getByRole('textbox', { name: 'Повторения' });
     await userEvent.clear(input);
     await userEvent.type(input, '12');
-    // Без Enter и blur: «Записать» сохраняет набранное
-    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    // Нативный click не переносит фокус (как тап в iOS Safari): поле не теряет фокус, blur не срабатывает
+    await expect(input).toHaveFocus();
+    dialog.getByRole('button', { name: 'Записать' }).click();
+    await expect(input).toHaveFocus();
     await expect(onSave).toHaveBeenCalledWith({ value: 12 });
   },
 };

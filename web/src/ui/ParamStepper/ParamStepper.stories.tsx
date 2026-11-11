@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { ARTIFACT, Stack } from '../storyKit';
 import { ParamStepper } from './ParamStepper';
 
@@ -41,5 +41,34 @@ export const AllVariants: Story = {
     await expect(reps).toHaveValue('15');
     await userEvent.click(c.getByRole('button', { name: 'Время: больше' }));
     await expect(c.getByText('00:50')).toBeInTheDocument();
+  },
+};
+
+export const LiveTyping: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { label: 'Повторы', unit: 'повт', value: 10, onChange: fn() },
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByLabelText('Повторы');
+    await userEvent.clear(input);
+    await userEvent.type(input, '12');
+    // Без blur: каждое валидное число уже ушло в onChange
+    await expect(args.onChange).toHaveBeenNthCalledWith(1, 1);
+    await expect(args.onChange).toHaveBeenLastCalledWith(12);
+    await userEvent.type(input, 'x');
+    await expect(args.onChange).toHaveBeenCalledTimes(2);
+  },
+};
+
+export const DeferredTyping: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { label: 'Отсчёт', unit: 'с', value: 3, live: false, onChange: fn() },
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByLabelText('Отсчёт');
+    await userEvent.clear(input);
+    await userEvent.type(input, '12');
+    await expect(args.onChange).not.toHaveBeenCalled();
+    await userEvent.tab();
+    await expect(args.onChange).toHaveBeenCalledTimes(1);
+    await expect(args.onChange).toHaveBeenLastCalledWith(12);
   },
 };
