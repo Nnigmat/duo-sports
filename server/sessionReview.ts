@@ -1,4 +1,4 @@
-import type { AwaitingReview, ReviewComment, ReviewExercise, ReviewSet, Role, SessionReviewResponse, SessionStepResult, VideoReviewResponse } from '../shared/types';
+import type { AwaitingReview, Block, ReviewComment, ReviewExercise, ReviewSection, ReviewSet, Role, SessionReviewResponse, SessionStepResult, VideoReviewResponse } from '../shared/types';
 import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
 import { nextWorkoutHints } from './hints';
@@ -59,6 +59,15 @@ function markSessionSeen(db: Db, viewerId: number, sessionId: number) {
   db.prepare('UPDATE comments SET seen_at = ? WHERE session_id = ? AND author_id <> ? AND seen_at IS NULL').run(new Date().toISOString(), sessionId, viewerId);
 }
 
+const stripInternal = ({ stepIndexes: _steps, blockIndex: _block, ...e }: ReviewExercise & { stepIndexes: number[]; blockIndex: number }): ReviewExercise => e;
+
+/** Структура тренировки, по которой шёл итог; null у старых итогов без тренировки */
+function structureOf(db: Db, workoutId: number | null): Block[] | null {
+  if (workoutId === null) return null;
+  const row = db.prepare('SELECT structure FROM workouts WHERE id = ?').get(workoutId) as { structure: string | null } | undefined;
+  return row?.structure ? (JSON.parse(row.structure) as Block[]) : null;
+}
+
 export type SessionReviewResult = { ok: true; review: SessionReviewResponse } | { ok: false; error: 'not_found' | 'forbidden' };
 
 /**
@@ -68,7 +77,7 @@ export type SessionReviewResult = { ok: true; review: SessionReviewResponse } | 
  * Открытие помечает прочитанным чужое и гасит уведомление о разборе.
  */
 export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today: string): SessionReviewResult {
-  const s = db.prepare('SELECT user_id, title, date, steps, duration_sec, feeling, comment FROM sessions_done WHERE id = ?').get(sessionId) as { user_id: number; title: string; date: string; steps: string; duration_sec: number | null; feeling: number | null; comment: string | null } | undefined;
+  const s = db.prepare('SELECT user_id, workout_id, title, date, steps, duration_sec, feeling, comment FROM sessions_done WHERE id = ?').get(sessionId) as { user_id: number; workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null; feeling: number | null; comment: string | null } | undefined;
   if (!s) return { ok: false, error: 'not_found' };
   if (!canAccessAthlete(db, viewer, s.user_id)) return { ok: false, error: 'forbidden' };
 
@@ -78,10 +87,10 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
     (db.prepare('SELECT id, duration_sec, step_index FROM videos WHERE session_id = ?').all(sessionId) as Array<{ id: string; duration_sec: number; step_index: number | null }>).map((v) => [v.id, v]),
   );
 
-  const groups = new Map<string, ReviewExercise & { stepIndexes: number[] }>();
+  const groups = new Map<string, ReviewExercise & { stepIndexes: number[]; blockIndex: number }>();
   steps.forEach((st, i) => {
     const id = `${st.blockIndex}:${st.exerciseId}`;
-    const g = groups.get(id) ?? { id, name: st.exerciseName, ...(st.replacedFrom && { replacedFrom: st.replacedFrom }), slug: null, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [] };
+    const g = groups.get(id) ?? { id, name: st.exerciseName, ...(st.replacedFrom && { replacedFrom: st.replacedFrom }), slug: null, sets: [] as ReviewSet[], note: null, thread: [], newCount: 0, stepIndexes: [], blockIndex: st.blockIndex };
     const video = st.videoId ? videos.get(st.videoId) : undefined;
     const fact = st.completed && st.actual ? { actualLabel: actualLabel(st), factMark: factLabel(st.plan, st.actual.value), ...(st.actual.extraWeight && { extraWeight: true as const }) } : {};
     g.sets.push({ n: g.sets.length + 1, label: setLabel(st), completed: st.completed, ...fact, ...(video && { videoId: video.id, videoDurationSec: video.duration_sec }) });
@@ -111,6 +120,21 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
       if (c.isNew) g.newCount++;
     }
   }
+  const structure = structureOf(db, s.workout_id);
+  const sections: ReviewSection[] = [];
+  for (const g of list) {
+    // Структуру могли править после тренировки: блок по индексу годится, только если в нём есть это упражнение (или то, что заменили: у замены другой id)
+    const candidate = structure?.[g.blockIndex];
+    const exerciseId = g.id.slice(g.id.indexOf(':') + 1);
+    const block = candidate?.exercises.some((e) => e.id === exerciseId || (g.replacedFrom !== undefined && key(e.name) === key(g.replacedFrom))) ? candidate : undefined;
+    const secKey = block ? `b${g.blockIndex}` : 'all';
+    let sec = sections.find((x) => x.key === secKey);
+    if (!sec) {
+      sec = { key: secKey, title: block?.title ?? 'Упражнения', folded: block?.mode === 'timed' && block.kind !== undefined, exercises: [] };
+      sections.push(sec);
+    }
+    sec.exercises.push(stripInternal(g));
+  }
   const trainerCommentCount = rows.filter((r) => r.author_id !== r.athlete_id).length;
   markSessionSeen(db, viewer.id, sessionId);
   db.prepare("UPDATE notifications SET read_at = COALESCE(read_at, ?) WHERE user_id = ? AND session_id = ? AND kind = 'review'").run(new Date().toISOString(), viewer.id, sessionId);
@@ -129,7 +153,8 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
       volumeKg: sessionVolume(steps),
       reviewedAt,
       trainerCommentCount,
-      exercises: list.map(({ stepIndexes: _drop, ...e }) => e),
+      exercises: list.map(stripInternal),
+      sections,
       general,
       hints: viewer.role === 'athlete' ? nextWorkoutHints(db, s.user_id, today) : null,
     },
@@ -145,6 +170,7 @@ export function videoReviewOf(db: Db, viewer: Viewer, videoId: string): VideoRev
   if (!canAccessAthlete(db, viewer, v.athlete_id)) return { ok: false, error: 'forbidden' };
   let exerciseName = 'Видео';
   let label = 'Видео';
+  let fact: Pick<VideoReviewResponse['video'], 'actualLabel' | 'factMark'> = {};
   if (v.session_id !== null && v.step_index !== null) {
     const row = db.prepare('SELECT steps FROM sessions_done WHERE id = ?').get(v.session_id) as { steps: string } | undefined;
     const steps = JSON.parse(row?.steps ?? '[]') as SessionStepResult[];
@@ -153,12 +179,13 @@ export function videoReviewOf(db: Db, viewer: Viewer, videoId: string): VideoRev
       exerciseName = st.exerciseName;
       const n = steps.slice(0, v.step_index).filter((x) => x.blockIndex === st.blockIndex && x.exerciseId === st.exerciseId).length + 1;
       label = `Подход ${n} · ${setLabel(st)}`;
+      if (st.completed && st.actual) fact = { actualLabel: actualLabel(st), factMark: factLabel(st.plan, st.actual.value) };
     }
   }
   const rows = db.prepare(`SELECT ${COMMENT_COLUMNS} FROM comments WHERE video_id = ? ORDER BY timecode_sec IS NULL, timecode_sec, created_at, id`).all(videoId) as CommentRow[];
   const comments = rows.map((r) => toComment(r, viewer.id));
   db.prepare('UPDATE comments SET seen_at = ? WHERE video_id = ? AND author_id <> ? AND seen_at IS NULL').run(new Date().toISOString(), videoId, viewer.id);
-  return { ok: true, review: { athleteId: v.athlete_id, video: { id: videoId, durationSec: v.duration_sec, exerciseName, label, sessionId: v.session_id }, comments } };
+  return { ok: true, review: { athleteId: v.athlete_id, video: { id: videoId, durationSec: v.duration_sec, exerciseName, label, ...fact, sessionId: v.session_id }, comments } };
 }
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];

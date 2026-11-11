@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { cx } from '../cx';
 import { Icon } from '../Icon/Icon';
 import { formatDuration } from '../Stepper/Stepper';
+import { parseNumberInput } from './parseNumberInput';
 import styles from './ParamStepper.module.css';
 
 type Props = {
@@ -10,29 +11,50 @@ type Props = {
   value: number;
   onChange: (value: number) => void;
   /** Единица: «кг», «повт», «с». Для time показывается мм:сс */
-  unit: string;
+  unit?: string;
   mode?: 'number' | 'duration';
   step?: number;
   min?: number;
   max?: number;
+  /** Только целые: набранное и шаговое значение округляется */
+  integer?: boolean;
+  /** Имена кнопок вместо «Подпись: меньше/больше» */
+  decreaseLabel?: string;
+  increaseLabel?: string;
+  /** id строки с подсказкой под полем */
+  describedBy?: string;
+  /** Валидное число из поля уходит в onChange на каждый символ. true: только в ResultSheet, где «Записать» может сработать без blur. По умолчанию число применяется по blur или Enter: правки зависимых полей (границы диапазона, круги) не должны срабатывать на полпути */
+  live?: boolean;
   className?: string;
 };
 
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
 /** Строка параметра: подпись слева, справа − значение +. Число можно ввести руками. */
-export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, className }: Props) {
+export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, integer = false, decreaseLabel, increaseLabel, describedBy, live = false, className }: Props) {
   const id = useId();
   const duration = mode === 'duration';
   const delta = step ?? (duration ? 5 : 1);
-  const clamp = (n: number) => Math.min(max, Math.max(min, round(n)));
+  const clamp = (n: number) => Math.min(max, Math.max(min, integer ? Math.round(n) : round(n)));
   const [draft, setDraft] = useState<string | null>(null);
 
   function commit() {
     if (draft === null) return;
-    const n = Number(draft.replace(',', '.'));
-    if (draft.trim() !== '' && Number.isFinite(n)) onChange(clamp(n));
+    const n = parseNumberInput(draft, clamp);
+    if (n !== null && n !== value) onChange(n);
     setDraft(null);
+  }
+
+  function type(text: string) {
+    setDraft(text);
+    if (!live) return;
+    const n = parseNumberInput(text, clamp);
+    if (n !== null) onChange(n);
+  }
+
+  function press(next: number) {
+    setDraft(null);
+    onChange(clamp(next));
   }
 
   return (
@@ -44,14 +66,14 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
         <button
           type="button"
           className={styles.button}
-          aria-label={`${label}: меньше`}
+          aria-label={decreaseLabel ?? `${label}: меньше`}
           disabled={value <= min}
-          onClick={() => onChange(clamp(value - delta))}
+          onClick={() => press(value - delta)}
         >
           <Icon name="minus" />
         </button>
         {duration ? (
-          <output id={id} className={styles.value}>
+          <output id={id} aria-describedby={describedBy} className={styles.value}>
             {formatDuration(value)}
           </output>
         ) : (
@@ -60,9 +82,10 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
               id={id}
               type="text"
               inputMode="decimal"
+              aria-describedby={describedBy}
               className={styles.input}
               value={draft ?? String(value).replace('.', ',')}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => type(e.target.value)}
               onBlur={commit}
               onKeyDown={(e) => e.key === 'Enter' && commit()}
             />
@@ -72,9 +95,9 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
         <button
           type="button"
           className={styles.button}
-          aria-label={`${label}: больше`}
+          aria-label={increaseLabel ?? `${label}: больше`}
           disabled={value >= max}
-          onClick={() => onChange(clamp(value + delta))}
+          onClick={() => press(value + delta)}
         >
           <Icon name="plus" />
         </button>

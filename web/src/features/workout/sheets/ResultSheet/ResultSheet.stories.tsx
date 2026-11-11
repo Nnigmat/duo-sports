@@ -118,9 +118,82 @@ export const TimeSave: Story = {
     onSave.mockClear();
     const dialog = within(await open());
     await expect(dialog.getByText('Сколько продержались?')).toBeVisible();
-    await userEvent.click(dialog.getByRole('button', { name: '−5 с' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Время: меньше' }));
     await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
     await expect(onSave).toHaveBeenCalledWith({ value: 55 });
+  },
+};
+
+export const RepsTypeAndSave: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '12');
+    // Нативный click не переносит фокус (как тап в iOS Safari): поле не теряет фокус, blur не срабатывает
+    await expect(input).toHaveFocus();
+    dialog.getByRole('button', { name: 'Записать' }).click();
+    await expect(input).toHaveFocus();
+    await expect(onSave).toHaveBeenCalledWith({ value: 12 });
+  },
+};
+
+export const RepsTypeGarbageKeepsValue: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, 'abc');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 20 });
+  },
+};
+
+export const RepsTypeFractionStoresInteger: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '12,4');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 12 });
+  },
+};
+
+export const RepsTypeAboveMaxClamps: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '5000');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 999 });
+  },
+};
+
+export const WeightTypeAboveMaxClamps: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="weight" eyebrow="Подход 1 из 3" plan={{ target: { min: 12, max: 12 }, weight: 60 }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Вес' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '9999');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 12, weight: 500 });
   },
 };
 

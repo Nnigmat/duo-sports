@@ -4,6 +4,8 @@ import { formatMinutes, formatVolume } from '../../../shared/format';
 import { Button, Comment, CommentField, PastComments, SetChip, StatusBadge, Text, VideoPlayer, type VideoPlayerHandle } from '../../../ui';
 import { formatTime, type PlayerComment } from '../../../ui/VideoPlayer/player';
 import type { NewComment } from '../api';
+import { FoldedSection } from '../../review/FoldedSection/FoldedSection';
+import { sectionStarts } from '../../review/sections';
 import { ExerciseLink } from '../ExerciseLink/ExerciseLink';
 import { buildCommentRequest, movedText, rowDate } from '../sessions';
 import styles from './ReviewDetail.module.css';
@@ -32,6 +34,7 @@ type Props = {
 export function ReviewDetail({ today, athleteName, review, movedFrom, past, videoSrc, exerciseHref, onOpenExercise, onComment, onDeleteComment, onMarkReviewed }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
   const moved = movedText({ movedFrom });
+  const starts = sectionStarts(review.sections);
   return (
     <section className={styles.root} aria-labelledby="detail-title">
       <header className={styles.head}>
@@ -73,11 +76,23 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
         </ul>
       )}
 
-      <ol className={styles.steps} aria-label="Шаги тренировки">
-        {review.exercises.map((ex, i) => (
-          <Step key={ex.id} index={i + 1} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} href={exerciseHref?.(ex.name)} onOpenExercise={onOpenExercise} onComment={onComment} onDelete={onDeleteComment} />
-        ))}
-      </ol>
+      {review.sections.map((sec, si) => {
+        const start = starts[si];
+        const list = (
+          <ol key={sec.key} className={styles.steps} aria-label={sec.title}>
+            {sec.exercises.map((ex, i) => (
+              <Step key={ex.id} index={start === null ? undefined : start + i} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} href={exerciseHref?.(ex.name)} onOpenExercise={onOpenExercise} onComment={onComment} onDelete={onDeleteComment} />
+            ))}
+          </ol>
+        );
+        return sec.folded ? (
+          <FoldedSection key={sec.key} section={sec}>
+            {list}
+          </FoldedSection>
+        ) : (
+          <div key={sec.key}>{list}</div>
+        );
+      })}
 
       <GeneralField sessionId={review.sessionId} onComment={onComment} />
 
@@ -135,7 +150,8 @@ function Step({
   onComment,
   onDelete,
 }: {
-  index: number;
+  /** Номер шага; у свёрнутых блоков (разминка, заминка) номера нет */
+  index?: number;
   exercise: ReviewExercise;
   sessionId: number;
   athleteName: string;
@@ -188,9 +204,11 @@ function Step({
 
   return (
     <li className={styles.step}>
-      <span className={styles.num} aria-hidden="true">
-        {index}
-      </span>
+      {index !== undefined && (
+        <span className={styles.num} aria-hidden="true">
+          {index}
+        </span>
+      )}
       <div className={styles.stepBody}>
         <div className={styles.stepHead}>
           <ExerciseLink name={exercise.name} href={href} onOpen={onOpenExercise} />

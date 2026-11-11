@@ -6,16 +6,19 @@ const TONES: PlanTone[] = ['primary', 'teal', 'amber', 'slate'];
 type WorkoutRow = { id: number; title: string; blocks: string };
 type EntryRow = { date: string; workout_id: number };
 
-/** Оценка длительности: десять минут на разминку и заминку и пять на упражнение, кратно пяти */
-export function estimateMinutes(exercises: number): number {
-  return Math.max(15, Math.round((10 + exercises * 5) / 5) * 5);
+/** Оценка длительности тренировки: по десять минут на разминку и заминку (если в блоке есть пункты, сколько бы их ни было) и пять на упражнение основной части; кратно пяти, не меньше 15 */
+export function estimateWorkoutMinutes(blocks: CommitBlock[]): number {
+  const filled = (kind: CommitBlock['kind']) => blocks.some((b) => b.kind === kind && b.items.length > 0);
+  const main = blocks.filter((b) => b.kind === 'exercises').reduce((n, b) => n + b.items.length, 0);
+  const minutes = (filled('warmup') ? 10 : 0) + (filled('cooldown') ? 10 : 0) + main * 5;
+  return Math.max(15, Math.round(minutes / 5) * 5);
 }
 
 function template(w: WorkoutRow): PlanTemplate {
   const blocks = JSON.parse(w.blocks) as CommitBlock[];
   // Разминка и заминка в составе не показываем: в них десятки коротких упражнений, а смысл дня — основная часть
   const exercises = blocks.filter((b) => b.kind === 'exercises').flatMap((b) => b.items.map((i) => ({ name: i.name, detail: i.value })));
-  return { id: String(w.id), title: w.title, minutes: estimateMinutes(exercises.length), tone: TONES[(w.id - 1) % TONES.length]!, exercises };
+  return { id: String(w.id), title: w.title, minutes: estimateWorkoutMinutes(blocks), tone: TONES[(w.id - 1) % TONES.length]!, exercises };
 }
 
 /** Тренировки пользователя как шаблоны и записи плана по дням. В дне с двумя тренировками первая главная, остальные — в more. */

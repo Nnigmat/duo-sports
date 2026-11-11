@@ -4,6 +4,7 @@ import sample from '../../../ui/VideoPlayer/sample.webm';
 import { reviewFixture } from '../fixtures';
 import { VideoReviewView } from './VideoReviewView';
 
+const NB = '\u00a0';
 const V = '11111111-1111-4111-8111-111111111111';
 const onReply = fn();
 
@@ -29,7 +30,37 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { name: 'Комментарии тренера · 3' })).toBeVisible();
+    await expect(c.getByText('Подход 4 · 80 кг × 5')).toBeVisible();
+    await expect(canvasElement).not.toHaveTextContent('undefined');
     await expect(c.getByText('Понял, попробую с паузой внизу на разминочных.')).toBeVisible();
+  },
+};
+
+const withFact = (actualLabel: string, factMark: 'Меньше плана' | 'В плане' | 'Больше плана') => ({
+  video: { id: V, durationSec: 12, exerciseName: 'Приседания со штангой', label: `Подход 4 · 80${NB}кг × 5`, actualLabel, factMark, sessionId: 7 },
+});
+
+export const FactAbovePlan: Story = {
+  args: withFact(`85${NB}кг × 7`, 'Больше плана'),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Подход 4 · сделано 85 кг × 7')).toBeVisible();
+    await expect(c.getByText('план 80 кг × 5 · Больше')).toBeVisible();
+    await expect(canvasElement).not.toHaveTextContent('undefined');
+  },
+};
+
+export const FactWithinPlan: Story = {
+  args: withFact(`80${NB}кг × 5`, 'В плане'),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('план 80 кг × 5 · В плане')).toBeVisible();
+  },
+};
+
+export const FactBelowPlan: Story = {
+  args: withFact(`80${NB}кг × 4`, 'Меньше плана'),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('план 80 кг × 5 · Меньше')).toBeVisible();
   },
 };
 

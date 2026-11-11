@@ -64,6 +64,70 @@ describe('sessionReviewOf', () => {
     db.prepare('UPDATE sessions_done SET comment = NULL WHERE id = ?').run(sid);
     expect(view(T())).toMatchObject({ feeling: 2, feedbackComment: null });
   });
+  it('секции по блокам: разминка и заминка свёрнуты, основная нет', () => {
+    const structure = [
+      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'w0' }] },
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ id: 'e0' }] },
+      { id: 'c', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [{ id: 'c0' }] },
+    ];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: 'w0', exerciseName: 'Кошка-корова', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e0' }),
+      step({ blockIndex: 2, exerciseId: 'c0', exerciseName: 'Растяжка бедра', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = view();
+    expect(r.sections.map((x) => [x.key, x.title, x.folded, x.exercises.map((e) => e.name)])).toEqual([
+      ['b0', 'Разминка', true, ['Кошка-корова']],
+      ['b1', 'Силовая', false, ['Приседания со штангой']],
+      ['b2', 'Заминка', true, ['Растяжка бедра']],
+    ]);
+    expect(r.exercises).toHaveLength(3);
+  });
+  it('структуру правили после тренировки (разминку убрали): основная часть не попадает в свёрнутую заминку', () => {
+    const ex = (id: string) => ({ id, name: id, kind: 'time', target: { min: 30, max: 30 } });
+    // Сейчас в тренировке только основная часть и заминка; тогда были ещё разминка
+    const structure = [
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ ...ex('e0'), kind: 'weight', sets: 4 }] },
+      { id: 'c', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [ex('c0')] },
+    ];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: 'w0', exerciseName: 'Кошка-корова', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e0' }),
+      step({ blockIndex: 2, exerciseId: 'c0', exerciseName: 'Растяжка бедра', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = view();
+    const folded = r.sections.filter((x) => x.folded).flatMap((x) => x.exercises.map((e) => e.name));
+    expect(folded).not.toContain('Приседания со штангой');
+    expect(r.sections.find((x) => !x.folded)!.exercises.map((e) => e.name)).toContain('Приседания со штангой');
+    expect(r.exercises).toHaveLength(3);
+  });
+  it('замена упражнения не выводит его из своего блока (структура не менялась)', () => {
+    const structure = [
+      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'w0', name: 'Кошка-корова' }] },
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ id: 'e0', name: 'Приседания со штангой' }] },
+    ];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: 'w9', exerciseName: 'Поза ребёнка', replacedFrom: ' кошка-корова ', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e7', exerciseName: 'Жим ногами', replacedFrom: 'Приседания со штангой' }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = view();
+    expect(r.sections.map((x) => [x.key, x.folded, x.exercises.map((e) => e.name)])).toEqual([
+      ['b0', true, ['Поза ребёнка']],
+      ['b1', false, ['Жим ногами']],
+    ]);
+  });
+  it('без тренировки в итоге одна секция «Упражнения»', () => {
+    const r = view();
+    expect(r.sections).toHaveLength(1);
+    expect(r.sections[0]).toMatchObject({ title: 'Упражнения', folded: false });
+    expect(r.sections[0]!.exercises.map((e) => e.name)).toEqual(['Приседания со штангой', 'Румынская тяга']);
+  });
   it('шапка и подходы по упражнениям, видео у своего подхода', () => {
     const r = view();
     expect(r).toMatchObject({ sessionId: sid, athleteId: athlete, title: 'Ноги', date: '2026-10-31', durationSec: 2880, volumeKg: 80 * 5 * 3 + 50 * 10, reviewedAt: null, trainerCommentCount: 0, hints: null });
@@ -171,6 +235,24 @@ describe('videoReviewOf', () => {
     expect(r.review.athleteId).toBe(athlete);
     expect(r.review.video).toEqual({ id: V, durationSec: 38, exerciseName: 'Приседания со штангой', label: `Подход 4 · 80${NB}кг × 5`, sessionId: sid });
     expect(r.review.comments.map((c) => c.timecodeSec)).toEqual([9, 21]);
+  });
+  it('факт подхода и метка против плана; без факта полей нет', () => {
+    const steps = JSON.parse((db.prepare('SELECT steps FROM sessions_done WHERE id = ?').get(sid) as { steps: string }).steps) as SessionStepResult[];
+    const setStep = (st: SessionStepResult) => db.prepare('UPDATE sessions_done SET steps = ? WHERE id = ?').run(JSON.stringify(steps.map((x, i) => (i === 3 ? st : x))), sid);
+    const video = () => {
+      const r = videoReviewOf(db, A(), V);
+      if (!r.ok) throw new Error(r.error);
+      return r.review.video;
+    };
+    setStep({ ...steps[3]!, actual: { value: 7, weight: 85 } });
+    expect(video()).toMatchObject({ label: `Подход 4 · 80${NB}кг × 5`, actualLabel: `85${NB}кг × 7`, factMark: 'Больше плана' });
+    setStep({ ...steps[3]!, actual: { value: 4, weight: 80 } });
+    expect(video().factMark).toBe('Меньше плана');
+    setStep({ ...steps[3]!, actual: { value: 5, weight: 80 } });
+    expect(video().factMark).toBe('В плане');
+    setStep({ ...steps[3]!, completed: false });
+    expect(video()).not.toHaveProperty('actualLabel');
+    expect(video()).not.toHaveProperty('factMark');
   });
   it('чужое и неизвестное видео', () => {
     expect(videoReviewOf(db, { id: stranger, role: 'athlete' }, V)).toEqual({ ok: false, error: 'forbidden' });

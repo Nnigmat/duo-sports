@@ -1,7 +1,7 @@
 import type { Block, CommitBlock, SessionStepResult, TodayDay, TodayMissed, TodayPause, TodayResponse, TodayWorkoutCard } from '../shared/types';
 import type { Db } from './db';
 import { reviewNoticeOf, unreadCount } from './notifications';
-import { estimateMinutes } from './plan';
+import { estimateWorkoutMinutes } from './plan';
 import { awaitingReviewOf } from './sessionReview';
 
 const NBSP = ' ';
@@ -64,6 +64,8 @@ export interface TodayInput {
 // ── Вычисления по одной тренировке ──
 
 const exerciseItems = (w: TodayWorkoutInfo) => w.blocks.flatMap((b) => b.items);
+/** Число упражнений основной части: разминка и заминка в подпись «N упражнений» не входят */
+const exerciseCount = (w: TodayWorkoutInfo) => w.blocks.filter((b) => b.kind === 'exercises').reduce((n, b) => n + b.items.length, 0);
 
 export function modeLabel(structure: Block[] | null): string {
   if (!structure) return '';
@@ -102,8 +104,8 @@ function workoutCard(w: TodayWorkoutInfo, today: string, musclesOf: TodayInput['
     id: String(w.id),
     title: w.title,
     whenLabel: `сегодня, ${WEEKDAYS[weekdayIndex(today)]} ${dayOfMonth(today)} ${MONTHS_SHORT[parse(today).getUTCMonth()]}`,
-    exerciseCount: all.length,
-    minutes: estimateMinutes(all.length),
+    exerciseCount: exerciseCount(w),
+    minutes: estimateWorkoutMinutes(w.blocks),
     modeLabel: modeLabel(w.structure),
     muscles,
     exercises,
@@ -150,13 +152,13 @@ function weekDay(iso: string, input: TodayInput): TodayDay {
   if (pausedOn(input, iso)) return { ...base, status: 'rest', caption: w.title, title: w.title, meta: 'План на паузе' };
   if (isSkipped(input, entry)) return { ...base, status: 'missed', caption: w.title, title: w.title, meta: 'Пропущена', actionLabel: 'Вернуть' };
   if (iso < today) return { ...base, status: 'missed', caption: w.title, title: w.title, meta: 'Пропущена', actionLabel: 'Перенести' };
-  const n = exerciseItems(w).length;
+  const n = exerciseCount(w);
   return {
     ...base,
     status: 'planned',
     caption: w.title,
     title: w.title,
-    meta: `${n}${NBSP}${plural(n, ['упражнение', 'упражнения', 'упражнений'])} · ≈${NBSP}${estimateMinutes(n)}${NBSP}мин`,
+    meta: `${n}${NBSP}${plural(n, ['упражнение', 'упражнения', 'упражнений'])} · ≈${NBSP}${estimateWorkoutMinutes(w.blocks)}${NBSP}мин`,
     actionLabel: iso === today ? 'Начать' : 'Перенести',
   };
 }
@@ -195,7 +197,7 @@ function nextWorkout(input: TodayInput) {
   return {
     whenLabel: next.date === addDays(input.today, 1) ? 'завтра' : `${WEEKDAYS[weekdayIndex(next.date)]}, ${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`,
     title: w.title,
-    minutes: estimateMinutes(exerciseItems(w).length),
+    minutes: estimateWorkoutMinutes(w.blocks),
   };
 }
 

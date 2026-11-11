@@ -4,6 +4,7 @@ import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { applyImport } from './imports';
 import { pausePlan, skipEntry } from './schedule';
+import { planOf } from './plan';
 import { addDays, streakWeeks, todayOf, userNameOf, weekStart } from './today';
 import { saveSession } from './workouts';
 
@@ -63,7 +64,7 @@ describe('todayOf: состояние дня', () => {
     const s = todayOf(db, me, TODAY).state;
     expect(s.kind).toBe('workout');
     if (s.kind !== 'workout') return;
-    expect(s.workout).toMatchObject({ title: 'Ноги', whenLabel: 'сегодня, ср 4 ноя', exerciseCount: 6, minutes: 40, modeLabel: '' });
+    expect(s.workout).toMatchObject({ title: 'Ноги', whenLabel: 'сегодня, ср 4 ноя', exerciseCount: 5, minutes: 35, modeLabel: '' });
     expect(s.workout.exercises).toEqual([
       { name: 'Упр 1', plan: '4 × 8 · 75 кг' }, { name: 'Упр 2', plan: '4 × 8 · 75 кг' }, { name: 'Упр 3', plan: '4 × 8 · 75 кг' }, { name: '+ ещё 2', plan: '' },
     ]);
@@ -90,7 +91,7 @@ describe('todayOf: состояние дня', () => {
   });
   it('отдых показывает ближайшую тренировку', () => {
     plan([{ date: '2026-11-05', workout: 1 }, { date: '2026-11-07', workout: 0 }]);
-    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'rest', next: { whenLabel: 'завтра', title: 'Ноги', minutes: 40 } });
+    expect(todayOf(db, me, TODAY).state).toEqual({ kind: 'rest', next: { whenLabel: 'завтра', title: 'Ноги', minutes: 35 } });
     expect(todayOf(db, me, '2026-11-06').state).toMatchObject({ kind: 'rest', next: { whenLabel: 'завтра', title: 'Верх' } });
     expect(todayOf(db, me, '2026-11-02').state).toMatchObject({ kind: 'rest', next: { whenLabel: 'чт, 5 ноя' } });
   });
@@ -153,6 +154,31 @@ describe('todayOf: пропуск и серия', () => {
   });
 });
 
+describe('todayOf: оценка времени', () => {
+  const long: CommitBlock[] = [
+    { kind: 'warmup', heading: 'Разминка', items: Array.from({ length: 40 }, (_, i) => ({ name: `Р ${i}`, value: '30 с' })) },
+    { kind: 'exercises', heading: 'Основа', items: Array.from({ length: 5 }, (_, i) => ({ name: `Упр ${i + 1}`, value: '4 × 8' })) },
+  ];
+  const planLong = (entries: Array<{ date: string; workout: number }>) =>
+    applyImport(db, me, { exercises: [], workouts: [{ title: 'Длинная', blocks: long }], entries, replaceDates: [] }, clock);
+  it('разминка не раздувает оценку, а подписи считают только основную часть', () => {
+    planLong([{ date: TODAY, workout: 0 }]);
+    const t = todayOf(db, me, TODAY);
+    if (t.state.kind !== 'workout') throw new Error('нет тренировки');
+    expect(t.state.workout.minutes).toBeGreaterThanOrEqual(30);
+    expect(t.state.workout.minutes).toBeLessThanOrEqual(90);
+    expect(t.state.workout.exerciseCount).toBe(5);
+    expect(t.week[2]!.meta).toBe(`5 упражнений · ≈ ${t.state.workout.minutes} мин`);
+  });
+  it('неделя и следующая тренировка совпадают с планом', () => {
+    planLong([{ date: '2026-11-06', workout: 0 }]);
+    const minutes = planOf(db, me).templates[0]!.minutes;
+    const t = todayOf(db, me, TODAY);
+    expect(t.week[4]!.meta).toContain(`≈ ${minutes} мин`);
+    expect(t.state).toMatchObject({ kind: 'rest', next: { minutes } });
+  });
+});
+
 describe('todayOf: неделя', () => {
   it('статусы: выполнена, пропущена, сегодня, впереди, отдых', () => {
     plan([{ date: '2026-11-02', workout: 0 }, { date: '2026-11-03', workout: 1 }, { date: TODAY, workout: 0 }, { date: '2026-11-06', workout: 1 }]);
@@ -162,7 +188,7 @@ describe('todayOf: неделя', () => {
     expect(w[0]).toMatchObject({ title: 'Верх', meta: '600 кг · 2 подхода', actionLabel: 'Итоги', fullLabel: 'Понедельник, 2 ноября' });
     expect(w[1]).toMatchObject({ meta: 'Пропущена', caption: 'Ноги' });
     expect(w[1]!.actionLabel).toBe('Перенести');
-    expect(w[2]).toMatchObject({ today: true, actionLabel: 'Начать', fullLabel: 'Сегодня, 4 ноября', meta: '4 упражнения · ≈ 30 мин' });
+    expect(w[2]).toMatchObject({ today: true, actionLabel: 'Начать', fullLabel: 'Сегодня, 4 ноября', meta: '3 упражнения · ≈ 25 мин' });
     expect(w[4]).toMatchObject({ actionLabel: 'Перенести' });
   });
   it('тренировка не по плану тоже отмечает день выполненным', () => {
@@ -193,7 +219,7 @@ describe('todayOf: пауза', () => {
     plan([{ date: '2026-10-30', workout: 1 }, { date: TODAY, workout: 0 }, { date: '2026-11-06', workout: 1 }, { date: '2026-11-10', workout: 0 }]);
     pausePlan(db, me, '2026-10-30', '2026-11-08', clock);
     const t = todayOf(db, me, TODAY);
-    expect(t.state).toEqual({ kind: 'rest', next: { whenLabel: 'вт, 10 ноя', title: 'Верх', minutes: 30 } });
+    expect(t.state).toEqual({ kind: 'rest', next: { whenLabel: 'вт, 10 ноя', title: 'Верх', minutes: 25 } });
     expect(t.missed).toEqual([]);
     expect(t.week[2]).toMatchObject({ status: 'rest', meta: 'План на паузе' });
     expect(t.week[2]!.actionLabel).toBeUndefined();

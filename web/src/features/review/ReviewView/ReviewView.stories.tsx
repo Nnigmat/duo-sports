@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { reviewFixture, reviewPendingFixture } from '../fixtures';
+import { reviewFixture, reviewFoldedCommentFixture, reviewFoldedFixture, reviewPendingFixture } from '../fixtures';
 import { ReviewView } from './ReviewView';
 
 const onReply = fn();
@@ -41,6 +41,24 @@ export const Default: Story = {
   },
 };
 
+const NB = '\u00a0';
+const addFact = (e: (typeof reviewFixture.exercises)[number]) => ({ ...e, sets: e.sets.map((st) => (st.videoId ? { ...st, actualLabel: `85${NB}кг × 7`, factMark: 'Больше плана' as const } : st)) });
+const withVideoFact = {
+  ...reviewFixture,
+  exercises: reviewFixture.exercises.map(addFact),
+  sections: reviewFixture.sections.map((sec) => ({ ...sec, exercises: sec.exercises.map(addFact) })),
+};
+
+export const VideoWithFact: Story = {
+  args: { review: withVideoFact },
+  play: async ({ canvasElement }) => {
+    const link = within(canvasElement).getByRole('link', { name: /Смотреть с комментариями/ });
+    await expect(link).toHaveTextContent(/Подход 4 · 85\sкг × 7/);
+    await expect(link).toHaveTextContent(/план 80\sкг × 5/);
+    await expect(link).not.toHaveTextContent('undefined');
+  },
+};
+
 export const Reply: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
@@ -70,5 +88,36 @@ export const NotReviewedYet: Story = {
     const c = within(canvasElement);
     await expect(c.getByText('Тренер ещё не разобрал тренировку')).toBeVisible();
     await expect(c.getAllByText('Без комментариев тренера')).toHaveLength(3);
+  },
+};
+
+export const FoldedWarmupCooldown: Story = {
+  args: { review: reviewFoldedFixture },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const warm = c.getByText('Разминка · 3');
+    const cool = c.getByText('Заминка · 2');
+    await expect(warm).toBeVisible();
+    await expect(cool).toBeVisible();
+    await expect(warm.closest('details')).not.toHaveAttribute('open');
+    await expect(c.getByText('Кошка-корова')).not.toBeVisible();
+    await expect(c.getByText('Растяжка бедра')).not.toBeVisible();
+    await expect(c.getByRole('heading', { name: 'Приседания со штангой' })).toBeVisible();
+    await userEvent.click(warm);
+    await expect(c.getByText('Кошка-корова')).toBeVisible();
+    await expect(c.getByText('Растяжка бедра')).not.toBeVisible();
+    await userEvent.click(cool);
+    await expect(c.getByText('Растяжка бедра')).toBeVisible();
+  },
+};
+
+export const FoldedWithComment: Story = {
+  args: { review: reviewFoldedCommentFixture },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const warm = c.getByText('Разминка · 3 · 1 новый');
+    await expect(warm.closest('details')).toHaveAttribute('open');
+    await expect(c.getByText('В разминке не торопись.')).toBeVisible();
+    await expect(c.getByText('Заминка · 2').closest('details')).not.toHaveAttribute('open');
   },
 };

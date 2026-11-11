@@ -5,6 +5,8 @@ import { Comment, CommentField, Icon, IconButton, SetChip } from '../../../ui';
 import { formatTime } from '../../../ui/VideoPlayer/player';
 import { formatLongDate } from '../../workout/flow/ru';
 import { parseIso } from '../../plan/plan';
+import { FoldedSection } from '../FoldedSection/FoldedSection';
+import { sectionStarts } from '../sections';
 import styles from './ReviewView.module.css';
 
 const FACT_MARK = {
@@ -35,6 +37,7 @@ const deleteOf = (c: ReviewComment, onDelete?: (id: string) => Promise<void>) =>
 /** Разбор для ученика: комментарии тренера по упражнениям, ответы и подсказки к следующему занятию. */
 export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, onDeleteComment, planHref, onOpenPlan }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
+  const starts = sectionStarts(review.sections);
   return (
     <div className={styles.root}>
       <header className={styles.header}>
@@ -69,11 +72,23 @@ export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, on
           </ul>
         )}
 
-        <ol className={styles.exercises} aria-label="Упражнения">
-          {review.exercises.map((ex, i) => (
-            <ExerciseCard key={ex.id} index={i + 1} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
-          ))}
-        </ol>
+        {review.sections.map((sec, si) => {
+          const start = starts[si];
+          const list = (
+            <ol key={sec.key} className={styles.exercises} aria-label={sec.title}>
+              {sec.exercises.map((ex, i) => (
+                <ExerciseCard key={ex.id} index={start === null ? undefined : start + i} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
+              ))}
+            </ol>
+          );
+          return sec.folded ? (
+            <FoldedSection key={sec.key} section={sec}>
+              {list}
+            </FoldedSection>
+          ) : (
+            <div key={sec.key}>{list}</div>
+          );
+        })}
 
         {review.hints && (
           <section className={styles.hints} aria-labelledby="hints-title">
@@ -122,7 +137,8 @@ function ExerciseCard({
   onReply,
   onDelete,
 }: {
-  index: number;
+  /** Номер карточки; у свёрнутых блоков (разминка, заминка) номера нет */
+  index?: number;
   exercise: ReviewExercise;
   videoHref: Props['videoHref'];
   onOpenVideo: Props['onOpenVideo'];
@@ -151,9 +167,11 @@ function ExerciseCard({
   return (
     <li className={styles.card}>
       <div className={styles.cardHead}>
-        <span className={styles.num} aria-hidden="true">
-          {index}
-        </span>
+        {index !== undefined && (
+          <span className={styles.num} aria-hidden="true">
+            {index}
+          </span>
+        )}
         <h2 className={styles.name}>
           {exercise.name}
           {exercise.replacedFrom && <span className={styles.replaced}>вместо «{exercise.replacedFrom}»</span>}
@@ -196,7 +214,10 @@ function ExerciseCard({
           }}
         >
           <span className={styles.videoTag}>
-            Подход {withVideo.n} · {withVideo.label}
+            <span>
+              Подход {withVideo.n} · {withVideo.actualLabel ?? withVideo.label}
+            </span>
+            {withVideo.actualLabel && <span className={styles.videoTagPlan}>план {withVideo.label}</span>}
           </span>
           <span className={styles.play} aria-hidden="true">
             <Icon name="play" size={24} />

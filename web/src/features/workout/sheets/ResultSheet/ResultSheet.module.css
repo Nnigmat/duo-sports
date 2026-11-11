@@ -25,3 +25,10 @@
 .label[data-state='above']::before {
   background: var(--primary);
 }
+
+/* Подсказка «План: …» под строкой параметра */
+.hint {
+  margin: 0;
+  color: var(--steel);
+  font-variant-numeric: tabular-nums;
+}

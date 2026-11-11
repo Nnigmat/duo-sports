@@ -18,6 +18,16 @@ type Props = {
   onReply: (text: string, timecodeSec: number | null) => Promise<void>;
 };
 
+const FACT_MARK = { 'Меньше плана': 'Меньше', 'В плане': 'В плане', 'Больше плана': 'Больше' } as const;
+
+/** Подзаголовок плеера: с фактом «Подход 4 · сделано 85 кг × 7» и мелкой строкой «план …»; без факта только план */
+function captions(video: VideoReviewResponse['video']): { subtitle: string; note?: string } {
+  if (!video.actualLabel) return { subtitle: video.label };
+  const [head, plan] = video.label.split(' · ');
+  const mark = video.factMark ? ` · ${FACT_MARK[video.factMark]}` : '';
+  return { subtitle: `${head} · сделано ${video.actualLabel}`, note: plan ? `план ${plan}${mark}` : undefined };
+}
+
 const author = (c: ReviewComment) => (c.author === 'trainer' ? 'Тренер' : 'Ты');
 
 /** Видео ученика с комментариями тренера: комментарий всплывает в своё время, ответ можно привязать к моменту. */
@@ -36,6 +46,7 @@ export function VideoReviewView({ video, comments, src, startSec, onBack, onRepl
   const timed: PlayerComment[] = comments.flatMap((c) => (c.timecodeSec === null ? [] : [{ id: c.id, timecodeSec: c.timecodeSec, text: c.text, author: author(c) }]));
   const trainerComments = timed.filter((c) => comments.find((x) => x.id === c.id)?.author === 'trainer');
   const active = activeComment(trainerComments, time)?.id;
+  const { subtitle, note } = captions(video);
   const trainerCount = comments.filter((c) => c.author === 'trainer').length;
 
   const send = async () => {
@@ -61,7 +72,8 @@ export function VideoReviewView({ video, comments, src, startSec, onBack, onRepl
         durationSec={video.durationSec}
         comments={trainerComments}
         title={video.exerciseName}
-        subtitle={video.label}
+        subtitle={subtitle}
+        subtitleNote={note}
         overlayStart={<IconButton bare icon="back" aria-label="Назад к разбору" onClick={onBack} className={styles.back} />}
         onTimeChange={setTime}
       />
