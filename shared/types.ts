@@ -54,6 +54,54 @@ export interface TimedBlock {
   exercises: Exercise[];
 }
 
+/** Разминка или заминка: общий набор упражнений по времени из библиотеки */
+export type RoutineKind = 'warmup' | 'cooldown';
+
+export interface RoutineItem {
+  /** slug упражнения библиотеки */
+  exercise: string;
+  name: string;
+  /** секунды на позицию (на сторону, если есть sides) */
+  sec: Range;
+  sides?: [string, string];
+}
+
+export interface Routine {
+  /** slug */
+  id: string;
+  kind: RoutineKind;
+  title: string;
+  note?: string;
+  items: RoutineItem[];
+  /** сумма sec.max, с удвоением при sides */
+  totalSec: number;
+}
+
+export interface RoutineSummary {
+  id: string;
+  kind: RoutineKind;
+  title: string;
+  itemCount: number;
+  totalSec: number;
+  usedIn: number;
+}
+
+export interface RoutineDetail extends Routine {
+  usedIn: number;
+  usedBy: Array<{ workoutId: number; title: string }>;
+}
+
+export interface RoutineInput {
+  kind: RoutineKind;
+  title: string;
+  note?: string;
+  items: Array<{ exercise: string; sec: Range; sides?: [string, string] }>;
+}
+
+export interface RoutinesResponse {
+  routines: RoutineSummary[];
+}
+
 /** Все подходы упражнения, потом следующее */
 export interface SetsBlock {
   id: string;
