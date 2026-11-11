@@ -90,3 +90,18 @@ export const reviewFoldedFixture: SessionReviewResponse = {
     { key: 'c', title: 'Заминка', folded: true, exercises: cooldown },
   ],
 };
+
+/** В разминке есть комментарий тренера: блок открыт сразу, в заголовке число новых */
+export const reviewFoldedCommentFixture: SessionReviewResponse = {
+  ...reviewFoldedFixture,
+  sections: reviewFoldedFixture.sections.map((sec) =>
+    sec.key === 'w'
+      ? {
+          ...sec,
+          exercises: sec.exercises.map((e, i) =>
+            i === 0 ? { ...e, newCount: 1, thread: [{ id: '9', author: 'trainer' as const, text: 'В разминке не торопись.', timecodeSec: null, videoId: null, createdAt: '2026-11-01T19:34:00', isNew: true }] } : e,
+          ),
+        }
+      : sec,
+  ),
+};

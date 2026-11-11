@@ -124,7 +124,7 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
   const sections: ReviewSection[] = [];
   for (const g of list) {
     const block = structure?.[g.blockIndex];
-    const secKey = block ? block.id : 'all';
+    const secKey = block ? `b${g.blockIndex}` : 'all';
     let sec = sections.find((x) => x.key === secKey);
     if (!sec) {
       sec = { key: secKey, title: block?.title ?? 'Упражнения', folded: block?.mode === 'timed' && block.kind !== undefined, exercises: [] };

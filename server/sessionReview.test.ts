@@ -79,9 +79,9 @@ describe('sessionReviewOf', () => {
     db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
     const r = view();
     expect(r.sections.map((x) => [x.key, x.title, x.folded, x.exercises.map((e) => e.name)])).toEqual([
-      ['w', 'Разминка', true, ['Кошка-корова']],
-      ['m', 'Силовая', false, ['Приседания со штангой']],
-      ['c', 'Заминка', true, ['Растяжка бедра']],
+      ['b0', 'Разминка', true, ['Кошка-корова']],
+      ['b1', 'Силовая', false, ['Приседания со штангой']],
+      ['b2', 'Заминка', true, ['Растяжка бедра']],
     ]);
     expect(r.exercises).toHaveLength(3);
   });

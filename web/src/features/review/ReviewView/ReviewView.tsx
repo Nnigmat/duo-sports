@@ -5,6 +5,8 @@ import { Comment, CommentField, Icon, IconButton, SetChip } from '../../../ui';
 import { formatTime } from '../../../ui/VideoPlayer/player';
 import { formatLongDate } from '../../workout/flow/ru';
 import { parseIso } from '../../plan/plan';
+import { FoldedSection } from '../FoldedSection/FoldedSection';
+import { sectionStarts } from '../sections';
 import styles from './ReviewView.module.css';
 
 const FACT_MARK = {
@@ -35,6 +37,7 @@ const deleteOf = (c: ReviewComment, onDelete?: (id: string) => Promise<void>) =>
 /** Разбор для ученика: комментарии тренера по упражнениям, ответы и подсказки к следующему занятию. */
 export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, onDeleteComment, planHref, onOpenPlan }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
+  const starts = sectionStarts(review.sections);
   return (
     <div className={styles.root}>
       <header className={styles.header}>
@@ -69,28 +72,23 @@ export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, on
           </ul>
         )}
 
-        {(() => {
-          let n = 0;
-          return review.sections.map((sec) => {
-            const list = (
-              <ol key={sec.key} className={styles.exercises} aria-label={sec.title}>
-                {sec.exercises.map((ex) => (
-                  <ExerciseCard key={ex.id} index={sec.folded ? undefined : ++n} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
-                ))}
-              </ol>
-            );
-            return sec.folded ? (
-              <details key={sec.key} className={styles.fold}>
-                <summary className={styles.foldSummary}>
-                  {sec.title} · {sec.exercises.length}
-                </summary>
-                <div className={styles.foldBody}>{list}</div>
-              </details>
-            ) : (
-              <div key={sec.key}>{list}</div>
-            );
-          });
-        })()}
+        {review.sections.map((sec, si) => {
+          const start = starts[si];
+          const list = (
+            <ol key={sec.key} className={styles.exercises} aria-label={sec.title}>
+              {sec.exercises.map((ex, i) => (
+                <ExerciseCard key={ex.id} index={start === null ? undefined : start + i} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
+              ))}
+            </ol>
+          );
+          return sec.folded ? (
+            <FoldedSection key={sec.key} section={sec}>
+              {list}
+            </FoldedSection>
+          ) : (
+            <div key={sec.key}>{list}</div>
+          );
+        })}
 
         {review.hints && (
           <section className={styles.hints} aria-labelledby="hints-title">

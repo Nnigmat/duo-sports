@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { reviewFixture, reviewFoldedFixture, reviewPendingFixture } from '../fixtures';
+import { reviewFixture, reviewFoldedCommentFixture, reviewFoldedFixture, reviewPendingFixture } from '../fixtures';
 import { ReviewView } from './ReviewView';
 
 const onReply = fn();
@@ -77,15 +77,29 @@ export const FoldedWarmupCooldown: Story = {
   args: { review: reviewFoldedFixture },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(c.getByText('Разминка · 3')).toBeVisible();
-    await expect(c.getByText('Заминка · 2')).toBeVisible();
-    await expect(c.queryByRole('heading', { name: 'Кошка-корова' })).not.toBeVisible();
-    await expect(c.queryByRole('heading', { name: 'Растяжка бедра' })).not.toBeVisible();
+    const warm = c.getByText('Разминка · 3');
+    const cool = c.getByText('Заминка · 2');
+    await expect(warm).toBeVisible();
+    await expect(cool).toBeVisible();
+    await expect(warm.closest('details')).not.toHaveAttribute('open');
+    await expect(c.getByText('Кошка-корова')).not.toBeVisible();
+    await expect(c.getByText('Растяжка бедра')).not.toBeVisible();
     await expect(c.getByRole('heading', { name: 'Приседания со штангой' })).toBeVisible();
-    await userEvent.click(c.getByText('Разминка · 3'));
-    await expect(c.getByRole('heading', { name: 'Кошка-корова' })).toBeVisible();
-    await expect(c.queryByRole('heading', { name: 'Растяжка бедра' })).not.toBeVisible();
-    await userEvent.click(c.getByText('Заминка · 2'));
-    await expect(c.getByRole('heading', { name: 'Растяжка бедра' })).toBeVisible();
+    await userEvent.click(warm);
+    await expect(c.getByText('Кошка-корова')).toBeVisible();
+    await expect(c.getByText('Растяжка бедра')).not.toBeVisible();
+    await userEvent.click(cool);
+    await expect(c.getByText('Растяжка бедра')).toBeVisible();
+  },
+};
+
+export const FoldedWithComment: Story = {
+  args: { review: reviewFoldedCommentFixture },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const warm = c.getByText('Разминка · 3 · 1 новый');
+    await expect(warm.closest('details')).toHaveAttribute('open');
+    await expect(c.getByText('В разминке не торопись.')).toBeVisible();
+    await expect(c.getByText('Заминка · 2').closest('details')).not.toHaveAttribute('open');
   },
 };
