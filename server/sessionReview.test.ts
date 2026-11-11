@@ -66,9 +66,9 @@ describe('sessionReviewOf', () => {
   });
   it('секции по блокам: разминка и заминка свёрнуты, основная нет', () => {
     const structure = [
-      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [] },
-      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [] },
-      { id: 'c', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [] },
+      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'w0' }] },
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ id: 'e0' }] },
+      { id: 'c', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [{ id: 'c0' }] },
     ];
     const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
     const steps = [
@@ -83,6 +83,26 @@ describe('sessionReviewOf', () => {
       ['b1', 'Силовая', false, ['Приседания со штангой']],
       ['b2', 'Заминка', true, ['Растяжка бедра']],
     ]);
+    expect(r.exercises).toHaveLength(3);
+  });
+  it('структуру правили после тренировки (разминку убрали): основная часть не попадает в свёрнутую заминку', () => {
+    const ex = (id: string) => ({ id, name: id, kind: 'time', target: { min: 30, max: 30 } });
+    // Сейчас в тренировке только основная часть и заминка; тогда были ещё разминка
+    const structure = [
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ ...ex('e0'), kind: 'weight', sets: 4 }] },
+      { id: 'c', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [ex('c0')] },
+    ];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: 'w0', exerciseName: 'Кошка-корова', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e0' }),
+      step({ blockIndex: 2, exerciseId: 'c0', exerciseName: 'Растяжка бедра', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = view();
+    const folded = r.sections.filter((x) => x.folded).flatMap((x) => x.exercises.map((e) => e.name));
+    expect(folded).not.toContain('Приседания со штангой');
+    expect(r.sections.find((x) => !x.folded)!.exercises.map((e) => e.name)).toContain('Приседания со штангой');
     expect(r.exercises).toHaveLength(3);
   });
   it('без тренировки в итоге одна секция «Упражнения»', () => {
