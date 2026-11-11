@@ -214,7 +214,10 @@ function ExerciseCard({
           }}
         >
           <span className={styles.videoTag}>
-            Подход {withVideo.n} · {withVideo.label}
+            <span>
+              Подход {withVideo.n} · {withVideo.actualLabel ?? withVideo.label}
+            </span>
+            {withVideo.actualLabel && <span className={styles.videoTagPlan}>план {withVideo.label}</span>}
           </span>
           <span className={styles.play} aria-hidden="true">
             <Icon name="play" size={24} />

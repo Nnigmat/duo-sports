@@ -538,7 +538,13 @@ export interface SessionReviewResponse {
 export interface VideoReviewResponse {
   /** Чьё видео: ему адресуются ответы */
   athleteId: number;
-  video: { id: string; durationSec: number; exerciseName: string; /** «Подход 4 · 80 кг × 5» */ label: string; sessionId: number | null };
+  video: { id: string; durationSec: number; exerciseName: string; /** «Подход 4 · 80 кг × 5» (план) */ label: string;
+    /** Факт подхода: «85 кг × 7». Нет у пропущенных подходов, старых Итогов и видео без тренировки */
+    actualLabel?: string;
+    /** Факт против плана; идёт вместе с actualLabel */
+    factMark?: 'Меньше плана' | 'В плане' | 'Больше плана';
+    sessionId: number | null;
+  };
   comments: ReviewComment[];
 }
 

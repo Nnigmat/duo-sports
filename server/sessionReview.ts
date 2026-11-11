@@ -167,6 +167,7 @@ export function videoReviewOf(db: Db, viewer: Viewer, videoId: string): VideoRev
   if (!canAccessAthlete(db, viewer, v.athlete_id)) return { ok: false, error: 'forbidden' };
   let exerciseName = 'Видео';
   let label = 'Видео';
+  let fact: Pick<VideoReviewResponse['video'], 'actualLabel' | 'factMark'> = {};
   if (v.session_id !== null && v.step_index !== null) {
     const row = db.prepare('SELECT steps FROM sessions_done WHERE id = ?').get(v.session_id) as { steps: string } | undefined;
     const steps = JSON.parse(row?.steps ?? '[]') as SessionStepResult[];
@@ -175,12 +176,13 @@ export function videoReviewOf(db: Db, viewer: Viewer, videoId: string): VideoRev
       exerciseName = st.exerciseName;
       const n = steps.slice(0, v.step_index).filter((x) => x.blockIndex === st.blockIndex && x.exerciseId === st.exerciseId).length + 1;
       label = `Подход ${n} · ${setLabel(st)}`;
+      if (st.completed && st.actual) fact = { actualLabel: actualLabel(st), factMark: factLabel(st.plan, st.actual.value) };
     }
   }
   const rows = db.prepare(`SELECT ${COMMENT_COLUMNS} FROM comments WHERE video_id = ? ORDER BY timecode_sec IS NULL, timecode_sec, created_at, id`).all(videoId) as CommentRow[];
   const comments = rows.map((r) => toComment(r, viewer.id));
   db.prepare('UPDATE comments SET seen_at = ? WHERE video_id = ? AND author_id <> ? AND seen_at IS NULL').run(new Date().toISOString(), videoId, viewer.id);
-  return { ok: true, review: { athleteId: v.athlete_id, video: { id: videoId, durationSec: v.duration_sec, exerciseName, label, sessionId: v.session_id }, comments } };
+  return { ok: true, review: { athleteId: v.athlete_id, video: { id: videoId, durationSec: v.duration_sec, exerciseName, label, ...fact, sessionId: v.session_id }, comments } };
 }
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];

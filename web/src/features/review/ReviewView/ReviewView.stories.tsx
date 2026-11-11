@@ -41,6 +41,24 @@ export const Default: Story = {
   },
 };
 
+const NB = '\u00a0';
+const addFact = (e: (typeof reviewFixture.exercises)[number]) => ({ ...e, sets: e.sets.map((st) => (st.videoId ? { ...st, actualLabel: `85${NB}кг × 7`, factMark: 'Больше плана' as const } : st)) });
+const withVideoFact = {
+  ...reviewFixture,
+  exercises: reviewFixture.exercises.map(addFact),
+  sections: reviewFixture.sections.map((sec) => ({ ...sec, exercises: sec.exercises.map(addFact) })),
+};
+
+export const VideoWithFact: Story = {
+  args: { review: withVideoFact },
+  play: async ({ canvasElement }) => {
+    const link = within(canvasElement).getByRole('link', { name: /Смотреть с комментариями/ });
+    await expect(link).toHaveTextContent(/Подход 4 · 85\sкг × 7/);
+    await expect(link).toHaveTextContent(/план 80\sкг × 5/);
+    await expect(link).not.toHaveTextContent('undefined');
+  },
+};
+
 export const Reply: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);

@@ -199,6 +199,24 @@ describe('videoReviewOf', () => {
     expect(r.review.video).toEqual({ id: V, durationSec: 38, exerciseName: 'Приседания со штангой', label: `Подход 4 · 80${NB}кг × 5`, sessionId: sid });
     expect(r.review.comments.map((c) => c.timecodeSec)).toEqual([9, 21]);
   });
+  it('факт подхода и метка против плана; без факта полей нет', () => {
+    const steps = JSON.parse((db.prepare('SELECT steps FROM sessions_done WHERE id = ?').get(sid) as { steps: string }).steps) as SessionStepResult[];
+    const setStep = (st: SessionStepResult) => db.prepare('UPDATE sessions_done SET steps = ? WHERE id = ?').run(JSON.stringify(steps.map((x, i) => (i === 3 ? st : x))), sid);
+    const video = () => {
+      const r = videoReviewOf(db, A(), V);
+      if (!r.ok) throw new Error(r.error);
+      return r.review.video;
+    };
+    setStep({ ...steps[3]!, actual: { value: 7, weight: 85 } });
+    expect(video()).toMatchObject({ label: `Подход 4 · 80${NB}кг × 5`, actualLabel: `85${NB}кг × 7`, factMark: 'Больше плана' });
+    setStep({ ...steps[3]!, actual: { value: 4, weight: 80 } });
+    expect(video().factMark).toBe('Меньше плана');
+    setStep({ ...steps[3]!, actual: { value: 5, weight: 80 } });
+    expect(video().factMark).toBe('В плане');
+    setStep({ ...steps[3]!, completed: false });
+    expect(video()).not.toHaveProperty('actualLabel');
+    expect(video()).not.toHaveProperty('factMark');
+  });
   it('чужое и неизвестное видео', () => {
     expect(videoReviewOf(db, { id: stranger, role: 'athlete' }, V)).toEqual({ ok: false, error: 'forbidden' });
     expect(videoReviewOf(db, A(), '33333333-3333-4333-8333-333333333333')).toEqual({ ok: false, error: 'not_found' });
