@@ -3,7 +3,8 @@ import type { Request, Response } from 'express';
 import type { ImportContextResponse } from '../shared/types';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
-import { ImportForbiddenError, applyImport, ensureLibrary, libraryOf, planTitles, redoImport, undoImport, validateCommit, type ActionResult } from './imports';
+import { listRoutines } from './routines';
+import { ImportForbiddenError, ImportInvalidError, applyImport, ensureLibrary, libraryOf, planTitles, redoImport, undoImport, validateCommit, type ActionResult } from './imports';
 
 const STATUS = { not_found: 404, expired: 410, bad_state: 409 } as const;
 
@@ -19,19 +20,24 @@ export function mountImport(r: Router, db: Db, base: string, owner: ImportOwner)
     const id = owner(req, res);
     if (id === null) return;
     ensureLibrary(db);
-    const body: ImportContextResponse = { library: libraryOf(db), mine: planTitles(db, id) };
+    const body: ImportContextResponse = {
+      library: libraryOf(db),
+      routines: listRoutines(db).map(({ id, kind, title }) => ({ id, kind, title })),
+      mine: planTitles(db, id),
+    };
     res.json(body);
   });
 
   r.post(`${base}/imports`, (req, res) => {
     const id = owner(req, res);
     if (id === null) return;
-    const v = validateCommit(req.body);
+    const v = validateCommit(req.body, db);
     if (!v.ok) return void res.status(400).json({ error: v.error });
     try {
       res.status(201).json(applyImport(db, id, v.commit, undefined, req.user!.id));
     } catch (e) {
       if (e instanceof ImportForbiddenError) return void res.status(403).json({ error: e.message });
+      if (e instanceof ImportInvalidError) return void res.status(400).json({ error: e.message });
       throw e;
     }
   });

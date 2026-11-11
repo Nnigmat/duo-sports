@@ -27,13 +27,13 @@ beforeEach(async () => {
       { id: 'squat', name: 'Приседания со штангой', aliases: [], muscles: [], kind: 'weight', group: 'legs' },
       { id: 'plank', name: 'Планка', aliases: [], muscles: [], kind: 'time', group: 'core' },
     ],
-    workouts: [{ title: 'Служебная', blocks: [] }], entries: [], replaceDates: [],
+    workouts: [{ title: 'Служебная', blocks: [] }], entries: [], replaceDates: [], routines: [],
   }, clock());
   applyImport(db, athlete, {
     exercises: [],
     workouts: [{ id: 'legs', title: 'Ноги', blocks }],
     entries: [{ date: '2026-11-05', workout: 0 }, { date: '2026-11-12', workout: 0 }],
-    replaceDates: [],
+    replaceDates: [], routines: [],
   }, clock());
 });
 

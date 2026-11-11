@@ -20,7 +20,7 @@ const importTwo = (userId: number) =>
     exercises: [],
     workouts: [{ title: 'Верх', blocks: blocks(3) }, { title: 'Ноги', blocks: blocks(5) }],
     entries: [{ date: '2026-11-03', workout: 0 }, { date: '2026-11-05', workout: 1 }, { date: '2026-11-05', workout: 0 }],
-    replaceDates: [],
+    replaceDates: [], routines: [],
   }, clock);
 
 const items = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `Упр ${i + 1}`, value: '10 повторений' }));
@@ -51,7 +51,7 @@ describe('planOf', () => {
         { kind: 'exercises', heading: 'Круг', items: [{ name: 'Выпады', value: '16–20 повт' }] },
         { kind: 'cooldown', heading: 'Заминка', items: [{ name: 'Бабочка', value: '00:45' }] },
       ] }],
-      entries: [], replaceDates: [],
+      entries: [], replaceDates: [], routines: [],
     }, clock);
     const [t] = planOf(db, me).templates;
     expect(t!.exercises).toEqual([{ name: 'Выпады', detail: '16–20 повт' }]);
@@ -157,7 +157,7 @@ describe('разминка по ссылке', () => {
     return rid;
   };
   const mainOnly = (userId: number) =>
-    applyImport(db, userId, { exercises: [], workouts: [{ title: 'Верх', blocks: [block('exercises', 3)] }], entries: [], replaceDates: [] }, clock);
+    applyImport(db, userId, { exercises: [], workouts: [{ title: 'Верх', blocks: [block('exercises', 3)] }], entries: [], replaceDates: [], routines: [] }, clock);
 
   it('estimateWorkoutMinutes считает подключённую разминку, состав дня без неё', () => {
     mainOnly(me);

@@ -93,5 +93,6 @@ export function buildCommit(parsed: ParsedImport, choices: ExerciseChoices, opti
     workouts,
     entries: plan.entries.map((e) => ({ date: e.date, workout: e.ref })),
     replaceDates: plan.replaced,
+    routines: [], // разминки из файла подключает Task 7
   };
 }

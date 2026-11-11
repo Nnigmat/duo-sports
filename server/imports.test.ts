@@ -3,7 +3,9 @@ import type { CommitBlock, ImportCommit } from '../shared/types';
 import { createUser } from './auth';
 import { DEFAULT_EXERCISES } from './defaultExercises';
 import { openDb, type Db } from './db';
-import { applyImport, checkStructure, ensureLibrary, libraryOf, planTitles, redoImport, undoImport, validateCommit } from './imports';
+import { createExercise } from './exercises';
+import { createRoutine } from './routines';
+import { applyImport, checkStructure, ensureLibrary, ImportForbiddenError, ImportInvalidError, libraryOf, planTitles, redoImport, undoImport, validateCommit } from './imports';
 
 let db: Db;
 let t = new Date('2026-11-02T14:20:00Z');
@@ -27,6 +29,7 @@ const commit = (over: Partial<ImportCommit> = {}): ImportCommit => ({
     { date: '2026-11-05', workout: 1 },
   ],
   replaceDates: [],
+  routines: [],
   ...over,
 });
 const count = (table: string, userId = me) => (db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE user_id = ?`).get(userId) as { n: number }).n;
@@ -261,5 +264,114 @@ describe('checkStructure: стороны', () => {
       },
     ];
     expect(checkStructure(sets)).toBe(false);
+  });
+});
+
+describe('разминки и заминки в импорте', () => {
+  const routineRow = (slug: string) => db.prepare('SELECT id, import_id FROM routines WHERE slug = ?').get(slug) as { id: number; import_id: number | null } | undefined;
+  const links = () => db.prepare("SELECT slug, warmup_routine_id AS w, cooldown_routine_id AS c FROM workouts WHERE user_id = ? ORDER BY id").all(me) as Array<{ slug: string; w: number | null; c: number | null }>;
+  const timeEx = (name: string) => {
+    const r = createExercise(db, { name, group: 'core', kind: 'time', muscles: [], aliases: [] });
+    if (!r.ok) throw new Error('exercise');
+    return r.entry.id;
+  };
+  const fileRoutine = (slug = 'legs-light', exercise = 'sheya') => ({ id: slug, kind: 'warmup' as const, title: 'Ноги лёгкая', items: [{ exercise, sec: { min: 30, max: 30 } }] });
+  const withLink = (over: Partial<ImportCommit> = {}, link: Record<string, string> = { warmupRoutine: 'legs-light' }) =>
+    commit({ exercises: [], workouts: [{ id: 'w01-tue', title: 'Трицепс', blocks: blocks('Отжимания'), ...link }], entries: [], ...over });
+  beforeEach(() => {
+    timeEx('Шея');
+  });
+
+  it('applyImport сохраняет разминки до тренировок и ставит ссылки', () => {
+    const rec = applyImport(db, me, withLink({ routines: [fileRoutine()] }), clock);
+    const row = routineRow('legs-light')!;
+    expect(row.import_id).toBe(rec.id);
+    expect(links()).toEqual([{ slug: 'w01-tue', w: row.id, c: null }]);
+  });
+  it('ссылка на готовую разминку библиотеки ничего не создаёт', () => {
+    createRoutine(db, { kind: 'warmup', title: 'Ноги лёгкая', items: [{ exercise: 'sheya', sec: { min: 20, max: 20 } }] });
+    const before = routineRow('nogi-legkaya')!;
+    applyImport(db, other, withLink({}, { warmupRoutine: 'nogi-legkaya' }), clock);
+    expect((db.prepare('SELECT COUNT(*) AS n FROM routines').get() as { n: number }).n).toBe(1);
+    expect(db.prepare('SELECT warmup_routine_id AS w FROM workouts WHERE user_id = ?').get(other)).toEqual({ w: before.id });
+  });
+  it('существующий slug разминки не перезаписывается', () => {
+    createRoutine(db, { kind: 'warmup', title: 'Старая', items: [{ exercise: 'sheya', sec: { min: 20, max: 20 } }] });
+    db.prepare("UPDATE routines SET slug = 'legs-light'").run();
+    applyImport(db, me, withLink({ routines: [fileRoutine()] }), clock);
+    expect(db.prepare("SELECT title FROM routines WHERE slug = 'legs-light'").get()).toEqual({ title: 'Старая' });
+    expect(links()[0]!.w).toBe(routineRow('legs-light')!.id);
+  });
+  it('validateCommit отклоняет ссылку на неизвестный slug', () => {
+    const v = validateCommit(withLink({}, { warmupRoutine: 'nope' }), db);
+    expect(v).toEqual({ ok: false, error: 'Неизвестная разминка: nope' });
+    expect(validateCommit(withLink({ routines: [fileRoutine('nope')] }, { warmupRoutine: 'nope' }), db).ok).toBe(true);
+  });
+  it('validateCommit отклоняет разминку, подключённую как заминку', () => {
+    const v = validateCommit(withLink({ routines: [fileRoutine()] }, { cooldownRoutine: 'legs-light' }), db);
+    expect(v.ok).toBe(false);
+  });
+  it('validateCommit проверяет форму и пределы routines и ссылок', () => {
+    const bad = (routines: unknown) => validateCommit(withLink({ routines: routines as never }), db).ok;
+    expect(bad([fileRoutine()])).toBe(true);
+    expect(bad('x')).toBe(false);
+    expect(bad([{ ...fileRoutine(), items: [] }])).toBe(false);
+    expect(bad([{ ...fileRoutine(), kind: 'main' }])).toBe(false);
+    expect(bad([{ ...fileRoutine(), id: 'плохой slug' }])).toBe(false);
+    expect(bad([{ ...fileRoutine(), items: [{ exercise: 'sheya', sec: { min: 0, max: 5 } }] }])).toBe(false);
+    expect(bad(Array.from({ length: 31 }, (_, i) => fileRoutine(`r${i}`)))).toBe(false);
+    expect(validateCommit(withLink({ routines: [fileRoutine()] }, { warmupRoutine: 5 as never }), db).ok).toBe(false);
+  });
+  it('validateCommit принимает старый запрос без routines', () => {
+    const { routines: _omit, ...old } = commit();
+    const v = validateCommit(old);
+    expect(v.ok && v.commit.routines).toEqual([]);
+  });
+  it('спортсмен не может импортировать раздел routines, ссылки на готовые разрешены', () => {
+    expect(() => applyImport(db, other, withLink({ routines: [fileRoutine()] }), clock)).toThrow(ImportForbiddenError);
+    createRoutine(db, { kind: 'warmup', title: 'Готовая', items: [{ exercise: 'sheya', sec: { min: 20, max: 20 } }] });
+    expect(() => applyImport(db, other, withLink({}, { warmupRoutine: 'gotovaya' }), clock)).not.toThrow();
+  });
+  it('упражнение разминки, которого нет, откатывает весь импорт с понятной ошибкой', () => {
+    const c = withLink({ routines: [fileRoutine('legs-light', 'net-takogo')] });
+    expect(() => applyImport(db, me, c, clock)).toThrow(ImportInvalidError);
+    expect(count('workouts')).toBe(0);
+    expect(routineRow('legs-light')).toBeUndefined();
+  });
+
+  it('отмена убирает созданные импортом разминки, если на них никто не ссылается', () => {
+    const rec = applyImport(db, me, withLink({ routines: [fileRoutine()] }), clock);
+    undoImport(db, me, rec.id, clock);
+    expect(routineRow('legs-light')).toBeUndefined();
+    expect(count('workouts')).toBe(0);
+  });
+  it('отмена оставляет разминку, на которую ссылается другая тренировка', () => {
+    const rec = applyImport(db, me, withLink({ routines: [fileRoutine()] }), clock);
+    applyImport(db, other, withLink({}, { warmupRoutine: 'legs-light' }), clock);
+    expect(undoImport(db, me, rec.id, clock).ok).toBe(true);
+    expect(routineRow('legs-light')).toBeDefined();
+    expect(db.prepare('SELECT warmup_routine_id AS w FROM workouts WHERE user_id = ?').get(other)).toEqual({ w: routineRow('legs-light')!.id });
+  });
+  it('упражнение, созданное импортом и стоящее в разминке, при отмене остаётся', () => {
+    const ex = { id: 'kot', name: 'Кот', aliases: [], muscles: [], kind: 'time' as const, group: 'core' as const };
+    const rec = applyImport(db, me, withLink({ exercises: [ex], routines: [fileRoutine('legs-light', 'kot')] }), clock);
+    applyImport(db, other, withLink({}, { warmupRoutine: 'legs-light' }), clock);
+    expect(undoImport(db, me, rec.id, clock).ok).toBe(true);
+    expect(libraryOf(db).some((e) => e.id === 'kot')).toBe(true);
+  });
+  it('«Вернуть» восстанавливает разминки и ссылки', () => {
+    const rec = applyImport(db, me, withLink({ routines: [fileRoutine()] }), clock);
+    undoImport(db, me, rec.id, clock);
+    expect(redoImport(db, me, rec.id, clock).ok).toBe(true);
+    expect(links()).toEqual([{ slug: 'w01-tue', w: routineRow('legs-light')!.id, c: null }]);
+  });
+  it('обновлённая тренировка при отмене получает прежние ссылки', () => {
+    createRoutine(db, { kind: 'warmup', title: 'Старая', items: [{ exercise: 'sheya', sec: { min: 20, max: 20 } }] });
+    applyImport(db, me, withLink({}, { warmupRoutine: 'staraya' }), clock);
+    const old = routineRow('staraya')!.id;
+    const rec = applyImport(db, me, withLink({ routines: [fileRoutine()] }), clock);
+    expect(links()[0]!.w).toBe(routineRow('legs-light')!.id);
+    undoImport(db, me, rec.id, clock);
+    expect(links()).toEqual([{ slug: 'w01-tue', w: old, c: null }]);
   });
 });

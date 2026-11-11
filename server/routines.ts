@@ -9,7 +9,7 @@ import { displayBlocks } from './workoutEdit';
 type Clock = () => Date;
 const now: Clock = () => new Date();
 
-export const ROUTINE_LIMITS = { title: 80, note: 300, items: 30, sec: 3600 };
+export const ROUTINE_LIMITS = { title: 80, note: 300, items: 30, sec: 3600, routines: 30 };
 export const ROUTINES_WRITE_FORBIDDEN = 'Разминки меняют тренер и админ';
 export const ROUTINE_NOT_FOUND = 'Разминка не найдена';
 export const ROUTINE_DUPLICATE = 'Разминка с таким названием уже есть';
@@ -155,13 +155,14 @@ const titleTaken = (db: Db, kind: RoutineKind, title: string, exceptId?: number)
 
 export type RoutineWrite = { ok: true; routine: Routine } | { ok: false; error: WriteError };
 
-export function createRoutine(db: Db, input: RoutineInput, importId: number | null = null, clock: Clock = now): RoutineWrite {
+/** slug задан при импорте из файла; иначе берётся из названия */
+export function createRoutine(db: Db, input: RoutineInput, importId: number | null = null, clock: Clock = now, slugOverride?: string): RoutineWrite {
   return db.transaction((): RoutineWrite => {
     if (titleTaken(db, input.kind, input.title)) return { ok: false, error: 'duplicate' };
     const resolved = resolveItems(db, input);
     if (!resolved.ok) return resolved;
     const taken = new Set((db.prepare('SELECT slug FROM routines').all() as Array<{ slug: string }>).map((r) => r.slug));
-    const slug = uniqueSlug(slugify(input.title), taken);
+    const slug = slugOverride ?? uniqueSlug(slugify(input.title), taken);
     const at = clock().toISOString();
     const id = Number(
       db

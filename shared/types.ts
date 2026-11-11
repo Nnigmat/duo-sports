@@ -253,6 +253,8 @@ export interface ExercisesResponse {
 /** Ответ GET /api/import/context: библиотека и уже стоящий план. Сегодняшний день знает браузер. */
 export interface ImportContextResponse {
   library: LibraryEntry[];
+  /** Разминки и заминки библиотеки: на них можно ссылаться из файла */
+  routines: Array<{ id: string; kind: RoutineKind; title: string }>;
   /** Дата → название тренировки в плане */
   mine: Record<string, string>;
 }
@@ -267,6 +269,12 @@ export interface CommitExercise {
   kind: ExerciseKind;
   group: MuscleGroupId;
   notes?: string;
+}
+
+/** Разминка или заминка, которую импорт создаёт в библиотеке; упражнения по slug */
+export interface CommitRoutine extends RoutineInput {
+  /** slug из файла */
+  id: string;
 }
 
 /** Одна строка блока: упражнение и нагрузка так, как их показывает проверка */
@@ -289,6 +297,9 @@ export interface CommitWorkout {
   blocks: CommitBlock[];
   /** Те же блоки для экрана тренировки; без них тренировку нельзя запустить */
   structure?: Block[];
+  /** slug подключённой разминки и заминки; в blocks и structure их блоков нет */
+  warmupRoutine?: string;
+  cooldownRoutine?: string;
 }
 
 /**
@@ -297,6 +308,8 @@ export interface CommitWorkout {
  */
 export interface ImportCommit {
   exercises: CommitExercise[];
+  /** Разминки и заминки из файла; пустой массив, если их нет */
+  routines: CommitRoutine[];
   workouts: CommitWorkout[];
   /** Тренировки в календаре: дата и номер тренировки в workouts */
   entries: Array<{ date: string; workout: number }>;

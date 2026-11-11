@@ -1,8 +1,9 @@
 import type {
-  CommitBlock, CommitExercise, CommitWorkout, ExerciseKind, ImportCommit, ImportRecord, ImportSummary, LibraryEntry, MuscleGroupId, Role,
+  CommitBlock, CommitExercise, CommitRoutine, CommitWorkout, ExerciseKind, ImportCommit, ImportRecord, ImportSummary, LibraryEntry, MuscleGroupId, Role,
 } from '../shared/types';
 import { DEFAULT_EXERCISES } from './defaultExercises';
 import type { Db } from './db';
+import { createRoutine, ROUTINE_LIMITS } from './routines';
 
 type Clock = () => Date;
 const now: Clock = () => new Date();
@@ -51,6 +52,9 @@ export class ImportForbiddenError extends Error {
     super(EXERCISES_FORBIDDEN);
   }
 }
+
+/** Присланное не сходится с базой (нет упражнения или разминки): весь импорт откатывается. */
+export class ImportInvalidError extends Error {}
 
 /** Дата → название тренировки; если в дне две, показываем через « + » */
 export function planTitles(db: Db, userId: number): Record<string, string> {
@@ -118,9 +122,21 @@ export function checkStructure(blocks: unknown): boolean {
 }
 
 /** Проверяет форму и пределы присланного; разбор YAML сервер не повторяет, это сделал браузер. */
-export function validateCommit(body: unknown): Validated {
+const checkRoutine = (r: unknown): r is CommitRoutine =>
+  isObj(r) && typeof r.id === 'string' && SLUG.test(r.id) && (r.kind === 'warmup' || r.kind === 'cooldown') && isStr(r.title, ROUTINE_LIMITS.title) &&
+  optStr(r.note, ROUTINE_LIMITS.note) && Array.isArray(r.items) && r.items.length > 0 && r.items.length <= ROUTINE_LIMITS.items &&
+  r.items.every((i) => isObj(i) && typeof i.exercise === 'string' && SLUG.test(i.exercise) && isObj(i.sec) && Number.isInteger(i.sec.min) && Number.isInteger(i.sec.max) &&
+    (i.sec.min as number) > 0 && (i.sec.max as number) >= (i.sec.min as number) && (i.sec.max as number) <= ROUTINE_LIMITS.sec && (i.sides === undefined || checkSides(i.sides)));
+
+/**
+ * Проверяет форму и пределы присланного; разбор YAML сервер не повторяет, это сделал браузер.
+ * С db проверяет и ссылки на разминки: slug есть в присланных routines или в библиотеке, вид совпадает.
+ */
+export function validateCommit(body: unknown, db?: Db): Validated {
   if (!isObj(body)) return { ok: false, error: 'Ждём объект с exercises, workouts, entries' };
   const { exercises, workouts, entries, replaceDates } = body;
+  const routines = body.routines === undefined ? [] : body.routines;
+  if (!Array.isArray(routines) || routines.length > ROUTINE_LIMITS.routines || !routines.every(checkRoutine)) return { ok: false, error: 'routines: неверные поля' };
   if (!Array.isArray(exercises) || exercises.length > LIMITS.exercises) return { ok: false, error: 'exercises: список до 1000' };
   if (!Array.isArray(workouts) || workouts.length === 0 || workouts.length > LIMITS.workouts) return { ok: false, error: 'workouts: список от 1 до 500' };
   if (!Array.isArray(entries) || entries.length > LIMITS.entries) return { ok: false, error: 'entries: список до 5000' };
@@ -137,15 +153,25 @@ export function validateCommit(body: unknown): Validated {
     const ok =
       isObj(w) && isStr(w.title, LIMITS.name) && (w.id === undefined || (typeof w.id === 'string' && SLUG.test(w.id))) &&
       Array.isArray(w.blocks) && w.blocks.length > 0 && w.blocks.length <= LIMITS.blocks && w.blocks.every(checkBlock) &&
-      (w.structure === undefined || checkStructure(w.structure));
+      (w.structure === undefined || checkStructure(w.structure)) &&
+      (w.warmupRoutine === undefined || (typeof w.warmupRoutine === 'string' && SLUG.test(w.warmupRoutine))) &&
+      (w.cooldownRoutine === undefined || (typeof w.cooldownRoutine === 'string' && SLUG.test(w.cooldownRoutine)));
     if (!ok) return { ok: false, error: `workouts[${i}]: неверные поля` };
+    if (db) {
+      for (const [slug, kind] of [[w.warmupRoutine, 'warmup'], [w.cooldownRoutine, 'cooldown']] as const) {
+        if (slug === undefined) continue;
+        const found = (routines as CommitRoutine[]).find((r) => r.id === slug) ?? (db.prepare('SELECT kind FROM routines WHERE slug = ?').get(slug) as { kind: string } | undefined);
+        if (!found) return { ok: false, error: `Неизвестная разминка: ${slug}` };
+        if (found.kind !== kind) return { ok: false, error: `workouts[${i}]: «${slug}» — ${found.kind === 'warmup' ? 'разминка' : 'заминка'}, а не ${kind === 'warmup' ? 'разминка' : 'заминка'}` };
+      }
+    }
   }
   for (const [i, en] of entries.entries()) {
     if (!isObj(en) || !isDate(en.date) || !Number.isInteger(en.workout) || (en.workout as number) < 0 || (en.workout as number) >= workouts.length) {
       return { ok: false, error: `entries[${i}]: неверная дата или номер тренировки` };
     }
   }
-  return { ok: true, commit: body as unknown as ImportCommit };
+  return { ok: true, commit: { ...body, routines } as unknown as ImportCommit };
 }
 
 // ── Запись и отмена ───────────────────────────────────────
@@ -154,7 +180,7 @@ interface Snapshot {
   /** Свои записи плана, которые заменил импорт */
   removed: Array<{ date: string; workoutId: number; importId: number | null }>;
   /** Тренировки, которые импорт обновил по id: как они выглядели до того */
-  updated: Array<{ id: number; title: string; blocks: string; structure: string | null }>;
+  updated: Array<{ id: number; title: string; blocks: string; structure: string | null; warmup_routine_id?: number | null; cooldown_routine_id?: number | null }>;
 }
 
 type ImportRow = { id: number; user_id: number; created_at: string; undone_at: string | null; summary: string; payload: string; snapshot: string };
@@ -184,21 +210,37 @@ function apply(db: Db, userId: number, importId: number, commit: ImportCommit, c
     summary.created++;
   }
 
-  const findWorkout = db.prepare('SELECT id, title, blocks, structure FROM workouts WHERE user_id = ? AND slug = ?');
-  const insertWorkout = db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, import_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  const updateWorkout = db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ? WHERE id = ?');
+  // Разминки после упражнений (на них они ссылаются), до тренировок; существующий slug не перезаписываем
+  const routineId = db.prepare('SELECT id FROM routines WHERE slug = ?');
+  for (const r of commit.routines ?? []) {
+    if (routineId.get(r.id)) continue;
+    const made = createRoutine(db, { kind: r.kind, title: r.title, note: r.note, items: r.items }, importId, clock, r.id);
+    if (!made.ok) throw new ImportInvalidError(`Разминка «${r.title}»: ${made.error === 'duplicate' ? 'такое название уже есть' : 'упражнения нет в библиотеке или оно не по времени'}`);
+  }
+  const linkOf = (slug: string | undefined): number | null => {
+    if (slug === undefined) return null;
+    const row = routineId.get(slug) as { id: number } | undefined;
+    if (!row) throw new ImportInvalidError(`Неизвестная разминка: ${slug}`);
+    return row.id;
+  };
+
+  const findWorkout = db.prepare('SELECT id, title, blocks, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ? AND slug = ?');
+  const insertWorkout = db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, warmup_routine_id, cooldown_routine_id, import_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  const updateWorkout = db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ?, warmup_routine_id = ?, cooldown_routine_id = ? WHERE id = ?');
   const ids: number[] = [];
   for (const w of commit.workouts as CommitWorkout[]) {
     const blocks = JSON.stringify(w.blocks);
     const structure = w.structure ? JSON.stringify(w.structure) : null;
-    const old = w.id ? (findWorkout.get(userId, w.id) as { id: number; title: string; blocks: string; structure: string | null } | undefined) : undefined;
+    const old = w.id ? (findWorkout.get(userId, w.id) as { id: number; title: string; blocks: string; structure: string | null; warmup_routine_id: number | null; cooldown_routine_id: number | null } | undefined) : undefined;
+    const warmup = linkOf(w.warmupRoutine);
+    const cooldown = linkOf(w.cooldownRoutine);
     if (old) {
       snapshot.updated.push(old);
-      updateWorkout.run(w.title, blocks, structure, old.id);
+      updateWorkout.run(w.title, blocks, structure, warmup, cooldown, old.id);
       ids.push(old.id);
       summary.updated++;
     } else {
-      ids.push(Number(insertWorkout.run(userId, w.id ?? null, w.title, blocks, structure, importId, at).lastInsertRowid));
+      ids.push(Number(insertWorkout.run(userId, w.id ?? null, w.title, blocks, structure, warmup, cooldown, importId, at).lastInsertRowid));
     }
   }
 
@@ -231,7 +273,7 @@ const record = (r: ImportRow): ImportRecord => ({
  * Данные пишутся userId, а право проверяется у actorId — того, кто импортирует (тренер за ученика).
  */
 export function applyImport(db: Db, userId: number, commit: ImportCommit, clock: Clock = now, actorId: number = userId): ImportRecord {
-  if (commit.exercises.length > 0) {
+  if (commit.exercises.length > 0 || (commit.routines ?? []).length > 0) {
     const u = db.prepare('SELECT role FROM users WHERE id = ?').get(actorId) as { role: Role } | undefined;
     if (!u || !canAddExercises(u.role)) throw new ImportForbiddenError();
   }
@@ -266,8 +308,11 @@ export function undoImport(db: Db, userId: number, id: number, clock: Clock = no
 
     db.prepare('DELETE FROM plan_entries WHERE import_id = ? AND user_id = ?').run(id, userId);
     db.prepare('DELETE FROM workouts WHERE import_id = ? AND user_id = ?').run(id, userId);
-    db.prepare('DELETE FROM exercises WHERE import_id = ?').run(id);
-    for (const u of snap.updated) db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ? WHERE id = ? AND user_id = ?').run(u.title, u.blocks, u.structure ?? null, u.id, userId);
+    // Прежние ссылки возвращаем до удаления разминок: иначе RESTRICT не даст убрать то, на что ещё ссылаются
+    for (const u of snap.updated) db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ?, warmup_routine_id = ?, cooldown_routine_id = ? WHERE id = ? AND user_id = ?').run(u.title, u.blocks, u.structure ?? null, u.warmup_routine_id ?? null, u.cooldown_routine_id ?? null, u.id, userId);
+    // Разминки и упражнения, созданные импортом, уходят, только если на них больше никто не ссылается
+    db.prepare('DELETE FROM routines WHERE import_id = ? AND id NOT IN (SELECT warmup_routine_id FROM workouts WHERE warmup_routine_id IS NOT NULL UNION SELECT cooldown_routine_id FROM workouts WHERE cooldown_routine_id IS NOT NULL)').run(id);
+    db.prepare('DELETE FROM exercises WHERE import_id = ? AND id NOT IN (SELECT exercise_id FROM routine_items)').run(id);
     const restore = db.prepare('INSERT OR IGNORE INTO plan_entries (user_id, date, workout_id, import_id) VALUES (?, ?, ?, ?)');
     for (const r of snap.removed) {
       const importStillThere = r.importId !== null && db.prepare('SELECT 1 FROM imports WHERE id = ?').get(r.importId);

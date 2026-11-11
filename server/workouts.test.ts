@@ -23,6 +23,7 @@ const commit = (over: Partial<ImportCommit> = {}): ImportCommit => ({
   workouts: [{ id: 'w1', title: 'Верх', blocks: [{ kind: 'exercises', heading: 'Подходами', items: [{ name: 'Жим', value: '3 × 8 · 60 кг' }] }], structure }],
   entries: [{ date: '2026-11-03', workout: 0 }],
   replaceDates: [],
+  routines: [],
   ...over,
 });
 const result = (over: Partial<SessionResult> = {}): SessionResult => ({
