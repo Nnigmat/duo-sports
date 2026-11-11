@@ -3,14 +3,14 @@ import type { CommitBlock } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { applyImport } from './imports';
-import { clearDay, copyWorkoutToAthlete, estimateMinutes, planOf, setDay } from './plan';
+import { clearDay, copyWorkoutToAthlete, estimateWorkoutMinutes, planOf, setDay } from './plan';
 
 let db: Db;
 let me: number;
 let other: number;
 const clock = () => new Date('2026-11-02T10:00:00Z');
 const blocks = (n: number): CommitBlock[] => [
-  { kind: 'warmup', heading: 'Разминка', items: [] },
+  { kind: 'warmup', heading: 'Разминка', items: [{ name: 'Суставная', value: '2 мин' }] },
   { kind: 'exercises', heading: 'Круг', items: Array.from({ length: n }, (_, i) => ({ name: `Упр ${i + 1}`, value: '10' })) },
 ];
 const importTwo = (userId: number) =>
@@ -20,6 +20,9 @@ const importTwo = (userId: number) =>
     entries: [{ date: '2026-11-03', workout: 0 }, { date: '2026-11-05', workout: 1 }, { date: '2026-11-05', workout: 0 }],
     replaceDates: [],
   }, clock);
+
+const items = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `Упр ${i + 1}`, value: '10 повторений' }));
+const block = (kind: CommitBlock['kind'], n: number): CommitBlock => ({ kind, heading: kind, items: items(n) });
 
 beforeEach(async () => {
   db = openDb(':memory:');
@@ -38,7 +41,7 @@ describe('planOf', () => {
     expect(templates[0]!.exercises[0]).toEqual({ name: 'Упр 1', detail: '10' });
     expect(templates.map((t) => t.tone)).toEqual(['primary', 'teal']);
   });
-  it('разминка и заминка не попадают в состав и в оценку', () => {
+  it('разминка и заминка не попадают в состав, в оценку входят по десять минут', () => {
     applyImport(db, me, {
       exercises: [],
       workouts: [{ title: 'Ноги', blocks: [
@@ -50,7 +53,7 @@ describe('planOf', () => {
     }, clock);
     const [t] = planOf(db, me).templates;
     expect(t!.exercises).toEqual([{ name: 'Выпады', detail: '16–20 повт' }]);
-    expect(t!.minutes).toBe(15);
+    expect(t!.minutes).toBe(25);
   });
   it('у выполненного дня в записи есть sessionId разбора', () => {
     importTwo(me);
@@ -73,7 +76,24 @@ describe('planOf', () => {
     expect(planOf(db, other)).toEqual({ templates: [], entries: {}, moves: [] });
   });
   it('оценка длительности кратна пяти и не меньше 15', () => {
-    expect([0, 1, 3, 4, 10].map(estimateMinutes)).toEqual([15, 15, 25, 30, 60]);
+    const main = (n: number): CommitBlock => ({ kind: 'exercises', heading: 'Основа', items: items(n) });
+    expect([0, 1, 3, 4, 10].map((n) => estimateWorkoutMinutes([main(n)]))).toEqual([15, 15, 15, 20, 50]);
+    for (const n of [0, 1, 2, 7]) {
+      const m = estimateWorkoutMinutes([block('warmup', 3), main(n), block('cooldown', 3)]);
+      expect(m % 5).toBe(0);
+      expect(m).toBeGreaterThanOrEqual(15);
+    }
+  });
+  it('число пунктов разминки и заминки не умножается на пять минут', () => {
+    const few = estimateWorkoutMinutes([block('warmup', 1), block('exercises', 5), block('cooldown', 1)]);
+    const many = estimateWorkoutMinutes([block('warmup', 30), block('exercises', 5), block('cooldown', 30)]);
+    expect(many).toBe(few);
+    expect(many).toBe(45);
+  });
+  it('без разминки и заминки не больше, чем с ними', () => {
+    const bare = estimateWorkoutMinutes([block('exercises', 4)]);
+    expect(bare).toBeLessThanOrEqual(estimateWorkoutMinutes([block('warmup', 2), block('exercises', 4), block('cooldown', 2)]));
+    expect(estimateWorkoutMinutes([block('warmup', 0), block('exercises', 4)])).toBe(bare);
   });
 });
 
