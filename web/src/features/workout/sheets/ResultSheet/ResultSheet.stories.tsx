@@ -155,6 +155,48 @@ export const RepsTypeGarbageKeepsValue: Story = {
   },
 };
 
+export const RepsTypeFractionStoresInteger: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '12,4');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 12 });
+  },
+};
+
+export const RepsTypeAboveMaxClamps: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '5000');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 999 });
+  },
+};
+
+export const WeightTypeAboveMaxClamps: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="weight" eyebrow="Подход 1 из 3" plan={{ target: { min: 12, max: 12 }, weight: 60 }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Вес' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '9999');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 12, weight: 500 });
+  },
+};
+
 export const CloseSavesNothing: Story = {
   tags: ['!dev', '!autodocs'],
   render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,

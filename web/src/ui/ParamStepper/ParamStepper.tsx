@@ -16,6 +16,8 @@ type Props = {
   step?: number;
   min?: number;
   max?: number;
+  /** Только целые: набранное и шаговое значение округляется */
+  integer?: boolean;
   /** Имена кнопок вместо «Подпись: меньше/больше» */
   decreaseLabel?: string;
   increaseLabel?: string;
@@ -29,11 +31,11 @@ type Props = {
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
 /** Строка параметра: подпись слева, справа − значение +. Число можно ввести руками. */
-export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, decreaseLabel, increaseLabel, describedBy, live = false, className }: Props) {
+export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, integer = false, decreaseLabel, increaseLabel, describedBy, live = false, className }: Props) {
   const id = useId();
   const duration = mode === 'duration';
   const delta = step ?? (duration ? 5 : 1);
-  const clamp = (n: number) => Math.min(max, Math.max(min, round(n)));
+  const clamp = (n: number) => Math.min(max, Math.max(min, integer ? Math.round(n) : round(n)));
   const [draft, setDraft] = useState<string | null>(null);
 
   function commit() {

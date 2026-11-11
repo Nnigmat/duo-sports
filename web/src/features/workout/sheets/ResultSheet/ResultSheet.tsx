@@ -29,6 +29,9 @@ const TITLES: Record<ExerciseKind, string> = {
 };
 
 const WEIGHT_STEP = 1;
+// Пределы ввода: опечатка вроде «120» не должна попасть в объём и прогресс
+const MAX_REPS = 999;
+const MAX_WEIGHT_KG = 500;
 const LABEL_STATE = { 'Меньше плана': 'below', 'В плане': 'within', 'Больше плана': 'above' } as const;
 
 /** Шторка после «Готово»: сколько спортсмен реально сделал. План подхода она не меняет. */
@@ -65,6 +68,8 @@ function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' 
           label="Повторения"
           unit="повт"
           live
+          integer
+          max={MAX_REPS}
           value={draft.value}
           onChange={setValue}
           decreaseLabel="Меньше повторений"
@@ -82,6 +87,7 @@ function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' 
             label="Вес"
             unit="кг"
             live
+            max={MAX_WEIGHT_KG}
             value={draft.weight ?? 0}
             step={WEIGHT_STEP}
             onChange={(weight) => setDraft((d) => ({ ...d, weight }))}
