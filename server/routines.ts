@@ -1,8 +1,10 @@
 import type {
-  Range, Routine, RoutineDetail, RoutineInput, RoutineItem, RoutineKind, RoutineSummary,
+  Block, CommitBlock, Range, Routine, RoutineDetail, RoutineInput, RoutineItem, RoutineKind, RoutineSummary,
 } from '../shared/types';
+import { composeBlocks, routineBlock } from '../shared/routines';
 import type { Db } from './db';
 import { type Checked, slugify, uniqueSlug } from './exercises';
+import { displayBlocks } from './workoutEdit';
 
 type Clock = () => Date;
 const now: Clock = () => new Date();
@@ -202,4 +204,36 @@ export function deleteRoutine(db: Db, slug: string): RoutineDelete {
     db.prepare('DELETE FROM routines WHERE id = ?').run(cur.id);
     return { ok: true };
   })();
+}
+
+export type RoutineLinks = { warmup_routine_id: number | null; cooldown_routine_id: number | null };
+
+export const linksOf = (db: Db, workoutId: number): RoutineLinks =>
+  (db.prepare('SELECT warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ?').get(workoutId) as RoutineLinks | undefined) ?? {
+    warmup_routine_id: null,
+    cooldown_routine_id: null,
+  };
+
+function linkedBlocks(db: Db, links: RoutineLinks) {
+  const at = (id: number | null) => {
+    const r = id === null ? null : routineById(db, id);
+    return r && id !== null ? routineBlock(r, id) : null;
+  };
+  return { warmup: at(links.warmup_routine_id), cooldown: at(links.cooldown_routine_id) };
+}
+
+/** Структура тренировки для экрана: сохранённые блоки, обёрнутые подключёнными разминкой и заминкой. null — структуры нет. */
+export function composeStructure(db: Db, row: RoutineLinks & { structure: string | null }): Block[] | null {
+  if (!row.structure) return null;
+  const main = JSON.parse(row.structure) as Block[];
+  const { warmup, cooldown } = linkedBlocks(db, row);
+  return composeBlocks(main, warmup, cooldown);
+}
+
+/** Блоки для списков и оценки минут: подключённые разминка и заминка вокруг сохранённых */
+export function composeDisplay(db: Db, row: RoutineLinks & { blocks: string }): CommitBlock[] {
+  const main = JSON.parse(row.blocks) as CommitBlock[];
+  const { warmup, cooldown } = linkedBlocks(db, row);
+  const wrap = (b: ReturnType<typeof routineBlock> | null) => (b && b.exercises.length > 0 ? displayBlocks([b]) : []);
+  return [...wrap(warmup), ...main, ...wrap(cooldown)];
 }

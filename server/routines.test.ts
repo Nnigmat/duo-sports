@@ -3,8 +3,9 @@ import type { ExerciseInput, RoutineInput } from '../shared/types';
 import { openDb, type Db } from './db';
 import { createExercise, deleteExercise, updateExercise } from './exercises';
 import { libraryOf } from './imports';
+import type { Block } from '../shared/types';
 import {
-  createRoutine, deleteRoutine, getRoutine, listRoutines, routineById, updateRoutine, validateRoutine,
+  composeDisplay, composeStructure, createRoutine, deleteRoutine, getRoutine, linksOf, listRoutines, routineById, updateRoutine, validateRoutine,
 } from './routines';
 
 let db: Db;
@@ -164,5 +165,51 @@ describe('deleteExercise', () => {
     createRoutine(db, input());
     expect(deleteExercise(db, neck)).toBe('in_use');
     expect(libraryOf(db).some((e) => e.id === neck)).toBe(true);
+  });
+});
+
+describe('composeStructure and composeDisplay', () => {
+  const main: Block[] = [{ id: 'b0', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [], exercises: [{ id: 'b0-e0', name: 'Жим', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3 }] }];
+  const inlineWarmup: Block = { id: 'w', mode: 'timed', kind: 'warmup', title: 'Встроенная', exercises: [{ id: 'w-e0', name: 'Шея', kind: 'time', target: { min: 30, max: 30 } }] };
+  const row = (structure: Block[] | null, links: { w?: number | null; c?: number | null } = {}) => ({
+    structure: structure ? JSON.stringify(structure) : null,
+    blocks: JSON.stringify([{ kind: 'exercises', heading: 'Силовая', items: [{ name: 'Жим', value: '3 × 8 · 60 кг' }] }]),
+    warmup_routine_id: links.w ?? null,
+    cooldown_routine_id: links.c ?? null,
+  });
+
+  it('returns the stored blocks when there are no links', () => {
+    expect(composeStructure(db, row([inlineWarmup, ...main]))).toEqual([inlineWarmup, ...main]);
+    expect(composeDisplay(db, row(null))).toEqual(JSON.parse(row(null).blocks));
+  });
+  it('returns null when the workout has no structure', () => {
+    expect(composeStructure(db, row(null))).toBeNull();
+  });
+  it('wraps main blocks with linked routines', () => {
+    createRoutine(db, input());
+    createRoutine(db, input({ kind: 'cooldown', title: 'Растяжка' }));
+    const w = routineDbId('nogi-legkaya');
+    const c = routineDbId('rastyazhka');
+    const out = composeStructure(db, row(main, { w, c }))!;
+    expect(out.map((b) => b.id)).toEqual([`r${w}`, 'b0', `r${c}`]);
+    expect(out[0]).toMatchObject({ mode: 'timed', kind: 'warmup', title: 'Ноги лёгкая' });
+    expect(out[2]).toMatchObject({ kind: 'cooldown' });
+    const display = composeDisplay(db, row(null, { w, c }));
+    expect(display.map((b) => b.kind)).toEqual(['warmup', 'exercises', 'cooldown']);
+    expect(display[0]!.items.map((i) => i.name)).toEqual(['Шея', 'Бедро']);
+  });
+  it('a routine with no items is skipped', () => {
+    createRoutine(db, input());
+    const w = routineDbId('nogi-legkaya');
+    db.prepare('DELETE FROM routine_items WHERE routine_id = ?').run(w);
+    expect(composeStructure(db, row(main, { w }))).toEqual(main);
+    expect(composeDisplay(db, row(null, { w })).map((b) => b.kind)).toEqual(['exercises']);
+  });
+  it('linksOf reads both columns', () => {
+    createRoutine(db, input());
+    const uid = user();
+    const w = routineDbId('nogi-legkaya');
+    const id = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, warmup_routine_id, created_at) VALUES (?, 'T', '[]', '[]', ?, 'z')").run(uid, w).lastInsertRowid);
+    expect(linksOf(db, id)).toEqual({ warmup_routine_id: w, cooldown_routine_id: null });
   });
 });

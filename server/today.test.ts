@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { CommitBlock, SessionStepResult } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
+import { createExercise } from './exercises';
 import { applyImport } from './imports';
+import { createRoutine } from './routines';
 import { pausePlan, skipEntry } from './schedule';
 import { planOf } from './plan';
 import { addDays, streakWeeks, todayOf, userNameOf, weekStart } from './today';
@@ -256,5 +258,19 @@ describe('todayOf: разбор тренера', () => {
     expect(t).not.toHaveProperty('awaitingReview');
     expect(t.unread).toBe(1);
     expect(t.reviewNotice).toMatchObject({ sessionId: sid, title: 'Всё тело', commentCount: 0 });
+  });
+});
+
+describe('todayOf: разминка по ссылке', () => {
+  it('оценка минут и режим берут собранную тренировку', () => {
+    applyImport(db, me, { exercises: [], workouts: [{ title: 'Верх', blocks: [{ kind: 'exercises', heading: 'Основа', items: [1, 2, 3].map((n) => ({ name: `Упр ${n}`, value: '10' })) }] }], entries: [{ date: TODAY, workout: 0 }], replaceDates: [] }, clock);
+    const before = JSON.stringify(todayOf(db, me, TODAY));
+    expect(before).toContain('"minutes":15');
+    const ex = createExercise(db, { name: 'Шея', group: 'core', kind: 'time', muscles: [], aliases: [] });
+    if (!ex.ok) throw new Error('exercise');
+    createRoutine(db, { kind: 'warmup', title: 'Р', items: [{ exercise: ex.entry.id, sec: { min: 30, max: 30 } }] });
+    db.prepare('UPDATE workouts SET warmup_routine_id = (SELECT id FROM routines)').run();
+    const after = todayOf(db, me, TODAY);
+    expect(JSON.stringify(after)).toContain('"minutes":25');
   });
 });

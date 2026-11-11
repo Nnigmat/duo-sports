@@ -3,7 +3,9 @@ import type { SessionStepResult } from '../shared/types';
 import { createUser } from './auth';
 import { addComment } from './comments';
 import { openDb, type Db } from './db';
+import { createExercise } from './exercises';
 import { markReviewed } from './reviews';
+import { createRoutine } from './routines';
 import { actualLabel, awaitingReviewOf, setLabel, sessionReviewOf, videoReviewOf } from './sessionReview';
 import { linkAthlete } from './trainerLinks';
 
@@ -273,5 +275,27 @@ describe('awaitingReviewOf: «видео отправлены, тренер ещ
     db.prepare("INSERT INTO videos (id, athlete_id, file, duration_sec, session_id, step_index, created_at) VALUES (?, ?, 'x', 1, ?, 3, 'x')").run(V, athlete, sid);
     markReviewed(db, T(), sid);
     expect(awaitingReviewOf(db, athlete, '2026-11-01')).toBeNull();
+  });
+});
+
+describe('sessionReviewOf: разминка по ссылке', () => {
+  it('blockIndex указывает в собранную структуру', () => {
+    const ex = createExercise(db, { name: 'Кошка-корова', group: 'core', kind: 'time', muscles: [], aliases: [] });
+    if (!ex.ok) throw new Error('exercise');
+    createRoutine(db, { kind: 'warmup', title: 'Спина', items: [{ exercise: ex.entry.id, sec: { min: 30, max: 30 } }] });
+    const rid = (db.prepare('SELECT id FROM routines').get() as { id: number }).id;
+    const main = [{ id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ id: 'e0', name: 'Приседания со штангой' }] }];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, warmup_routine_id, created_at) VALUES (?, 'Ноги', '[]', ?, ?, 'x')").run(athlete, JSON.stringify(main), rid).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: `r${rid}-e0`, exerciseName: 'Кошка-корова', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e0' }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = sessionReviewOf(db, A(), sid, '2026-11-02');
+    if (!r.ok) throw new Error(r.error);
+    expect(r.review.sections.map((x) => [x.key, x.title, x.folded])).toEqual([
+      ['b0', 'Спина', true],
+      ['b1', 'Силовая', false],
+    ]);
   });
 });

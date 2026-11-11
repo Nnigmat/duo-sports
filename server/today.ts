@@ -2,6 +2,7 @@ import type { Block, CommitBlock, SessionStepResult, TodayDay, TodayMissed, Toda
 import type { Db } from './db';
 import { reviewNoticeOf, unreadCount } from './notifications';
 import { estimateWorkoutMinutes } from './plan';
+import { composeDisplay, composeStructure, type RoutineLinks } from './routines';
 import { awaitingReviewOf } from './sessionReview';
 
 const NBSP = ' ';
@@ -265,8 +266,8 @@ export function pausesOf(db: Db, userId: number): NonNullable<TodayInput['pauses
 
 export function todayOf(db: Db, userId: number, today: string): TodayResponse {
   const user = db.prepare('SELECT email, display_name FROM users WHERE id = ?').get(userId) as { email: string; display_name: string | null } | undefined;
-  const rows = db.prepare('SELECT id, title, blocks, structure FROM workouts WHERE user_id = ?').all(userId) as Array<{ id: number; title: string; blocks: string; structure: string | null }>;
-  const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: JSON.parse(r.blocks) as CommitBlock[], structure: r.structure ? (JSON.parse(r.structure) as Block[]) : null }]));
+  const rows = db.prepare('SELECT id, title, blocks, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ?').all(userId) as Array<RoutineLinks & { id: number; title: string; blocks: string; structure: string | null }>;
+  const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: composeDisplay(db, r), structure: composeStructure(db, r) }]));
   const entries = (db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as Array<{ date: string; workout_id: number }>).map((e) => ({ date: e.date, workoutId: e.workout_id }));
   const sessions = (db.prepare('SELECT id, workout_id, title, date, steps, duration_sec FROM sessions_done WHERE user_id = ? ORDER BY id').all(userId) as Array<{ id: number; workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null }>).map((s) => ({
     id: s.id,
