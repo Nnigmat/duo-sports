@@ -49,7 +49,7 @@ describe('updateWorkout', () => {
 });
 
 describe('updateWorkout и разминка по ссылке', () => {
-  const A = () => ({ id: me, role: 'athlete' as const });
+  const actor = () => ({ id: me, role: 'athlete' as const });
   const ex = (id: string) => ({ id, name: id, kind: 'time', target: { min: 30, max: 30 } });
   const main = [{ id: 'm', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [], exercises: [{ id: 'e0', name: 'Жим', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3 }] }];
   let rid: number;
@@ -64,7 +64,7 @@ describe('updateWorkout и разминка по ссылке', () => {
   });
 
   it('сохраняет только основные блоки и не трогает ссылку', () => {
-    const r = updateWorkout(db, A(), me, wid, { title: 'Новое', blocks: main });
+    const r = updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main });
     expect(r.ok).toBe(true);
     const row = stored();
     expect(row.w).toBe(rid);
@@ -73,22 +73,22 @@ describe('updateWorkout и разминка по ссылке', () => {
   });
   it('блок разминки, присланный клиентом при ссылке, отбрасывается', () => {
     const sent = [{ id: `r${rid}`, mode: 'timed', kind: 'warmup', title: 'Спина', exercises: [ex(`r${rid}-e0`)] }, ...main];
-    expect(updateWorkout(db, A(), me, wid, { title: 'Новое', blocks: sent }).ok).toBe(true);
+    expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: sent }).ok).toBe(true);
     expect(JSON.parse(stored().structure)).toEqual(main);
     expect(stored().w).toBe(rid);
   });
   it('если после отбрасывания блоков не осталось, запрос отклоняется', () => {
     const sent = [{ id: `r${rid}`, mode: 'timed', kind: 'warmup', title: 'Спина', exercises: [ex(`r${rid}-e0`)] }];
-    expect(updateWorkout(db, A(), me, wid, { title: 'Новое', blocks: sent })).toEqual({ ok: false, error: 'bad_request' });
+    expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: sent })).toEqual({ ok: false, error: 'bad_request' });
   });
   it('без ссылки встроенная разминка по-прежнему принимается', () => {
     db.prepare('UPDATE workouts SET warmup_routine_id = NULL WHERE id = ?').run(wid);
     const inline = { id: 'w', mode: 'timed', kind: 'warmup', title: 'Встроенная', exercises: [ex('a')] };
-    expect(updateWorkout(db, A(), me, wid, { title: 'Новое', blocks: [inline, ...main] }).ok).toBe(true);
+    expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: [inline, ...main] }).ok).toBe(true);
     expect(JSON.parse(stored().structure)).toEqual([inline, ...main]);
   });
   it('ответ отдаёт собранную тренировку и список подключённых разминок', () => {
-    const r = updateWorkout(db, A(), me, wid, { title: 'Новое', blocks: main });
+    const r = updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main });
     if (!r.ok) throw new Error(r.error);
     expect(r.workout.blocks.map((b) => b.id)).toEqual([`r${rid}`, 'm']);
     expect(r.workout.routines).toEqual({ warmup: { id: 'spina', title: 'Спина' } });
