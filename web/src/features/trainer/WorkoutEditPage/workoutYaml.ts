@@ -76,7 +76,7 @@ function keepIds(blocks: Block[], previous: Block[]): Block[] {
 
 /** Разбирает YAML редактора. library нужна, чтобы найти упражнения; previous — чтобы сохранить id. */
 export function workoutFromYaml(text: string, library: LibraryExercise[], previous: Block[], today: string): YamlResult {
-  const parsed = parseImport(text, { library: library.map(toEntry), today, mine: {} });
+  const parsed = parseImport(text, { library: library.map(toEntry), routines: [], today, mine: {} });
   if (!parsed.ok) return { ok: false, issues: parsed.errors };
   if (parsed.workouts.length !== 1) {
     return { ok: false, issues: [{ message: 'В workouts должна быть одна тренировка', hint: 'Здесь правится только та, что открыта.' }] };
@@ -88,7 +88,11 @@ export function workoutFromYaml(text: string, library: LibraryExercise[], previo
       issues: missing.map((m) => ({ message: `Упражнения «${m.name}» нет в библиотеке`, hint: 'Поправьте название или добавьте упражнение в разделе «Упражнения».' })),
     };
   }
-  const { title, structure } = parsed.workouts[0]!;
+  const only = parsed.workouts[0]!;
+  if (only.warmupRoutine || only.cooldownRoutine) {
+    return { ok: false, issues: [{ message: 'routine в редакторе не подключается', hint: 'Разминку и заминку по ссылке задаёт импорт; здесь уберите routine или опишите упражнения в блоке.' }] };
+  }
+  const { title, structure } = only;
   const raw = (parse(text) as { workouts?: Array<{ blocks?: Array<{ title?: unknown; video_rounds?: unknown }> }> }).workouts?.[0]?.blocks ?? [];
   const issues: ParseIssue[] = [];
   const blocks = structure.map((b, i): Block => {

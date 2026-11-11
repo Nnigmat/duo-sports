@@ -2,6 +2,7 @@ import type {
   CommitBlock, CommitExercise, CommitRoutine, CommitWorkout, ExerciseKind, ImportCommit, ImportRecord, ImportSummary, LibraryEntry, MuscleGroupId, Role,
 } from '../shared/types';
 import { DEFAULT_EXERCISES } from './defaultExercises';
+import { importSlug } from '../shared/importSlug';
 import type { Db } from './db';
 import { createRoutine, ROUTINE_LIMITS } from './routines';
 
@@ -187,7 +188,7 @@ type ImportRow = { id: number; user_id: number; created_at: string; undone_at: s
 
 const slugOf = (name: string, taken: (s: string) => boolean): string => {
   let n = 1;
-  const base = `my-${[...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`;
+  const base = importSlug(name);
   let s = base;
   while (taken(s)) s = `${base}-${++n}`;
   return s;

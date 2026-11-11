@@ -1,4 +1,5 @@
-import type { Block } from '../../../../shared/types';
+import type { Block, CommitRoutine, RoutineKind } from '../../../../shared/types';
+import { importSlug } from '../../../../shared/importSlug';
 import { LineCounter, parseDocument, type Document } from 'yaml';
 import type { LibraryEntry } from '../../../../shared/types';
 import { addDays, parseIso, weekStart } from '../plan/plan';
@@ -17,6 +18,8 @@ import {
 export interface ParseContext {
   /** Библиотека упражнений: по ней находим упражнения по name, exercise_id и aliases */
   library: LibraryEntry[];
+  /** Разминки и заминки библиотеки: на них ссылается routine в блоке */
+  routines: Array<{ id: string; kind: RoutineKind; title: string }>;
   /** Сегодня, «2026-11-02»: даты раньше считаются прошедшими */
   today: string;
   /** Тренировки, уже стоящие в плане: дата → название */
@@ -32,7 +35,7 @@ export interface ParseIssue {
 }
 
 export type ParseResult =
-  | { ok: true; preview: PreviewData; plan: PlanSource; workouts: ParsedWorkout[]; warnings: ParseIssue[] }
+  | { ok: true; preview: PreviewData; plan: PlanSource; workouts: ParsedWorkout[]; routines: CommitRoutine[]; /** Упражнения библиотеки на время: название → slug, чтобы «Использовать похожее» работало и в разминках */ timeLibrary: Record<string, string>; warnings: ParseIssue[] }
   | { ok: false; errors: ParseIssue[] };
 
 /** Тренировка файла целиком: её записываем в базу; PlanWorkout.ref указывает на номер в этом списке */
@@ -43,6 +46,9 @@ export interface ParsedWorkout {
   blocks: PreviewBlock[];
   /** Те же блоки для экрана тренировки: подходы, круги, отдых */
   structure: Block[];
+  /** slug подключённых разминки и заминки: в blocks они есть для проверки (с routine), в structure их нет */
+  warmupRoutine?: string;
+  cooldownRoutine?: string;
 }
 
 /** Удачный разбор */
@@ -390,13 +396,18 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
   /** Набор, как он стоит в тренировке: упражнения для структуры, строки для проверки, общее время обеих сторон */
   interface Routine {
     exercises: RawExercise[];
+    /** slug упражнения для каждой позиции: библиотека, id из exercises файла или id, который выдадим при создании */
+    slugs: string[];
     items: PreviewItem[];
     totalSec: number;
+    title?: string;
+    note?: string;
   }
   const routineList = new Map<string, Routine>();
   /** Упражнения на время: в наборе и прямо в блоке разминки или заминки. owner — номер тренировки или IN_ROUTINE. */
   const readTimed = (list: Json[], path: Path, owner: number, where: 'набора' | 'блока'): Routine => {
     const exercises: RawExercise[] = [];
+    const slugs: string[] = [];
     const items: PreviewItem[] = [];
     let totalSec = 0;
     list.forEach((e: Json, ei: number) => {
@@ -425,10 +436,11 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       if (measure && measure !== 'time') fail(ep, `«${name}» — не упражнение на время`, 'В разминке и заминке нужны упражнения с измерением time.');
       if (!time) return;
       exercises.push({ name, load: { time }, ...(sides ? { sides } : {}) });
+      slugs.push(lib?.id ?? defByName.get(norm(name))?.id ?? importSlug(name));
       items.push({ name, value: `${formatDuration(time)}${sides ? ' · на сторону' : ''}` });
       totalSec += time.max * (sides ? 2 : 1);
     });
-    return { exercises, items, totalSec };
+    return { exercises, slugs, items, totalSec };
   };
 
   if (root.routines !== undefined) {
@@ -441,9 +453,9 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         if (!id) return fail(p, 'У набора нет id', 'id — латиница, цифры и дефис; по нему блок разминки ссылается через routine.');
         if (!/^[A-Za-z0-9-]+$/.test(id)) fail([...p, 'id'], `id только из латиницы, цифр и дефиса: ${id}`);
         if (routineList.has(id)) return fail([...p, 'id'], `id набора повторяется: ${id}`, 'У каждого набора свой id.');
-        routineList.set(id, { exercises: [], items: [], totalSec: 0 });
+        routineList.set(id, { exercises: [], slugs: [], items: [], totalSec: 0 });
         if (!Array.isArray(r.exercises) || r.exercises.length === 0) return fail([...p, 'exercises'], 'В наборе нет exercises', 'Добавьте хотя бы одно упражнение.');
-        routineList.set(id, readTimed(r.exercises, [...p, 'exercises'], IN_ROUTINE, 'набора'));
+        routineList.set(id, { ...readTimed(r.exercises, [...p, 'exercises'], IN_ROUTINE, 'набора'), title: str(r.title) ?? id, note: str(r.text) ?? str(r.note) ?? undefined });
       });
   }
 
@@ -454,8 +466,13 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     date?: string;
     blocks: PreviewBlock[];
     structure: Block[];
+    warmupRoutine?: string;
+    cooldownRoutine?: string;
   }
   const built: Built[] = [];
+  /** Наборы файла, которые кто-то подключил, и в каком виде */
+  const routineKinds = new Map<string, RoutineKind>();
+  const kindWord = (k: string) => (k === 'warmup' ? 'разминка' : 'заминка');
   const ids = new Map<string, number>();
 
   if (!Array.isArray(root.workouts) || root.workouts.length === 0) {
@@ -485,7 +502,9 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         return;
       }
       const blocks: PreviewBlock[] = [];
-      const raws: RawBlock[] = [];
+      /** Параллельно blocks; null у блока-ссылки: в структуру он не идёт */
+      const raws: Array<RawBlock | null> = [];
+      const links: { warmup?: string; cooldown?: string } = {};
       w.blocks.forEach((b: Json, bi: number) => {
         const bp: Path = [...p, 'blocks', bi];
         if (!isObj(b)) return fail(bp, 'Блок должен быть набором полей: type, exercises');
@@ -505,14 +524,25 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
           const head = type === 'warmup' ? 'Разминка' : 'Заминка';
           const routineId = str(b.routine);
           if (routineId) {
-            const routine = routineList.get(routineId);
-            if (!routine) return fail([...bp, 'routine'], `Неизвестный набор: ${routineId}`, 'Опишите его в routines.');
+            // Сначала набор из файла, потом библиотека
+            const fileRoutine = routineList.get(routineId);
+            const libRoutine = fileRoutine ? undefined : ctx.routines.find((r) => r.id === routineId);
+            if (!fileRoutine && !libRoutine) return fail([...bp, 'routine'], `Неизвестный набор: ${routineId}`, 'Опишите его в routines или создайте на странице разминок.');
+            if (libRoutine && libRoutine.kind !== type) return fail([...bp, 'routine'], `«${routineId}» — ${kindWord(libRoutine.kind)}, а не ${kindWord(type)}`);
+            if (links[type]) return warn([...bp, 'routine'], `Вторая ${kindWord(type)} в тренировке: «${routineId}»`, 'Остаётся первая.');
+            if (fileRoutine && routineKinds.get(routineId) && routineKinds.get(routineId) !== type) {
+              return fail([...bp, 'routine'], `Набор «${routineId}» подключён и как разминка, и как заминка`, 'Опишите два набора с разными id.');
+            }
             if (b.exercises !== undefined) warn([...bp, 'exercises'], 'exercises рядом с routine не нужны', 'Берётся набор.');
             if (b.time !== undefined) warn([...bp, 'time'], 'time рядом с routine не нужен', 'Время берётся из упражнений набора.');
-            for (const e of routine.exercises) used.get(norm(e.name))?.workouts.add(wi);
-            const text = str(b.text) ?? undefined;
-            blocks.push({ kind: type, heading: `${head} · ${formatDuration({ min: routine.totalSec, max: routine.totalSec })}`, ...(text ? { text } : {}), items: routine.items });
-            raws.push({ type, ...(text ? { text } : {}), exercises: routine.exercises });
+            if (b.text !== undefined) warn([...bp, 'text'], 'text рядом с routine не нужен', 'Пояснение берётся из набора.');
+            links[type] = routineId;
+            if (fileRoutine) {
+              routineKinds.set(routineId, type);
+              for (const e of fileRoutine.exercises) used.get(norm(e.name))?.workouts.add(wi);
+            }
+            blocks.push({ kind: type, heading: `${head} · ${fileRoutine ? (fileRoutine.title ?? routineId) : libRoutine!.title}`, items: fileRoutine?.items ?? [], routine: routineId });
+            raws.push(null);
             return;
           }
           if (b.exercises !== undefined) {
@@ -554,7 +584,21 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         const heading = type === 'sets' ? 'Подходами' : `${type === 'circuit' ? 'Круг' : 'Суперсет'}${rounds && rounds > 0 ? ` · ${rounds} ${roundsWord(rounds)}` : ''}`;
         blocks.push({ kind: 'exercises', heading, items });
       });
-      built.push({ id, title: title ?? '', date, blocks, structure: buildBlocks(raws) });
+      // Ссылка главнее встроенного блока того же вида
+      for (const kind of ['warmup', 'cooldown'] as const) {
+        if (!links[kind]) continue;
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          if (blocks[i]!.kind !== kind || blocks[i]!.routine) continue;
+          warn([...p, 'blocks'], `Встроенная ${kindWord(kind)} не нужна: подключён набор «${links[kind]}»`, 'Остаётся набор.');
+          blocks.splice(i, 1);
+          raws.splice(i, 1);
+        }
+      }
+      if (!raws.some((r) => r)) {
+        fail([...p, 'blocks'], `В «${title ?? ''}» нет основной части`, 'Кроме разминки и заминки по ссылке нужен хотя бы один блок.');
+        return;
+      }
+      built.push({ id, title: title ?? '', date, blocks, structure: buildBlocks(raws.filter((r): r is RawBlock => r !== null)), ...(links.warmup ? { warmupRoutine: links.warmup } : {}), ...(links.cooldown ? { cooldownRoutine: links.cooldown } : {}) });
     });
   }
 
@@ -678,7 +722,19 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     ok: true,
     preview,
     plan: { firstMonday, today: ctx.today, workouts: planWorkouts, mine: ctx.mine },
-    workouts: built.map((b) => ({ slug: b.id, title: b.title, blocks: b.blocks, structure: b.structure })),
+    workouts: built.map((b) => ({
+      slug: b.id, title: b.title, blocks: b.blocks, structure: b.structure,
+      ...(b.warmupRoutine ? { warmupRoutine: b.warmupRoutine } : {}),
+      ...(b.cooldownRoutine ? { cooldownRoutine: b.cooldownRoutine } : {}),
+    })),
+    timeLibrary: Object.fromEntries(ctx.library.filter((l) => l.kind === 'time').map((l) => [l.name, l.id])),
+    routines: [...routineKinds].map(([id, kind]): CommitRoutine => {
+      const r = routineList.get(id)!;
+      return {
+        id, kind, title: r.title ?? id, ...(r.note ? { note: r.note } : {}),
+        items: r.exercises.map((e, i) => ({ exercise: r.slugs[i]!, sec: { min: e.load.time!.min, max: e.load.time!.max }, ...(e.sides ? { sides: e.sides } : {}) })),
+      };
+    }),
     warnings: sortIssues(warnings),
   };
 }

@@ -61,7 +61,7 @@ export const TOP_FIELDS: FieldRow[] = [
   row('version', '1', 'Версия формата. Сейчас всегда 1.', req),
   row('units', 'kg | lb', 'Единицы веса. По умолчанию — как в профиле.'),
   row('exercises', 'список', 'Новые упражнения с видео и подсказками. Создадим только те, что вы отметите на проверке.'),
-  row('routines', 'список', 'Наборы упражнений для разминки и заминки: описываются один раз, в блоках подключаются через routine.'),
+  row('routines', 'список', 'Разминки и заминки из файла: описываются один раз, сохраняются в библиотеку разминок и подключаются к тренировкам через routine.'),
   row('workouts', 'список', 'Тренировки, хотя бы одна. С date — сразу в календарь.', req),
   row('plan', 'объект', 'Повтор по дням недели — для тренировок без date.'),
 ];
@@ -90,7 +90,7 @@ export const BLOCK_TYPES: BlockType[] = [
   { type: 'timed', title: 'По таймеру', description: 'Упражнения на время в основной части, например планка. В отличие от warmup и cooldown, остаётся в составе дня.', code: ['- type: timed', '  exercises:', '    - { name: Планка, time: 45s }'] },
   { type: 'warmup | cooldown', title: 'Разминка и заминка', description: 'Свободный текст и время — когда тренер пишет «любым способом», а не список упражнений.', code: ['- type: warmup', '  time: 5-7m', '  text: Скакалка, ОРУ ~10 мин'] },
   { type: 'warmup | cooldown + exercises', title: 'Упражнения прямо в блоке', description: 'Упражнения на время из библиотеки, по порядку. Поля те же, что у набора: name, time, per_side, sides.', code: ['- type: cooldown', '  exercises:', '    - { name: Наклон к ногам, time: 45s }', '    - { name: Растяжка бедра, time: 30s, per_side: true }'] },
-  { type: 'warmup | cooldown + routine', title: 'Набор упражнений', description: 'Упражнения на время с видео, отсчётом и сигналами. Набор описывается в routines и подключается по id.', code: ['- type: warmup', '  routine: neck-shoulders'] },
+  { type: 'warmup | cooldown + routine', title: 'Набор упражнений', description: 'Упражнения на время с видео, отсчётом и сигналами. Набор из библиотеки разминок или описанный в routines файла подключается по id; правка набора меняет все тренировки, где он стоит.', code: ['- type: warmup', '  routine: neck-shoulders'] },
 ];
 
 export const SHORT_FORMS: Array<{ code: string; description: string }> = [
@@ -158,7 +158,7 @@ export const ROUTINE_EXAMPLE = [
 ];
 
 export const ROUTINE_FIELDS: FieldRow[] = [
-  row('id', 'neck-shoulders', 'Латиница, цифры и дефис. По нему блок подключает набор: routine: neck-shoulders.', req),
+  row('id', 'neck-shoulders', 'Латиница, цифры и дефис. По нему блок подключает набор: routine: neck-shoulders. Такой же id есть у разминки в библиотеке — она не перезаписывается.', req),
   row('title', 'Шея и плечи', 'Название набора для себя.'),
   row('exercises', 'список', 'Упражнения по порядку, хотя бы одно. Смена по таймеру, без пауз.', req),
   row('time', '30s, 1:30', 'У каждого упражнения набора, на одну сторону.', req),
