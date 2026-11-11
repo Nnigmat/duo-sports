@@ -118,9 +118,38 @@ export const TimeSave: Story = {
     onSave.mockClear();
     const dialog = within(await open());
     await expect(dialog.getByText('Сколько продержались?')).toBeVisible();
-    await userEvent.click(dialog.getByRole('button', { name: '−5 с' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Время: меньше' }));
     await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
     await expect(onSave).toHaveBeenCalledWith({ value: 55 });
+  },
+};
+
+export const RepsTypeAndSave: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, '12');
+    // Без Enter и blur: «Записать» сохраняет набранное
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 12 });
+  },
+};
+
+export const RepsTypeGarbageKeepsValue: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo kind="reps" plan={{ target: { min: 18, max: 20 } }} />,
+  play: async () => {
+    onSave.mockClear();
+    const dialog = within(await open());
+    const input = dialog.getByRole('textbox', { name: 'Повторения' });
+    await userEvent.clear(input);
+    await userEvent.type(input, 'abc');
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await expect(onSave).toHaveBeenCalledWith({ value: 20 });
   },
 };
 

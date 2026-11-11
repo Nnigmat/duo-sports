@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { cx } from '../cx';
 import { Icon } from '../Icon/Icon';
 import { formatDuration } from '../Stepper/Stepper';
+import { parseNumberInput } from './parseNumberInput';
 import styles from './ParamStepper.module.css';
 
 type Props = {
@@ -15,13 +16,18 @@ type Props = {
   step?: number;
   min?: number;
   max?: number;
+  /** Имена кнопок вместо «Подпись: меньше/больше» */
+  decreaseLabel?: string;
+  increaseLabel?: string;
+  /** id строки с подсказкой под полем */
+  describedBy?: string;
   className?: string;
 };
 
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
 /** Строка параметра: подпись слева, справа − значение +. Число можно ввести руками. */
-export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, className }: Props) {
+export function ParamStepper({ label, value, onChange, unit, mode = 'number', step, min = 0, max = Infinity, decreaseLabel, increaseLabel, describedBy, className }: Props) {
   const id = useId();
   const duration = mode === 'duration';
   const delta = step ?? (duration ? 5 : 1);
@@ -30,8 +36,8 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
 
   function commit() {
     if (draft === null) return;
-    const n = Number(draft.replace(',', '.'));
-    if (draft.trim() !== '' && Number.isFinite(n)) onChange(clamp(n));
+    const n = parseNumberInput(draft, clamp);
+    if (n !== null) onChange(n);
     setDraft(null);
   }
 
@@ -44,14 +50,14 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
         <button
           type="button"
           className={styles.button}
-          aria-label={`${label}: меньше`}
+          aria-label={decreaseLabel ?? `${label}: меньше`}
           disabled={value <= min}
           onClick={() => onChange(clamp(value - delta))}
         >
           <Icon name="minus" />
         </button>
         {duration ? (
-          <output id={id} className={styles.value}>
+          <output id={id} aria-describedby={describedBy} className={styles.value}>
             {formatDuration(value)}
           </output>
         ) : (
@@ -60,6 +66,7 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
               id={id}
               type="text"
               inputMode="decimal"
+              aria-describedby={describedBy}
               className={styles.input}
               value={draft ?? String(value).replace('.', ',')}
               onChange={(e) => setDraft(e.target.value)}
@@ -72,7 +79,7 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
         <button
           type="button"
           className={styles.button}
-          aria-label={`${label}: больше`}
+          aria-label={increaseLabel ?? `${label}: больше`}
           disabled={value >= max}
           onClick={() => onChange(clamp(value + delta))}
         >
