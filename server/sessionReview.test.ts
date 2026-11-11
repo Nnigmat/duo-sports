@@ -64,6 +64,33 @@ describe('sessionReviewOf', () => {
     db.prepare('UPDATE sessions_done SET comment = NULL WHERE id = ?').run(sid);
     expect(view(T())).toMatchObject({ feeling: 2, feedbackComment: null });
   });
+  it('секции по блокам: разминка и заминка свёрнуты, основная нет', () => {
+    const structure = [
+      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [] },
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [] },
+      { id: 'c', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [] },
+    ];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: 'w0', exerciseName: 'Кошка-корова', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e0' }),
+      step({ blockIndex: 2, exerciseId: 'c0', exerciseName: 'Растяжка бедра', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = view();
+    expect(r.sections.map((x) => [x.key, x.title, x.folded, x.exercises.map((e) => e.name)])).toEqual([
+      ['w', 'Разминка', true, ['Кошка-корова']],
+      ['m', 'Силовая', false, ['Приседания со штангой']],
+      ['c', 'Заминка', true, ['Растяжка бедра']],
+    ]);
+    expect(r.exercises).toHaveLength(3);
+  });
+  it('без тренировки в итоге одна секция «Упражнения»', () => {
+    const r = view();
+    expect(r.sections).toHaveLength(1);
+    expect(r.sections[0]).toMatchObject({ title: 'Упражнения', folded: false });
+    expect(r.sections[0]!.exercises.map((e) => e.name)).toEqual(['Приседания со штангой', 'Румынская тяга']);
+  });
   it('шапка и подходы по упражнениям, видео у своего подхода', () => {
     const r = view();
     expect(r).toMatchObject({ sessionId: sid, athleteId: athlete, title: 'Ноги', date: '2026-10-31', durationSec: 2880, volumeKg: 80 * 5 * 3 + 50 * 10, reviewedAt: null, trainerCommentCount: 0, hints: null });

@@ -69,11 +69,28 @@ export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, on
           </ul>
         )}
 
-        <ol className={styles.exercises} aria-label="Упражнения">
-          {review.exercises.map((ex, i) => (
-            <ExerciseCard key={ex.id} index={i + 1} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
-          ))}
-        </ol>
+        {(() => {
+          let n = 0;
+          return review.sections.map((sec) => {
+            const list = (
+              <ol key={sec.key} className={styles.exercises} aria-label={sec.title}>
+                {sec.exercises.map((ex) => (
+                  <ExerciseCard key={ex.id} index={sec.folded ? undefined : ++n} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
+                ))}
+              </ol>
+            );
+            return sec.folded ? (
+              <details key={sec.key} className={styles.fold}>
+                <summary className={styles.foldSummary}>
+                  {sec.title} · {sec.exercises.length}
+                </summary>
+                <div className={styles.foldBody}>{list}</div>
+              </details>
+            ) : (
+              <div key={sec.key}>{list}</div>
+            );
+          });
+        })()}
 
         {review.hints && (
           <section className={styles.hints} aria-labelledby="hints-title">
@@ -122,7 +139,8 @@ function ExerciseCard({
   onReply,
   onDelete,
 }: {
-  index: number;
+  /** Номер карточки; у свёрнутых блоков (разминка, заминка) номера нет */
+  index?: number;
   exercise: ReviewExercise;
   videoHref: Props['videoHref'];
   onOpenVideo: Props['onOpenVideo'];
@@ -151,9 +169,11 @@ function ExerciseCard({
   return (
     <li className={styles.card}>
       <div className={styles.cardHead}>
-        <span className={styles.num} aria-hidden="true">
-          {index}
-        </span>
+        {index !== undefined && (
+          <span className={styles.num} aria-hidden="true">
+            {index}
+          </span>
+        )}
         <h2 className={styles.name}>
           {exercise.name}
           {exercise.replacedFrom && <span className={styles.replaced}>вместо «{exercise.replacedFrom}»</span>}

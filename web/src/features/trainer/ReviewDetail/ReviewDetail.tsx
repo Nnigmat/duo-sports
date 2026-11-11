@@ -73,11 +73,28 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
         </ul>
       )}
 
-      <ol className={styles.steps} aria-label="Шаги тренировки">
-        {review.exercises.map((ex, i) => (
-          <Step key={ex.id} index={i + 1} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} href={exerciseHref?.(ex.name)} onOpenExercise={onOpenExercise} onComment={onComment} onDelete={onDeleteComment} />
-        ))}
-      </ol>
+      {(() => {
+        let n = 0;
+        return review.sections.map((sec) => {
+          const list = (
+            <ol key={sec.key} className={styles.steps} aria-label={sec.title}>
+              {sec.exercises.map((ex) => (
+                <Step key={ex.id} index={sec.folded ? undefined : ++n} exercise={ex} sessionId={review.sessionId} athleteName={athleteName} past={past[ex.name] ?? []} videoSrc={videoSrc} href={exerciseHref?.(ex.name)} onOpenExercise={onOpenExercise} onComment={onComment} onDelete={onDeleteComment} />
+              ))}
+            </ol>
+          );
+          return sec.folded ? (
+            <details key={sec.key} className={styles.fold}>
+              <summary className={styles.foldSummary}>
+                {sec.title} · {sec.exercises.length}
+              </summary>
+              <div className={styles.foldBody}>{list}</div>
+            </details>
+          ) : (
+            <div key={sec.key}>{list}</div>
+          );
+        });
+      })()}
 
       <GeneralField sessionId={review.sessionId} onComment={onComment} />
 
@@ -135,7 +152,8 @@ function Step({
   onComment,
   onDelete,
 }: {
-  index: number;
+  /** Номер шага; у свёрнутых блоков (разминка, заминка) номера нет */
+  index?: number;
   exercise: ReviewExercise;
   sessionId: number;
   athleteName: string;
@@ -188,9 +206,11 @@ function Step({
 
   return (
     <li className={styles.step}>
-      <span className={styles.num} aria-hidden="true">
-        {index}
-      </span>
+      {index !== undefined && (
+        <span className={styles.num} aria-hidden="true">
+          {index}
+        </span>
+      )}
       <div className={styles.stepBody}>
         <div className={styles.stepHead}>
           <ExerciseLink name={exercise.name} href={href} onOpen={onOpenExercise} />

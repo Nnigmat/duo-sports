@@ -1,23 +1,9 @@
-import type { SessionReviewResponse } from '../../../../shared/types';
+import type { ReviewExercise, SessionReviewResponse } from '../../../../shared/types';
 
 const NB = ' ';
 const V = '11111111-1111-4111-8111-111111111111';
 
-/** Данные макета «Ученик · Разбор от тренера» */
-export const reviewFixture: SessionReviewResponse = {
-  sessionId: 7,
-  athleteId: 1,
-  title: 'Ноги и ягодицы',
-  date: '2026-10-31',
-  durationSec: 48 * 60,
-  feeling: 4,
-  feelingLabel: 'Хорошо',
-  feedbackComment: 'Колено после третьего подхода ныло, но терпимо.',
-  volumeKg: 5840,
-  reviewedAt: '2026-11-01T19:40:00',
-  trainerCommentCount: 4,
-  general: [],
-  exercises: [
+const mainExercises: ReviewExercise[] = [
     {
       id: '1:e0',
       name: 'Приседания со штангой',
@@ -55,7 +41,24 @@ export const reviewFixture: SessionReviewResponse = {
       newCount: 0,
       thread: [],
     },
-  ],
+  ];
+
+/** Данные макета «Ученик · Разбор от тренера» */
+export const reviewFixture: SessionReviewResponse = {
+  sessionId: 7,
+  athleteId: 1,
+  title: 'Ноги и ягодицы',
+  date: '2026-10-31',
+  durationSec: 48 * 60,
+  feeling: 4,
+  feelingLabel: 'Хорошо',
+  feedbackComment: 'Колено после третьего подхода ныло, но терпимо.',
+  volumeKg: 5840,
+  reviewedAt: '2026-11-01T19:40:00',
+  trainerCommentCount: 4,
+  general: [],
+  exercises: mainExercises,
+  sections: [{ key: 'b1', title: 'Упражнения', folded: false, exercises: mainExercises }],
   hints: {
     date: '2026-11-05',
     workoutId: 3,
@@ -70,4 +73,20 @@ export const reviewPendingFixture: SessionReviewResponse = {
   trainerCommentCount: 0,
   hints: null,
   exercises: reviewFixture.exercises.map((e) => ({ ...e, thread: [], newCount: 0 })),
+  sections: reviewFixture.sections.map((sec) => ({ ...sec, exercises: sec.exercises.map((e) => ({ ...e, thread: [], newCount: 0 })) })),
+};
+
+const quick = (id: string, name: string, label: string): ReviewExercise => ({ id, name, slug: null, sets: [{ n: 1, label, completed: true }], note: null, thread: [], newCount: 0 });
+const warmup = [quick('0:w0', 'Кошка-корова', '0:30'), quick('0:w1', 'Мост', '0:30'), quick('0:w2', 'Выпады на месте', `10${NB}повт`)];
+const cooldown = [quick('3:c0', 'Растяжка бедра', '0:30'), quick('3:c1', 'Поза ребёнка', '1:00')];
+
+/** С разминкой и заминкой: они свёрнуты, основные карточки нумеруются с единицы */
+export const reviewFoldedFixture: SessionReviewResponse = {
+  ...reviewFixture,
+  exercises: [...warmup, ...mainExercises, ...cooldown],
+  sections: [
+    { key: 'w', title: 'Разминка', folded: true, exercises: warmup },
+    { key: 'b1', title: 'Силовая', folded: false, exercises: mainExercises },
+    { key: 'c', title: 'Заминка', folded: true, exercises: cooldown },
+  ],
 };
