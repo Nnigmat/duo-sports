@@ -105,6 +105,23 @@ describe('sessionReviewOf', () => {
     expect(r.sections.find((x) => !x.folded)!.exercises.map((e) => e.name)).toContain('Приседания со штангой');
     expect(r.exercises).toHaveLength(3);
   });
+  it('замена упражнения не выводит его из своего блока (структура не менялась)', () => {
+    const structure = [
+      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'w0', name: 'Кошка-корова' }] },
+      { id: 'm', mode: 'sets', title: 'Силовая', exercises: [{ id: 'e0', name: 'Приседания со штангой' }] },
+    ];
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', ?, 'x')").run(athlete, JSON.stringify(structure)).lastInsertRowid);
+    const steps = [
+      step({ blockIndex: 0, exerciseId: 'w9', exerciseName: 'Поза ребёнка', replacedFrom: ' кошка-корова ', kind: 'time', plan: { target: { min: 30, max: 30 } } }),
+      step({ blockIndex: 1, exerciseId: 'e7', exerciseName: 'Жим ногами', replacedFrom: 'Приседания со штангой' }),
+    ];
+    db.prepare('UPDATE sessions_done SET workout_id = ?, steps = ? WHERE id = ?').run(wid, JSON.stringify(steps), sid);
+    const r = view();
+    expect(r.sections.map((x) => [x.key, x.folded, x.exercises.map((e) => e.name)])).toEqual([
+      ['b0', true, ['Поза ребёнка']],
+      ['b1', false, ['Жим ногами']],
+    ]);
+  });
   it('без тренировки в итоге одна секция «Упражнения»', () => {
     const r = view();
     expect(r.sections).toHaveLength(1);
