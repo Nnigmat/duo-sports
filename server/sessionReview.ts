@@ -123,10 +123,10 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
   const structure = structureOf(db, s.workout_id);
   const sections: ReviewSection[] = [];
   for (const g of list) {
-    // Структуру могли править после тренировки: блок по индексу годится, только если в нём есть это упражнение
+    // Структуру могли править после тренировки: блок по индексу годится, только если в нём есть это упражнение (или то, что заменили: у замены другой id)
     const candidate = structure?.[g.blockIndex];
     const exerciseId = g.id.slice(g.id.indexOf(':') + 1);
-    const block = candidate?.exercises.some((e) => e.id === exerciseId) ? candidate : undefined;
+    const block = candidate?.exercises.some((e) => e.id === exerciseId || (g.replacedFrom !== undefined && key(e.name) === key(g.replacedFrom))) ? candidate : undefined;
     const secKey = block ? `b${g.blockIndex}` : 'all';
     let sec = sections.find((x) => x.key === secKey);
     if (!sec) {
