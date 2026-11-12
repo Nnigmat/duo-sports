@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { TimedBlock } from '../../../../shared/types';
 import { applyToStructure, buildCommit, commitExercise, musclesOf } from './commit';
+import { importSlug } from '../../../../shared/importSlug';
 import { libraryFixture } from './fixtures';
 import { DEFAULT_OPTIONS } from './importPlan';
 import { parseImport, type ParsedImport } from './parse';
-import { EMPTY_CHOICES, setAction, setGroup, pickAllSimilar } from './preview';
+import { EMPTY_CHOICES, setAction, setGroup, pickAllSimilar, pickExisting } from './preview';
 
-const ctx = { library: libraryFixture, today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
+const ctx = { library: libraryFixture, routines: [], today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
 const text = `version: 1
 exercises:
   - id: reverse-pushup
@@ -122,7 +123,7 @@ routines:
       - { name: Вращение тазом, time: 30s, per_side: true }
       - { name: Вращение плечами, time: 20s }
 workouts:
-  - { title: Т, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }, { type: warmup, text: Скакалка }] }
+  - { title: Т, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }, { type: cooldown, text: Растяжка }, { type: sets, exercises: [{ name: Отжимания, do: 3x10 }] }] }
 `;
   const p = (() => {
     const r = parseImport(routineText, ctx);
@@ -130,17 +131,48 @@ workouts:
     return r;
   })();
   const keyOf = (name: string) => p.preview.newExercises.find((e) => e.name === name)!.key;
-  const timed = (c: ReturnType<typeof buildCommit>, i = 0) => c.workouts[0]!.structure![i] as TimedBlock;
+  const tazom = importSlug('Вращение тазом');
+  const plechi = importSlug('Вращение плечами');
+  const skip = (...names: string[]) => names.reduce((c, n) => setAction(c, keyOf(n), 'skip'), EMPTY_CHOICES);
 
-  it('«Не создавать» убирает упражнение из набора', () => {
-    const c = buildCommit(p, setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), DEFAULT_OPTIONS);
-    expect(timed(c).exercises.map((e) => e.name)).toEqual(['Вращение плечами']);
+  it('разминка из файла уходит в commit.routines, в тренировке только ссылка', () => {
+    const c = buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS);
+    expect(c.routines).toEqual([
+      {
+        id: 'neck', kind: 'warmup', title: 'Шея',
+        items: [
+          { exercise: tazom, sec: { min: 30, max: 30 }, sides: ['вправо', 'влево'] },
+          { exercise: plechi, sec: { min: 20, max: 20 } },
+        ],
+      },
+    ]);
+    expect(c.workouts[0]!.warmupRoutine).toBe('neck');
+    expect(c.workouts[0]!.structure!.map((b) => b.mode)).toEqual(['timed', 'sets']);
+    expect(c.workouts[0]!.blocks.map((b) => b.heading)).toEqual(['Заминка', 'Подходами']);
   });
-  it('пустой набор исчезает, блок «Разминка» без списка остаётся', () => {
-    const choices = setAction(setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), keyOf('Вращение плечами'), 'skip');
-    const c = buildCommit(p, choices, DEFAULT_OPTIONS);
-    expect(c.workouts[0]!.structure).toHaveLength(1);
-    expect(timed(c).exercises.map((e) => e.name)).toEqual(['Разминка']);
+  it('созданные упражнения набора получают id, на который он ссылается', () => {
+    const c = buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS);
+    expect(c.exercises.map((e) => e.id)).toEqual([tazom, plechi]);
+  });
+  it('«Не создавать» убирает упражнение из набора', () => {
+    const c = buildCommit(p, skip('Вращение тазом'), DEFAULT_OPTIONS);
+    expect(c.routines[0]!.items.map((i) => i.exercise)).toEqual([plechi]);
+    expect(c.exercises.map((e) => e.id)).toEqual([plechi]);
+  });
+  it('пустой набор исчезает вместе со ссылкой', () => {
+    const c = buildCommit(p, skip('Вращение тазом', 'Вращение плечами'), DEFAULT_OPTIONS);
+    expect(c.routines).toEqual([]);
+    expect(c.workouts[0]!.warmupRoutine).toBeUndefined();
+  });
+  it('«Использовать похожее» подменяет упражнение набора слагом библиотеки', () => {
+    const e = p.preview.newExercises.find((x) => x.name === 'Вращение плечами')!;
+    const c = buildCommit(p, pickExisting(EMPTY_CHOICES, e.key, 'Планка'), DEFAULT_OPTIONS);
+    expect(c.routines[0]!.items[1]!.exercise).toBe('plank');
+    expect(c.exercises.some((x) => x.id === plechi)).toBe(false);
+  });
+  it('блок-ссылка в blocks тренировки не попадает, встроенная разминка остаётся', () => {
+    const c = buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS);
+    expect(c.workouts[0]!.blocks.map((b) => b.kind)).toEqual(['cooldown', 'exercises']);
   });
   it('«Использовать похожее» подменяет название в timed-блоке', () => {
     const blocks = [{ id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Планка1', kind: 'time', target: { min: 30, max: 30 } }] }] as TimedBlock[];
@@ -150,15 +182,5 @@ workouts:
   it('блок «Разминка» без списка не затрагивается', () => {
     const block = { id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Разминка', kind: 'time', target: { min: 300, max: 300 } }] } as TimedBlock;
     expect(applyToStructure([block], new Map([['Планка', null]]))).toEqual([block]);
-  });
-  it('заголовок блока в blocks не врёт про время, пустой набор из blocks уходит', () => {
-    const one = buildCommit(p, setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), DEFAULT_OPTIONS);
-    expect(one.workouts[0]!.blocks.map((b) => b.heading)).toEqual(['Разминка', 'Разминка']);
-    const none = buildCommit(p, setAction(setAction(EMPTY_CHOICES, keyOf('Вращение тазом'), 'skip'), keyOf('Вращение плечами'), 'skip'), DEFAULT_OPTIONS);
-    expect(none.workouts[0]!.blocks).toHaveLength(1);
-    expect(buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS).workouts[0]!.blocks[0]!.heading).toBe('Разминка · 1:20');
-  });
-  it('sides доходят до отправки', () => {
-    expect(timed(buildCommit(p, EMPTY_CHOICES, DEFAULT_OPTIONS)).exercises[0]!.sides).toEqual(['вправо', 'влево']);
   });
 });

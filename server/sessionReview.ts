@@ -2,6 +2,7 @@ import type { AwaitingReview, Block, ReviewComment, ReviewExercise, ReviewSectio
 import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
 import { nextWorkoutHints } from './hints';
+import { composeStructure, type RoutineLinks } from './routines';
 import { factLabel } from '../shared/fact';
 import { feelingLabel } from '../shared/feeling';
 import { sessionVolume, addDays } from './today';
@@ -64,8 +65,8 @@ const stripInternal = ({ stepIndexes: _steps, blockIndex: _block, ...e }: Review
 /** Структура тренировки, по которой шёл итог; null у старых итогов без тренировки */
 function structureOf(db: Db, workoutId: number | null): Block[] | null {
   if (workoutId === null) return null;
-  const row = db.prepare('SELECT structure FROM workouts WHERE id = ?').get(workoutId) as { structure: string | null } | undefined;
-  return row?.structure ? (JSON.parse(row.structure) as Block[]) : null;
+  const row = db.prepare('SELECT structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ?').get(workoutId) as (RoutineLinks & { structure: string | null }) | undefined;
+  return row ? composeStructure(db, row) : null;
 }
 
 export type SessionReviewResult = { ok: true; review: SessionReviewResponse } | { ok: false; error: 'not_found' | 'forbidden' };

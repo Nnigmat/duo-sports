@@ -12,7 +12,7 @@ let other: number;
 const clock = () => new Date('2026-11-02T10:00:00Z');
 const blocks: CommitBlock[] = [{ kind: 'exercises', heading: 'Круг', items: [{ name: 'Упр', value: '10' }] }];
 const seed = (userId: number, entries: Array<{ date: string; workout: number }>) =>
-  applyImport(db, userId, { exercises: [], workouts: [{ title: 'Верх', blocks }, { title: 'Ноги', blocks }], entries, replaceDates: [] }, clock);
+  applyImport(db, userId, { exercises: [], workouts: [{ title: 'Верх', blocks }, { title: 'Ноги', blocks }], entries, replaceDates: [], routines: [] }, clock);
 const dates = (userId: number) => Object.entries(planOf(db, userId).entries).map(([d, e]) => `${d}:${e.templateId}`);
 
 beforeEach(async () => {

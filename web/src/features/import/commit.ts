@@ -1,4 +1,5 @@
-import type { Block, CommitBlock, CommitExercise, CommitWorkout, ExerciseKind, ImportCommit } from '../../../../shared/types';
+import type { Block, CommitBlock, CommitExercise, CommitRoutine, CommitWorkout, ExerciseKind, ImportCommit } from '../../../../shared/types';
+import { importSlug } from '../../../../shared/importSlug';
 import { groupForMuscles } from '../exercises/library';
 import { buildPlan, type PlanOptions } from './importPlan';
 import type { ParsedImport } from './parse';
@@ -67,15 +68,42 @@ export function applyToStructure(blocks: Block[], rename: Map<string, string | n
   return out;
 }
 
+/** Разминки из файла с учётом выбора на проверке: пропущенное убирается, «похожее» меняется на упражнение библиотеки, пустая разминка исчезает */
+function commitRoutines(parsed: ParsedImport, choices: ExerciseChoices): { routines: CommitRoutine[]; dropped: Set<string> } {
+  const byExercise = new Map(parsed.preview.newExercises.map((e) => [e.slug ?? importSlug(e.name), e]));
+  const routines: CommitRoutine[] = [];
+  const dropped = new Set<string>();
+  for (const r of parsed.routines) {
+    const items = r.items.flatMap((i) => {
+      const e = byExercise.get(i.exercise);
+      if (!e) return [i];
+      const action = actionOf(choices, e.key);
+      if (action === 'skip') return [];
+      if (action === 'use') {
+        const to = replacementOf(e, choices);
+        const slug = to ? parsed.timeLibrary[to] : undefined;
+        return slug ? [{ ...i, exercise: slug }] : [];
+      }
+      return [i];
+    });
+    if (items.length === 0) dropped.add(r.id);
+    else routines.push({ ...r, items });
+  }
+  return { routines, dropped };
+}
+
 export function buildCommit(parsed: ParsedImport, choices: ExerciseChoices, options: PlanOptions): ImportCommit {
   const list = parsed.preview.newExercises;
   const rename = renamer(list, choices);
   const plan = buildPlan(parsed.plan, options);
+  const { routines, dropped } = commitRoutines(parsed, choices);
+  const routineSlugs = new Set(routines.flatMap((r) => r.items.map((i) => i.exercise)));
 
   const workouts: CommitWorkout[] = parsed.workouts.map((w) => ({
     ...(w.slug ? { id: w.slug } : {}),
     title: w.title,
-    blocks: w.blocks.flatMap((b): CommitBlock[] => {
+    // Блоки-ссылки в тренировку не пишутся: разминка подключается колонкой, а не копией
+    blocks: w.blocks.filter((b) => !b.routine).flatMap((b): CommitBlock[] => {
       const items = b.items.flatMap((i) => {
         const name = rename.has(i.name) ? rename.get(i.name) : i.name;
         return name ? [{ name, value: i.value }] : [];
@@ -86,10 +114,19 @@ export function buildCommit(parsed: ParsedImport, choices: ExerciseChoices, opti
       return [{ kind: b.kind, heading: trimmed ? b.heading.split(' · ')[0]! : b.heading, ...(b.text ? { text: b.text } : {}), items }];
     }),
     ...structureOf(w.structure, rename),
+    ...(w.warmupRoutine && !dropped.has(w.warmupRoutine) ? { warmupRoutine: w.warmupRoutine } : {}),
+    ...(w.cooldownRoutine && !dropped.has(w.cooldownRoutine) ? { cooldownRoutine: w.cooldownRoutine } : {}),
   }));
 
   return {
-    exercises: list.filter((e) => actionOf(choices, e.key) === 'create').map((e) => commitExercise(e, choices)),
+    // Упражнению без id из файла даём тот, на который ссылается разминка
+    exercises: list
+      .filter((e) => actionOf(choices, e.key) === 'create')
+      .map((e) => {
+        const out = commitExercise(e, choices);
+        return out.id === undefined && routineSlugs.has(importSlug(e.name)) ? { ...out, id: importSlug(e.name) } : out;
+      }),
+    routines,
     workouts,
     entries: plan.entries.map((e) => ({ date: e.date, workout: e.ref })),
     replaceDates: plan.replaced,

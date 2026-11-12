@@ -3,9 +3,10 @@ import { libraryFixture } from './fixtures';
 import { EXAMPLE } from './format';
 import { SAMPLE_YAML, newWorkoutYaml, sampleYaml } from './import';
 import { buildPlan, DEFAULT_OPTIONS } from './importPlan';
+import { importSlug } from '../../../../shared/importSlug';
 import { candidatesFor, parseImport, similarTo, type ParseContext, type ParseResult } from './parse';
 
-const ctx: ParseContext = { library: libraryFixture, today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
+const ctx: ParseContext = { library: libraryFixture, routines: [], today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
 const ok = (r: ParseResult) => {
   if (!r.ok) throw new Error(`ожидали успех: ${r.errors.map((e) => e.message).join('; ')}`);
   return r;
@@ -274,50 +275,92 @@ describe('базовый шаблон новой тренировки', () => {
 describe('наборы разминки и заминки (routines)', () => {
   const routines = (ex: string, id = 'neck') => `routines:\n  - id: ${id}\n    title: Шея\n    exercises:\n${ex}`;
   const ref = (type = 'warmup', id = 'neck') => `      - { type: ${type}, routine: ${id} }\n`;
-  const full = (ex: string, type = 'warmup') => wrap(ref(type), routines(ex));
+  const main = '      - type: sets\n        exercises:\n          - { name: Отжимания, do: 3x10 }\n';
+  const full = (ex: string, type = 'warmup') => wrap(ref(type) + main, routines(ex));
   const rows = '      - { name: Вращение головой, time: 30s, per_side: true }\n      - { name: Планка, time: 45s }\n';
-  const struct = (text: string) => ok(parseImport(text, ctx)).workouts[0]!.structure[0] as import('../../../../shared/types').TimedBlock;
+  const parsed = (text: string) => ok(parseImport(text, ctx));
+  const libCtx: ParseContext = { ...ctx, routines: [{ id: 'legs-light', kind: 'warmup', title: 'Ноги лёгкая' }, { id: 'stretch', kind: 'cooldown', title: 'Растяжка' }] };
 
-  it('routine разворачивается в timed-блок с упражнениями', () => {
-    const b = struct(full(rows));
-    expect(b).toMatchObject({ id: 'b0', mode: 'timed', title: 'Разминка' });
-    expect(b.exercises.map((e) => [e.id, e.name, e.kind, e.target, e.pose])).toEqual([
-      ['b0-e0', 'Вращение головой', 'time', { min: 30, max: 30 }, 'stand'],
-      ['b0-e1', 'Планка', 'time', { min: 45, max: 45 }, 'stand'],
+  it('routine из файла становится ссылкой и CommitRoutine, а не блоком структуры', () => {
+    const r = parsed(full(rows));
+    expect(r.workouts[0]!.warmupRoutine).toBe('neck');
+    expect(r.workouts[0]!.structure.map((b) => b.mode)).toEqual(['sets']);
+    expect(r.routines).toEqual([
+      {
+        id: 'neck', kind: 'warmup', title: 'Шея',
+        items: [
+          { exercise: importSlug('Вращение головой'), sec: { min: 30, max: 30 }, sides: ['вправо', 'влево'] },
+          { exercise: 'plank', sec: { min: 45, max: 45 } },
+        ],
+      },
     ]);
   });
-  it('per_side даёт sides по умолчанию вправо и влево', () => {
-    const b = struct(full(rows));
-    expect(b.exercises[0]!.sides).toEqual(['вправо', 'влево']);
-    expect(b.exercises[1]!.sides).toBeUndefined();
-  });
   it('sides из файла переопределяют подписи', () => {
-    const b = struct(full('      - { name: Плечи, time: 20s, per_side: true, sides: [вперёд, назад] }\n'));
-    expect(b.exercises[0]!.sides).toEqual(['вперёд', 'назад']);
+    const r = parsed(full('      - { name: Планка, time: 20s, per_side: true, sides: [вперёд, назад] }\n'));
+    expect(r.routines[0]!.items[0]!.sides).toEqual(['вперёд', 'назад']);
   });
-  it('заминка растягивается', () => {
-    expect(struct(full(rows, 'cooldown')).exercises[0]!.pose).toBe('stretch');
+  it('заминка получает вид cooldown и ссылку cooldownRoutine', () => {
+    const r = parsed(full(rows, 'cooldown'));
+    expect(r.routines[0]!.kind).toBe('cooldown');
+    expect(r.workouts[0]!.cooldownRoutine).toBe('neck');
+    expect(r.workouts[0]!.warmupRoutine).toBeUndefined();
   });
-  it('предпросмотр: заголовок с общим временем обеих сторон и строки', () => {
-    const r = ok(parseImport(full(rows), ctx));
-    const block = r.workouts[0]!.blocks[0]!;
-    expect(block.kind).toBe('warmup');
-    expect(block.heading).toBe('Разминка · 1:45');
+  it('предпросмотр: заголовок с названием набора и строки, блок помечен ссылкой', () => {
+    const block = parsed(full(rows)).workouts[0]!.blocks[0]!;
+    expect(block).toMatchObject({ kind: 'warmup', heading: 'Разминка · Шея', routine: 'neck' });
     expect(block.items).toEqual([
       { name: 'Вращение головой', value: '30 с · на сторону' },
       { name: 'Планка', value: '45 с' },
     ]);
   });
-  it('неизвестный routine — ошибка со строкой', () => {
-    const e = fails(wrap(ref('warmup', 'nope'), routines(rows)));
+  it('набор библиотеки принимается и становится ссылкой без CommitRoutine', () => {
+    const r = ok(parseImport(wrap(ref('warmup', 'legs-light') + main), libCtx));
+    expect(r.workouts[0]!.warmupRoutine).toBe('legs-light');
+    expect(r.workouts[0]!.structure.map((b) => b.mode)).toEqual(['sets']);
+    expect(r.routines).toEqual([]);
+    expect(r.workouts[0]!.blocks[0]).toMatchObject({ kind: 'warmup', heading: 'Разминка · Ноги лёгкая', routine: 'legs-light', items: [] });
+  });
+  it('набор из файла важнее набора библиотеки с тем же id', () => {
+    const c: ParseContext = { ...libCtx, routines: [{ id: 'neck', kind: 'cooldown', title: 'Чужая' }] };
+    const r = ok(parseImport(full(rows), c));
+    expect(r.routines.map((x) => x.id)).toEqual(['neck']);
+  });
+  it('неизвестный routine — ошибка со строкой и подсказкой про библиотеку', () => {
+    const e = fails(wrap(ref('warmup', 'nope') + main, routines(rows)));
     expect(e[0]!.message).toContain('nope');
+    expect(e[0]!.hint).toContain('routines');
+    expect(e[0]!.hint).toContain('страниц');
     expect(e[0]!.line).toBeGreaterThan(0);
   });
+  it('набор не того вида — ошибка', () => {
+    const r = parseImport(wrap(ref('cooldown', 'legs-light') + main), libCtx);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors[0]!.message).toBe('«legs-light» — разминка, а не заминка');
+  });
+  it('набор из файла как разминка и как заминка — ошибка', () => {
+    const text = `version: 1\n${routines(rows)}workouts:\n  - { title: А, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }, { type: cooldown, routine: neck }, { type: sets, exercises: [{ name: Отжимания, do: 3x10 }] }] }\n`;
+    expect(fails(text)[0]!.message).toContain('neck');
+  });
+  it('две разминки в тренировке — предупреждение, остаётся первая', () => {
+    const text = `version: 1\n${routines(rows)}workouts:\n  - { title: А, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }, { type: warmup, routine: other }, { type: sets, exercises: [{ name: Отжимания, do: 3x10 }] }] }\n`;
+    const r = parseImport(text, { ...libCtx, routines: [...libCtx.routines, { id: 'other', kind: 'warmup', title: 'Другая' }] });
+    const res = ok(r);
+    expect(res.workouts[0]!.warmupRoutine).toBe('neck');
+    expect(res.warnings.length).toBeGreaterThan(0);
+  });
+  it('встроенная разминка рядом со ссылкой отбрасывается с предупреждением', () => {
+    const r = parsed(wrap([ref(), '      - { type: warmup, text: Скакалка }\n', main].join(''), routines(rows)));
+    expect(r.workouts[0]!.blocks.filter((b) => b.kind === 'warmup')).toHaveLength(1);
+    expect(r.warnings.some((w) => w.message.includes('Встроенн') || w.message.includes('встроенн'))).toBe(true);
+  });
+  it('тренировка только из разминки — ошибка: основной части нет', () => {
+    expect(fails(wrap(ref(), routines(rows)))[0]!.message).toContain('основн');
+  });
   it('повтор id набора — ошибка', () => {
-    expect(fails(wrap(ref(), `${routines(rows)}${routines(rows).replace('routines:\n', '')}`))[0]!.message).toContain('повторяется');
+    expect(fails(wrap(ref() + main, `${routines(rows)}${routines(rows).replace('routines:\n', '')}`))[0]!.message).toContain('повторяется');
   });
   it('пустой exercises — ошибка', () => {
-    expect(fails(wrap(ref(), 'routines:\n  - id: neck\n    title: Шея\n    exercises: []\n'))[0]!.message).toContain('exercises');
+    expect(fails(wrap(ref() + main, 'routines:\n  - id: neck\n    title: Шея\n    exercises: []\n'))[0]!.message).toContain('exercises');
   });
   it('упражнение без time — ошибка', () => {
     expect(fails(full('      - { name: Планка }\n'))[0]!.message).toContain('time');
@@ -326,8 +369,7 @@ describe('наборы разминки и заминки (routines)', () => {
     expect(fails(full('      - { name: Планка, time: 0 }\n'))[0]!.message).toContain('time');
   });
   it('похожее для упражнения набора ищется только среди упражнений на время', () => {
-    const r = ok(parseImport(full('      - { name: Подтягиваня, time: 30s }\n'), ctx));
-    const e = r.preview.newExercises[0]!;
+    const e = parsed(full('      - { name: Подтягиваня, time: 30s }\n')).preview.newExercises[0]!;
     expect(e.candidates).not.toContain('Подтягивания');
     expect(e.similar).not.toBe('Подтягивания');
   });
@@ -338,19 +380,27 @@ describe('наборы разминки и заминки (routines)', () => {
     expect(fails(full('      - { name: Подтягивания, time: 30s }\n'))[0]!.message).toContain('на время');
   });
   it('незнакомое упражнение набора попадает в newExercises с measure time', () => {
-    const r = ok(parseImport(full('      - { name: Вращение тазом, time: 30s }\n'), ctx));
+    const r = parsed(full('      - { name: Вращение тазом, time: 30s }\n'));
     expect(r.preview.newExercises.map((e) => [e.name, e.measure, e.usedIn])).toEqual([['Вращение тазом', 'time', 1]]);
+    expect(r.routines[0]!.items[0]!.exercise).toBe(importSlug('Вращение тазом'));
   });
-  it('набор, который никто не подключил, упражнений не создаёт', () => {
-    const r = ok(parseImport(wrap('      - { type: warmup, text: Р }\n', routines('      - { name: Вращение тазом, time: 30s }\n')), ctx));
+  it('упражнение из exercises файла ссылается по его id', () => {
+    const text = `version: 1\nexercises:\n  - { id: hip-circle, name: Круги тазом, measure: time }\n${routines('      - { exercise_id: hip-circle, time: 30s }\n')}workouts:\n  - { title: А, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }, { type: sets, exercises: [{ name: Отжимания, do: 3x10 }] }] }\n`;
+    expect(parsed(text).routines[0]!.items[0]!.exercise).toBe('hip-circle');
+  });
+  it('набор, который никто не подключил, упражнений не создаёт и в commit не попадает', () => {
+    const r = parsed(wrap(['      - { type: warmup, text: Р }\n', main].join(''), routines('      - { name: Вращение тазом, time: 30s }\n')));
     expect(r.preview.newExercises).toEqual([]);
+    expect(r.routines).toEqual([]);
   });
-  it('один набор в двух тренировках: usedIn считает обе', () => {
-    const text = `version: 1\n${routines('      - { name: Вращение тазом, time: 30s }\n')}workouts:\n  - { title: А, date: 2026-11-03, blocks: [{ type: warmup, routine: neck }] }\n  - { title: Б, date: 2026-11-04, blocks: [{ type: warmup, routine: neck }] }\n`;
-    expect(ok(parseImport(text, ctx)).preview.newExercises[0]!.usedIn).toBe(2);
+  it('один набор в двух тренировках: usedIn считает обе, CommitRoutine один', () => {
+    const w = (t: string, d: string) => `  - { title: ${t}, date: ${d}, blocks: [{ type: warmup, routine: neck }, { type: sets, exercises: [{ name: Отжимания, do: 3x10 }] }] }\n`;
+    const r = parsed(`version: 1\n${routines('      - { name: Вращение тазом, time: 30s }\n')}workouts:\n${w('А', '2026-11-03')}${w('Б', '2026-11-04')}`);
+    expect(r.preview.newExercises[0]!.usedIn).toBe(2);
+    expect(r.routines).toHaveLength(1);
   });
   it('warmup со свободным text разбирается как раньше', () => {
-    const b = struct(wrap('      - { type: warmup, time: 5-7m, text: Скакалка }\n'));
+    const b = parsed(wrap('      - { type: warmup, time: 5-7m, text: Скакалка }\n')).workouts[0]!.structure[0] as import('../../../../shared/types').TimedBlock;
     expect(b.exercises).toHaveLength(1);
     expect(b.exercises[0]!.name).toBe('Разминка');
   });

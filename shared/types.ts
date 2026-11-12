@@ -54,6 +54,54 @@ export interface TimedBlock {
   exercises: Exercise[];
 }
 
+/** Разминка или заминка: общий набор упражнений по времени из библиотеки */
+export type RoutineKind = 'warmup' | 'cooldown';
+
+export interface RoutineItem {
+  /** slug упражнения библиотеки */
+  exercise: string;
+  name: string;
+  /** секунды на позицию (на сторону, если есть sides) */
+  sec: Range;
+  sides?: [string, string];
+}
+
+export interface Routine {
+  /** slug */
+  id: string;
+  kind: RoutineKind;
+  title: string;
+  note?: string;
+  items: RoutineItem[];
+  /** сумма sec.max, с удвоением при sides */
+  totalSec: number;
+}
+
+export interface RoutineSummary {
+  id: string;
+  kind: RoutineKind;
+  title: string;
+  itemCount: number;
+  totalSec: number;
+  usedIn: number;
+}
+
+export interface RoutineDetail extends Routine {
+  usedIn: number;
+  usedBy: Array<{ workoutId: number; title: string }>;
+}
+
+export interface RoutineInput {
+  kind: RoutineKind;
+  title: string;
+  note?: string;
+  items: Array<{ exercise: string; sec: Range; sides?: [string, string] }>;
+}
+
+export interface RoutinesResponse {
+  routines: RoutineSummary[];
+}
+
 /** Все подходы упражнения, потом следующее */
 export interface SetsBlock {
   id: string;
@@ -114,7 +162,10 @@ export interface Technique {
 export interface Workout {
   id: string;
   title: string;
+  /** Для экрана: разминка и заминка по ссылке уже стоят в начале и в конце */
   blocks: Block[];
+  /** Подключённые разминка и заминка (slug и название); редактор показывает их строками-ссылками */
+  routines?: { warmup?: { id: string; title: string }; cooldown?: { id: string; title: string } };
 }
 
 /** Ответ GET /api/workouts/:id: тренировка, комментарии тренера и техника по id упражнений тренировки */
@@ -202,6 +253,8 @@ export interface ExercisesResponse {
 /** Ответ GET /api/import/context: библиотека и уже стоящий план. Сегодняшний день знает браузер. */
 export interface ImportContextResponse {
   library: LibraryEntry[];
+  /** Разминки и заминки библиотеки: на них можно ссылаться из файла */
+  routines: Array<{ id: string; kind: RoutineKind; title: string }>;
   /** Дата → название тренировки в плане */
   mine: Record<string, string>;
 }
@@ -216,6 +269,12 @@ export interface CommitExercise {
   kind: ExerciseKind;
   group: MuscleGroupId;
   notes?: string;
+}
+
+/** Разминка или заминка, которую импорт создаёт в библиотеке; упражнения по slug */
+export interface CommitRoutine extends RoutineInput {
+  /** slug из файла */
+  id: string;
 }
 
 /** Одна строка блока: упражнение и нагрузка так, как их показывает проверка */
@@ -238,6 +297,9 @@ export interface CommitWorkout {
   blocks: CommitBlock[];
   /** Те же блоки для экрана тренировки; без них тренировку нельзя запустить */
   structure?: Block[];
+  /** slug подключённой разминки и заминки; в blocks и structure их блоков нет */
+  warmupRoutine?: string;
+  cooldownRoutine?: string;
 }
 
 /**
@@ -246,6 +308,8 @@ export interface CommitWorkout {
  */
 export interface ImportCommit {
   exercises: CommitExercise[];
+  /** Разминки и заминки из файла; пустой массив, если их нет */
+  routines: CommitRoutine[];
   workouts: CommitWorkout[];
   /** Тренировки в календаре: дата и номер тренировки в workouts */
   entries: Array<{ date: string; workout: number }>;

@@ -96,13 +96,13 @@ describe('база', () => {
       exercises: [{ id: 'bench', name: 'Жим лёжа', aliases: [], muscles: [], kind: 'weight', group: 'chest', notes: '1. Лопатки сведены' }],
       workouts: [{ title: 'Служебная', blocks: [] }],
       entries: [],
-      replaceDates: [],
+      replaceDates: [], routines: [],
     }, clock);
     applyImport(db, athlete, {
       exercises: [],
       workouts: [{ id: 'w1', title: 'Верх', blocks: [], structure: blocks }],
       entries: [],
-      replaceDates: [],
+      replaceDates: [], routines: [],
     }, clock);
   });
   const wid = () => (db.prepare('SELECT id FROM workouts WHERE user_id = ?').get(athlete) as { id: number }).id;

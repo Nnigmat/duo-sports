@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { Block, Exercise, SetsExercise } from '../../../../../shared/types';
+import { Link } from 'react-router-dom';
+import type { Block, Exercise, SetsExercise, Workout } from '../../../../../shared/types';
 import { Button, Card, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
 import type { ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
@@ -25,6 +26,8 @@ type Props = {
   onView: (view: EditView) => void;
   title: string;
   blocks: Block[];
+  /** Подключённые разминка и заминка: показываются строками и здесь не меняются */
+  routines?: Workout['routines'];
   library: LibraryExercise[];
   saving: boolean;
   /** Что мешает сохранить; показывается после первой попытки */
@@ -39,7 +42,7 @@ type Props = {
 const MODES = (Object.keys(MODE_LABELS) as BlockMode[]).map((value) => ({ value, label: MODE_LABELS[value] }));
 
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
-export function WorkoutEditView({ view, yaml, onView, title, blocks, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel }: Props) {
+export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel }: Props) {
   const [pickFor, setPickFor] = useState<string | null>(null);
   const change = (fn: (b: Block[]) => Block[]) => onBlocks(fn(blocks));
 
@@ -100,6 +103,8 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, library, sa
         <>
       <TextInput label="Название тренировки" value={title} maxLength={200} onChange={(e) => onTitle(e.target.value)} />
 
+      {routines?.warmup && <RoutineLink label="Разминка" routine={routines.warmup} />}
+
       {blocks.map((b, i) => (
         <Card key={b.id} tone="surface" className={styles.block} aria-label={`Блок ${i + 1}`}>
           <div className={styles.blockHead}>
@@ -152,6 +157,8 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, library, sa
         </Card>
       ))}
 
+      {routines?.cooldown && <RoutineLink label="Заминка" routine={routines.cooldown} />}
+
       <section className={styles.addBlock} aria-label="Добавить блок">
         <Text variant="eyebrow">Добавить блок</Text>
         <div className={styles.chips}>
@@ -175,6 +182,18 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, library, sa
         }}
       />
     </div>
+  );
+}
+
+/** Подключённая ссылкой разминка или заминка: открывает её карточку */
+function RoutineLink({ label, routine }: { label: string; routine: { id: string; title: string } }) {
+  return (
+    <Link to={`/routines/${encodeURIComponent(routine.id)}`} className={styles.routineLink}>
+      <span>
+        <span className={styles.routineLabel}>{label}:</span> <strong>{routine.title}</strong>
+      </span>
+      <span className={styles.routineHint}>Подключена ссылкой</span>
+    </Link>
   );
 }
 

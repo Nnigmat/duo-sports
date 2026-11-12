@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { CommitBlock } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
+import { createExercise } from './exercises';
 import { applyImport } from './imports';
+import { createRoutine } from './routines';
 import { clearDay, copyWorkoutToAthlete, estimateWorkoutMinutes, planOf, setDay } from './plan';
 
 let db: Db;
@@ -18,7 +20,7 @@ const importTwo = (userId: number) =>
     exercises: [],
     workouts: [{ title: 'Верх', blocks: blocks(3) }, { title: 'Ноги', blocks: blocks(5) }],
     entries: [{ date: '2026-11-03', workout: 0 }, { date: '2026-11-05', workout: 1 }, { date: '2026-11-05', workout: 0 }],
-    replaceDates: [],
+    replaceDates: [], routines: [],
   }, clock);
 
 const items = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `Упр ${i + 1}`, value: '10 повторений' }));
@@ -49,7 +51,7 @@ describe('planOf', () => {
         { kind: 'exercises', heading: 'Круг', items: [{ name: 'Выпады', value: '16–20 повт' }] },
         { kind: 'cooldown', heading: 'Заминка', items: [{ name: 'Бабочка', value: '00:45' }] },
       ] }],
-      entries: [], replaceDates: [],
+      entries: [], replaceDates: [], routines: [],
     }, clock);
     const [t] = planOf(db, me).templates;
     expect(t!.exercises).toEqual([{ name: 'Выпады', detail: '16–20 повт' }]);
@@ -141,5 +143,37 @@ describe('copyWorkoutToAthlete', () => {
     const foreign = Number(planOf(db, other).templates[0]!.id);
     expect(copyWorkoutToAthlete(db, me, foreign, other, '2026-11-10')).toEqual({ ok: false, error: 'not_found' });
     expect(planOf(db, other).templates).toHaveLength(2);
+  });
+});
+
+describe('разминка по ссылке', () => {
+  const linkWarmup = (userId: number, title: string) => {
+    const ex = createExercise(db, { name: 'Шея', group: 'core', kind: 'time', muscles: [], aliases: [] });
+    if (!ex.ok) throw new Error('exercise');
+    const r = createRoutine(db, { kind: 'warmup', title: 'Р', items: [{ exercise: ex.entry.id, sec: { min: 30, max: 30 } }] });
+    if (!r.ok) throw new Error('routine');
+    const rid = (db.prepare('SELECT id FROM routines').get() as { id: number }).id;
+    db.prepare('UPDATE workouts SET warmup_routine_id = ? WHERE user_id = ? AND title = ?').run(rid, userId, title);
+    return rid;
+  };
+  const mainOnly = (userId: number) =>
+    applyImport(db, userId, { exercises: [], workouts: [{ title: 'Верх', blocks: [block('exercises', 3)] }], entries: [], replaceDates: [], routines: [] }, clock);
+
+  it('estimateWorkoutMinutes считает подключённую разминку, состав дня без неё', () => {
+    mainOnly(me);
+    expect(planOf(db, me).templates[0]).toMatchObject({ minutes: 15 });
+    linkWarmup(me, 'Верх');
+    const t = planOf(db, me).templates[0]!;
+    expect(t.minutes).toBe(25);
+    expect(t.exercises).toHaveLength(3);
+  });
+  it('копия тренировки сохраняет ссылки', () => {
+    mainOnly(me);
+    const rid = linkWarmup(me, 'Верх');
+    const src = planOf(db, me).templates[0]!;
+    copyWorkoutToAthlete(db, me, Number(src.id), other, '2026-11-10');
+    const copy = db.prepare('SELECT warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ?').get(other);
+    expect(copy).toEqual({ warmup_routine_id: rid, cooldown_routine_id: null });
+    expect(planOf(db, other).templates[0]!.minutes).toBe(25);
   });
 });

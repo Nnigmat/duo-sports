@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { CommitBlock, SessionStepResult } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
+import { createExercise } from './exercises';
 import { applyImport } from './imports';
+import { createRoutine } from './routines';
 import { pausePlan, skipEntry } from './schedule';
 import { planOf } from './plan';
 import { addDays, streakWeeks, todayOf, userNameOf, weekStart } from './today';
@@ -23,7 +25,7 @@ const step = (over: Partial<SessionStepResult> = {}): SessionStepResult => ({
 /** Среда 4 ноября; неделя 2–8 ноября */
 const TODAY = '2026-11-04';
 const plan = (entries: Array<{ date: string; workout: number }>) =>
-  applyImport(db, me, { exercises: [], workouts: [{ title: 'Верх', blocks: blocks(3) }, { title: 'Ноги', blocks: blocks(5) }], entries, replaceDates: [] }, clock);
+  applyImport(db, me, { exercises: [], workouts: [{ title: 'Верх', blocks: blocks(3) }, { title: 'Ноги', blocks: blocks(5) }], entries, replaceDates: [], routines: [] }, clock);
 const finish = (workoutId: number, date: string, steps = [step()], durationSec?: number) => saveSession(db, me, workoutId, { date, steps, videos: 0, durationSec }, clock);
 const ids = () => (db.prepare('SELECT id FROM workouts WHERE user_id = ? ORDER BY id').all(me) as Array<{ id: number }>).map((w) => w.id);
 
@@ -160,7 +162,7 @@ describe('todayOf: оценка времени', () => {
     { kind: 'exercises', heading: 'Основа', items: Array.from({ length: 5 }, (_, i) => ({ name: `Упр ${i + 1}`, value: '4 × 8' })) },
   ];
   const planLong = (entries: Array<{ date: string; workout: number }>) =>
-    applyImport(db, me, { exercises: [], workouts: [{ title: 'Длинная', blocks: long }], entries, replaceDates: [] }, clock);
+    applyImport(db, me, { exercises: [], workouts: [{ title: 'Длинная', blocks: long }], entries, replaceDates: [], routines: [] }, clock);
   it('разминка не раздувает оценку, а подписи считают только основную часть', () => {
     planLong([{ date: TODAY, workout: 0 }]);
     const t = todayOf(db, me, TODAY);
@@ -256,5 +258,19 @@ describe('todayOf: разбор тренера', () => {
     expect(t).not.toHaveProperty('awaitingReview');
     expect(t.unread).toBe(1);
     expect(t.reviewNotice).toMatchObject({ sessionId: sid, title: 'Всё тело', commentCount: 0 });
+  });
+});
+
+describe('todayOf: разминка по ссылке', () => {
+  it('оценка минут и режим берут собранную тренировку', () => {
+    applyImport(db, me, { exercises: [], workouts: [{ title: 'Верх', blocks: [{ kind: 'exercises', heading: 'Основа', items: [1, 2, 3].map((n) => ({ name: `Упр ${n}`, value: '10' })) }] }], entries: [{ date: TODAY, workout: 0 }], replaceDates: [], routines: [] }, clock);
+    const before = JSON.stringify(todayOf(db, me, TODAY));
+    expect(before).toContain('"minutes":15');
+    const ex = createExercise(db, { name: 'Шея', group: 'core', kind: 'time', muscles: [], aliases: [] });
+    if (!ex.ok) throw new Error('exercise');
+    createRoutine(db, { kind: 'warmup', title: 'Р', items: [{ exercise: ex.entry.id, sec: { min: 30, max: 30 } }] });
+    db.prepare('UPDATE workouts SET warmup_routine_id = (SELECT id FROM routines)').run();
+    const after = todayOf(db, me, TODAY);
+    expect(JSON.stringify(after)).toContain('"minutes":25');
   });
 });

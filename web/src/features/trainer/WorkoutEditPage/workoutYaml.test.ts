@@ -133,3 +133,25 @@ describe('ошибки', () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe('workoutFromYaml: разминка по ссылке', () => {
+  it('routine в редакторе не принимается молча: ссылки задаёт импорт', () => {
+    const text = `version: 1
+routines:
+  - id: neck
+    title: Шея
+    exercises:
+      - { name: Вращения плечами, time: 30s }
+workouts:
+  - title: Т
+    blocks:
+      - { type: warmup, routine: neck }
+      - type: sets
+        exercises:
+          - { name: Присед, do: 3x8 }
+`;
+    const r = workoutFromYaml(text, library, [], TODAY);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.issues[0]!.message).toContain('routine');
+  });
+});

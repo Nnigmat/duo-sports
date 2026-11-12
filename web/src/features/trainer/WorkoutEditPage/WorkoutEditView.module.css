@@ -121,3 +121,23 @@
   tab-size: 2;
   font-variant-numeric: tabular-nums;
 }
+
+.routineLink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px dashed var(--hairline);
+  border-radius: var(--rounded-xl);
+  color: var(--ink);
+  text-decoration: none;
+}
+.routineLabel {
+  color: var(--slate);
+}
+.routineHint {
+  font-size: var(--caption-size);
+  color: var(--slate);
+}

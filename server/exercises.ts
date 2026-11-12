@@ -142,11 +142,13 @@ export function updateExercise(db: Db, slug: string, patch: Partial<ExerciseInpu
   })();
 }
 
-/** Удаляет упражнение; возвращает файлы его роликов, чтобы вызывающий убрал их с диска. null — такого упражнения нет. */
-export function deleteExercise(db: Db, slug: string): string[] | null {
-  return db.transaction((): string[] | null => {
+/** Удаляет упражнение; возвращает файлы его роликов, чтобы вызывающий убрал их с диска. null — такого упражнения нет, 'in_use' — оно стоит в разминке. */
+export function deleteExercise(db: Db, slug: string): string[] | null | 'in_use' {
+  return db.transaction((): string[] | null | 'in_use' => {
     const cur = libraryOf(db).find((e) => e.id === slug);
     if (!cur) return null;
+    const used = db.prepare('SELECT 1 FROM routine_items i JOIN exercises e ON e.id = i.exercise_id WHERE e.slug = ? LIMIT 1').get(slug);
+    if (used) return 'in_use';
     db.prepare('DELETE FROM exercises WHERE slug = ?').run(slug);
     return [cur.demo?.female, cur.demo?.male].filter((f): f is string => !!f);
   })();

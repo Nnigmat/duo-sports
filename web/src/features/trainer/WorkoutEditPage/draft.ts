@@ -1,6 +1,11 @@
-import type { Block, Exercise, ExerciseKind, SetsExercise } from '../../../../../shared/types';
+import type { Block, Exercise, ExerciseKind, SetsExercise, Workout } from '../../../../../shared/types';
 
 /** Правка тренировки без побочных эффектов: каждая функция возвращает новые блоки. Id упражнений не меняем: на них держатся подсказки. */
+
+/** Блоки для правки: подключённые разминку и заминку сервер собирает сам, поэтому их среди блоков не оставляем */
+export function editableBlocks(blocks: Block[], routines: Workout['routines']): Block[] {
+  return blocks.filter((b) => b.mode !== 'timed' || !((b.kind === 'warmup' && routines?.warmup) || (b.kind === 'cooldown' && routines?.cooldown)));
+}
 
 export type BlockMode = Block['mode'];
 

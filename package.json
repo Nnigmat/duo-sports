@@ -9,6 +9,7 @@
     "create-user": "tsx server/createUser.ts",
     "seed-demo": "tsx server/seedDemo.ts",
     "set-gender": "tsx server/setGender.ts",
+    "migrate:routines": "tsx server/migrateRoutines.ts",
     "link-user": "tsx server/linkUser.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
     "lint": "biome lint .",

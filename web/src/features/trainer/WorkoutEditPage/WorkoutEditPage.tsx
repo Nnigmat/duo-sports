@@ -9,7 +9,7 @@ import { fetchOwnWorkout, putOwnWorkout } from '../../plan/api';
 import { fetchPlannedWorkout, putWorkout } from '../api';
 import { toIso } from '../../plan/plan';
 import type { ParseIssue } from '../../import/parse';
-import { problems } from './draft';
+import { editableBlocks, problems } from './draft';
 import { WorkoutEditView, type EditView } from './WorkoutEditView';
 import { workoutFromYaml, workoutToYaml } from './workoutYaml';
 
@@ -75,7 +75,7 @@ function Editor({ source, workout, library }: { source: Source; workout: Workout
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const [title, setTitle] = useState(workout.title);
-  const [blocks, setBlocks] = useState<Block[]>(workout.blocks);
+  const [blocks, setBlocks] = useState<Block[]>(() => editableBlocks(workout.blocks, workout.routines));
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
@@ -142,6 +142,7 @@ function Editor({ source, workout, library }: { source: Source; workout: Workout
       onView={switchView}
       title={title}
       blocks={blocks}
+      routines={workout.routines}
       library={library}
       saving={saving}
       issues={tried && view === 'form' ? issues : []}

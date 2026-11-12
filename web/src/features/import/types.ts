@@ -46,6 +46,8 @@ export interface PreviewBlock {
   heading: string;
   text?: string;
   items: PreviewItem[];
+  /** slug разминки или заминки, если блок подключён ссылкой: в тренировку он не записывается, а показывается на проверке */
+  routine?: string;
 }
 
 export interface PreviewSession {

@@ -26,7 +26,7 @@ const meta = {
   title: 'Features/Import/ImportFlow',
   component: ImportFlow,
   args: {
-    data: { library: libraryFixture, today: '2026-11-02', mine: planSourceFixture.mine },
+    data: { library: libraryFixture, routines: [], today: '2026-11-02', mine: planSourceFixture.mine },
     view: 'flow',
     links: { import: '/import', format: '/import/format', workouts: '/', plan: '/plan', exercises: '/exercises' },
     onNavigate: fn(),

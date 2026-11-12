@@ -56,17 +56,20 @@ describe('содержимое страницы', () => {
 });
 
 describe('наборы разминки в справке', () => {
-  it('пример набора разбирается без ошибок и даёт timed-блоки со сторонами', () => {
-    const r = parseImport(ROUTINE_EXAMPLE.join('\n'), { library: libraryFixture, today: '2026-11-02', mine: {} });
+  it('пример набора разбирается без ошибок: два набора со сторонами, подключены ссылками', () => {
+    const r = parseImport(ROUTINE_EXAMPLE.join('\n'), { library: libraryFixture, routines: [], today: '2026-11-02', mine: {} });
     if (!r.ok) throw new Error(r.errors.map((e) => `${e.line}: ${e.message}`).join('; '));
-    const list = r.workouts[0]!.structure as Array<{ mode: string; exercises: Array<{ sides?: string[] }> }>;
-    const warmup = list[0];
-    const cooldown = list[list.length - 1];
-    expect(warmup!.mode).toBe('timed');
-    expect(warmup!.exercises.some((e) => e.sides)).toBe(true);
-    expect(cooldown!.mode).toBe('timed');
+    expect(r.routines.map((x) => [x.id, x.kind])).toEqual([['neck-shoulders', 'warmup'], ['back-stretch', 'cooldown']]);
+    expect(r.routines[0]!.items.some((i) => i.sides)).toBe(true);
+    expect(r.workouts[0]!.warmupRoutine).toBe('neck-shoulders');
+    expect(r.workouts[0]!.cooldownRoutine).toBe('back-stretch');
+    expect(r.workouts[0]!.structure.map((b) => b.mode)).toEqual(['circuit']);
   });
-  it('routines описан в верхнем уровне', () => {
-    expect(TOP_FIELDS.map((r) => r.field)).toContain('routines');
+  it('routines описан в верхнем уровне и упоминает библиотеку разминок', () => {
+    const top = TOP_FIELDS.find((r) => r.field === 'routines')!;
+    expect(top).toBeDefined();
+    expect(JSON.stringify(top)).toContain('библиот');
+    const block = BLOCK_TYPES.find((b) => b.type === 'warmup | cooldown + routine')!;
+    expect(block.description).toContain('библиот');
   });
 });

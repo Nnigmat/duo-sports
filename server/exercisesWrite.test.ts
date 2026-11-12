@@ -11,6 +11,7 @@ import {
 } from './exercises';
 import { exercisesRouter } from './exercisesRouter';
 import { libraryOf } from './imports';
+import { createRoutine } from './routines';
 import type { ExerciseInput } from '../shared/types';
 
 const base: ExerciseInput = { name: 'Жим лёжа', group: 'chest', kind: 'weight', muscles: ['Грудь'], aliases: ['Bench press'] };
@@ -172,5 +173,14 @@ describe('/api/exercises (HTTP)', () => {
     expect((await call('PATCH', 'trainer', { name: 'X' }, '/net')).status).toBe(404);
     expect((await call('DELETE', 'admin', undefined, '/zhim-lezha')).status).toBe(204);
     expect((await call('DELETE', 'admin', undefined, '/zhim-lezha')).status).toBe(404);
+  });
+  it('DELETE упражнения из разминки: 409 и упражнение остаётся', async () => {
+    const c = await call('POST', 'trainer', { ...base, name: 'Шея', kind: 'time' });
+    expect(c.status).toBe(201);
+    expect(createRoutine(db, { kind: 'warmup', title: 'Р', items: [{ exercise: 'sheya', sec: { min: 30, max: 30 } }] }).ok).toBe(true);
+    const d = await call('DELETE', 'admin', undefined, '/sheya');
+    expect(d.status).toBe(409);
+    expect(await d.json()).toEqual({ error: 'Упражнение стоит в разминке' });
+    expect(libraryOf(db).some((e) => e.id === 'sheya')).toBe(true);
   });
 });

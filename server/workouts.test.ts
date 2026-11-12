@@ -5,7 +5,9 @@ import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { applyImport, undoImport, validateCommit } from './imports';
 import { planOf } from './plan';
-import { saveSession, validateSession, workoutOf } from './workouts';
+import { createExercise } from './exercises';
+import { createRoutine } from './routines';
+import { saveSession, validateSession, workoutOf, workoutResponse } from './workouts';
 
 let db: Db;
 let me: number;
@@ -21,6 +23,7 @@ const commit = (over: Partial<ImportCommit> = {}): ImportCommit => ({
   workouts: [{ id: 'w1', title: 'Верх', blocks: [{ kind: 'exercises', heading: 'Подходами', items: [{ name: 'Жим', value: '3 × 8 · 60 кг' }] }], structure }],
   entries: [{ date: '2026-11-03', workout: 0 }],
   replaceDates: [],
+  routines: [],
   ...over,
 });
 const result = (over: Partial<SessionResult> = {}): SessionResult => ({
@@ -315,5 +318,29 @@ describe('самочувствие и комментарий', () => {
     saveSession(db, me, workoutId(), result({ feeling: 3, key: KEY }), clock);
     expect(saveSession(db, other, otherWorkout, result({ feeling: 3, key: KEY }), clock).ok).toBe(true);
     expect(db.prepare('SELECT COUNT(*) AS n FROM sessions_done').get()).toEqual({ n: 2 });
+  });
+});
+
+describe('тренировка со ссылкой на разминку', () => {
+  const linked = () => {
+    const ex = createExercise(db, { name: 'Кошка-корова', group: 'core', kind: 'time', muscles: [], aliases: [], notes: '1. Встаньте на четвереньки' });
+    if (!ex.ok) throw new Error('exercise');
+    const r = createRoutine(db, { kind: 'warmup', title: 'Спина', items: [{ exercise: ex.entry.id, sec: { min: 30, max: 30 } }] });
+    if (!r.ok) throw new Error('routine');
+    applyImport(db, me, commit({ workouts: [{ id: 'w1', title: 'Верх', blocks: [], structure: [structure[1]!] }] }), clock);
+    const rid = (db.prepare('SELECT id FROM routines').get() as { id: number }).id;
+    db.prepare('UPDATE workouts SET warmup_routine_id = ? WHERE slug = ?').run(rid, 'w1');
+    return rid;
+  };
+  it('workoutOf отдаёт собранные блоки: разминка первая', () => {
+    const rid = linked();
+    const w = workoutOf(db, me, workoutId())!;
+    expect(w.blocks.map((b) => b.id)).toEqual([`r${rid}`, 'b1']);
+    expect(w.blocks[0]).toMatchObject({ kind: 'warmup', title: 'Спина' });
+  });
+  it('workoutResponse строит технику по упражнениям разминки', () => {
+    const rid = linked();
+    const res = workoutResponse(db, me, workoutId())!;
+    expect(res.techniques[`r${rid}-e0`]).toBeDefined();
   });
 });
