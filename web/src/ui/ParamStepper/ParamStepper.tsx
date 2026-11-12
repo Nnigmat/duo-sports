@@ -85,6 +85,7 @@ export function ParamStepper({ label, value, onChange, unit, mode = 'number', st
               aria-describedby={describedBy}
               className={styles.input}
               value={draft ?? String(value).replace('.', ',')}
+              onFocus={() => setDraft('')}
               onChange={(e) => type(e.target.value)}
               onBlur={commit}
               onKeyDown={(e) => e.key === 'Enter' && commit()}
