@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Block, SetsBlock } from '../../../../../shared/types';
 import {
-  addBlock, addExercise, changeMode, moveBlock, moveExercise, patchExercise, problems, removeBlock, removeExercise, roundsOf, setRounds, setTarget, toggleVideoRound,
+  addBlock, addExercise, changeMode, editableBlocks, moveBlock, moveExercise, patchExercise, problems, removeBlock, removeExercise, roundsOf, setRounds, setTarget, toggleVideoRound,
 } from './draft';
 
 const squat = { name: 'Присед', kind: 'weight' as const, defaults: { reps: 8, weight: 60, seconds: 30 } };
@@ -103,5 +103,18 @@ describe('setTarget', () => {
     expect(up[0].exercises[0].target).toEqual({ min: 12, max: 12 });
     const down = setTarget(setTarget(sets(), 'b1', 'x1', 'max', 10), 'b1', 'x1', 'max', 6);
     expect(down[0].exercises[0].target).toEqual({ min: 6, max: 6 });
+  });
+});
+
+describe('editableBlocks', () => {
+  const block = (id: string, kind?: 'warmup' | 'cooldown'): Block => ({ id, mode: 'timed', title: id, exercises: [], ...(kind ? { kind } : {}) });
+  const all = [block('w', 'warmup'), block('m'), block('c', 'cooldown')];
+
+  it('убирает только подключённые ссылкой', () => {
+    expect(editableBlocks(all, { warmup: { id: 'a', title: 'A' } }).map((b) => b.id)).toEqual(['m', 'c']);
+    expect(editableBlocks(all, { warmup: { id: 'a', title: 'A' }, cooldown: { id: 'b', title: 'B' } }).map((b) => b.id)).toEqual(['m']);
+  });
+  it('без ссылок ничего не трогает', () => {
+    expect(editableBlocks(all, undefined)).toHaveLength(3);
   });
 });
