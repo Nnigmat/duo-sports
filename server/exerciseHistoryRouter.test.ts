@@ -49,4 +49,20 @@ describe('GET /api/exercises/history', () => {
     expect(body.history).toHaveLength(1);
     expect(body.history[0]).toMatchObject({ id: ex.id, sessionsTotal: 1, record: { value: 12, date: '2026-10-01' }, trend: [12] });
   });
+
+  it('отдаёт комментарии тренера к упражнениям, без ответов самого спортсмена и чужих', async () => {
+    const me = await createUser(db, 'me@example.com', 'trenirovka7', 'athlete');
+    const other = await createUser(db, 'other@example.com', 'trenirovka7', 'athlete');
+    const coach = await createUser(db, 'coach@example.com', 'trenirovka7', 'trainer');
+    const cookie = await cookieOf('me@example.com');
+    const list = (await (await fetch(`${base}/exercises`, { headers: { cookie } })).json()) as { exercises: Array<{ id: string; name: string }> };
+    const ex = list.exercises[0]!;
+    const add = db.prepare("INSERT INTO comments (athlete_id, author_id, exercise_slug, exercise_name, text, created_at) VALUES (?, ?, ?, ?, ?, ?)");
+    add.run(me, coach, ex.id, ex.name, 'Колени наружу', '2026-10-01T10:00:00Z');
+    add.run(me, coach, ex.id, ex.name, 'Спина прямая', '2026-10-05T10:00:00Z');
+    add.run(me, me, ex.id, ex.name, 'Понял', '2026-10-06T10:00:00Z');
+    add.run(other, coach, ex.id, ex.name, 'Чужое', '2026-10-07T10:00:00Z');
+    const body = (await (await fetch(`${base}/exercises/history`, { headers: { cookie } })).json()) as ExerciseHistoryResponse;
+    expect(body.comments[ex.id]?.map((c) => c.text)).toEqual(['Спина прямая', 'Колени наружу']);
+  });
 });

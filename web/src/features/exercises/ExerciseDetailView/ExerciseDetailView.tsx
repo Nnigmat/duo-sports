@@ -37,6 +37,7 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
   const hasMedia = !!(media.video || media.comment);
   const last = ex.sessions[0];
   const steps = noteSteps(ex.notes);
+  const coach = ex.coachComments ?? [];
 
   return (
     <div className={styles.root}>
@@ -99,6 +100,15 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
                 <li key={i}>{t}</li>
               ))}
             </ol>
+          </section>
+        )}
+
+        {coach.length > 0 && (
+          <section aria-labelledby="ex-coach" className={styles.section}>
+            <Text variant="h5" tag="h2" id="ex-coach">Комментарии тренера</Text>
+            {coach.map((c) => (
+              <CommentBubble key={c.id} author="Тренер" date={c.date} text={c.text} />
+            ))}
           </section>
         )}
 
