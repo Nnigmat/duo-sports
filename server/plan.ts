@@ -1,10 +1,10 @@
-import type { CommitBlock, PlanEntry, PlanMove, PlanResponse, PlanTemplate, PlanTone } from '../shared/types';
+import type { Block, CommitBlock, Exercise, PlanEntry, PlanMove, PlanResponse, PlanTemplate, PlanTone } from '../shared/types';
 import type { Db } from './db';
-import { composeDisplay, type RoutineLinks } from './routines';
+import { composeDisplay, composeStructure, type RoutineLinks } from './routines';
 
 const TONES: PlanTone[] = ['primary', 'teal', 'amber', 'slate'];
 
-type WorkoutRow = RoutineLinks & { id: number; title: string; blocks: string };
+type WorkoutRow = RoutineLinks & { id: number; title: string; blocks: string; structure: string | null };
 type EntryRow = { date: string; workout_id: number };
 
 /** Оценка длительности тренировки: по десять минут на разминку и заминку (если в блоке есть пункты, сколько бы их ни было) и пять на упражнение основной части; кратно пяти, не меньше 15 */
@@ -15,16 +15,37 @@ export function estimateWorkoutMinutes(blocks: CommitBlock[]): number {
   return Math.max(15, Math.round(minutes / 5) * 5);
 }
 
+const REP_SEC = 4;
+const UNKNOWN_WORK_SEC = 40;
+const SETUP_SEC = 20;
+
+/** Секунды работы в одном подходе: время — как задано, повторы — по REP_SEC на повтор, «макс.» без числа — UNKNOWN_WORK_SEC; упражнение с sides идёт на обе стороны */
+function workSec(e: Exercise): number {
+  const one = e.kind === 'time' ? e.target.max : e.target.max > 0 ? Math.max(15, e.target.max * REP_SEC) : UNKNOWN_WORK_SEC;
+  return e.sides ? one * 2 : one;
+}
+
+/** Оценка по структуре экрана: подходы, круги, отдых и время разминки и заминки; кратно пяти, не меньше 15. Без структуры — по числу упражнений. */
+export function estimateMinutes(blocks: CommitBlock[], structure: Block[] | null): number {
+  if (!structure) return estimateWorkoutMinutes(blocks);
+  const sec = structure.reduce((total, b) => {
+    if (b.mode === 'timed') return total + b.exercises.reduce((n, e) => n + workSec(e), 0);
+    if (b.mode === 'sets') return total + b.exercises.reduce((n, e) => n + e.sets * (workSec(e) + b.restSec) + SETUP_SEC, 0);
+    return total + b.rounds * (b.exercises.reduce((n, e) => n + workSec(e), 0) + b.exercises.length * b.restSec) + SETUP_SEC;
+  }, 0);
+  return Math.max(15, Math.round(sec / 60 / 5) * 5);
+}
+
 function template(db: Db, w: WorkoutRow): PlanTemplate {
   const blocks = composeDisplay(db, w);
   // Разминка и заминка в составе не показываем: в них десятки коротких упражнений, а смысл дня — основная часть
   const exercises = blocks.filter((b) => b.kind === 'exercises').flatMap((b) => b.items.map((i) => ({ name: i.name, detail: i.value })));
-  return { id: String(w.id), title: w.title, minutes: estimateWorkoutMinutes(blocks), tone: TONES[(w.id - 1) % TONES.length]!, exercises };
+  return { id: String(w.id), title: w.title, minutes: estimateMinutes(blocks, composeStructure(db, w)), tone: TONES[(w.id - 1) % TONES.length]!, exercises };
 }
 
 /** Тренировки пользователя как шаблоны и записи плана по дням. В дне с двумя тренировками первая главная, остальные — в more. */
 export function planOf(db: Db, userId: number): PlanResponse {
-  const workouts = db.prepare('SELECT id, title, blocks, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ? ORDER BY id').all(userId) as WorkoutRow[];
+  const workouts = db.prepare('SELECT id, title, blocks, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ? ORDER BY id').all(userId) as WorkoutRow[];
   const titles = new Map(workouts.map((w) => [w.id, w.title]));
   const rows = db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as EntryRow[];
   // Порядок по id: у двух занятий в один день разбор ведёт на последнее

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { CommitBlock } from '../shared/types';
+import type { Block, CommitBlock, Exercise } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { createExercise } from './exercises';
 import { applyImport } from './imports';
 import { createRoutine } from './routines';
-import { clearDay, copyWorkoutToAthlete, estimateWorkoutMinutes, planOf, setDay } from './plan';
+import { clearDay, copyWorkoutToAthlete, estimateMinutes, estimateWorkoutMinutes, planOf, setDay } from './plan';
 
 let db: Db;
 let me: number;
@@ -175,5 +175,25 @@ describe('разминка по ссылке', () => {
     const copy = db.prepare('SELECT warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ?').get(other);
     expect(copy).toEqual({ warmup_routine_id: rid, cooldown_routine_id: null });
     expect(planOf(db, other).templates[0]!.minutes).toBe(25);
+  });
+});
+
+describe('estimateMinutes по структуре', () => {
+  const ex = (id: string, max: number, extra: Partial<Exercise> = {}): Exercise => ({ id, name: id, kind: 'reps', target: { min: max, max }, ...extra });
+  it('считает подходы с отдыхом, а не только число упражнений', () => {
+    const structure: Block[] = [{ id: 'a', mode: 'sets', title: 'Основа', restSec: 90, videoRounds: [], exercises: [{ ...ex('x', 20), sets: 4 }, { ...ex('y', 0), sets: 4 }, { ...ex('z', 30, { kind: 'time' }), sets: 4 }] }];
+    // 4 × (80 + 90) + 4 × (40 + 90) + 4 × (30 + 90) + 3 × 20 = 1740 с = 29 мин → 30
+    expect(estimateMinutes([], structure)).toBe(30);
+  });
+  it('круги и разминка из структуры', () => {
+    const structure: Block[] = [
+      { id: 'w', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [ex('a', 60, { kind: 'time' }), ex('b', 30, { kind: 'time', sides: ['л', 'п'] })] },
+      { id: 'c', mode: 'circuit', title: 'Круг', rounds: 4, restSec: 60, videoRounds: [], exercises: [ex('x', 15), ex('y', 20)] },
+    ];
+    // 120 + 4 × (60 + 80 + 120) + 20 = 1180 с ≈ 20 мин
+    expect(estimateMinutes([], structure)).toBe(20);
+  });
+  it('без структуры считает по блокам', () => {
+    expect(estimateMinutes([block('exercises', 4)], null)).toBe(estimateWorkoutMinutes([block('exercises', 4)]));
   });
 });
