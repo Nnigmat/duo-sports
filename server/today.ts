@@ -1,7 +1,7 @@
 import type { Block, CommitBlock, SessionStepResult, TodayDay, TodayMissed, TodayPause, TodayResponse, TodayWorkoutCard } from '../shared/types';
 import type { Db } from './db';
 import { reviewNoticeOf, unreadCount } from './notifications';
-import { estimateWorkoutMinutes } from './plan';
+import { estimateMinutes } from './plan';
 import { composeDisplay, composeStructure, type RoutineLinks } from './routines';
 import { awaitingReviewOf } from './sessionReview';
 
@@ -106,7 +106,7 @@ function workoutCard(w: TodayWorkoutInfo, today: string, musclesOf: TodayInput['
     title: w.title,
     whenLabel: `сегодня, ${WEEKDAYS[weekdayIndex(today)]} ${dayOfMonth(today)} ${MONTHS_SHORT[parse(today).getUTCMonth()]}`,
     exerciseCount: exerciseCount(w),
-    minutes: estimateWorkoutMinutes(w.blocks),
+    minutes: estimateMinutes(w.blocks, w.structure),
     modeLabel: modeLabel(w.structure),
     muscles,
     exercises,
@@ -159,7 +159,7 @@ function weekDay(iso: string, input: TodayInput): TodayDay {
     status: 'planned',
     caption: w.title,
     title: w.title,
-    meta: `${n}${NBSP}${plural(n, ['упражнение', 'упражнения', 'упражнений'])} · ≈${NBSP}${estimateWorkoutMinutes(w.blocks)}${NBSP}мин`,
+    meta: `${n}${NBSP}${plural(n, ['упражнение', 'упражнения', 'упражнений'])} · ≈${NBSP}${estimateMinutes(w.blocks, w.structure)}${NBSP}мин`,
     actionLabel: iso === today ? 'Начать' : 'Перенести',
   };
 }
@@ -198,7 +198,7 @@ function nextWorkout(input: TodayInput) {
   return {
     whenLabel: next.date === addDays(input.today, 1) ? 'завтра' : `${WEEKDAYS[weekdayIndex(next.date)]}, ${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`,
     title: w.title,
-    minutes: estimateWorkoutMinutes(w.blocks),
+    minutes: estimateMinutes(w.blocks, w.structure),
   };
 }
 
