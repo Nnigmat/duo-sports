@@ -1,4 +1,4 @@
-import type { AthleteListResponse, Block, AthleteSessionsResponse, ExerciseCommentItem, PlanResponse, WorkoutResponse, Workout } from '../../../../shared/types';
+import type { AthleteListResponse, Block, AthleteSessionsResponse, ExerciseCommentItem, PlanResponse, RoutineSlugs, WorkoutResponse, Workout } from '../../../../shared/types';
 import type { AthleteFilter } from './students';
 
 /** Запросы кабинета тренера. Компоненты их не вызывают: страница передаёт колбэки. */
@@ -87,5 +87,11 @@ export const fetchAthletePreview = async (athleteId: number, workoutId: number):
 export const athleteBase = (athleteId: number) => `/api/trainer/athletes/${athleteId}`;
 
 /** Сохраняет состав тренировки ученика целиком; тренировка общая для всех дней плана, где она стоит */
-export const putWorkout = async (athleteId: number, workoutId: number, title: string, blocks: Block[]): Promise<Workout> =>
-  (await request(`/api/trainer/athletes/${athleteId}/workouts/${workoutId}`, { method: 'PUT', headers: json, body: JSON.stringify({ title, blocks }) })).json();
+export const putWorkout = async (athleteId: number, workoutId: number, title: string, blocks: Block[], links: RoutineSlugs): Promise<Workout> =>
+  (
+    await request(`/api/trainer/athletes/${athleteId}/workouts/${workoutId}`, {
+      method: 'PUT',
+      headers: json,
+      body: JSON.stringify({ title, blocks, warmupRoutine: links.warmup ?? null, cooldownRoutine: links.cooldown ?? null }),
+    })
+  ).json();

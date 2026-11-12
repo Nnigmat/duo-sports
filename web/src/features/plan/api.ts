@@ -1,4 +1,4 @@
-import type { Block, PlanResponse, Workout } from '../../../../shared/types';
+import type { Block, PlanResponse, RoutineSlugs, Workout } from '../../../../shared/types';
 
 /** Запросы плана к серверу. Компоненты их не вызывают: страница передаёт колбэки. */
 
@@ -24,5 +24,11 @@ export const deleteDay = (date: string) => request(`/api/plan/entries/${date}`, 
 /** Состав своей тренировки для редактора; комментарии не помечаются прочитанными */
 export const fetchOwnWorkout = async (workoutId: number): Promise<Workout> => (await request(`/api/workouts/${workoutId}/plan`)).json();
 
-export const putOwnWorkout = async (workoutId: number, title: string, blocks: Block[]): Promise<Workout> =>
-  (await request(`/api/workouts/${workoutId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, blocks }) })).json();
+export const putOwnWorkout = async (workoutId: number, title: string, blocks: Block[], links: RoutineSlugs): Promise<Workout> =>
+  (
+    await request(`/api/workouts/${workoutId}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title, blocks, warmupRoutine: links.warmup ?? null, cooldownRoutine: links.cooldown ?? null }),
+    })
+  ).json();

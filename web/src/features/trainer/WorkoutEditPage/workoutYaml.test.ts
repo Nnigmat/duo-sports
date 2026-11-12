@@ -61,7 +61,7 @@ describe('блок по таймеру в основной части', () => {
     const text = workoutToYaml('Кор', plank);
     expect(text).toContain('type: timed');
     expect(text).not.toMatch(/warmup|cooldown/);
-    expect(workoutFromYaml(text, library, plank, TODAY)).toEqual({ ok: true, title: 'Кор', blocks: plank });
+    expect(workoutFromYaml(text, library, plank, TODAY)).toEqual({ ok: true, title: 'Кор', blocks: plank, links: {} });
   });
   it('старая разминка без kind остаётся разминкой', () => {
     const old: Block[] = [{ id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] }];
@@ -72,7 +72,7 @@ describe('блок по таймеру в основной части', () => {
 describe('круг блоки → YAML → блоки', () => {
   it('ничего не теряет', () => {
     const back = workoutFromYaml(workoutToYaml('Ноги', blocks), library, blocks, TODAY);
-    expect(back).toEqual({ ok: true, title: 'Ноги', blocks });
+    expect(back).toEqual({ ok: true, title: 'Ноги', blocks, links: {} });
   });
   it('разминка и заминка из упражнений, дописанные текстом, читаются', () => {
     const text = `version: 1
@@ -134,9 +134,53 @@ describe('ошибки', () => {
   });
 });
 
-describe('workoutFromYaml: разминка по ссылке', () => {
-  it('routine в редакторе не принимается молча: ссылки задаёт импорт', () => {
-    const text = `version: 1
+describe('разминка и заминка по ссылке', () => {
+  const routines = [
+    { id: 'obschaya-razminka', kind: 'warmup' as const, title: 'Общая разминка' },
+    { id: 'obschaya-zaminka', kind: 'cooldown' as const, title: 'Общая заминка' },
+  ];
+  const main: Block[] = [{ id: 'm', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [2], exercises: [{ id: 'm-e0', name: 'Присед', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3 }] }];
+  const text = `version: 1
+workouts:
+  - title: Т
+    blocks:
+      - { type: warmup, routine: obschaya-razminka }
+      - type: sets
+        title: Силовая
+        video_rounds: [2]
+        exercises:
+          - { name: Присед, do: 3x8 @ 60 }
+      - { type: cooldown, routine: obschaya-zaminka }
+`;
+
+  it('пишет блоки routine: разминка первой, заминка последней', () => {
+    const out = workoutToYaml('Т', main, { warmup: 'obschaya-razminka', cooldown: 'obschaya-zaminka' });
+    expect(out.indexOf('routine: obschaya-razminka')).toBeLessThan(out.indexOf('type: sets'));
+    expect(out.indexOf('type: sets')).toBeLessThan(out.indexOf('routine: obschaya-zaminka'));
+  });
+  it('читает ссылки и не сдвигает video_rounds и названия блоков', () => {
+    const r = workoutFromYaml(text, library, main, TODAY, routines);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.links).toEqual({ warmup: 'obschaya-razminka', cooldown: 'obschaya-zaminka' });
+    expect(r.blocks).toHaveLength(1);
+    expect(r.blocks[0]).toMatchObject({ id: 'm', title: 'Силовая', videoRounds: [2] });
+  });
+  it('круг: текст → ссылки → текст', () => {
+    const links = { warmup: 'obschaya-razminka', cooldown: 'obschaya-zaminka' };
+    const r = workoutFromYaml(workoutToYaml('Т', main, links), library, main, TODAY, routines);
+    expect(r).toMatchObject({ ok: true, links, blocks: main });
+  });
+  it('без блоков routine ссылок нет', () => {
+    const r = workoutFromYaml(workoutToYaml('Т', main), library, main, TODAY, routines);
+    expect(r).toMatchObject({ ok: true, links: {} });
+  });
+  it('набора нет в библиотеке: ошибка', () => {
+    const r = workoutFromYaml(text, library, main, TODAY, []);
+    expect(r.ok).toBe(false);
+  });
+  it('набор из routines самого файла не принимается: в библиотеку он отсюда не попадёт', () => {
+    const own = `version: 1
 routines:
   - id: neck
     title: Шея
@@ -150,8 +194,12 @@ workouts:
         exercises:
           - { name: Присед, do: 3x8 }
 `;
-    const r = workoutFromYaml(text, library, [], TODAY);
+    const r = workoutFromYaml(own, library, [], TODAY, routines);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.issues[0]!.message).toContain('routine');
+    if (!r.ok) expect(r.issues[0]!.message).toContain('neck');
+  });
+  it('заминку нельзя поставить как разминку', () => {
+    const r = workoutFromYaml(text.replace('routine: obschaya-razminka', 'routine: obschaya-zaminka'), library, main, TODAY, routines);
+    expect(r.ok).toBe(false);
   });
 });
