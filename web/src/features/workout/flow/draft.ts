@@ -69,7 +69,7 @@ function hasValidFeedback(v: Record<string, unknown>): boolean {
   return (v.feeling === undefined || v.feeling === null || (Number.isInteger(v.feeling) && (v.feeling as number) >= 1 && (v.feeling as number) <= 5)) && (v.comment === undefined || typeof v.comment === 'string');
 }
 
-type StoredSession = Omit<Session, 'actuals' | 'feeling' | 'comment'> & Partial<Pick<Session, 'actuals' | 'feeling' | 'comment'>>;
+type StoredSession = Omit<Session, 'actuals' | 'times' | 'feeling' | 'comment'> & Partial<Pick<Session, 'actuals' | 'times' | 'feeling' | 'comment'>>;
 
 function isSession(v: unknown): v is StoredSession {
   if (!isObject(v) || !Array.isArray(v.steps) || v.steps.length === 0) return false;
@@ -86,6 +86,7 @@ function isSession(v: unknown): v is StoredSession {
     v.completed.length === n &&
     v.completed.every((c) => typeof c === 'boolean') &&
     hasValidActuals(v, n) &&
+    (v.times === undefined || (Array.isArray(v.times) && v.times.length === n && v.times.every((t) => t === null || (isObject(t) && isNum(t.startedAt) && isNum(t.endedAt))))) &&
     hasValidFeedback(v) &&
     Array.isArray(v.videoIds) &&
     v.videoIds.length === n &&
@@ -116,6 +117,7 @@ export function parseDraft(raw: string | null, now: number): Draft | null {
   const session: Session = {
     ...data.session,
     actuals: data.session.actuals ?? data.session.steps.map(() => null),
+    times: data.session.times ?? data.session.steps.map(() => null),
     feeling: data.session.feeling ?? null,
     comment: data.session.comment ?? '',
   };

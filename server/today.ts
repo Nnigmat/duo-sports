@@ -1,7 +1,7 @@
 import type { Block, CommitBlock, SessionStepResult, TodayDay, TodayMissed, TodayPause, TodayResponse, TodayWorkoutCard } from '../shared/types';
 import type { Db } from './db';
 import { reviewNoticeOf, unreadCount } from './notifications';
-import { estimateMinutes } from './plan';
+import { estimateMinutes, exerciseWorkSec, pastDurations } from './plan';
 import { composeDisplay, composeStructure, type RoutineLinks } from './routines';
 import { awaitingReviewOf } from './sessionReview';
 
@@ -36,6 +36,10 @@ export interface TodayWorkoutInfo {
   blocks: CommitBlock[];
   /** Блоки экрана тренировки; у старых импортов нет */
   structure: Block[] | null;
+  /** Длительности прошлых прохождений, секунды: по ним оценка времени точнее расчёта */
+  pastSec?: number[];
+  /** Реальное время подхода по упражнениям (название в нижнем регистре → секунды) */
+  realWork?: Map<string, number>;
 }
 export interface TodaySession {
   /** id записи sessions_done: по нему открывается разбор */
@@ -106,7 +110,7 @@ function workoutCard(w: TodayWorkoutInfo, today: string, musclesOf: TodayInput['
     title: w.title,
     whenLabel: `сегодня, ${WEEKDAYS[weekdayIndex(today)]} ${dayOfMonth(today)} ${MONTHS_SHORT[parse(today).getUTCMonth()]}`,
     exerciseCount: exerciseCount(w),
-    minutes: estimateMinutes(w.blocks, w.structure),
+    minutes: estimateMinutes(w.blocks, w.structure, w.pastSec, w.realWork),
     modeLabel: modeLabel(w.structure),
     muscles,
     exercises,
@@ -159,7 +163,7 @@ function weekDay(iso: string, input: TodayInput): TodayDay {
     status: 'planned',
     caption: w.title,
     title: w.title,
-    meta: `${n}${NBSP}${plural(n, ['упражнение', 'упражнения', 'упражнений'])} · ≈${NBSP}${estimateMinutes(w.blocks, w.structure)}${NBSP}мин`,
+    meta: `${n}${NBSP}${plural(n, ['упражнение', 'упражнения', 'упражнений'])} · ≈${NBSP}${estimateMinutes(w.blocks, w.structure, w.pastSec, w.realWork)}${NBSP}мин`,
     actionLabel: iso === today ? 'Начать' : 'Перенести',
   };
 }
@@ -198,7 +202,7 @@ function nextWorkout(input: TodayInput) {
   return {
     whenLabel: next.date === addDays(input.today, 1) ? 'завтра' : `${WEEKDAYS[weekdayIndex(next.date)]}, ${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`,
     title: w.title,
-    minutes: estimateMinutes(w.blocks, w.structure),
+    minutes: estimateMinutes(w.blocks, w.structure, w.pastSec, w.realWork),
   };
 }
 
@@ -267,7 +271,9 @@ export function pausesOf(db: Db, userId: number): NonNullable<TodayInput['pauses
 export function todayOf(db: Db, userId: number, today: string): TodayResponse {
   const user = db.prepare('SELECT email, display_name FROM users WHERE id = ?').get(userId) as { email: string; display_name: string | null } | undefined;
   const rows = db.prepare('SELECT id, title, blocks, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ?').all(userId) as Array<RoutineLinks & { id: number; title: string; blocks: string; structure: string | null }>;
-  const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: composeDisplay(db, r), structure: composeStructure(db, r) }]));
+  const past = pastDurations(db, userId);
+  const realWork = exerciseWorkSec(db, userId);
+  const workouts = new Map(rows.map((r) => [r.id, { id: r.id, title: r.title, blocks: composeDisplay(db, r), structure: composeStructure(db, r), pastSec: past.get(r.id) ?? [], realWork }]));
   const entries = (db.prepare('SELECT date, workout_id FROM plan_entries WHERE user_id = ? ORDER BY date, workout_id').all(userId) as Array<{ date: string; workout_id: number }>).map((e) => ({ date: e.date, workoutId: e.workout_id }));
   const sessions = (db.prepare('SELECT id, workout_id, title, date, steps, duration_sec FROM sessions_done WHERE user_id = ? ORDER BY id').all(userId) as Array<{ id: number; workout_id: number | null; title: string; date: string; steps: string; duration_sec: number | null }>).map((s) => ({
     id: s.id,

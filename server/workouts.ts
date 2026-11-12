@@ -67,6 +67,7 @@ export function validateSession(body: unknown): ValidSession {
       (s.actual === undefined || isActual(s.actual)) &&
       (s.replacedFrom === undefined || (typeof s.replacedFrom === 'string' && s.replacedFrom.length >= 1 && s.replacedFrom.length <= 200)) &&
       (s.restSec === undefined || (Number.isInteger(s.restSec) && (s.restSec as number) >= 0 && (s.restSec as number) <= MAX_DURATION_SEC)) &&
+      ((s.startedAt === undefined && s.endedAt === undefined) || (Number.isInteger(s.startedAt) && Number.isInteger(s.endedAt) && (s.startedAt as number) > 0 && (s.endedAt as number) >= (s.startedAt as number) && (s.endedAt as number) - (s.startedAt as number) <= MAX_DURATION_SEC * 1000)) &&
       (s.videoId === undefined || (typeof s.videoId === 'string' && UUID.test(s.videoId)));
     if (!ok) return { ok: false, error: `steps[${i}]: неверные поля` };
   }

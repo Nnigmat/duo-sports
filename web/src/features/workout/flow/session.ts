@@ -2,6 +2,12 @@ import type { SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 import { swapSteps, type SwapOption } from './swap';
 
+/** Когда шаг появился на экране и когда выполнен, мс по часам браузера */
+export interface StepTime {
+  startedAt: number;
+  endedAt: number;
+}
+
 export type Phase = 'start' | 'work' | 'rest' | 'finish' | 'feedback';
 
 /** Ход тренировки: где мы, что выполнено. Всё остальное (шторки, камера) — состояние экрана. */
@@ -19,6 +25,8 @@ export interface Session {
   videoIds: Array<string | null>;
   /** Фактический отдых после шага i в секундах (в том числе сверх цели); null — отдыха не было (последний шаг, пропущенный подход, старый черновик); при «Пропустить» на отдыхе — время до нажатия */
   restSec: Array<number | null>;
+  /** Метки шага i: от появления на экране до «Готово»; null — не выполнен или метки не писались (старый черновик) */
+  times: Array<StepTime | null>;
   /** Запущен ли таймер текущего шага: в таймерных блоках сам, у упражнений на время по «Старт» */
   timerStarted: boolean;
   /** Самочувствие 1–5; null — ещё не выбрано. Без него итог не отправить. */
@@ -31,7 +39,7 @@ export type Action =
   | { type: 'begin' }
   | { type: 'startTimer' }
   /** «Готово»; actual — факт из шторки, у разминки и заминки его нет */
-  | { type: 'done'; actual?: SetActual }
+  | { type: 'done'; actual?: SetActual; time?: StepTime }
   /** На отдыхе `restSec` — сколько он шёл до нажатия; на подходе не нужен */
   | { type: 'skip'; restSec?: number }
   | { type: 'back' }
@@ -40,7 +48,7 @@ export type Action =
   /** Отдых закончен кнопкой «Начать»: `restSec` — сколько он шёл, включая время сверх цели */
   | { type: 'restOver'; restSec: number }
   /** видео записано и сохранено: подход считается выполненным */
-  | { type: 'recorded'; videoId?: string; actual?: SetActual }
+  | { type: 'recorded'; videoId?: string; actual?: SetActual; time?: StepTime }
   | { type: 'finishNow' }
   /** «Дальше» на финише: к обратной связи */
   | { type: 'toFeedback' }
@@ -62,6 +70,7 @@ export function initSession(steps: Step[]): Session {
     videos: 0,
     videoIds: steps.map(() => null),
     restSec: steps.map(() => null),
+    times: steps.map(() => null),
     timerStarted: false,
     feeling: null,
     comment: '',
@@ -82,10 +91,11 @@ function next(s: Session): Session {
   return s.index + 1 >= s.steps.length ? { ...s, phase: 'finish' } : goTo(s, s.index + 1);
 }
 
-function complete(s: Session, actual?: SetActual): Session {
+function complete(s: Session, actual?: SetActual, time?: StepTime): Session {
   const completed = s.completed.map((c, i) => (i === s.index ? true : c));
   const actuals = s.actuals.map((a, i) => (i === s.index ? (actual ?? null) : a));
-  const done = { ...s, completed, actuals };
+  const times = s.times.map((t, i) => (i === s.index ? (time ?? null) : t));
+  const done = { ...s, completed, actuals, times };
   if (s.index + 1 >= s.steps.length) return { ...done, phase: 'finish' };
   return s.steps[s.index].restAfterSec > 0 ? { ...done, phase: 'rest' } : goTo(done, s.index + 1);
 }
@@ -100,6 +110,7 @@ function uncomplete(s: Session, index: number): Session {
     videoIds: s.videoIds.map((v, i) => (i === index ? null : v)),
     // Отдых после этого шага начнётся заново при следующем «Готово»
     restSec: s.restSec.map((v, i) => (i === index ? null : v)),
+    times: s.times.map((v, i) => (i === index ? null : v)),
   };
 }
 
@@ -122,11 +133,11 @@ export function reduce(s: Session, a: Action): Session {
       return s.phase === 'work' ? { ...s, timerStarted: true } : s;
 
     case 'done':
-      return s.phase === 'work' ? complete(s, a.actual) : s;
+      return s.phase === 'work' ? complete(s, a.actual, a.time) : s;
 
     case 'recorded':
       return s.phase === 'work'
-        ? complete({ ...s, videos: s.videos + 1, videoIds: s.videoIds.map((v, i) => (i === s.index ? (a.videoId ?? null) : v)) }, a.actual)
+        ? complete({ ...s, videos: s.videos + 1, videoIds: s.videoIds.map((v, i) => (i === s.index ? (a.videoId ?? null) : v)) }, a.actual, a.time)
         : s;
 
     case 'skip':

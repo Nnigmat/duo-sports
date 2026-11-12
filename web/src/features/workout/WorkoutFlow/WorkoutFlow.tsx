@@ -111,6 +111,19 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
   const { steps, index, phase } = session;
   const step = steps[index];
 
+  // Подход идёт с появления на экране (у упражнения на время — с «Старт») до «Готово»; метки в ref, чтобы не перерисовывать экран
+  const workStart = useRef(Date.now());
+  const workEnd = useRef<number | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: метку нужно сбрасывать при смене шага и запуске таймера, хотя их значения в теле не читаются
+  useEffect(() => {
+    workStart.current = Date.now();
+    workEnd.current = null;
+  }, [index, phase, session.timerStarted]);
+  const markWorkEnd = () => {
+    workEnd.current ??= Date.now();
+  };
+  const timeNow = () => ({ startedAt: workStart.current, endedAt: workEnd.current ?? Date.now() });
+
   if (phase === 'start') {
     return (
       <StartScreen
@@ -135,7 +148,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
       setSending(true);
       setSendError(null);
       try {
-        await onFinish(finishStats(steps, session.completed, session.videos), sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals), feedback);
+        await onFinish(finishStats(steps, session.completed, session.videos), sessionSteps(steps, session.completed, session.videoIds, session.restSec, session.actuals, session.times), feedback);
       } catch (e) {
         setSendError(e instanceof Error ? e.message : 'Итоги не отправлены');
       }
@@ -171,6 +184,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         beeper={beeper}
         onUpload={async (video, durationSec) => {
           const videoId = await onUploadVideo(video, step, durationSec);
+          markWorkEnd();
           setRecording(false);
           setRecorded(videoId ? { videoId } : {});
         }}
@@ -208,7 +222,11 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         techNew={hasNewComments(comments, shown.exerciseId)}
         startedAt={startedAt}
         // На подходах упражнений «Готово» сначала спрашивает факт; у разминки и заминки шторки нет
-        onDone={() => (step.mode === 'timed' ? dispatch({ type: 'done' }) : setSheet('result'))}
+        onDone={() => {
+          markWorkEnd();
+          if (step.mode === 'timed') dispatch({ type: 'done', time: timeNow() });
+          else setSheet('result');
+        }}
         onTech={() => setSheet('tech')}
         onSwap={library && library.length > 0 && canSwap(session) ? () => setSheet('swap') : undefined}
         onOpenNotes={() => {
@@ -225,7 +243,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
           if (open) return;
           setSheet(null);
           // Шторку после записи закрыли без факта: видео уже на сервере, подход засчитываем по плану
-          if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}) });
+          if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), time: timeNow() });
           setRecorded(null);
         }}
         eyebrow={eyebrow(step)}
@@ -233,8 +251,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         plan={step.plan}
         actual={session.actuals[index]}
         onSave={(actual) => {
-          if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), actual });
-          else dispatch({ type: 'done', actual });
+          if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), actual, time: timeNow() });
+          else dispatch({ type: 'done', actual, time: timeNow() });
           setRecorded(null);
         }}
       />
@@ -363,7 +381,7 @@ function TimedStage(props: StageProps) {
   const t = useCountdown({
     seconds: leadSec + workSec,
     // Конец таймера набора засчитывает шаг сам; у упражнения круг ждёт «Готово»
-    onFinish: routine ? () => dispatch({ type: 'done' }) : undefined,
+    onFinish: routine ? onDone : undefined,
   });
   const elapsed = t.total - t.seconds;
 
