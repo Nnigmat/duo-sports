@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import type { HistorySort } from '../library';
-import { fresh, plank, pullup, squat } from '../mock';
+import { fresh, plank, pullup, squat, squatTimed } from '../mock';
 import { ExerciseHistoryView } from './ExerciseHistoryView';
 
 const meta = {
@@ -20,6 +20,21 @@ export const Weight: Story = {
     await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Все тренировки');
     await userEvent.click(c.getByRole('button', { name: 'Показать ещё 6' }));
     await expect(args.onShowMore).toHaveBeenCalled();
+  },
+};
+export const Timed: Story = {
+  args: { exercise: squatTimed },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Подход обычно 45 с')).toBeInTheDocument();
+    await expect(c.getAllByText(/на упражнение ушло \d\d:\d\d/).length).toBeGreaterThan(0);
+  },
+};
+export const WithoutTimes: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.queryByText(/Подход обычно/)).toBeNull();
+    await expect(c.queryByText(/на упражнение ушло/)).toBeNull();
   },
 };
 export const Bodyweight: Story = { args: { exercise: pullup } };

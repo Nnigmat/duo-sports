@@ -133,3 +133,15 @@ export const fresh: LibraryExercise = createExercise(
 );
 
 export const exerciseLibrary: LibraryExercise[] = [squat, ...rest.slice(0, 3), pullup, ...rest.slice(3, 5), ...rest.slice(5, 6), plank, rest[6], fresh];
+
+/** Приседания с метками времени: у свежих тренировок время есть, у самой старой нет, у одной известно не у всех подходов */
+export const squatTimed: LibraryExercise = {
+  ...squat,
+  typicalSetSec: 45,
+  sessions: squat.sessions.map((s, i, all) => {
+    if (i === all.length - 1) return s;
+    const times = [40 + i, 45, 52 + i, 48].slice(0, s.sets.length);
+    const sets = s.sets.map((x, j) => (i === 2 && j === 0 ? x : { ...x, timeSec: times[j] ?? 45 }));
+    return { ...s, sets, ...(i === 2 ? {} : { totalSec: times.reduce((a, b) => a + b, 0) + (s.sets.length > times.length ? 45 * (s.sets.length - times.length) : 0) }) };
+  }),
+};

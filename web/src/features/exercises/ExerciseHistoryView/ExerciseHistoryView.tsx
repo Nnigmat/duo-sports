@@ -1,5 +1,5 @@
 import { Badge, Button, Card, CommentBubble, EmptyState, MediaLink, SegmentedControl, Text, TopBar } from '../../../ui';
-import { hiddenSessions, historySubtitle, sessionSummary, setText, sortSessions, type HistorySort } from '../library';
+import { hiddenSessions, historySubtitle, sessionSummary, sessionTimeText, setText, setTimeText, sortSessions, typicalSetText, type HistorySort } from '../library';
 import type { LibraryExercise } from '../types';
 import styles from './ExerciseHistoryView.module.css';
 
@@ -15,6 +15,7 @@ type Props = {
 export function ExerciseHistoryView({ exercise: ex, sort, onSortChange, onBack, onShowMore }: Props) {
   const sessions = sortSessions(ex.sessions, sort);
   const hidden = hiddenSessions(ex);
+  const typical = typicalSetText(ex);
 
   return (
     <div className={styles.root}>
@@ -23,6 +24,7 @@ export function ExerciseHistoryView({ exercise: ex, sort, onSortChange, onBack, 
         <div className={styles.titles}>
           <Text variant="h3" tag="h1">Все тренировки</Text>
           <Text variant="body-sm" color="steel">{historySubtitle(ex)}</Text>
+          {typical && <Text variant="body-sm" color="steel" className={styles.num}>{typical}</Text>}
         </div>
 
         <SegmentedControl
@@ -46,9 +48,13 @@ export function ExerciseHistoryView({ exercise: ex, sort, onSortChange, onBack, 
                 </div>
                 <ul className={styles.sets} aria-label="Подходы">
                   {s.sets.map((set, i) => (
-                    <li key={i} className={styles.set}>{setText(ex.kind, set, ex.pair)}</li>
+                    <li key={i} className={styles.set}>
+                      {setText(ex.kind, set, ex.pair)}
+                      {set.timeSec !== undefined && <span className={styles.setTime}>{setTimeText(set.timeSec)}</span>}
+                    </li>
                   ))}
                 </ul>
+                {sessionTimeText(s) && <Text variant="caption" className={styles.num}>{sessionTimeText(s)}</Text>}
                 {s.videos.map((v) => (
                   <MediaLink key={v.title} href="#video" duration={v.duration} eyebrow="Видео" title={v.title} />
                 ))}

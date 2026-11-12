@@ -250,6 +250,8 @@ export interface ExerciseInput {
 export interface HistorySet {
   value: number;
   weight?: number;
+  /** Сколько длился подход, с; нет — у итога не было меток времени */
+  timeSec?: number;
 }
 
 /** Одна тренировка с упражнением в истории */
@@ -258,6 +260,8 @@ export interface HistorySession {
   date: string;
   /** Только выполненные подходы, по порядку */
   sets: HistorySet[];
+  /** Сколько ушло на упражнение, с: сумма времени подходов, если оно известно у всех; иначе нет */
+  totalSec?: number;
   /** В этой тренировке побит рекорд (первая тренировка рекордом не считается) */
   isRecord?: boolean;
 }
@@ -274,6 +278,8 @@ export interface ExerciseHistory {
   sessions: HistorySession[];
   /** Лучший подход по тренировкам, от старых к новым (вес, повторы или секунды) */
   trend: number[];
+  /** Типичное время подхода, с: медиана по всем тренировкам, не меньше 2 замеров; иначе нет */
+  typicalSetSec?: number;
 }
 
 /** Ответ GET /api/exercises/history: только упражнения, которые выполнялись */
