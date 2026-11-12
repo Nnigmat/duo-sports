@@ -285,6 +285,16 @@ export interface ExerciseHistory {
 /** Ответ GET /api/exercises/history: только упражнения, которые выполнялись */
 export interface ExerciseHistoryResponse {
   history: ExerciseHistory[];
+  /** Комментарии тренера к упражнению по slug, от новых к старым; ответы самого пользователя не входят */
+  comments: Record<string, ExerciseComment[]>;
+}
+
+/** Комментарий тренера на странице упражнения */
+export interface ExerciseComment {
+  id: string;
+  /** ISO-дата */
+  createdAt: string;
+  text: string;
 }
 
 export interface ExercisesResponse {

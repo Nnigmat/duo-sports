@@ -68,6 +68,8 @@ export interface LibraryExercise {
   sessions: ExerciseSession[];
   /** Значение лучшего подхода по тренировкам, от старых к новым */
   trend: number[];
+  /** Комментарии тренера к упражнению, от новых к старым; «12 окт» */
+  coachComments?: Array<{ id: string; date: string; text: string }>;
   /** Типичное время подхода, с */
   typicalSetSec?: number;
   /** «Сб, 31 окт · Ноги и ягодицы» — если упражнение стоит в плане */

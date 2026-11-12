@@ -1,4 +1,4 @@
-import type { ExerciseHistory, ExerciseHistoryResponse, ExerciseKind, HistorySession, HistorySet, SessionStepResult } from '../shared/types';
+import type { ExerciseComment, ExerciseHistory, ExerciseHistoryResponse, ExerciseKind, HistorySession, HistorySet, SessionStepResult } from '../shared/types';
 import { libraryIndex, libraryOf, type LibraryRow } from './comments';
 import type { Db } from './db';
 import { effectiveSet } from './today';
@@ -96,5 +96,19 @@ export function exerciseHistories(sessions: HistorySource[], library: LibraryRow
 export function exerciseHistoryOf(db: Db, userId: number): ExerciseHistoryResponse {
   const rows = db.prepare('SELECT date, steps FROM sessions_done WHERE user_id = ? ORDER BY date, id').all(userId) as Array<{ date: string; steps: string }>;
   const sessions = rows.map((r) => ({ date: r.date, steps: JSON.parse(r.steps) as SessionStepResult[] }));
-  return { history: exerciseHistories(sessions, libraryOf(db)) };
+  return { history: exerciseHistories(sessions, libraryOf(db)), comments: exerciseCommentsOf(db, userId) };
+}
+
+/** Комментарии тренера к упражнениям: к видео подхода и к самому упражнению; ответы спортсмена не в счёт */
+export function exerciseCommentsOf(db: Db, userId: number): Record<string, ExerciseComment[]> {
+  const rows = db
+    .prepare('SELECT id, exercise_slug, text, created_at FROM comments WHERE athlete_id = ? AND author_id <> athlete_id AND exercise_slug IS NOT NULL ORDER BY created_at DESC, id DESC')
+    .all(userId) as Array<{ id: number; exercise_slug: string; text: string; created_at: string }>;
+  const out: Record<string, ExerciseComment[]> = {};
+  for (const r of rows) {
+    const list = out[r.exercise_slug] ?? [];
+    list.push({ id: String(r.id), createdAt: r.created_at, text: r.text });
+    out[r.exercise_slug] = list;
+  }
+  return out;
 }

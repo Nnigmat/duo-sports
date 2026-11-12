@@ -1,4 +1,4 @@
-import type { ExerciseDemo, ExerciseHistory, ExerciseHistoryResponse, ExercisesResponse, Gender, HistorySet, LibraryEntry } from '../../../../shared/types';
+import type { ExerciseComment, ExerciseDemo, ExerciseHistory, ExerciseHistoryResponse, ExercisesResponse, Gender, HistorySet, LibraryEntry } from '../../../../shared/types';
 import { formatShortDate } from '../../shared/format';
 import { DEFAULT_PARAMS, toExerciseInput, toExercisePatch } from './library';
 import type { ExerciseDraft, LibraryExercise, SetResult } from './types';
@@ -50,19 +50,25 @@ export function withHistory(ex: LibraryExercise, h: ExerciseHistory | undefined)
 }
 
 /** Сбой истории не мешает списку: упражнения показываются, как будто их ещё не выполняли */
-async function fetchHistory(): Promise<Map<string, ExerciseHistory>> {
+async function fetchHistory(): Promise<{ history: Map<string, ExerciseHistory>; comments: ExerciseHistoryResponse['comments'] }> {
   const res = await fetch('/api/exercises/history', { credentials: 'same-origin' }).catch(() => null);
-  if (!res?.ok) return new Map();
+  if (!res?.ok) return { history: new Map(), comments: {} };
   const body = (await res.json().catch(() => null)) as ExerciseHistoryResponse | null;
-  return new Map((body?.history ?? []).map((h) => [h.id, h]));
+  return { history: new Map((body?.history ?? []).map((h) => [h.id, h])), comments: body?.comments ?? {} };
+}
+
+/** Комментарии тренера поверх упражнения; нет комментариев — поле не появляется */
+export function withComments(ex: LibraryExercise, list: ExerciseComment[] | undefined): LibraryExercise {
+  if (!list?.length) return ex;
+  return { ...ex, coachComments: list.map((c) => ({ id: c.id, date: formatShortDate(c.createdAt), text: c.text })) };
 }
 
 export async function fetchLibrary(): Promise<LibraryExercise[]> {
-  const [res, history] = await Promise.all([fetch('/api/exercises').catch(() => null), fetchHistory()]);
+  const [res, { history, comments }] = await Promise.all([fetch('/api/exercises').catch(() => null), fetchHistory()]);
   if (!res) throw new Error('Нет связи с сервером');
   if (!res.ok) throw new Error(res.status === 401 ? 'Сессия закончилась: войдите заново' : `Сервер ответил ${res.status}`);
   const body = (await res.json()) as ExercisesResponse;
-  return body.exercises.map((e) => withHistory(toLibraryExercise(e), history.get(e.id)));
+  return body.exercises.map((e) => withComments(withHistory(toLibraryExercise(e), history.get(e.id)), comments[e.id]));
 }
 
 /** Сообщение из тела {error}, иначе по статусу */
