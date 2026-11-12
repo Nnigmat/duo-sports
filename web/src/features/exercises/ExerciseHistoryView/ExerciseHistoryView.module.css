@@ -52,6 +52,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+.setTime {
+  margin-left: var(--spacing-xs);
+  color: var(--steel);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
 @media (min-width: 1024px) {
   .root {
     max-width: 720px;
