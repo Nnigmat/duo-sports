@@ -11,6 +11,7 @@
     "set-gender": "tsx server/setGender.ts",
     "migrate:routines": "tsx server/migrateRoutines.ts",
     "link-user": "tsx server/linkUser.ts",
+    "work-time": "tsx server/workTimeReport.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
     "lint": "biome lint .",
     "test": "vitest run --project unit",

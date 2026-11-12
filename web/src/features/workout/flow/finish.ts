@@ -1,6 +1,7 @@
 import type { SessionStepResult, SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 import { formatElapsed } from './elapsed';
+import type { StepTime } from './session';
 
 export interface FinishStats {
   setsDone: number;
@@ -25,6 +26,7 @@ export function sessionSteps(
   videoIds: Array<string | null> = [],
   restSec: Array<number | null> = [],
   actuals: Array<SetActual | null> = [],
+  times: Array<StepTime | null> = [],
 ): SessionStepResult[] {
   return steps.map((s, i) => ({
     exerciseId: s.exerciseId,
@@ -39,6 +41,7 @@ export function sessionSteps(
     completed: completed[i] ?? false,
     ...(videoIds[i] ? { videoId: videoIds[i]! } : {}),
     ...(restSec[i] != null ? { restSec: restSec[i]! } : {}),
+    ...(completed[i] && times[i] ? { startedAt: times[i]!.startedAt, endedAt: times[i]!.endedAt } : {}),
   }));
 }
 

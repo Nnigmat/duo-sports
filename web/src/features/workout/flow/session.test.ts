@@ -121,6 +121,18 @@ describe('фактическое время отдыха', () => {
     expect(again.restSec[2]).toBe(35);
   });
 
+  it('«Готово» пишет метки подхода в свой шаг, «Назад» его стирает', () => {
+    const s = reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'done', time: { startedAt: 1000, endedAt: 42000 } });
+    expect(s.times[2]).toEqual({ startedAt: 1000, endedAt: 42000 });
+    expect(s.times.filter((v) => v !== null)).toHaveLength(1);
+    expect(reduce(s, { type: 'back' }).times[2]).toBeNull();
+  });
+
+  it('без секунд подход выполнен, а времени нет; запись видео время тоже принимает', () => {
+    expect(reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'done' }).times[2]).toBeNull();
+    expect(reduce(at(reduce(fresh(), { type: 'begin' }), 2), { type: 'recorded', time: { startedAt: 5, endedAt: 60 } }).times[2]).toEqual({ startedAt: 5, endedAt: 60 });
+  });
+
   it('«Назад» на отдыхе без секунд ничего не оставляет', () => {
     expect(reduce(resting(), { type: 'back' }).restSec[2]).toBeNull();
   });

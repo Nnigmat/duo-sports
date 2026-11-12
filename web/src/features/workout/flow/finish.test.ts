@@ -112,6 +112,18 @@ describe('sessionSteps: факт подходов', () => {
   });
 });
 
+describe('sessionSteps: метки времени', () => {
+  const steps = buildSteps([warmup, circuit]);
+  it('метки уходят только у выполненных подходов', () => {
+    const work = steps.map((_, i) => (i === 3 || i === 4 ? { startedAt: 1000, endedAt: 41000 } : null));
+    const done = steps.map((_, i) => i !== 4);
+    const out = sessionSteps(steps, done, [], [], [], work);
+    expect(out[3]).toMatchObject({ startedAt: 1000, endedAt: 41000 });
+    expect('startedAt' in out[4]!).toBe(false);
+    expect('endedAt' in out[2]!).toBe(false);
+  });
+});
+
 describe('sessionSteps: фактический отдых', () => {
   const steps = buildSteps([warmup, circuit]);
   it('restSec попадает в свой подход, у остальных поля нет', () => {

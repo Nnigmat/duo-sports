@@ -193,6 +193,16 @@ describe('estimateMinutes по структуре', () => {
     // 120 + 4 × (60 + 80 + 120) + 20 = 1180 с ≈ 20 мин
     expect(estimateMinutes([], structure)).toBe(20);
   });
+  it('прошлые прохождения важнее расчёта: берём медиану', () => {
+    const structure: Block[] = [{ id: 'c', mode: 'circuit', title: 'Круг', rounds: 3, restSec: 60, videoRounds: [], exercises: [ex('x', 15)] }];
+    expect(estimateMinutes([], structure, [3300, 3600, 4200])).toBe(60);
+    expect(estimateMinutes([], structure, [])).toBe(estimateMinutes([], structure));
+  });
+  it('реальное время подхода по упражнению важнее REP_SEC', () => {
+    const structure: Block[] = [{ id: 'c', mode: 'circuit', title: 'Круг', rounds: 3, restSec: 60, videoRounds: [], exercises: [ex('x', 20)] }];
+    // по умолчанию 3 × (80 + 60) + 20 = 440 с → 15 мин (минимум); с замером 600 с: 3 × (600 + 60) + 20 = 2000 с → 35 мин
+    expect(estimateMinutes([], structure, [], new Map([['x', 600]]))).toBe(35);
+  });
   it('без структуры считает по блокам', () => {
     expect(estimateMinutes([block('exercises', 4)], null)).toBe(estimateWorkoutMinutes([block('exercises', 4)]));
   });

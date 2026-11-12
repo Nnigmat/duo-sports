@@ -15,6 +15,14 @@ describe('draft', () => {
     expect(draftKey(1, '5', '2026-11-03')).not.toBe(draftKey(1, '5', '2026-11-04'));
   });
 
+  it('время подхода переживает перезагрузку; в старом черновике его нет — это допустимо', () => {
+    const time = { startedAt: 1000, endedAt: 42000 };
+    const withTimes = { ...draft, session: { ...draft.session, times: draft.session.steps.map((_, i) => (i === 2 ? time : null)) } };
+    expect(parseDraft(serializeDraft(withTimes), NOW)?.session.times[2]).toEqual(time);
+    const { times: _omit, ...old } = draft.session;
+    expect(parseDraft(serializeDraft({ ...draft, session: old as typeof draft.session }), NOW)?.session.times).toEqual(draft.session.steps.map(() => null));
+  });
+
   it('время отдыха переживает перезагрузку', () => {
     const withRest = { ...draft, session: { ...draft.session, restSec: draft.session.steps.map((_, i) => (i === 2 ? 72 : null)) } };
     expect(parseDraft(serializeDraft(withRest), NOW)?.session.restSec[2]).toBe(72);
