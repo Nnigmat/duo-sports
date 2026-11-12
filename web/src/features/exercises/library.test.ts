@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyDraft, barsNote, canSubmit, createExercise, draftFromExercise, emptyDraft, exerciseIcon, formatKg,
   formatReps, formatTime, groupExercises, groupForMuscles, groupHint, groupTabs, hiddenSessions, lastSessionRows,
-  latestMedia, mediaCountText, paramFields, recordText, recordTiles, searchExercises, sessionSummary, sortSessions,
+  latestMedia, mediaCountText, paramFields, recordText, recordTiles, searchExercises, sessionSummary, sessionTimeText, setTimeText, sortSessions, typicalSetText,
   planShort, toggleItem, totalText, trendInfo, canManageExercises, noteSteps,
   toExerciseInput, toExercisePatch,
 } from './library';
@@ -204,5 +204,19 @@ describe('права и запись', () => {
     expect(toExercisePatch(draft, ex)).not.toHaveProperty('group');
     expect(toExercisePatch({ ...draft, muscles: ['Грудь'] }, ex)).toMatchObject({ group: 'chest', muscles: ['Грудь'] });
     expect(toExercisePatch(draft, ex)).not.toHaveProperty('aliases');
+  });
+});
+
+describe('время подходов', () => {
+  it('setTimeText: до минуты «45 с», дальше мм:сс, от часа ч:мм:сс', () => {
+    expect(plain(setTimeText(45))).toBe('45 с');
+    expect(setTimeText(200)).toBe('03:20');
+    expect(setTimeText(3725)).toBe('1:02:05');
+  });
+  it('typicalSetText и sessionTimeText пустые, если данных нет', () => {
+    expect(typicalSetText(squat)).toBe('');
+    expect(typicalSetText({ ...squat, typicalSetSec: 45 }).replace(/\u00a0/g, ' ')).toBe('Подход обычно 45 с');
+    expect(sessionTimeText(squat.sessions[0]!)).toBe('');
+    expect(sessionTimeText({ ...squat.sessions[0]!, totalSec: 200 })).toBe('на упражнение ушло 03:20');
   });
 });

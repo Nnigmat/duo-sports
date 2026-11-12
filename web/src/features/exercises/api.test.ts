@@ -154,6 +154,19 @@ describe('withHistory', () => {
     ]);
   });
 
+  it('время подхода и упражнения переносится, без меток полей нет', () => {
+    const base = toLibraryExercise(entry('sq', 'weight'));
+    const ex = withHistory(base, h({
+      id: 'sq', typicalSetSec: 45,
+      sessions: [{ date: '2026-10-20', sets: [{ weight: 80, value: 8, timeSec: 40 }, { weight: 80, value: 8, timeSec: 50 }], totalSec: 90 }, { date: '2026-10-12', sets: [{ weight: 80, value: 8 }] }],
+    }));
+    expect(ex.typicalSetSec).toBe(45);
+    expect(ex.sessions[0]).toMatchObject({ totalSec: 90, sets: [{ weight: 80, reps: 8, timeSec: 40 }, { weight: 80, reps: 8, timeSec: 50 }] });
+    expect(ex.sessions[1]).not.toHaveProperty('totalSec');
+    expect(ex.sessions[1]!.sets[0]).not.toHaveProperty('timeSec');
+    expect(withHistory(base, h({ id: 'sq' }))).not.toHaveProperty('typicalSetSec');
+  });
+
   it('повторы и время кладутся в своё поле', () => {
     const reps = withHistory(toLibraryExercise(entry('p', 'reps')), h({ id: 'p', record: { value: 20, date: '2026-10-05' }, sessions: [{ date: '2026-10-05', sets: [{ value: 20 }] }] }));
     expect(reps.record).toEqual({ reps: 20, date: '5 окт' });

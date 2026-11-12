@@ -24,8 +24,10 @@ export function toLibraryExercise(e: LibraryEntry): LibraryExercise {
   };
 }
 
-const setResult = (kind: LibraryExercise['kind'], s: HistorySet): SetResult =>
-  kind === 'weight' ? { weight: s.weight ?? 0, reps: s.value } : kind === 'reps' ? { reps: s.value } : { seconds: s.value };
+const setResult = (kind: LibraryExercise['kind'], s: HistorySet): SetResult => ({
+  ...(kind === 'weight' ? { weight: s.weight ?? 0, reps: s.value } : kind === 'reps' ? { reps: s.value } : { seconds: s.value }),
+  ...(s.timeSec === undefined ? {} : { timeSec: s.timeSec }),
+});
 
 /** История с сервера поверх упражнения; нет истории — упражнение остаётся новым. Видео и комментарии в историю пока не приходят. */
 export function withHistory(ex: LibraryExercise, h: ExerciseHistory | undefined): LibraryExercise {
@@ -35,9 +37,11 @@ export function withHistory(ex: LibraryExercise, h: ExerciseHistory | undefined)
     record: { ...setResult(ex.kind, h.record), date: formatShortDate(h.record.date) },
     sessionsTotal: h.sessionsTotal,
     trend: h.trend,
+    ...(h.typicalSetSec === undefined ? {} : { typicalSetSec: h.typicalSetSec }),
     sessions: h.sessions.map((s) => ({
       date: formatShortDate(s.date),
       sets: s.sets.map((x) => setResult(ex.kind, x)),
+      ...(s.totalSec === undefined ? {} : { totalSec: s.totalSec }),
       ...(s.isRecord ? { isRecord: true } : {}),
       videos: [],
       comments: [],

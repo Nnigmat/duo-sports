@@ -29,6 +29,8 @@ const cookieOf = async (email: string) => {
   return `session=${r.token}`;
 };
 const steps = (name: string) => JSON.stringify([{ exerciseId: 'a', exerciseName: name, blockIndex: 0, round: 1, rounds: 1, kind: 'reps', plan: { target: { min: 10, max: 10 } }, actual: { value: 12 }, completed: true }]);
+const timedSteps = (name: string) =>
+  JSON.stringify([40, 50].map((sec, i) => ({ exerciseId: 'a', exerciseName: name, blockIndex: 0, round: i + 1, rounds: 2, kind: 'reps', plan: { target: { min: 10, max: 10 } }, actual: { value: 12 }, completed: true, startedAt: 1000, endedAt: 1000 + sec * 1000 })));
 const done = (user: number, date: string, name: string) =>
   db.prepare("INSERT INTO sessions_done (user_id, title, date, finished_at, steps, videos) VALUES (?, 'Т', ?, 'x', ?, 0)").run(user, date, steps(name));
 
@@ -64,5 +66,19 @@ describe('GET /api/exercises/history', () => {
     add.run(other, coach, ex.id, ex.name, 'Чужое', '2026-10-07T10:00:00Z');
     const body = (await (await fetch(`${base}/exercises/history`, { headers: { cookie } })).json()) as ExerciseHistoryResponse;
     expect(body.comments[ex.id]?.map((c) => c.text)).toEqual(['Спина прямая', 'Колени наружу']);
+  });
+
+  it('отдаёт время подходов из меток; у итога без меток полей времени нет', async () => {
+    const me = await createUser(db, 'timed@example.com', 'trenirovka7', 'athlete');
+    const cookie = await cookieOf('timed@example.com');
+    const list = (await (await fetch(`${base}/exercises`, { headers: { cookie } })).json()) as { exercises: Array<{ id: string; name: string; kind: string }> };
+    const ex = list.exercises.find((e) => e.kind === 'reps')!;
+    done(me, '2026-10-01', ex.name);
+    db.prepare("INSERT INTO sessions_done (user_id, title, date, finished_at, steps, videos) VALUES (?, 'Т', '2026-10-02', 'x', ?, 0)").run(me, timedSteps(ex.name));
+    const body = (await (await fetch(`${base}/exercises/history`, { headers: { cookie } })).json()) as ExerciseHistoryResponse;
+    const h = body.history[0]!;
+    expect(h.typicalSetSec).toBe(45);
+    expect(h.sessions[0]).toMatchObject({ date: '2026-10-02', totalSec: 90, sets: [{ timeSec: 40 }, { timeSec: 50 }] });
+    expect(h.sessions[1]).not.toHaveProperty('totalSec');
   });
 });

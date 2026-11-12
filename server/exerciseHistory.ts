@@ -11,10 +11,33 @@ export interface HistorySource {
   steps: SessionStepResult[];
 }
 
+/** Время подхода в секундах; нет обеих меток или они перепутаны (часы ушли назад) — нет и времени */
+export function stepSec(st: SessionStepResult): number | undefined {
+  const { startedAt, endedAt } = st;
+  if (typeof startedAt !== 'number' || typeof endedAt !== 'number' || endedAt < startedAt) return undefined;
+  return Math.round((endedAt - startedAt) / 1000);
+}
+
+/** Медиана; пустой список — undefined. Чётное число замеров — среднее двух средних, округлённое */
+export function median(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  const a = [...nums].sort((x, y) => x - y);
+  const mid = a.length >> 1;
+  return a.length % 2 ? a[mid]! : Math.round((a[mid - 1]! + a[mid]!) / 2);
+}
+
+/** Сколько замеров нужно, чтобы говорить о типичном времени подхода */
+const MIN_TIMED_SETS = 2;
+
 const setOf = (kind: ExerciseKind, st: SessionStepResult): HistorySet => {
   const { weight, value } = effectiveSet(st);
-  return kind === 'weight' ? { weight, value } : { value };
+  const timeSec = stepSec(st);
+  return { ...(kind === 'weight' ? { weight, value } : { value }), ...(timeSec === undefined ? {} : { timeSec }) };
 };
+/** Сумма времени подходов, если оно известно у каждого; частичную сумму не отдаём */
+const totalOf = (sets: HistorySet[]): number | undefined =>
+  sets.every((s) => s.timeSec !== undefined) ? sets.reduce((n, s) => n + s.timeSec!, 0) : undefined;
+
 /** Чем больше, тем лучше: вес, потом повторы; повторы или секунды */
 const score = (s: HistorySet): number[] => [s.weight ?? 0, s.value];
 const better = (a: number[], b: number[]) => (a[0]! !== b[0]! ? a[0]! > b[0]! : (a[1] ?? 0) > (b[1] ?? 0));
@@ -26,7 +49,7 @@ const better = (a: number[], b: number[]) => (a[0]! !== b[0]! ? a[0]! > b[0]! : 
  */
 export function exerciseHistories(sessions: HistorySource[], library: LibraryRow[]): ExerciseHistory[] {
   const index = libraryIndex(library);
-  type Acc = { id: string; best: { set: HistorySet; score: number[]; date: string } | null; days: HistorySession[]; trend: number[] };
+  type Acc = { id: string; best: { set: HistorySet; score: number[]; date: string } | null; days: HistorySession[]; trend: number[]; times: number[] };
   const byId = new Map<string, Acc>();
   for (const sess of [...sessions].sort((a, b) => a.date.localeCompare(b.date))) {
     const sets = new Map<string, HistorySet[]>();
@@ -37,7 +60,7 @@ export function exerciseHistories(sessions: HistorySource[], library: LibraryRow
       sets.set(lib.slug, [...(sets.get(lib.slug) ?? []), setOf(st.kind, st)]);
     }
     for (const [id, list] of sets) {
-      const acc = byId.get(id) ?? { id, best: null, days: [], trend: [] };
+      const acc = byId.get(id) ?? { id, best: null, days: [], trend: [], times: [] };
       byId.set(id, acc);
       const first = acc.best === null;
       let improved = false;
@@ -50,16 +73,23 @@ export function exerciseHistories(sessions: HistorySource[], library: LibraryRow
       }
       const top = list.map(score).reduce((a, b) => (better(b, a) ? b : a));
       acc.trend.push(list[0]!.weight === undefined ? top[1]! : top[0]!);
-      acc.days.push({ date: sess.date, sets: list, ...(improved && !first ? { isRecord: true as const } : {}) });
+      const totalSec = totalOf(list);
+      for (const set of list) if (set.timeSec !== undefined) acc.times.push(set.timeSec);
+      acc.days.push({ date: sess.date, sets: list, ...(totalSec === undefined ? {} : { totalSec }), ...(improved && !first ? { isRecord: true as const } : {}) });
     }
   }
-  return [...byId.values()].map((a) => ({
-    id: a.id,
-    record: { ...a.best!.set, date: a.best!.date },
-    sessionsTotal: a.days.length,
-    sessions: a.days.slice(-HISTORY_SESSIONS).reverse(),
-    trend: a.trend,
-  }));
+  return [...byId.values()].map((a) => {
+    const { weight, value } = a.best!.set;
+    const typicalSetSec = a.times.length >= MIN_TIMED_SETS ? median(a.times) : undefined;
+    return {
+      id: a.id,
+      record: { ...(weight === undefined ? {} : { weight }), value, date: a.best!.date },
+      sessionsTotal: a.days.length,
+      sessions: a.days.slice(-HISTORY_SESSIONS).reverse(),
+      trend: a.trend,
+      ...(typicalSetSec === undefined ? {} : { typicalSetSec }),
+    };
+  });
 }
 
 /** GET /api/exercises/history: выполненные тренировки пользователя */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionStepResult } from '../shared/types';
 import type { LibraryRow } from './comments';
-import { HISTORY_SESSIONS, exerciseHistories } from './exerciseHistory';
+import { HISTORY_SESSIONS, exerciseHistories, median, stepSec } from './exerciseHistory';
 
 const lib = (slug: string, name: string, aliases: string[] = []): LibraryRow => ({ slug, name, aliases, notes: null, demo: {} });
 const library = [lib('squat', 'Присед', ['приседания']), lib('plank', 'Планка'), lib('pushup', 'Отжимания')];
@@ -91,5 +91,85 @@ describe('exerciseHistories', () => {
   it('две тренировки в один день — две записи', () => {
     const out = exerciseHistories([{ date: '2026-10-01', steps: [sq(80, 5)] }, { date: '2026-10-01', steps: [sq(80, 6)] }], library);
     expect(out[0]!.sessionsTotal).toBe(2);
+  });
+});
+
+/** Подход с метками: длился `sec` секунд */
+const timed = (st: SessionStepResult, sec: number, at = 1_000_000): SessionStepResult => ({ ...st, startedAt: at, endedAt: at + sec * 1000 });
+
+describe('stepSec', () => {
+  it('разница меток в секундах, округлённая', () => {
+    expect(stepSec(timed(sq(80, 5), 45))).toBe(45);
+    expect(stepSec({ ...sq(80, 5), startedAt: 0, endedAt: 1600 })).toBe(2);
+  });
+  it('нет одной из меток или endedAt раньше startedAt — нет времени', () => {
+    expect(stepSec(sq(80, 5))).toBeUndefined();
+    expect(stepSec({ ...sq(80, 5), startedAt: 5 })).toBeUndefined();
+    expect(stepSec({ ...sq(80, 5), startedAt: 5000, endedAt: 4000 })).toBeUndefined();
+  });
+  it('нулевая длительность допустима', () => {
+    expect(stepSec({ ...sq(80, 5), startedAt: 5000, endedAt: 5000 })).toBe(0);
+  });
+});
+
+describe('median', () => {
+  it('нечётное, чётное и пустое', () => {
+    expect(median([30, 10, 20])).toBe(20);
+    expect(median([10, 21])).toBe(16);
+    expect(median([])).toBeUndefined();
+  });
+});
+
+describe('время подходов в истории', () => {
+  it('timeSec у подходов и totalSec у тренировки', () => {
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [timed(sq(80, 5), 40), timed(sq(80, 5), 50)] }], library);
+    expect(out[0]!.sessions[0]).toEqual({ date: '2026-10-01', sets: [{ weight: 80, value: 5, timeSec: 40 }, { weight: 80, value: 5, timeSec: 50 }], totalSec: 90 });
+    expect(out[0]!.typicalSetSec).toBe(45);
+  });
+
+  it('частичные метки: timeSec только у подходов с метками, totalSec нет', () => {
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [timed(sq(80, 5), 40), sq(80, 5)] }], library);
+    const s = out[0]!.sessions[0]!;
+    expect(s.sets).toEqual([{ weight: 80, value: 5, timeSec: 40 }, { weight: 80, value: 5 }]);
+    expect(s).not.toHaveProperty('totalSec');
+  });
+
+  it('невыполненный подход с метками не считается', () => {
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [timed(sq(80, 5), 40), timed(step('Присед', { completed: false }), 99)] }], library);
+    expect(out[0]!.sessions[0]!.totalSec).toBe(40);
+  });
+
+  it('endedAt раньше startedAt — подход без времени', () => {
+    const bad: SessionStepResult = { ...sq(80, 5), startedAt: 9000, endedAt: 1000 };
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [bad] }], library);
+    expect(out[0]!.sessions[0]).toEqual({ date: '2026-10-01', sets: [{ weight: 80, value: 5 }] });
+  });
+
+  it('typicalSetSec — медиана по всем тренировкам, а не только по последним; один замер — поля нет', () => {
+    const one = exerciseHistories([{ date: '2026-10-01', steps: [timed(sq(80, 5), 40)] }], library);
+    expect(one[0]).not.toHaveProperty('typicalSetSec');
+    const n = HISTORY_SESSIONS + 5;
+    const heavyOld = exerciseHistories(
+      Array.from({ length: n }, (_, i) => ({ date: `2026-01-${String(i + 1).padStart(2, '0')}`, steps: [timed(sq(50, 5), i < 15 ? 100 : 10)] })),
+      library,
+    );
+    // по последним 20 медиана была бы 10 с, по всем 25 — 100 с
+    expect(heavyOld[0]!.typicalSetSec).toBe(100);
+  });
+
+  it('рекорд не несёт timeSec', () => {
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [timed(sq(80, 5), 40), timed(sq(85, 5), 50)] }], library);
+    expect(out[0]!.record).toEqual({ weight: 85, value: 5, date: '2026-10-01' });
+  });
+
+  it('упражнение на время: время подхода отдельно от результата', () => {
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [timed(plank(60), 65), timed(plank(45), 50)] }], library);
+    expect(out[0]!.sessions[0]!.sets).toEqual([{ value: 60, timeSec: 65 }, { value: 45, timeSec: 50 }]);
+  });
+
+  it('старые итоги без меток: ни одного нового поля', () => {
+    const out = exerciseHistories([{ date: '2026-10-01', steps: [sq(80, 5), sq(80, 5)] }], library);
+    expect(out[0]).not.toHaveProperty('typicalSetSec');
+    expect(out[0]!.sessions[0]).not.toHaveProperty('totalSec');
   });
 });
