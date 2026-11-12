@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { LibraryEntry } from '../../../../shared/types';
-import { createExercise, deleteDemo, deleteExercise, mergeEntry, toLibraryExercise, updateExercise, uploadDemo } from './api';
+import type { ExerciseHistory, LibraryEntry } from '../../../../shared/types';
+import { createExercise, deleteDemo, deleteExercise, fetchLibrary, mergeEntry, toLibraryExercise, updateExercise, uploadDemo, withHistory } from './api';
 import { draftFromExercise, emptyDraft } from './library';
 import { squat } from './mock';
 
@@ -129,5 +129,65 @@ describe('uploadDemo / deleteDemo', () => {
   it('413 и 415 приходят текстом сервера', async () => {
     mockFetch(json(413, { error: 'Видео слишком большое' }));
     await expect(uploadDemo('plank', 'male', new File([''], 'a.mp4', { type: 'video/mp4' }))).rejects.toThrow('Видео слишком большое');
+  });
+});
+
+const entry = (id: string, kind: LibraryEntry['kind']): LibraryEntry => ({ id, name: id, aliases: [], kind, group: 'legs', muscles: [] });
+
+describe('withHistory', () => {
+  const h = (o: Partial<ExerciseHistory> & Pick<ExerciseHistory, 'id'>): ExerciseHistory => ({
+    record: { value: 1, date: '2026-10-12' }, sessionsTotal: 1, sessions: [], trend: [], ...o,
+  });
+
+  it('вес × повторы: рекорд, тренировки с датами «12 окт» и тренд', () => {
+    const base = toLibraryExercise(entry('sq', 'weight'));
+    const ex = withHistory(base, h({
+      id: 'sq', record: { weight: 85, value: 5, date: '2026-10-12' }, sessionsTotal: 3, trend: [80, 85],
+      sessions: [{ date: '2026-10-20', sets: [{ weight: 80, value: 8 }] }, { date: '2026-10-12', sets: [{ weight: 85, value: 5 }], isRecord: true }],
+    }));
+    expect(ex.record).toEqual({ weight: 85, reps: 5, date: '12 окт' });
+    expect(ex.sessionsTotal).toBe(3);
+    expect(ex.trend).toEqual([80, 85]);
+    expect(ex.sessions).toEqual([
+      { date: '20 окт', sets: [{ weight: 80, reps: 8 }], videos: [], comments: [] },
+      { date: '12 окт', sets: [{ weight: 85, reps: 5 }], isRecord: true, videos: [], comments: [] },
+    ]);
+  });
+
+  it('повторы и время кладутся в своё поле', () => {
+    const reps = withHistory(toLibraryExercise(entry('p', 'reps')), h({ id: 'p', record: { value: 20, date: '2026-10-05' }, sessions: [{ date: '2026-10-05', sets: [{ value: 20 }] }] }));
+    expect(reps.record).toEqual({ reps: 20, date: '5 окт' });
+    const time = withHistory(toLibraryExercise(entry('t', 'time')), h({ id: 't', record: { value: 95, date: '2026-10-05' }, sessions: [{ date: '2026-10-05', sets: [{ value: 95 }] }] }));
+    expect(time.record).toEqual({ seconds: 95, date: '5 окт' });
+    expect(time.sessions[0]!.sets).toEqual([{ seconds: 95 }]);
+  });
+
+  it('без истории упражнение остаётся новым', () => {
+    const base = toLibraryExercise(entry('x', 'reps'));
+    expect(withHistory(base, undefined)).toBe(base);
+  });
+});
+
+describe('fetchLibrary', () => {
+  const res = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+  const stub = (history: Response | null) =>
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url === '/api/exercises') return res({ exercises: [entry('sq', 'weight'), entry('new', 'reps')] });
+      if (!history) throw new TypeError('network');
+      return history;
+    }));
+
+  it('подмешивает историю к упражнениям, которые выполнялись', async () => {
+    stub(res({ history: [{ id: 'sq', record: { weight: 85, value: 5, date: '2026-10-12' }, sessionsTotal: 1, sessions: [], trend: [85] }] }));
+    const list = await fetchLibrary();
+    expect(list.find((e) => e.id === 'sq')!.record).toEqual({ weight: 85, reps: 5, date: '12 окт' });
+    expect(list.find((e) => e.id === 'new')!.record).toBeUndefined();
+  });
+
+  it('если история не загрузилась, список всё равно показывается', async () => {
+    stub(res({}, 500));
+    expect((await fetchLibrary()).map((e) => e.id)).toEqual(['sq', 'new']);
+    stub(null);
+    expect(await fetchLibrary()).toHaveLength(2);
   });
 });

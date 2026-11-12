@@ -1,10 +1,11 @@
-import type { ExerciseDemo, ExercisesResponse, Gender, LibraryEntry } from '../../../../shared/types';
+import type { ExerciseDemo, ExerciseHistory, ExerciseHistoryResponse, ExercisesResponse, Gender, HistorySet, LibraryEntry } from '../../../../shared/types';
+import { formatShortDate } from '../../shared/format';
 import { DEFAULT_PARAMS, toExerciseInput, toExercisePatch } from './library';
-import type { ExerciseDraft, LibraryExercise } from './types';
+import type { ExerciseDraft, LibraryExercise, SetResult } from './types';
 
 /** Запросы вкладки «Упражнения» к серверу. Компоненты их не вызывают. */
 
-/** Сервер знает название, тип, группу и мышцы; снаряда, истории и рекордов у него пока нет */
+/** Справочник сервера: название, тип, группа, мышцы, ролики. Снаряда у него нет, историю подмешивает withHistory. */
 export function toLibraryExercise(e: LibraryEntry): LibraryExercise {
   return {
     id: e.id,
@@ -23,12 +24,41 @@ export function toLibraryExercise(e: LibraryEntry): LibraryExercise {
   };
 }
 
+const setResult = (kind: LibraryExercise['kind'], s: HistorySet): SetResult =>
+  kind === 'weight' ? { weight: s.weight ?? 0, reps: s.value } : kind === 'reps' ? { reps: s.value } : { seconds: s.value };
+
+/** История с сервера поверх упражнения; нет истории — упражнение остаётся новым. Видео и комментарии в историю пока не приходят. */
+export function withHistory(ex: LibraryExercise, h: ExerciseHistory | undefined): LibraryExercise {
+  if (!h) return ex;
+  return {
+    ...ex,
+    record: { ...setResult(ex.kind, h.record), date: formatShortDate(h.record.date) },
+    sessionsTotal: h.sessionsTotal,
+    trend: h.trend,
+    sessions: h.sessions.map((s) => ({
+      date: formatShortDate(s.date),
+      sets: s.sets.map((x) => setResult(ex.kind, x)),
+      ...(s.isRecord ? { isRecord: true } : {}),
+      videos: [],
+      comments: [],
+    })),
+  };
+}
+
+/** Сбой истории не мешает списку: упражнения показываются, как будто их ещё не выполняли */
+async function fetchHistory(): Promise<Map<string, ExerciseHistory>> {
+  const res = await fetch('/api/exercises/history', { credentials: 'same-origin' }).catch(() => null);
+  if (!res?.ok) return new Map();
+  const body = (await res.json().catch(() => null)) as ExerciseHistoryResponse | null;
+  return new Map((body?.history ?? []).map((h) => [h.id, h]));
+}
+
 export async function fetchLibrary(): Promise<LibraryExercise[]> {
-  const res = await fetch('/api/exercises').catch(() => null);
+  const [res, history] = await Promise.all([fetch('/api/exercises').catch(() => null), fetchHistory()]);
   if (!res) throw new Error('Нет связи с сервером');
   if (!res.ok) throw new Error(res.status === 401 ? 'Сессия закончилась: войдите заново' : `Сервер ответил ${res.status}`);
   const body = (await res.json()) as ExercisesResponse;
-  return body.exercises.map(toLibraryExercise);
+  return body.exercises.map((e) => withHistory(toLibraryExercise(e), history.get(e.id)));
 }
 
 /** Сообщение из тела {error}, иначе по статусу */

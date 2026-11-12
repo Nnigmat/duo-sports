@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { ExercisesResponse } from '../shared/types';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
+import { exerciseHistoryOf } from './exerciseHistory';
 import { createExercise, deleteExercise, DUPLICATE_ERROR, EXERCISES_WRITE_FORBIDDEN, updateExercise, validateCreate, validateFields } from './exercises';
 import { canAddExercises, ensureLibrary, libraryOf } from './imports';
 
@@ -15,6 +16,12 @@ export function exercisesRouter(db: Db, demoDir?: string) {
     ensureLibrary(db);
     const body: ExercisesResponse = { exercises: libraryOf(db) };
     res.json(body);
+  });
+
+  /** История выполнения упражнений самого вошедшего: у тренера и админа тоже своя */
+  r.get('/exercises/history', auth, (req, res) => {
+    ensureLibrary(db);
+    res.json(exerciseHistoryOf(db, req.user!.id));
   });
 
   r.post('/exercises', auth, (req, res) => {
