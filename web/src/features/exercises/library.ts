@@ -1,4 +1,5 @@
 import type { ExerciseInput, ExerciseKind, Role } from '../../../../shared/types';
+import { formatElapsed } from '../workout/flow/elapsed';
 import { plural } from '../workout/flow/ru';
 import type { IconName } from '../../ui';
 import type {
@@ -250,6 +251,21 @@ export function sessionSummary(kind: ExerciseKind, sets: SetResult[]): string {
   if (kind === 'weight') return `${sets.length} ${plural(sets.length, ['подход', 'подхода', 'подходов'])}`;
   if (kind === 'reps') return `всего ${formatReps(sum(sets.map((s) => s.reps ?? 0)))}`;
   return `всего ${formatTime(sum(sets.map((s) => s.seconds ?? 0)))}`;
+}
+
+/** Время подхода: до минуты «45 с», дальше мм:сс */
+export function setTimeText(sec: number): string {
+  return sec < 60 ? `${sec}${NBSP}с` : formatElapsed(sec);
+}
+
+/** «Подход обычно 45 с»; пустая строка, если типичного времени нет */
+export function typicalSetText(ex: LibraryExercise): string {
+  return ex.typicalSetSec === undefined ? '' : `Подход обычно ${setTimeText(ex.typicalSetSec)}`;
+}
+
+/** «на упражнение ушло 03:20»; пустая строка, если время известно не у всех подходов */
+export function sessionTimeText(s: ExerciseSession): string {
+  return s.totalSec === undefined ? '' : `на упражнение ушло ${formatElapsed(s.totalSec)}`;
 }
 
 export function historySubtitle(ex: LibraryExercise): string {
