@@ -246,6 +246,41 @@ export interface ExerciseInput {
 }
 
 /** Ответ GET /api/exercises: общая библиотека */
+/** Подход в истории упражнения: повторы или секунды в `value`, вес только у «вес × повторы» */
+export interface HistorySet {
+  value: number;
+  weight?: number;
+}
+
+/** Одна тренировка с упражнением в истории */
+export interface HistorySession {
+  /** День тренировки, «2026-10-12» */
+  date: string;
+  /** Только выполненные подходы, по порядку */
+  sets: HistorySet[];
+  /** В этой тренировке побит рекорд (первая тренировка рекордом не считается) */
+  isRecord?: boolean;
+}
+
+/** История одного упражнения у вошедшего пользователя */
+export interface ExerciseHistory {
+  /** slug упражнения библиотеки */
+  id: string;
+  /** Лучший подход и день, когда он впервые показан */
+  record: HistorySet & { date: string };
+  /** Сколько тренировок было всего; в `sessions` лежат последние */
+  sessionsTotal: number;
+  /** От новых к старым */
+  sessions: HistorySession[];
+  /** Лучший подход по тренировкам, от старых к новым (вес, повторы или секунды) */
+  trend: number[];
+}
+
+/** Ответ GET /api/exercises/history: только упражнения, которые выполнялись */
+export interface ExerciseHistoryResponse {
+  history: ExerciseHistory[];
+}
+
 export interface ExercisesResponse {
   exercises: LibraryEntry[];
 }
