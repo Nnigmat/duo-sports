@@ -8,6 +8,8 @@ export interface SetResult {
   weight?: number;
   reps?: number;
   seconds?: number;
+  /** Сколько длился подход, с; нет меток времени — нет и поля */
+  timeSec?: number;
 }
 
 export interface SessionVideo {
@@ -26,6 +28,8 @@ export interface ExerciseSession {
   /** «28 окт» */
   date: string;
   sets: SetResult[];
+  /** Сколько ушло на упражнение, с; нет, если время известно не у всех подходов */
+  totalSec?: number;
   /** В этой тренировке побит рекорд */
   isRecord?: boolean;
   videos: SessionVideo[];
@@ -64,6 +68,8 @@ export interface LibraryExercise {
   sessions: ExerciseSession[];
   /** Значение лучшего подхода по тренировкам, от старых к новым */
   trend: number[];
+  /** Типичное время подхода, с */
+  typicalSetSec?: number;
   /** «Сб, 31 окт · Ноги и ягодицы» — если упражнение стоит в плане */
   plan?: string;
 }
