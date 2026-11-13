@@ -6,13 +6,13 @@ import { squat } from './mock';
 
 describe('toLibraryExercise', () => {
   it('дополняет запись сервера полями экрана', () => {
-    const ex = toLibraryExercise({ id: 'plank', name: 'Планка', aliases: [], kind: 'time', group: 'core', muscles: ['пресс'] });
+    const ex = toLibraryExercise({ id: 'plank', name: 'Планка', aliases: [], kind: 'time', group: 'core', muscles: ['пресс'], equipment: [] });
     expect(ex).toMatchObject({ id: 'plank', kind: 'time', group: 'core', sessionsTotal: 0, sessions: [], trend: [] });
     expect(ex.defaults.seconds).toBeGreaterThan(0);
   });
 
   it('переносит шаги и ролики, пустые превращает в отсутствующие', () => {
-    const e: LibraryEntry = { id: 'a', name: 'А', aliases: [], kind: 'reps', group: 'core', muscles: [] };
+    const e: LibraryEntry = { id: 'a', name: 'А', aliases: [], kind: 'reps', group: 'core', muscles: [], equipment: [] };
     expect(toLibraryExercise({ ...e, notes: 'Раз\nДва', demo: { female: 'f.mp4' } })).toMatchObject({ notes: 'Раз\nДва', demo: { female: 'f.mp4' } });
     expect(toLibraryExercise({ ...e, notes: '' }).notes).toBeUndefined();
     expect(toLibraryExercise(e).demo).toBeUndefined();
@@ -33,14 +33,14 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('createExercise', () => {
   it('шлёт POST с телом ExerciseInput и возвращает упражнение с локальными полями', async () => {
-    const fn = mockFetch(json(201, { id: 'most', name: 'Мост', aliases: [], kind: 'reps', group: 'legs', muscles: ['Ягодицы'], notes: 'Лягте' }));
-    const draft = { ...emptyDraft(), name: ' Мост ', kind: 'reps' as const, muscles: ['Ягодицы'], equipment: 'Гиря', notes: 'Лягте' };
+    const fn = mockFetch(json(201, { id: 'most', name: 'Мост', aliases: [], kind: 'reps', group: 'legs', muscles: ['Ягодицы'], equipment: ['Гиря'], notes: 'Лягте' }));
+    const draft = { ...emptyDraft(), name: ' Мост ', kind: 'reps' as const, muscles: ['Ягодицы'], equipment: ['Гиря'], notes: 'Лягте' };
     const ex = await createExercise(draft);
     const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/exercises');
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toMatchObject({ name: 'Мост', group: 'legs', kind: 'reps', muscles: ['Ягодицы'], aliases: [], notes: 'Лягте' });
-    expect(ex).toMatchObject({ id: 'most', notes: 'Лягте', equipment: 'Гиря' });
+    expect(JSON.parse(init.body as string)).toMatchObject({ name: 'Мост', group: 'legs', kind: 'reps', muscles: ['Ягодицы'], aliases: [], equipment: ['Гиря'], notes: 'Лягте' });
+    expect(ex).toMatchObject({ id: 'most', notes: 'Лягте', equipment: ['Гиря'] });
   });
 
   it('берёт сообщение из тела {error}', async () => {
@@ -65,13 +65,13 @@ describe('updateExercise', () => {
   it('шлёт PATCH по id; история и параметры остаются, шаги очищаются', async () => {
     const fn = mockFetch(json(200, { id: squat.id, name: 'Присед', aliases: [], kind: squat.kind, group: squat.group, muscles: squat.muscles }));
     const ex = { ...squat, notes: 'Старое' };
-    const draft = { ...draftFromExercise(ex), name: 'Присед', notes: '', equipment: 'Штанга' };
+    const draft = { ...draftFromExercise(ex), name: 'Присед', notes: '', equipment: ['Штанга'] };
     const next = await updateExercise(ex, draft);
     const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(`/api/exercises/${squat.id}`);
     expect(init.method).toBe('PATCH');
     const body = JSON.parse(init.body as string);
-    expect(body).toMatchObject({ name: 'Присед', notes: '' });
+    expect(body).toMatchObject({ name: 'Присед', notes: '', equipment: ['Штанга'] });
     expect(body).not.toHaveProperty('muscles');
     expect(next.notes).toBeUndefined();
     expect(next.sessions).toBe(squat.sessions);
@@ -99,7 +99,7 @@ describe('deleteExercise', () => {
 
 describe('mergeEntry', () => {
   it('сохраняет историю', () => {
-    const out = mergeEntry(squat, { id: squat.id, name: 'Новое', aliases: [], kind: 'weight', group: 'legs', muscles: ['Ноги'] });
+    const out = mergeEntry(squat, { id: squat.id, name: 'Новое', aliases: [], kind: 'weight', group: 'legs', muscles: ['Ноги'], equipment: [] });
     expect(out.name).toBe('Новое');
     expect(out.sessions).toBe(squat.sessions);
   });
@@ -132,7 +132,7 @@ describe('uploadDemo / deleteDemo', () => {
   });
 });
 
-const entry = (id: string, kind: LibraryEntry['kind']): LibraryEntry => ({ id, name: id, aliases: [], kind, group: 'legs', muscles: [] });
+const entry = (id: string, kind: LibraryEntry['kind']): LibraryEntry => ({ id, name: id, aliases: [], kind, group: 'legs', muscles: [], equipment: [] });
 
 describe('withHistory', () => {
   const h = (o: Partial<ExerciseHistory> & Pick<ExerciseHistory, 'id'>): ExerciseHistory => ({

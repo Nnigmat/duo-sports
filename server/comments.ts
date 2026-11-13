@@ -16,6 +16,8 @@ export interface LibraryRow {
   aliases: string[];
   notes: string | null;
   demo: ExerciseDemo;
+  /** Инвентарь упражнения; нет — без снаряда */
+  equipment?: string[];
 }
 
 export interface CommentRow {
@@ -62,6 +64,17 @@ export function techniquesFor(blocks: Block[], library: LibraryRow[], gender?: G
     const lib = index.get(key(ex.name));
     const t = lib && techniqueOf(lib.notes, pickDemo(gender, lib.demo));
     if (t) out[ex.id] = t;
+  }
+  return out;
+}
+
+/** Инвентарь из библиотеки по id упражнений тренировки; без снаряда записи нет */
+export function equipmentFor(blocks: Block[], library: LibraryRow[]): Record<string, string[]> {
+  const index = libraryIndex(library);
+  const out: Record<string, string[]> = {};
+  for (const ex of exercisesOf(blocks)) {
+    const gear = index.get(key(ex.name))?.equipment;
+    if (gear?.length) out[ex.id] = gear;
   }
   return out;
 }
@@ -143,15 +156,16 @@ export function validateComment(body: unknown): ValidComment {
 // ── База ──────────────────────────────────────────────────
 
 export function libraryOf(db: Db): LibraryRow[] {
-  const rows = db.prepare('SELECT slug, name, aliases, notes, demo_female, demo_male FROM exercises ORDER BY id').all() as Array<{
+  const rows = db.prepare('SELECT slug, name, aliases, equipment, notes, demo_female, demo_male FROM exercises ORDER BY id').all() as Array<{
     slug: string;
     name: string;
     aliases: string;
+    equipment: string;
     notes: string | null;
     demo_female: string | null;
     demo_male: string | null;
   }>;
-  return rows.map((r) => ({ slug: r.slug, name: r.name, aliases: JSON.parse(r.aliases) as string[], notes: r.notes, demo: { ...(r.demo_female ? { female: r.demo_female } : {}), ...(r.demo_male ? { male: r.demo_male } : {}) } }));
+  return rows.map((r) => ({ slug: r.slug, name: r.name, aliases: JSON.parse(r.aliases) as string[], equipment: JSON.parse(r.equipment) as string[], notes: r.notes, demo: { ...(r.demo_female ? { female: r.demo_female } : {}), ...(r.demo_male ? { male: r.demo_male } : {}) } }));
 }
 
 /** Комментарии тренера спортсмену (ответы самого спортсмена не в счёт). После выдачи помечаются прочитанными: «новый» виден один раз. */

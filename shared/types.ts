@@ -179,6 +179,8 @@ export interface WorkoutResponse {
   workout: Workout;
   comments: CoachComment[];
   techniques: Record<string, Technique>;
+  /** Инвентарь по id упражнений тренировки (из библиотеки); у упражнений без снаряда записи нет */
+  equipment: Record<string, string[]>;
   /** Пол владельца тренировки: по нему выбирается ролик «чибик стоит»; не задан, пока админ не указал */
   gender?: Gender;
 }
@@ -231,6 +233,8 @@ export interface LibraryEntry {
   kind: ExerciseKind;
   group: MuscleGroupId;
   muscles: string[];
+  /** Инвентарь: «Штанга», «2 гантели», «Скамья»; пусто — без снаряда */
+  equipment: string[];
   /** Как выполнять: строки через \n */
   notes?: string;
   /** Ролики чибика; есть, только если загружен хотя бы один */
@@ -247,6 +251,8 @@ export interface ExerciseInput {
   kind: ExerciseKind;
   muscles: string[];
   aliases: string[];
+  /** Инвентарь; в PATCH нет поля — не меняем */
+  equipment?: string[];
   /** Как выполнять: шаги через \n */
   notes?: string;
 }
@@ -323,6 +329,8 @@ export interface CommitExercise {
   name: string;
   aliases: string[];
   muscles: string[];
+  /** Инвентарь; нет поля — без снаряда */
+  equipment?: string[];
   kind: ExerciseKind;
   group: MuscleGroupId;
   notes?: string;

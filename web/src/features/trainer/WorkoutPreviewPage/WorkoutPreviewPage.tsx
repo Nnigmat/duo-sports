@@ -31,6 +31,7 @@ function Preview({ athleteId, workoutId }: { athleteId: number; workoutId: numbe
       workout={data.workout}
       comments={data.comments}
       techniques={data.techniques}
+      equipment={data.equipment}
       gender={data.gender}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
       dateLabel={`Превью · ${formatLongDate(parseIso(day))}`}

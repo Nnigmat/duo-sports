@@ -141,6 +141,7 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, fi
       workout={data.workout}
       comments={data.comments}
       techniques={data.techniques}
+      equipment={data.equipment}
       gender={data.gender}
       library={library ?? undefined}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}

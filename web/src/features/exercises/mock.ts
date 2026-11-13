@@ -45,7 +45,7 @@ interface Spec {
   name: string;
   group: MuscleGroupId;
   muscles: string[];
-  equipment: string;
+  equipment: string[];
   kind: ExerciseKind;
   pair?: boolean;
   defaults: Partial<ExerciseDefaults>;
@@ -72,7 +72,7 @@ const r = (reps: number): SetResult => ({ reps });
 const t = (seconds: number): SetResult => ({ seconds });
 
 export const squat = make({
-  id: 'squat', name: 'Приседания со штангой', group: 'legs', muscles: ['Квадрицепс', 'Ягодицы'], equipment: 'Штанга',
+  id: 'squat', name: 'Приседания со штангой', group: 'legs', muscles: ['Квадрицепс', 'Ягодицы'], equipment: ['Штанга'],
   kind: 'weight', defaults: { reps: 5, weight: 80 }, record: { weight: 80, reps: 5, date: '28 окт' }, total: 14,
   trend: [60, 62.5, 65, 67.5, 70, 72.5, 75, 80], lastDate: '28 окт', lastSets: [w(80, 5), w(80, 5), w(80, 5), w(80, 4)], plan: SAT,
   media: {
@@ -83,7 +83,7 @@ export const squat = make({
 });
 
 export const pullup = make({
-  id: 'pullup', name: 'Подтягивания', group: 'back', muscles: ['Широчайшие', 'Бицепс'], equipment: 'Турник', kind: 'reps',
+  id: 'pullup', name: 'Подтягивания', group: 'back', muscles: ['Широчайшие', 'Бицепс'], equipment: ['Турник'], kind: 'reps',
   defaults: { reps: 6 }, record: { reps: 6, date: '12 окт' }, total: 10, trend: [2, 3, 3, 4, 4, 5, 6, 5], lastDate: '26 окт',
   lastSets: [r(5), r(5), r(4)], plan: SUN,
   media: {
@@ -93,7 +93,7 @@ export const pullup = make({
 });
 
 export const plank = make({
-  id: 'plank', name: 'Планка', group: 'core', muscles: ['Пресс', 'Кор'], equipment: 'Без снаряда', kind: 'time',
+  id: 'plank', name: 'Планка', group: 'core', muscles: ['Пресс', 'Кор'], equipment: [], kind: 'time',
   defaults: { seconds: 90 }, record: { seconds: 105, date: '21 окт' }, total: 15, trend: [60, 70, 75, 80, 90, 95, 105, 90],
   lastDate: '28 окт', lastSets: [t(90), t(80), t(75)], plan: SUN,
   media: {
@@ -103,32 +103,32 @@ export const plank = make({
 });
 
 const rest: LibraryExercise[] = [
-  make({ id: 'rdl', name: 'Румынская тяга', group: 'legs', muscles: ['Бицепс бедра', 'Ягодицы'], equipment: 'Штанга', kind: 'weight',
+  make({ id: 'rdl', name: 'Румынская тяга', group: 'legs', muscles: ['Бицепс бедра', 'Ягодицы'], equipment: ['Штанга'], kind: 'weight',
     defaults: { reps: 10, weight: 50 }, record: { weight: 55, reps: 8, date: '17 окт' }, total: 11, trend: [40, 40, 42.5, 45, 47.5, 50, 52.5, 55],
     lastDate: '22 окт', lastSets: [w(50, 10), w(50, 10), w(50, 9)], plan: SAT }),
-  make({ id: 'lunge', name: 'Выпады с гантелями', group: 'legs', muscles: ['Квадрицепс', 'Ягодицы'], equipment: 'Гантели', kind: 'weight', pair: true,
+  make({ id: 'lunge', name: 'Выпады с гантелями', group: 'legs', muscles: ['Квадрицепс', 'Ягодицы'], equipment: ['2 гантели'], kind: 'weight', pair: true,
     defaults: { reps: 12, weight: 12 }, record: { weight: 14, reps: 12, date: '15 окт' }, total: 9, trend: [8, 10, 10, 10, 12, 12, 14, 14],
     lastDate: '22 окт', lastSets: [w(12, 12), w(12, 12), w(12, 12)], plan: SAT }),
-  make({ id: 'pulldown', name: 'Тяга верхнего блока', group: 'back', muscles: ['Широчайшие', 'Бицепс'], equipment: 'Тренажёр', kind: 'weight',
+  make({ id: 'pulldown', name: 'Тяга верхнего блока', group: 'back', muscles: ['Широчайшие', 'Бицепс'], equipment: ['Тренажёр'], kind: 'weight',
     defaults: { reps: 10, weight: 55 }, record: { weight: 55, reps: 10, date: '26 окт' }, total: 13, trend: [40, 42.5, 45, 45, 47.5, 50, 52.5, 55],
     lastDate: '26 окт', lastSets: [w(55, 10), w(55, 10), w(52.5, 10), w(52.5, 10)] }),
-  make({ id: 'bench', name: 'Жим штанги лёжа', group: 'chest', muscles: ['Грудь', 'Трицепс'], equipment: 'Штанга', kind: 'weight',
+  make({ id: 'bench', name: 'Жим штанги лёжа', group: 'chest', muscles: ['Грудь', 'Трицепс'], equipment: ['Штанга'], kind: 'weight',
     defaults: { reps: 8, weight: 57.5 }, record: { weight: 62.5, reps: 5, date: '5 окт' }, total: 13, trend: [45, 47.5, 50, 52.5, 55, 62.5, 57.5, 57.5],
     lastDate: '26 окт', lastSets: [w(57.5, 8), w(57.5, 8), w(57.5, 7), w(57.5, 6)], plan: SUN }),
-  make({ id: 'pushup', name: 'Отжимания', group: 'chest', muscles: ['Грудь', 'Трицепс'], equipment: 'Без снаряда', kind: 'reps',
+  make({ id: 'pushup', name: 'Отжимания', group: 'chest', muscles: ['Грудь', 'Трицепс'], equipment: [], kind: 'reps',
     defaults: { reps: 25 }, record: { reps: 25, date: '30 сен' }, total: 7, trend: [12, 14, 15, 18, 20, 22, 25, 20],
     lastDate: '14 окт', lastSets: [r(20), r(18), r(15)] }),
-  make({ id: 'biceps', name: 'Подъём гантелей на бицепс', group: 'arms', muscles: ['Бицепс'], equipment: 'Гантели', kind: 'weight', pair: true,
+  make({ id: 'biceps', name: 'Подъём гантелей на бицепс', group: 'arms', muscles: ['Бицепс'], equipment: ['2 гантели'], kind: 'weight', pair: true,
     defaults: { reps: 10, weight: 12 }, record: { weight: 12, reps: 10, date: '12 окт' }, total: 9, trend: [7, 8, 8, 10, 10, 10, 12, 12],
     lastDate: '26 окт', lastSets: [w(12, 8), w(12, 8), w(10, 10)] }),
-  make({ id: 'rope', name: 'Прыжки на скакалке', group: 'cardio', muscles: ['Икры', 'Выносливость'], equipment: 'Скакалка', kind: 'time',
+  make({ id: 'rope', name: 'Прыжки на скакалке', group: 'cardio', muscles: ['Икры', 'Выносливость'], equipment: ['Скакалка'], kind: 'time',
     defaults: { seconds: 180 }, record: { seconds: 180, date: '14 окт' }, total: 6, trend: [60, 75, 90, 100, 120, 150, 180, 150],
     lastDate: '28 окт', lastSets: [t(150), t(120), t(120)] }),
 ];
 
 /** Упражнение, которое ещё ни разу не выполнялось */
 export const fresh: LibraryExercise = createExercise(
-  { ...emptyDraft(), name: 'Болгарские выпады', muscles: ['Квадрицепс', 'Ягодицы'], equipment: 'Гантели', params: { reps: 10, weight: 12, seconds: 30 } },
+  { ...emptyDraft(), name: 'Болгарские выпады', muscles: ['Квадрицепс', 'Ягодицы'], equipment: ['2 гантели'], params: { reps: 10, weight: 12, seconds: 30 } },
   'bulgarian',
 );
 

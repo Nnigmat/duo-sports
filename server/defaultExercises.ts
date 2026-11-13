@@ -1,16 +1,17 @@
 import type { ExerciseKind, LibraryEntry, MuscleGroupId } from '../shared/types';
 
 /** Упражнения, с которыми начинает каждый новый пользователь. Добавлять сюда новые можно свободно: они появятся только у тех, у кого библиотека ещё пуста. */
-const e = (id: string, name: string, group: MuscleGroupId, kind: ExerciseKind, muscles: string[], aliases: string[] = []): LibraryEntry => ({
+const e = (id: string, name: string, group: MuscleGroupId, kind: ExerciseKind, muscles: string[], aliases: string[] = [], equipment: string[] = []): LibraryEntry => ({
   id,
   name,
   group,
   kind,
   muscles,
+  equipment,
   aliases,
 });
 
-export const DEFAULT_EXERCISES: LibraryEntry[] = [
+const BASE: LibraryEntry[] = [
   e('barbell-squat', 'Приседания со штангой', 'legs', 'weight', ['квадрицепс', 'ягодицы'], ['присед']),
   e('romanian-deadlift', 'Румынская тяга', 'legs', 'weight', ['бицепс бедра', 'ягодицы'], ['РДЛ']),
   e('leg-press', 'Жим ногами', 'legs', 'weight', ['квадрицепс', 'ягодицы']),
@@ -36,3 +37,29 @@ export const DEFAULT_EXERCISES: LibraryEntry[] = [
   e('leg-raise', 'Подъём ног в висе', 'core', 'reps', ['пресс']),
   e('jump-rope', 'Скакалка', 'cardio', 'time', ['выносливость']),
 ];
+
+/** Инвентарь стартового набора по id; нет записи — без снаряда */
+const EQUIPMENT: Record<string, string[]> = {
+  'barbell-squat': ['Штанга'],
+  'romanian-deadlift': ['Штанга'],
+  'leg-press': ['Тренажёр'],
+  'dumbbell-lunge': ['2 гантели'],
+  'leg-curl': ['Тренажёр'],
+  deadlift: ['Штанга'],
+  hyperextension: ['Тренажёр'],
+  'lat-pulldown': ['Тренажёр'],
+  'seated-row': ['Тренажёр'],
+  'pull-up': ['Турник'],
+  'barbell-row': ['Штанга'],
+  'bench-press': ['Штанга', 'Скамья'],
+  'incline-press': ['Штанга', 'Скамья'],
+  'dumbbell-fly': ['2 гантели', 'Скамья'],
+  'biceps-curl': ['2 гантели'],
+  'french-press': ['Гантель'],
+  plank: ['Коврик'],
+  crunch: ['Коврик'],
+  'glute-bridge': ['Коврик'],
+  'jump-rope': ['Скакалка'],
+};
+
+export const DEFAULT_EXERCISES: LibraryEntry[] = BASE.map((x) => ({ ...x, equipment: EQUIPMENT[x.id] ?? [] }));

@@ -5,7 +5,7 @@ import type { ExerciseDraft, LibraryExercise, SetResult } from './types';
 
 /** Запросы вкладки «Упражнения» к серверу. Компоненты их не вызывают. */
 
-/** Справочник сервера: название, тип, группа, мышцы, ролики. Снаряда у него нет, историю подмешивает withHistory. */
+/** Справочник сервера: название, тип, группа, мышцы, инвентарь, ролики. Историю подмешивает withHistory. */
 export function toLibraryExercise(e: LibraryEntry): LibraryExercise {
   return {
     id: e.id,
@@ -16,7 +16,7 @@ export function toLibraryExercise(e: LibraryEntry): LibraryExercise {
     muscles: e.muscles,
     notes: e.notes || undefined,
     demo: e.demo,
-    equipment: 'Без снаряда',
+    equipment: e.equipment ?? [],
     defaults: { ...DEFAULT_PARAMS },
     sessionsTotal: 0,
     sessions: [],
@@ -93,20 +93,20 @@ async function send(url: string, method: string, body?: unknown): Promise<Respon
   return res;
 }
 
-/** Ответ сервера поверх локального упражнения: снаряд, параметры и история остаются как были */
+/** Ответ сервера поверх локального упражнения: параметры и история остаются как были */
 export function mergeEntry(base: LibraryExercise, e: LibraryEntry, draft?: ExerciseDraft): LibraryExercise {
-  const { equipment: _eq, defaults: _d, sessionsTotal: _s, sessions: _ss, trend: _t, ...server } = toLibraryExercise(e);
+  const { defaults: _d, sessionsTotal: _s, sessions: _ss, trend: _t, ...server } = toLibraryExercise(e);
   return {
     ...base,
     ...server,
-    ...(draft ? { equipment: draft.equipment || base.equipment, defaults: { ...draft.params } } : {}),
+    ...(draft ? { defaults: { ...draft.params } } : {}),
   };
 }
 
 export async function createExercise(draft: ExerciseDraft): Promise<LibraryExercise> {
   const res = await send('/api/exercises', 'POST', toExerciseInput(draft));
   const created = toLibraryExercise((await res.json()) as LibraryEntry);
-  return { ...created, equipment: draft.equipment || created.equipment, defaults: { ...draft.params } };
+  return { ...created, defaults: { ...draft.params } };
 }
 
 export async function updateExercise(ex: LibraryExercise, draft: ExerciseDraft): Promise<LibraryExercise> {

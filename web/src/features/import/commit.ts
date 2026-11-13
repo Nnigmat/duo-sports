@@ -38,6 +38,7 @@ export function commitExercise(e: NewExercise, choices: ExerciseChoices): Commit
     kind: kindOf(e),
     group: groupForMuscles(muscles.map(cap)),
   };
+  if (e.equipment?.length) out.equipment = e.equipment;
   if (e.slug) out.id = e.slug;
   if (e.notes) out.notes = e.notes;
   return out;

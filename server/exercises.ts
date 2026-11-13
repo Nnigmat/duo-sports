@@ -71,9 +71,9 @@ export function validateFields(body: unknown): Checked<Partial<ExerciseInput>> {
     if (!KINDS.includes(b.kind as ExerciseKind)) return bad('Тип: reps, weight или time');
     out.kind = b.kind as ExerciseKind;
   }
-  for (const f of ['muscles', 'aliases'] as const) {
+  for (const f of ['muscles', 'aliases', 'equipment'] as const) {
     if (b[f] === undefined) continue;
-    const r = list(b[f], f === 'muscles' ? 'Мышцы' : 'Псевдонимы');
+    const r = list(b[f], f === 'muscles' ? 'Мышцы' : f === 'equipment' ? 'Инвентарь' : 'Псевдонимы');
     if (!r.ok) return r;
     out[f] = r.value;
   }
@@ -91,7 +91,7 @@ export function validateCreate(body: unknown): Checked<ExerciseInput> {
   if (v.name === undefined) return bad(`Название: от 1 до ${EXERCISE_LIMITS.name} символов`);
   if (v.group === undefined) return bad('Группа мышц: обязательное поле');
   if (v.kind === undefined) return bad('Тип: reps, weight или time');
-  return { ok: true, value: { name: v.name, group: v.group, kind: v.kind, muscles: v.muscles ?? [], aliases: v.aliases ?? [], ...(v.notes !== undefined ? { notes: v.notes } : {}) } };
+  return { ok: true, value: { name: v.name, group: v.group, kind: v.kind, muscles: v.muscles ?? [], aliases: v.aliases ?? [], equipment: v.equipment ?? [], ...(v.notes !== undefined ? { notes: v.notes } : {}) } };
 }
 
 // ── База ──────────────────────────────────────────────────
@@ -116,8 +116,8 @@ export function createExercise(db: Db, input: ExerciseInput, clock: Clock = now)
     const taken = new Set((db.prepare('SELECT slug FROM exercises').all() as Array<{ slug: string }>).map((r) => r.slug));
     const slug = uniqueSlug(slugify(input.name), taken);
     db.prepare(
-      `INSERT INTO exercises (slug, name, aliases, muscles, kind, group_id, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(slug, input.name, JSON.stringify(input.aliases), JSON.stringify(input.muscles), input.kind, input.group, input.notes || null, clock().toISOString());
+      `INSERT INTO exercises (slug, name, aliases, muscles, equipment, kind, group_id, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(slug, input.name, JSON.stringify(input.aliases), JSON.stringify(input.muscles), JSON.stringify(input.equipment ?? []), input.kind, input.group, input.notes || null, clock().toISOString());
     return { ok: true, entry: entryOf(db, slug) };
   })();
 }
@@ -133,10 +133,11 @@ export function updateExercise(db: Db, slug: string, patch: Partial<ExerciseInpu
       kind: patch.kind ?? cur.kind,
       muscles: patch.muscles ?? cur.muscles,
       aliases: patch.aliases ?? cur.aliases,
+      equipment: patch.equipment ?? cur.equipment,
       notes: patch.notes !== undefined ? patch.notes : cur.notes ?? '',
     };
-    db.prepare('UPDATE exercises SET name = ?, group_id = ?, kind = ?, muscles = ?, aliases = ?, notes = ? WHERE slug = ?').run(
-      next.name, next.group, next.kind, JSON.stringify(next.muscles), JSON.stringify(next.aliases), next.notes || null, slug,
+    db.prepare('UPDATE exercises SET name = ?, group_id = ?, kind = ?, muscles = ?, aliases = ?, equipment = ?, notes = ? WHERE slug = ?').run(
+      next.name, next.group, next.kind, JSON.stringify(next.muscles), JSON.stringify(next.aliases), JSON.stringify(next.equipment), next.notes || null, slug,
     );
     return { ok: true, entry: entryOf(db, slug) };
   })();

@@ -13,7 +13,7 @@ const plain = (s: string) => s.replaceAll(' ', ' ');
 
 const squat: LibraryExercise = {
   id: 'squat', name: 'Приседания со штангой', kind: 'weight', group: 'legs', muscles: ['Квадрицепс', 'Ягодицы'],
-  equipment: 'Штанга', defaults: { reps: 5, weight: 80, seconds: 30 },
+  equipment: ['Штанга'], defaults: { reps: 5, weight: 80, seconds: 30 },
   record: { weight: 80, reps: 5, date: '28 окт' }, sessionsTotal: 14,
   sessions: [
     { date: '28 окт', isRecord: true, videos: [{ title: 'Подход 4', duration: '0:21' }], comments: [{ author: 'Настя', text: 'Глубина хорошая' }],
@@ -23,12 +23,12 @@ const squat: LibraryExercise = {
   trend: [60, 62.5, 80],
 };
 const pullup: LibraryExercise = {
-  id: 'pullup', name: 'Подтягивания', kind: 'reps', group: 'back', muscles: ['Широчайшие'], equipment: 'Турник',
+  id: 'pullup', name: 'Подтягивания', kind: 'reps', group: 'back', muscles: ['Широчайшие'], equipment: ['Турник'],
   defaults: { reps: 6, weight: 20, seconds: 30 }, record: { reps: 6, date: '12 окт' }, sessionsTotal: 10,
   sessions: [{ date: '26 окт', videos: [], comments: [], sets: [{ reps: 5 }, { reps: 3 }] }], trend: [2, 6, 5],
 };
 const plank: LibraryExercise = {
-  id: 'plank', name: 'Планка', kind: 'time', group: 'core', muscles: ['Пресс'], equipment: 'Без снаряда',
+  id: 'plank', name: 'Планка', kind: 'time', group: 'core', muscles: ['Пресс'], equipment: [],
   defaults: { reps: 10, weight: 20, seconds: 105 }, record: { seconds: 105, date: '21 окт' }, sessionsTotal: 15,
   sessions: [{ date: '28 окт', videos: [], comments: [], sets: [{ seconds: 90 }, { seconds: 60 }] }], trend: [60, 105, 90],
 };
@@ -56,9 +56,10 @@ describe('подписи', () => {
     expect(totalText(1, 0)).toBe('1 упражнение · 0 в плане');
   });
   it('иконка: время — таймер, иначе по снаряду', () => {
-    expect(exerciseIcon('time', 'Скакалка')).toBe('timer');
-    expect(exerciseIcon('weight', 'Гантели')).toBe('dumbbell');
-    expect(exerciseIcon('reps', 'что-то новое')).toBe('body');
+    expect(exerciseIcon('time', ['Скакалка'])).toBe('timer');
+    expect(exerciseIcon('weight', ['Скамья', '2 гантели'])).toBe('dumbbell');
+    expect(exerciseIcon('reps', ['что-то новое'])).toBe('body');
+    expect(exerciseIcon('reps', [])).toBe('body');
   });
 });
 
@@ -170,13 +171,13 @@ describe('форма', () => {
     expect(toggleItem(['а', 'б'], 'а')).toEqual(['б']);
   });
   it('новое упражнение: значения по умолчанию', () => {
-    expect(fresh).toMatchObject({ name: 'Болгарские выпады', group: 'legs', equipment: 'Без снаряда', sessionsTotal: 0 });
+    expect(fresh).toMatchObject({ name: 'Болгарские выпады', group: 'legs', equipment: [], sessionsTotal: 0 });
     expect(createExercise(emptyDraft(), 'y').muscles).toEqual(['Всё тело']);
   });
   it('редактирование сохраняет историю и группу', () => {
-    const draft = { ...draftFromExercise(squat), name: ' ', kind: 'reps' as const, muscles: [], equipment: 'Гантели' };
+    const draft = { ...draftFromExercise(squat), name: ' ', kind: 'reps' as const, muscles: [], equipment: ['Гантели'] };
     const next = applyDraft(squat, draft);
-    expect(next).toMatchObject({ name: squat.name, kind: 'reps', muscles: squat.muscles, equipment: 'Гантели', group: 'legs' });
+    expect(next).toMatchObject({ name: squat.name, kind: 'reps', muscles: squat.muscles, equipment: ['Гантели'], group: 'legs' });
     expect(next.sessions).toBe(squat.sessions);
   });
 });

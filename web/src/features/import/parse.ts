@@ -76,6 +76,7 @@ interface Def {
   name: string;
   muscles: string[];
   aliases: string[];
+  equipment: string[];
   video?: string;
   measure: Measure;
   notes?: string;
@@ -91,6 +92,7 @@ interface Used {
   candidates: string[];
   slug?: string;
   aliases: string[];
+  equipment: string[];
   measure: Measure;
   video?: string;
   notes?: string;
@@ -223,7 +225,8 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         if (!['weight', 'reps', 'time', 'distance'].includes(String(measure))) fail([...p, 'measure'], `Неизвестный measure: ${String(measure)}`, 'Допустимо: weight, reps, time, distance.');
         const muscles = Array.isArray(e.muscles) ? e.muscles.map(str).filter((m): m is string => !!m) : [];
         const aliases = Array.isArray(e.aliases) ? e.aliases.map(str).filter((m): m is string => !!m) : [];
-        defs.set(id, { id, name, muscles, aliases, video: str(e.video) ?? undefined, measure: String(measure) as Measure, notes: str(e.notes) ?? undefined });
+        const equipment = Array.isArray(e.equipment) ? e.equipment.map(str).filter((m): m is string => !!m) : [];
+        defs.set(id, { id, name, muscles, aliases, equipment, video: str(e.video) ?? undefined, measure: String(measure) as Measure, notes: str(e.notes) ?? undefined });
       });
   }
 
@@ -278,6 +281,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       candidates: candidatesFor(shown, pool),
       slug: def?.id,
       aliases: def?.aliases ?? [],
+      equipment: def?.equipment ?? [],
       measure: def?.measure ?? inferMeasure(ex),
       video: def?.video,
       notes: def?.notes,
@@ -702,6 +706,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     candidates: u.candidates,
     slug: u.slug,
     aliases: u.aliases,
+    equipment: u.equipment,
     measure: u.measure,
     video: u.video,
     notes: u.notes,

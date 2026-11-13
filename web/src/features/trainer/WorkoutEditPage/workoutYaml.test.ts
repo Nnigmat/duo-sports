@@ -4,7 +4,7 @@ import type { LibraryExercise } from '../../exercises/types';
 import { workoutFromYaml, workoutToYaml } from './workoutYaml';
 
 const lib = (name: string, kind: LibraryExercise['kind']): LibraryExercise =>
-  ({ id: name, name, kind, group: 'legs', muscles: [], equipment: '', defaults: { reps: 8, weight: 0, seconds: 30 }, sessionsTotal: 0, sessions: [], trend: [] }) as LibraryExercise;
+  ({ id: name, name, kind, group: 'legs', muscles: [], equipment: [], defaults: { reps: 8, weight: 0, seconds: 30 }, sessionsTotal: 0, sessions: [], trend: [] }) as LibraryExercise;
 
 const library = [lib('Присед', 'weight'), lib('Жим лёжа', 'weight'), lib('Планка', 'time'), lib('Отжимания', 'reps'), lib('Вращения плечами', 'time'), lib('Выпад', 'time')];
 const TODAY = '2026-11-09';

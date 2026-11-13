@@ -88,7 +88,9 @@ export function ExerciseDetailView({ exercise: ex, onBack, onEdit, onOpenHistory
             {ex.muscles.map((m) => (
               <li key={m}><Badge tone="neutral">{m}</Badge></li>
             ))}
-            <li><Badge tone="neutral">{ex.equipment}</Badge></li>
+            {(ex.equipment.length ? ex.equipment : ['Без снаряда']).map((e) => (
+              <li key={e}><Badge tone="neutral">{e}</Badge></li>
+            ))}
           </ul>
         </div>
 

@@ -52,7 +52,8 @@ export interface LibraryExercise {
   kind: ExerciseKind;
   group: MuscleGroupId;
   muscles: string[];
-  equipment: string;
+  /** Инвентарь; пусто — без снаряда */
+  equipment: string[];
   /** Как выполнять: шаги через \n */
   notes?: string;
   /** Ролики чибика: девочка и мальчик */
@@ -81,7 +82,7 @@ export interface ExerciseDraft {
   name: string;
   kind: ExerciseKind;
   muscles: string[];
-  equipment: string;
+  equipment: string[];
   /** Как выполнять: один шаг на строку */
   notes: string;
   params: ExerciseDefaults;

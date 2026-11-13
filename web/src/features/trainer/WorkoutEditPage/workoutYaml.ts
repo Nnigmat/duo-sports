@@ -55,7 +55,7 @@ export function workoutToYaml(title: string, blocks: Block[], links: RoutineLink
   return stringify(doc, { lineWidth: 0, flowCollectionPadding: false });
 }
 
-const toEntry = (l: LibraryExercise): LibraryEntry => ({ id: l.id, name: l.name, aliases: l.aliases ?? [], kind: l.kind, group: l.group, muscles: l.muscles });
+const toEntry = (l: LibraryExercise): LibraryEntry => ({ id: l.id, name: l.name, aliases: l.aliases ?? [], kind: l.kind, group: l.group, muscles: l.muscles, equipment: l.equipment });
 
 /** Делает id уникальными: при совпадении дописывает номер */
 function unique(id: string, taken: Set<string>): string {

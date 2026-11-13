@@ -18,6 +18,7 @@ export { factDraft, factFromDraft, factLabel, type FactDraft, type FactLabel } f
 export { AUDIO_BITS_PER_SECOND, clampZoom, formatZoom, openCamera, pickMimeType, zoomRange, type CameraStream, type Facing, type ZoomRange } from './recording';
 export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';
 export { formatLongDate, joinNumbers, plural } from './ru';
+export { gearList } from './gear';
 export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
 export { DRAFT_TTL_MS, draftKey, parseDraft, serializeDraft, type Draft } from './draft';
 export { elapsedSec, formatElapsed, totalSec } from './elapsed';

@@ -147,4 +147,5 @@ export const libraryFixture: LibraryEntry[] = exercisesFixture.map((e) => ({
   kind: e.kind,
   group: e.group,
   muscles: e.muscles,
+  equipment: e.equipment,
 }));

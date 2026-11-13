@@ -30,7 +30,7 @@ export const MUSCLE_OPTIONS = [
   'Дельты', 'Бицепс', 'Трицепс', 'Пресс', 'Кор', 'Ноги', 'Всё тело', 'Выносливость',
 ];
 
-export const EQUIPMENT_OPTIONS = ['Штанга', 'Гантели', 'Гиря', 'Тренажёр', 'Турник', 'Скакалка', 'Без снаряда'];
+export const EQUIPMENT_OPTIONS = ['Штанга', 'Гантель', '2 гантели', 'Гиря', 'Тренажёр', 'Турник', 'Скакалка', 'Скамья', 'Коврик'];
 
 const MUSCLE_GROUP: Record<string, MuscleGroupId> = {
   Квадрицепс: 'legs', Ягодицы: 'legs', 'Бицепс бедра': 'legs', Икры: 'legs', Ноги: 'legs',
@@ -49,15 +49,18 @@ export const KIND_INFO: Record<ExerciseKind, { name: string; hint: string; icon:
 export const KINDS: ExerciseKind[] = ['weight', 'reps', 'time'];
 
 const EQUIPMENT_ICON: Record<string, IconName> = {
-  Штанга: 'barbell', Гантели: 'dumbbell', Гантель: 'dumbbell', Гиря: 'kettlebell',
-  Тренажёр: 'machine', Турник: 'body', Скакалка: 'rope', 'Без снаряда': 'body',
+  Штанга: 'barbell', Гантели: 'dumbbell', Гантель: 'dumbbell', '2 гантели': 'dumbbell', Гиря: 'kettlebell',
+  Тренажёр: 'machine', Турник: 'body', Скакалка: 'rope',
 };
 
-/** Иконка плитки в списке: время — таймер, иначе по снаряду */
-export function exerciseIcon(kind: ExerciseKind, equipment: string): IconName {
+/** Иконка плитки в списке: время — таймер, иначе по первому снаряду с иконкой */
+export function exerciseIcon(kind: ExerciseKind, equipment: string[]): IconName {
   if (kind === 'time') return 'timer';
-  return EQUIPMENT_ICON[equipment] ?? 'body';
+  return equipment.map((e) => EQUIPMENT_ICON[e]).find(Boolean) ?? 'body';
 }
+
+/** Инвентарь строкой: «Штанга, Скамья»; пусто — «Без снаряда» */
+export const equipmentLabel = (equipment: string[]): string => equipment.join(', ') || 'Без снаряда';
 
 // ── Подписи ──────────────────────────────────────────────
 
@@ -303,11 +306,11 @@ export function paramFields(kind: ExerciseKind): ParamField[] {
 }
 
 export function emptyDraft(): ExerciseDraft {
-  return { name: '', kind: 'weight', muscles: [], equipment: '', notes: '', params: { ...DEFAULT_PARAMS } };
+  return { name: '', kind: 'weight', muscles: [], equipment: [], notes: '', params: { ...DEFAULT_PARAMS } };
 }
 
 export function draftFromExercise(ex: LibraryExercise): ExerciseDraft {
-  return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: ex.equipment, notes: ex.notes ?? '', params: { ...ex.defaults } };
+  return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: [...ex.equipment], notes: ex.notes ?? '', params: { ...ex.defaults } };
 }
 
 export function canSubmit(draft: ExerciseDraft): boolean {
@@ -349,7 +352,7 @@ export function createExercise(draft: ExerciseDraft, id: string): LibraryExercis
     kind: draft.kind,
     group: groupForMuscles(draft.muscles),
     muscles: draft.muscles.length ? draft.muscles : ['Всё тело'],
-    equipment: draft.equipment || 'Без снаряда',
+    equipment: draft.equipment,
     notes: draft.notes.trim() || undefined,
     defaults: { ...draft.params },
     sessionsTotal: 0,
@@ -378,6 +381,7 @@ export function toExerciseInput(draft: ExerciseDraft): ExerciseInput {
     kind: draft.kind,
     muscles: draft.muscles.length ? draft.muscles : ['Всё тело'],
     aliases: [],
+    equipment: draft.equipment,
     notes: draft.notes.trim(),
   };
 }

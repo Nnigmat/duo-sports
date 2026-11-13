@@ -52,6 +52,8 @@ describe('validateFields', () => {
   it('списки: пустые отбрасываются, дубликаты убираются, лимиты', () => {
     expect(validateFields({ muscles: [' Грудь ', '', 'грудь', 'Трицепс'] })).toEqual({ ok: true, value: { muscles: ['Грудь', 'Трицепс'] } });
     expect(err({ muscles: 'x' })).toMatch(/Мышцы/);
+    expect(validateFields({ equipment: [' Скамья ', '', 'скамья', '2 гантели'] })).toEqual({ ok: true, value: { equipment: ['Скамья', '2 гантели'] } });
+    expect(err({ equipment: 'x' })).toMatch(/Инвентарь/);
     expect(err({ aliases: [1] })).toMatch(/Псевдонимы/);
     expect(err({ aliases: ['я'.repeat(61)] })).toMatch(/Псевдонимы/);
     expect(err({ aliases: Array.from({ length: 13 }, (_, i) => `a${i}`) })).toMatch(/12/);
@@ -69,7 +71,7 @@ describe('validateFields', () => {
   it('validateCreate требует name, group, kind', () => {
     expect(validateCreate({ name: 'А', group: 'core' }).ok).toBe(false);
     expect(validateCreate({ name: 'А', group: 'core', kind: 'reps' })).toEqual({
-      ok: true, value: { name: 'А', group: 'core', kind: 'reps', muscles: [], aliases: [] },
+      ok: true, value: { name: 'А', group: 'core', kind: 'reps', muscles: [], aliases: [], equipment: [] },
     });
   });
 });
