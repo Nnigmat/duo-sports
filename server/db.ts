@@ -66,6 +66,13 @@ CREATE TABLE IF NOT EXISTS exercises (
   import_id INTEGER REFERENCES imports(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL
 );
+-- Справочник инвентаря: общий, уникальность по названию без регистра и «ё»
+CREATE TABLE IF NOT EXISTS equipment (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+);
 -- Разминки и заминки: общий набор упражнений по времени; тренировка подключает их ссылкой
 CREATE TABLE IF NOT EXISTS routines (
   id INTEGER PRIMARY KEY,
