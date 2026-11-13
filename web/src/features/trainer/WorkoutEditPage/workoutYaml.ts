@@ -1,12 +1,16 @@
 import { parse, stringify } from 'yaml';
-import type { Block, Exercise, LibraryEntry, Range, SetsExercise } from '../../../../../shared/types';
+import type { Block, Exercise, LibraryEntry, Range, RoutineSlugs, SetsExercise } from '../../../../../shared/types';
 import { parseImport, type ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
 import { roundsOf } from './draft';
 
 /** YAML-вид тренировки для редактора: тот же формат, что у импорта, плюс два поля блока — title и video_rounds. Чистые функции. */
 
-export type YamlResult = { ok: true; title: string; blocks: Block[] } | { ok: false; issues: ParseIssue[] };
+export type RoutineLinks = RoutineSlugs;
+/** Набор из библиотеки: по нему проверяются ссылки routine */
+export type KnownRoutine = { id: string; kind: 'warmup' | 'cooldown'; title: string };
+
+export type YamlResult = { ok: true; title: string; blocks: Block[]; links: RoutineLinks } | { ok: false; issues: ParseIssue[] };
 
 const rangeText = (r: Range, unit = ''): string | number => (r.min === r.max ? r.min : `${r.min}-${r.max}${unit}`);
 const isOpen = (r: Range) => r.min === 0 && r.max === 0;
@@ -28,8 +32,8 @@ function exerciseYaml(e: Exercise, withSets: boolean): Record<string, unknown> {
   };
 }
 
-/** Состав тренировки как YAML для редактирования */
-export function workoutToYaml(title: string, blocks: Block[]): string {
+/** Состав тренировки как YAML для редактирования; подключённые наборы пишутся блоками routine: разминка первой, заминка последней */
+export function workoutToYaml(title: string, blocks: Block[], links: RoutineLinks = {}): string {
   const out = blocks.map((b) => {
     const head = { title: b.title, ...(b.mode !== 'timed' && b.videoRounds.length ? { video_rounds: b.videoRounds } : {}) };
     if (b.mode === 'timed' && !b.kind && !isLegacyRoutine(b)) {
@@ -46,7 +50,8 @@ export function workoutToYaml(title: string, blocks: Block[]): string {
     if (b.mode === 'sets') return { type: 'sets', ...head, rest: b.restSec, exercises: b.exercises.map((e) => exerciseYaml(e, true)) };
     return { type: 'circuit', ...head, rounds: b.rounds, rest: b.restSec, exercises: b.exercises.map((e) => exerciseYaml(e, false)) };
   });
-  const doc = { version: 1, workouts: [{ title, blocks: out }] };
+  const all = [...(links.warmup ? [{ type: 'warmup', routine: links.warmup }] : []), ...out, ...(links.cooldown ? [{ type: 'cooldown', routine: links.cooldown }] : [])];
+  const doc = { version: 1, workouts: [{ title, blocks: all }] };
   return stringify(doc, { lineWidth: 0, flowCollectionPadding: false });
 }
 
@@ -74,9 +79,9 @@ function keepIds(blocks: Block[], previous: Block[]): Block[] {
   });
 }
 
-/** Разбирает YAML редактора. library нужна, чтобы найти упражнения; previous — чтобы сохранить id. */
-export function workoutFromYaml(text: string, library: LibraryExercise[], previous: Block[], today: string): YamlResult {
-  const parsed = parseImport(text, { library: library.map(toEntry), routines: [], today, mine: {} });
+/** Разбирает YAML редактора. library нужна, чтобы найти упражнения; routines — наборы для routine:; previous — чтобы сохранить id. */
+export function workoutFromYaml(text: string, library: LibraryExercise[], previous: Block[], today: string, routines: KnownRoutine[] = []): YamlResult {
+  const parsed = parseImport(text, { library: library.map(toEntry), routines, today, mine: {} });
   if (!parsed.ok) return { ok: false, issues: parsed.errors };
   if (parsed.workouts.length !== 1) {
     return { ok: false, issues: [{ message: 'В workouts должна быть одна тренировка', hint: 'Здесь правится только та, что открыта.' }] };
@@ -89,11 +94,18 @@ export function workoutFromYaml(text: string, library: LibraryExercise[], previo
     };
   }
   const only = parsed.workouts[0]!;
-  if (only.warmupRoutine || only.cooldownRoutine) {
-    return { ok: false, issues: [{ message: 'routine в редакторе не подключается', hint: 'Разминку и заминку по ссылке задаёт импорт; здесь уберите routine или опишите упражнения в блоке.' }] };
+  // Набор, описанный в самом файле (routines:), в библиотеку отсюда не попадёт: ссылаться можно только на готовые
+  const links: RoutineLinks = {};
+  for (const [kind, id] of [['warmup', only.warmupRoutine], ['cooldown', only.cooldownRoutine]] as const) {
+    if (!id) continue;
+    if (!routines.some((r) => r.id === id)) {
+      return { ok: false, issues: [{ message: `Набор «${id}» не найден в библиотеке`, hint: 'Здесь подключаются готовые разминки и заминки; создайте набор на странице разминок.' }] };
+    }
+    links[kind] = id;
   }
   const { title, structure } = only;
-  const raw = (parse(text) as { workouts?: Array<{ blocks?: Array<{ title?: unknown; video_rounds?: unknown }> }> }).workouts?.[0]?.blocks ?? [];
+  // Блоки со ссылкой routine в структуру не входят, поэтому и здесь пропускаем их, чтобы номера совпали
+  const raw = ((parse(text) as { workouts?: Array<{ blocks?: Array<{ title?: unknown; video_rounds?: unknown; routine?: unknown }> }> }).workouts?.[0]?.blocks ?? []).filter((b) => !b?.routine);
   const issues: ParseIssue[] = [];
   const blocks = structure.map((b, i): Block => {
     const extra = raw[i];
@@ -108,5 +120,5 @@ export function workoutFromYaml(text: string, library: LibraryExercise[], previo
     return { ...b, title: own, videoRounds: [...new Set(rounds as number[])].sort((x, y) => x - y) };
   });
   if (issues.length > 0) return { ok: false, issues };
-  return { ok: true, title, blocks: keepIds(blocks, previous) };
+  return { ok: true, title, blocks: keepIds(blocks, previous), links };
 }

@@ -89,7 +89,7 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
           )}
           <TextArea
             label="Тренировка в YAML"
-            hint="Формат тот же, что в импорте. В блок можно дописать title и video_rounds."
+            hint="Формат тот же, что в импорте. В блок можно дописать title и video_rounds. Готовую разминку или заминку подключает блок { type: warmup, routine: slug }."
             value={yaml.text}
             rows={24}
             spellCheck={false}

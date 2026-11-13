@@ -93,6 +93,43 @@ describe('updateWorkout и разминка по ссылке', () => {
     expect(r.workout.blocks.map((b) => b.id)).toEqual([`r${rid}`, 'm']);
     expect(r.workout.routines).toEqual({ warmup: { id: 'spina', title: 'Спина' } });
   });
+  describe('смена ссылок', () => {
+    const links = () => db.prepare('SELECT warmup_routine_id AS w, cooldown_routine_id AS c FROM workouts WHERE id = ?').get(wid) as { w: number | null; c: number | null };
+    let cid: number;
+    beforeEach(() => {
+      const slug = (db.prepare('SELECT slug FROM exercises LIMIT 1').get() as { slug: string }).slug;
+      const c = createRoutine(db, { kind: 'cooldown', title: 'Растяжка', items: [{ exercise: slug, sec: { min: 30, max: 30 } }] });
+      if (!c.ok) throw new Error('cooldown');
+      cid = (db.prepare("SELECT id FROM routines WHERE kind = 'cooldown'").get() as { id: number }).id;
+    });
+
+    it('подключает заминку по slug и оставляет разминку, если её не трогали', () => {
+      expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main, cooldownRoutine: 'rastyazhka' }).ok).toBe(true);
+      expect(links()).toEqual({ w: rid, c: cid });
+    });
+    it('null снимает ссылку', () => {
+      expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main, warmupRoutine: null }).ok).toBe(true);
+      expect(links().w).toBeNull();
+    });
+    it('заменяет разминку другой и убирает присланный блок прежней', () => {
+      const own = { id: 'w', mode: 'timed', kind: 'warmup', title: 'Своя', exercises: [ex('a')] };
+      expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: [own, ...main], warmupRoutine: null }).ok).toBe(true);
+      expect(JSON.parse(stored().structure)).toEqual([own, ...main]);
+      expect(links().w).toBeNull();
+    });
+    it('неизвестный slug отклоняется', () => {
+      expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main, warmupRoutine: 'net-takoy' })).toEqual({ ok: false, error: 'bad_request' });
+      expect(links().w).toBe(rid);
+    });
+    it('вид набора должен совпадать: заминку в разминку не поставить', () => {
+      expect(updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main, warmupRoutine: 'rastyazhka' })).toEqual({ ok: false, error: 'bad_request' });
+    });
+    it('ответ отдаёт новые ссылки', () => {
+      const r = updateWorkout(db, actor(), me, wid, { title: 'Новое', blocks: main, cooldownRoutine: 'rastyazhka' });
+      if (!r.ok) throw new Error(r.error);
+      expect(r.workout.routines).toEqual({ warmup: { id: 'spina', title: 'Спина' }, cooldown: { id: 'rastyazhka', title: 'Растяжка' } });
+    });
+  });
   it('загрузка для редактора перечисляет подключённые разминки (тренер читает тем же workoutOf)', () => {
     const w = workoutOf(db, me, wid)!;
     expect(w.routines).toEqual({ warmup: { id: 'spina', title: 'Спина' } });

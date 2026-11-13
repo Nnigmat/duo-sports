@@ -57,6 +57,12 @@ export interface TimedBlock {
 /** Разминка или заминка: общий набор упражнений по времени из библиотеки */
 export type RoutineKind = 'warmup' | 'cooldown';
 
+/** Подключённые к тренировке разминка и заминка: slug наборов; нет поля — набор не подключён */
+export interface RoutineSlugs {
+  warmup?: string;
+  cooldown?: string;
+}
+
 export interface RoutineItem {
   /** slug упражнения библиотеки */
   exercise: string;
