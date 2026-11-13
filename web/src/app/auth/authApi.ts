@@ -1,4 +1,4 @@
-import type { AuthUser, Gender, LoginFailure } from '../../../../shared/types';
+import type { AuthUser, Gender, LoginFailure, SoundStyle } from '../../../../shared/types';
 
 async function post(url: string, body?: unknown) {
   return fetch(url, {
@@ -65,4 +65,14 @@ export async function apiSetStartDelay(startDelaySec: number): Promise<void> {
     credentials: 'same-origin',
   });
   if (!res.ok) throw new Error('Не удалось сохранить отсчёт. Попробуйте ещё раз');
+}
+
+export async function apiSetSound(soundStyle: SoundStyle, soundVolume: number): Promise<void> {
+  const res = await fetch('/api/auth/sound', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ soundStyle, soundVolume }),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить звук. Попробуйте ещё раз');
 }

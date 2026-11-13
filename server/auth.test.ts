@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { changePassword, createUser, login, logout, setDisplayName, setGender, setStartDelay, userBySession, MAX_ATTEMPTS } from './auth';
+import { changePassword, createUser, login, logout, setDisplayName, setGender, setSound, setStartDelay, userBySession, MAX_ATTEMPTS } from './auth';
 import { openDb, type Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -125,6 +125,23 @@ describe('пол спортсмена', () => {
   it('отсчёт вне 0–30 и нецелый отвергаются', async () => {
     const id = (await sessionOf('nikita@example.com')).id;
     for (const bad of [-1, 31, 2.5, Number.NaN]) expect(() => setStartDelay(db, id, bad)).toThrow();
+  });
+  it('без настройки звук classic на 80 %', async () => {
+    const u = await sessionOf('nikita@example.com');
+    expect(u.soundStyle).toBe('classic');
+    expect(u.soundVolume).toBe(80);
+  });
+  it('setSound сохраняет стиль и громкость, в том числе 0', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    setSound(db, id, 'bell', 40);
+    expect(await sessionOf('nikita@example.com')).toMatchObject({ soundStyle: 'bell', soundVolume: 40 });
+    setSound(db, id, 'soft', 0);
+    expect(await sessionOf('nikita@example.com')).toMatchObject({ soundStyle: 'soft', soundVolume: 0 });
+  });
+  it('неизвестный стиль и громкость вне 0–100 или нецелая отвергаются', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    expect(() => setSound(db, id, 'siren' as never, 50)).toThrow();
+    for (const bad of [-1, 101, 2.5, Number.NaN]) expect(() => setSound(db, id, 'bell', bad)).toThrow();
   });
   it('слишком длинное имя отвергается', async () => {
     const id = (await sessionOf('nikita@example.com')).id;

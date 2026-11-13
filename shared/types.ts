@@ -203,7 +203,20 @@ export interface AuthUser {
   displayName?: string;
   /** Секунд отсчёта перед записью видео; всегда задан (по умолчанию DEFAULT_START_DELAY_SEC) */
   startDelaySec: number;
+  /** Стиль звуковых сигналов тренировки; всегда задан (по умолчанию DEFAULT_SOUND_STYLE) */
+  soundStyle: SoundStyle;
+  /** Громкость сигналов, % от 0 до MAX_SOUND_VOLUME; 0 — без звука; всегда задана */
+  soundVolume: number;
 }
+
+/** Стили сигналов: те же короткий и длинный, разное звучание */
+export const SOUND_STYLES = ['classic', 'bell', 'soft'] as const;
+export type SoundStyle = (typeof SOUND_STYLES)[number];
+export const DEFAULT_SOUND_STYLE: SoundStyle = 'classic';
+export const DEFAULT_SOUND_VOLUME = 80;
+export const MAX_SOUND_VOLUME = 100;
+export const isSoundStyle = (v: unknown): v is SoundStyle => SOUND_STYLES.some((s) => s === v);
+export const isSoundVolume = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= MAX_SOUND_VOLUME;
 
 export const DISPLAY_NAME_MAX = 40;
 

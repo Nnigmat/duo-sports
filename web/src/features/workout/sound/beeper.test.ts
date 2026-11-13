@@ -52,6 +52,34 @@ describe('createBeeper', () => {
     expect(freqs).toEqual([660, 990]);
   });
 
+  it('стиль bell играет свои частоты с обертонами', () => {
+    const { freqs } = fakeContext();
+    const b = createBeeper({ style: 'bell', volume: 80 });
+    b.unlock();
+    b.play('short');
+    expect(freqs[0]).toBe(1047);
+    expect(freqs).toHaveLength(3);
+  });
+
+  it('громкость 0 молчит, не создавая осцилляторов', () => {
+    const { freqs } = fakeContext();
+    const b = createBeeper({ style: 'classic', volume: 0 });
+    b.unlock();
+    b.play('long');
+    expect(freqs).toEqual([]);
+  });
+
+  it('configure меняет стиль для следующих сигналов', () => {
+    const { freqs } = fakeContext();
+    const b = createBeeper();
+    b.unlock();
+    b.play('short');
+    b.configure({ style: 'soft', volume: 50 });
+    b.play('short');
+    expect(freqs[0]).toBe(660);
+    expect(freqs[1]).toBe(523);
+  });
+
   it('контекст один, сколько ни вызывай unlock', () => {
     const { created } = fakeContext();
     const b = createBeeper();

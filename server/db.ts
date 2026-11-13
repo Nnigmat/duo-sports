@@ -276,6 +276,8 @@ function migrate(db: Db) {
   if (!columns('users').includes('goal')) db.exec('ALTER TABLE users ADD COLUMN goal TEXT');
   if (!columns('users').includes('display_name')) db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
   if (!columns('users').includes('start_delay_sec')) db.exec('ALTER TABLE users ADD COLUMN start_delay_sec INTEGER');
+  if (!columns('users').includes('sound_style')) db.exec('ALTER TABLE users ADD COLUMN sound_style TEXT');
+  if (!columns('users').includes('sound_volume')) db.exec('ALTER TABLE users ADD COLUMN sound_volume INTEGER');
   if (!columns('exercises').includes('equipment')) db.exec("ALTER TABLE exercises ADD COLUMN equipment TEXT NOT NULL DEFAULT '[]'");
   if (!columns('exercises').includes('demo_female')) db.exec('ALTER TABLE exercises ADD COLUMN demo_female TEXT');
   if (!columns('exercises').includes('demo_male')) db.exec('ALTER TABLE exercises ADD COLUMN demo_male TEXT');

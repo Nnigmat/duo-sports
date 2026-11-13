@@ -1,15 +1,12 @@
 import type { Signal } from '../flow';
-
-/** Сигнал: частота и длительность, секунд. Длинный заканчивается за ~0,5 с, до старта записи видео. */
-const TONES: Record<Signal, { hz: number; sec: number }> = {
-  short: { hz: 660, sec: 0.15 },
-  long: { hz: 990, sec: 0.5 },
-};
+import { DEFAULT_SOUND, partialGains, peakGain, toneFor, type SoundSettings } from './styles';
 
 export type Beeper = {
   /** Создать и разбудить AudioContext; вызывать из нажатия, иначе браузер его не разрешит */
   unlock: () => void;
   play: (signal: Signal) => void;
+  /** Сменить стиль и громкость; действует со следующего сигнала */
+  configure: (settings: SoundSettings) => void;
   close: () => void;
 };
 
@@ -19,8 +16,9 @@ type Ctor = typeof AudioContext;
  * Один AudioContext на Прохождение. Любая ошибка звука (нет Web Audio, беззвучный режим, отказ браузера)
  * глотается: тренировка идёт без звука и без предупреждений.
  */
-export function createBeeper(): Beeper {
+export function createBeeper(initial: SoundSettings = DEFAULT_SOUND): Beeper {
   let ctx: AudioContext | null = null;
+  let settings = initial;
 
   const unlock = () => {
     try {
@@ -38,19 +36,33 @@ export function createBeeper(): Beeper {
   const play = (signal: Signal) => {
     try {
       if (ctx?.state !== 'running') return;
-      const { hz, sec } = TONES[signal];
+      const peak = peakGain(settings.volume);
+      if (peak === 0) return;
+      const tone = toneFor(settings.style, signal);
+      const { sec, attack } = tone;
       const t = ctx.currentTime;
-      const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.frequency.value = hz;
       // Короткий вход и спад, чтобы в начале и конце не щёлкало
       gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
-      gain.gain.setValueAtTime(0.4, t + sec - 0.03);
+      gain.gain.linearRampToValueAtTime(peak, t + attack);
+      if (tone.shape === 'flat') {
+        gain.gain.setValueAtTime(peak, t + sec - 0.03);
+      } else {
+        // Затухание в два звена приближает экспоненту: удар и длинный хвост
+        gain.gain.linearRampToValueAtTime(peak * 0.25, t + sec * 0.3);
+      }
       gain.gain.linearRampToValueAtTime(0, t + sec);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + sec);
+      gain.connect(ctx.destination);
+      const shares = partialGains(tone);
+      tone.partials.forEach((p, i) => {
+        const osc = ctx!.createOscillator();
+        const mix = ctx!.createGain();
+        osc.frequency.value = tone.hz * p.ratio;
+        mix.gain.value = shares[i];
+        osc.connect(mix).connect(gain);
+        osc.start(t);
+        osc.stop(t + sec);
+      });
     } catch {
       /* звук не заработал: идём без него */
     }
@@ -65,5 +77,9 @@ export function createBeeper(): Beeper {
     ctx = null;
   };
 
-  return { unlock, play, close };
+  const configure = (next: SoundSettings) => {
+    settings = next;
+  };
+
+  return { unlock, play, configure, close };
 }
