@@ -309,6 +309,17 @@ export interface ExerciseComment {
   text: string;
 }
 
+/** Инвентарь из справочника; exercises — сколько упражнений библиотеки его используют */
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  exercises: number;
+}
+
+export interface EquipmentResponse {
+  equipment: EquipmentItem[];
+}
+
 export interface ExercisesResponse {
   exercises: LibraryEntry[];
 }

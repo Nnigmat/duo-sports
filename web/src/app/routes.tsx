@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { LoginPage, ProfilePage } from '../features/auth';
 import { AchievementsPage } from '../features/achievements';
+import { EquipmentPage } from '../features/equipment';
 import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
 import { PlanPage } from '../features/plan';
@@ -35,6 +36,9 @@ export function AppRoutes() {
             <Route path="athletes/:id/plan" element={<AthletePlanPage />} />
             <Route path="athletes/:id/workouts/:wid/edit" element={<WorkoutEditPage />} />
             <Route path="athletes/:id/import/*" element={<AthleteImportPage />} />
+          </Route>
+          <Route element={<RequireTrainer />}>
+            <Route path="equipment" element={<EquipmentPage />} />
           </Route>
           <Route path="plan" element={<PlanPage />} />
           <Route path="plan/workouts/:wid/edit" element={<OwnWorkoutEditPage />} />
