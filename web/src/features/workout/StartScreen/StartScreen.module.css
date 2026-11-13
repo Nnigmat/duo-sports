@@ -41,12 +41,13 @@
 }
 
 .blocks {
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+.section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  margin: var(--spacing-xl) 0 0;
-  padding: 0;
-  list-style: none;
 }
 
 .headline {
@@ -54,9 +55,6 @@
   font-weight: var(--body-md-medium-weight);
 }
 
-.work {
-  gap: var(--spacing-sm);
-}
 .workHead {
   display: flex;
   align-items: center;
@@ -104,7 +102,16 @@
 
 .gear {
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+.gearHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.gearIcon {
+  flex: none;
+  color: var(--steel);
 }
 .gearList {
   display: flex;
@@ -115,7 +122,19 @@
   list-style: none;
 }
 .gearItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   font-variant-numeric: tabular-nums;
+}
+/* Маркер пункта */
+.gearItem::before {
+  content: '';
+  flex: none;
+  width: 6px; /* нет токена */
+  height: 6px; /* нет токена */
+  border-radius: var(--rounded-full);
+  background: var(--steel);
 }
 
 .rule {

@@ -19,7 +19,7 @@ export { AUDIO_BITS_PER_SECOND, clampZoom, formatZoom, openCamera, pickMimeType,
 export { finishStats, formatFinishStats, sessionSteps, type FinishStat, type FinishStats } from './finish';
 export { formatLongDate, joinNumbers, plural } from './ru';
 export { gearList } from './gear';
-export { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta, type BlockItem } from './summary';
+export { blockItems, restLabel, timedTotal, videoLabel, workoutMeta, type BlockItem } from './summary';
 export { DRAFT_TTL_MS, draftKey, parseDraft, serializeDraft, type Draft } from './draft';
 export { elapsedSec, formatElapsed, totalSec } from './elapsed';
 export { afterReload, canGoBack, canSwap, initSession, reduce, type Action, type Phase, type Session } from './session';
