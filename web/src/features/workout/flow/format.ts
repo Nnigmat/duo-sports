@@ -22,13 +22,15 @@ export function formatTarget(kind: ExerciseKind, target: Range): string {
   return kind === 'time' ? range(target.min, target.max, formatTime) : range(target.min, target.max);
 }
 
-/** Строка цели: «18–20 повт», «60 кг × 10», «00:45–01:00» */
+/** Строка цели: «18–20 повт», «60 кг × 10», «00:45–01:00»; вес без значения в плане — как повторы */
 export function formatPlan(kind: ExerciseKind, plan: SetPlan): string {
   const { min, max } = plan.target;
   switch (kind) {
     case 'reps':
       return open(min, max) ? 'макс. повт' : `${range(min, max)} повт`;
     case 'weight':
+      // Веса в плане нет (после замены упражнения без истории): «10 повт», а не «0 кг × 10»
+      if (plan.weight === undefined) return open(min, max) ? 'макс. повт' : `${range(min, max)} повт`;
       return `${decimal(plan.weight ?? 0)} кг × ${open(min, max) ? 'макс.' : range(min, max)}`;
     case 'time':
       return range(min, max, formatTime);

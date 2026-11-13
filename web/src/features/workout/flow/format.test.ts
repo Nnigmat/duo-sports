@@ -20,6 +20,8 @@ describe('formatPlan', () => {
   });
   it('weight: вес × повторы', () => {
     expect(formatPlan('weight', { target: { min: 10, max: 10 }, weight: 60 })).toBe('60 кг × 10');
+    expect(formatPlan('weight', { target: { min: 10, max: 10 }, weight: 0 })).toBe('0 кг × 10');
+    expect(formatPlan('weight', { target: { min: 10, max: 10 } })).toBe('10 повт');
   });
   it('weight: дробный вес с запятой и диапазон повторов', () => {
     expect(formatPlan('weight', { target: { min: 10, max: 12 }, weight: 12.5 })).toBe('12,5 кг × 10–12');

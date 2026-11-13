@@ -12,18 +12,37 @@ export interface SwapOption {
   muscles: string[];
   /** Значения для плана, если тип упражнения другой, чем в плане */
   defaults: { reps: number; weight: number; seconds: number };
+  /** Прошлые тренировки атлета с этим упражнением, от новых к старым; нет — ещё не выполнял */
+  sessions?: Array<{ sets: PastSet[] }>;
 }
 
-/** План нового упражнения: тот же тип — цель и вес из плана, другой — значения по умолчанию из библиотеки */
+/** Подход из истории атлета: заполнены поля по типу упражнения */
+interface PastSet {
+  weight?: number;
+  reps?: number;
+  seconds?: number;
+}
+
+/** Последний подход последней тренировки с этим упражнением; нет истории — undefined */
+function lastSet(to: SwapOption): PastSet | undefined {
+  return to.sessions?.find((s) => s.sets.length > 0)?.sets.at(-1);
+}
+
+/**
+ * План нового упражнения: тот же тип — цель и вес из плана. Другой тип — последний подход атлета в этом упражнении;
+ * истории нет — повторы и секунды по умолчанию из библиотеки, а вес не подставляем (в плане его нет, шторка покажет 0 кг).
+ */
 function planFor(step: Step, to: SwapOption): SetPlan {
   if (step.kind === to.kind) return step.plan;
+  const last = lastSet(to);
+  const target = (n: number) => ({ min: n, max: n });
   switch (to.kind) {
     case 'reps':
-      return { target: { min: to.defaults.reps, max: to.defaults.reps } };
+      return { target: target(last?.reps ?? to.defaults.reps) };
     case 'weight':
-      return { target: { min: to.defaults.reps, max: to.defaults.reps }, weight: to.defaults.weight };
+      return { target: target(last?.reps ?? to.defaults.reps), ...(last?.weight ? { weight: last.weight } : {}) };
     case 'time':
-      return { target: { min: to.defaults.seconds, max: to.defaults.seconds } };
+      return { target: target(last?.seconds ?? to.defaults.seconds) };
   }
 }
 
