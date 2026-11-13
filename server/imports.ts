@@ -24,20 +24,20 @@ export function ensureLibrary(db: Db, clock: Clock = now): void {
   db.transaction(() => {
     if (db.prepare('SELECT 1 FROM exercises LIMIT 1').get()) return;
     const insert = db.prepare(
-      `INSERT OR IGNORE INTO exercises (slug, name, aliases, muscles, kind, group_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR IGNORE INTO exercises (slug, name, aliases, muscles, equipment, kind, group_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    for (const e of DEFAULT_EXERCISES) insert.run(e.id, e.name, JSON.stringify(e.aliases), JSON.stringify(e.muscles), e.kind, e.group, clock().toISOString());
+    for (const e of DEFAULT_EXERCISES) insert.run(e.id, e.name, JSON.stringify(e.aliases), JSON.stringify(e.muscles), JSON.stringify(e.equipment), e.kind, e.group, clock().toISOString());
   })();
 }
 
-type ExerciseRow = { slug: string; name: string; aliases: string; muscles: string; kind: ExerciseKind; group_id: MuscleGroupId; notes: string | null; demo_female: string | null; demo_male: string | null };
+type ExerciseRow = { slug: string; name: string; aliases: string; muscles: string; equipment: string; kind: ExerciseKind; group_id: MuscleGroupId; notes: string | null; demo_female: string | null; demo_male: string | null };
 
 /** Общая библиотека для всех пользователей; notes и demo есть, только если заполнены. */
 export function libraryOf(db: Db): LibraryEntry[] {
-  const rows = db.prepare('SELECT slug, name, aliases, muscles, kind, group_id, notes, demo_female, demo_male FROM exercises ORDER BY id').all() as ExerciseRow[];
+  const rows = db.prepare('SELECT slug, name, aliases, muscles, equipment, kind, group_id, notes, demo_female, demo_male FROM exercises ORDER BY id').all() as ExerciseRow[];
   return rows.map((r) => ({
-    id: r.slug, name: r.name, aliases: JSON.parse(r.aliases), kind: r.kind, group: r.group_id, muscles: JSON.parse(r.muscles),
+    id: r.slug, name: r.name, aliases: JSON.parse(r.aliases), kind: r.kind, group: r.group_id, muscles: JSON.parse(r.muscles), equipment: JSON.parse(r.equipment),
     ...(r.notes ? { notes: r.notes } : {}),
     ...(r.demo_female || r.demo_male ? { demo: { ...(r.demo_female ? { female: r.demo_female } : {}), ...(r.demo_male ? { male: r.demo_male } : {}) } } : {}),
   }));
@@ -146,7 +146,7 @@ export function validateCommit(body: unknown, db?: Db): Validated {
   for (const [i, e] of exercises.entries()) {
     const ok =
       isObj(e) && isStr(e.name, LIMITS.name) && (e.id === undefined || (typeof e.id === 'string' && SLUG.test(e.id))) &&
-      strList(e.aliases, LIMITS.name) && strList(e.muscles, LIMITS.name) && KINDS.includes(e.kind as ExerciseKind) &&
+      strList(e.aliases, LIMITS.name) && strList(e.muscles, LIMITS.name) && (e.equipment === undefined || strList(e.equipment, LIMITS.name)) && KINDS.includes(e.kind as ExerciseKind) &&
       GROUPS.includes(e.group as MuscleGroupId) && optStr(e.notes, LIMITS.text);
     if (!ok) return { ok: false, error: `exercises[${i}]: неверные поля` };
   }
@@ -201,13 +201,13 @@ function apply(db: Db, userId: number, importId: number, commit: ImportCommit, c
 
   const hasExercise = db.prepare('SELECT 1 FROM exercises WHERE slug = ?');
   const insertExercise = db.prepare(
-    `INSERT INTO exercises (slug, name, aliases, muscles, kind, group_id, notes, import_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO exercises (slug, name, aliases, muscles, equipment, kind, group_id, notes, import_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   for (const e of commit.exercises as CommitExercise[]) {
     const slug = e.id ?? slugOf(e.name, (s) => !!hasExercise.get(s));
     if (hasExercise.get(slug)) continue; // уже есть: не дублируем и не перезаписываем
-    insertExercise.run(slug, e.name, JSON.stringify(e.aliases), JSON.stringify(e.muscles), e.kind, e.group, e.notes ?? null, importId, at);
+    insertExercise.run(slug, e.name, JSON.stringify(e.aliases), JSON.stringify(e.muscles), JSON.stringify(e.equipment ?? []), e.kind, e.group, e.notes ?? null, importId, at);
     summary.created++;
   }
 

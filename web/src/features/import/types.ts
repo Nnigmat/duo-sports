@@ -17,6 +17,8 @@ export interface NewExercise {
   /** Что понадобится при создании: id из файла, другие названия, как считать, ссылка на технику */
   slug?: string;
   aliases?: string[];
+  /** Инвентарь: «штанга», «2 гантели» */
+  equipment?: string[];
   measure?: Measure;
   video?: string;
   notes?: string;

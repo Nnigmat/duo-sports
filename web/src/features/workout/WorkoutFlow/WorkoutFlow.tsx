@@ -57,6 +57,8 @@ type Props = {
   comments: CoachComment[];
   /** Описание техники по id упражнения; без него панель «Техника» показывает только анимацию */
   techniques: Record<string, Technique>;
+  /** Инвентарь по id упражнения: на экране старта список «Что взять» */
+  equipment?: Record<string, string[]>;
   /** Пол спортсмена: каким чибиком показать «стоит» */
   gender?: Gender;
   /** Загрузить видео подхода. Ошибка (reject) остаётся на экране записи, можно повторить. */
@@ -92,7 +94,7 @@ type Sheet = 'result' | 'tech' | 'comments' | 'swap' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, library, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, library, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
   // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
   const [beeper] = useState(createBeeper);
@@ -130,6 +132,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, gender, onUploadVi
         title={workout.title}
         blocks={workout.blocks}
         dateLabel={dateLabel}
+        equipment={equipment}
         idleUrl={idleUrl(gender)}
         onBack={onExit}
         onStart={() => {

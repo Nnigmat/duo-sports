@@ -8,7 +8,7 @@ import { Text } from '../../../ui/Text/Text';
 import { useMediaQuery } from '../../../shared';
 import { Chibi } from '../chibi/Chibi';
 import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
-import { blockItems, plural, restLabel, timedHeadline, videoLabel, workoutMeta } from '../flow';
+import { blockItems, gearList, plural, restLabel, timedHeadline, videoLabel, workoutMeta } from '../flow';
 import styles from './StartScreen.module.css';
 
 type Props = {
@@ -17,6 +17,8 @@ type Props = {
   blocks: Block[];
   /** «Пятница, 30 октября» */
   dateLabel: string;
+  /** Инвентарь по id упражнения: из него собирается список «Что взять» */
+  equipment?: Record<string, string[]>;
   /** Ролик «чибик стоит»; без него (или если не загрузился) стоит статичный чибик */
   idleUrl?: string;
   onBack: () => void;
@@ -24,9 +26,10 @@ type Props = {
 };
 
 /** Экран старта: что сегодня в тренировке и кнопка «Начать». */
-export function StartScreen({ title, blocks, dateLabel, idleUrl, onBack, onStart }: Props) {
+export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBack, onStart }: Props) {
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [failed, setFailed] = useState(false);
+  const gear = gearList(blocks, equipment ?? {});
   const playing = idleUrl && !still && !failed ? idleUrl : undefined;
   return (
     <Screen label={dateLabel} back={{ onClick: onBack }}>
@@ -55,6 +58,23 @@ export function StartScreen({ title, blocks, dateLabel, idleUrl, onBack, onStart
           </li>
         ))}
       </ul>
+
+      {gear.length > 0 && (
+        <Card className={styles.gear}>
+          <Text variant="eyebrow" id="gear-title">
+            Что взять
+          </Text>
+          <ul className={styles.gearList} aria-labelledby="gear-title">
+            {gear.map((g) => (
+              <li key={g}>
+                <Text variant="body-sm" tag="span" className={styles.gearItem}>
+                  {g}
+                </Text>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* Кнопка остаётся внизу и на длинной тренировке */}
       <div className={styles.cta}>

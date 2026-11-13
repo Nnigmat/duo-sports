@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Block } from '../shared/types';
 import { createUser } from './auth';
-import { addComment, commentRowsOf, deleteComment, commentsFor, libraryOf, techniqueOf, techniquesFor, validateComment, type LibraryRow } from './comments';
+import { addComment, commentRowsOf, deleteComment, commentsFor, equipmentFor, libraryOf, techniqueOf, techniquesFor, validateComment, type LibraryRow } from './comments';
 import { openDb, type Db } from './db';
 import { applyImport, ensureLibrary } from './imports';
 import { sessionReviewOf } from './sessionReview';
@@ -42,6 +42,14 @@ describe('техника', () => {
     expect(Object.keys(techniquesFor(blocks, lib))).toEqual(['b1-e0']);
     const alias = [{ ...blocks[0]!, exercises: [{ ...blocks[0]!.exercises[0]!, name: 'Жим штанги' }] }] as Block[];
     expect(techniquesFor(alias, lib)['b1-e0']?.instructions).toEqual(['Лопатки сведены', 'Гриф к груди']);
+  });
+});
+
+describe('инвентарь для экрана', () => {
+  it('по id из структуры; без снаряда записи нет', () => {
+    const withGear = lib.map((l) => (l.slug === 'bench' ? { ...l, equipment: ['Штанга', 'Скамья'] } : l));
+    expect(equipmentFor(blocks, withGear)).toEqual({ 'b1-e0': ['Штанга', 'Скамья'] });
+    expect(equipmentFor(blocks, lib)).toEqual({});
   });
 });
 

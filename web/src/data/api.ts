@@ -8,7 +8,7 @@ import { fetchScheduleResponse } from '../features/schedule/api';
 import { applyMoves, planBounds, toIso } from '../features/plan/plan';
 import type { AchievementsData, ImportData, PlanData, ScheduleData, TodayData } from './types';
 
-export type WorkoutData = { workout: Workout; comments: CoachComment[]; techniques: Record<string, Technique>; gender?: Gender };
+export type WorkoutData = { workout: Workout; comments: CoachComment[]; techniques: Record<string, Technique>; equipment?: Record<string, string[]>; gender?: Gender };
 
 /** «Сегодня» собирает сервер; дату знает браузер. Блока insights пока нет. */
 export const fetchToday = async (): Promise<TodayData> => {

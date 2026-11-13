@@ -55,7 +55,7 @@ describe('библиотека и план', () => {
   });
   it('упражнение отдаётся в виде, нужном разбору', () => {
     expect(libraryOf(db).find((e) => e.id === 'barbell-squat')).toEqual({
-      id: 'barbell-squat', name: 'Приседания со штангой', aliases: ['присед'], kind: 'weight', group: 'legs', muscles: ['квадрицепс', 'ягодицы'],
+      id: 'barbell-squat', name: 'Приседания со штангой', aliases: ['присед'], kind: 'weight', group: 'legs', muscles: ['квадрицепс', 'ягодицы'], equipment: ['Штанга'],
     });
   });
 });

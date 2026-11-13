@@ -1,5 +1,5 @@
 import type { ExerciseKind, Gender, SessionResult, Workout, WorkoutResponse } from '../shared/types';
-import { commentRowsOf, commentsFor, libraryOf, markSeen, techniquesFor } from './comments';
+import { commentRowsOf, commentsFor, equipmentFor, libraryOf, markSeen, techniquesFor } from './comments';
 import type { Db } from './db';
 import { isDate } from './imports';
 import { composeStructure, linkedRoutines, type RoutineLinks } from './routines';
@@ -32,7 +32,7 @@ export function workoutResponse(db: Db, userId: number, id: number, markRead = t
   // Ролик выбираем по полу владельца тренировки: тренер в превью видит то же, что увидит ученик
   const owner = db.prepare('SELECT gender FROM users WHERE id = ?').get(userId) as { gender: Gender | null } | undefined;
   const gender = owner?.gender ?? undefined;
-  return { workout, comments, techniques: techniquesFor(workout.blocks, library, gender), ...(gender ? { gender } : {}) };
+  return { workout, comments, techniques: techniquesFor(workout.blocks, library, gender), equipment: equipmentFor(workout.blocks, library), ...(gender ? { gender } : {}) };
 }
 
 const KINDS: ExerciseKind[] = ['reps', 'weight', 'time'];

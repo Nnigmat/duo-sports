@@ -1,5 +1,5 @@
 import { Badge, Button, Chip, ChipGroup, EmptyState, IconButton, ListRow, SearchField, Text } from '../../../ui';
-import { exerciseIcon, groupExercises, groupTabs, planShort, recordText, searchExercises, totalText, type GroupFilter } from '../library';
+import { equipmentLabel, exerciseIcon, groupExercises, groupTabs, planShort, recordText, searchExercises, totalText, type GroupFilter } from '../library';
 import type { LibraryExercise } from '../types';
 import styles from './ExerciseListView.module.css';
 
@@ -62,7 +62,7 @@ export function ExerciseListView({ exercises, query, onQueryChange, group, onGro
                 <ListRow
                   icon={exerciseIcon(ex.kind, ex.equipment)}
                   title={ex.name}
-                  subtitle={`${ex.muscles.join(', ')} · ${ex.equipment}`}
+                  subtitle={`${ex.muscles.join(', ')} · ${equipmentLabel(ex.equipment)}`}
                   aside={
                     desktop ? (
                       <>

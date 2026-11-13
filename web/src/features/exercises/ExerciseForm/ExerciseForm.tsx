@@ -14,12 +14,12 @@ type Props = {
   name?: string;
 };
 
-/** Поля упражнения: название, тип, параметры по умолчанию, мышцы, снаряд. Общая для создания и редактирования. */
+/** Поля упражнения: название, тип, параметры по умолчанию, мышцы, инвентарь. Общая для создания и редактирования. */
 export function ExerciseForm({ draft, onChange, showGroupHint, kindChanged, name = 'kind' }: Props) {
   const set = (patch: Partial<ExerciseDraft>) => onChange({ ...draft, ...patch });
   // Мышцы и снаряд, которых нет в справочнике (старые записи), остаются выбранными и видимыми
   const muscles = [...MUSCLE_OPTIONS, ...draft.muscles.filter((m) => !MUSCLE_OPTIONS.includes(m))];
-  const equipment = draft.equipment && !EQUIPMENT_OPTIONS.includes(draft.equipment) ? [...EQUIPMENT_OPTIONS, draft.equipment] : EQUIPMENT_OPTIONS;
+  const equipment = [...EQUIPMENT_OPTIONS, ...draft.equipment.filter((e) => !EQUIPMENT_OPTIONS.includes(e))];
 
   return (
     <div className={styles.form}>
@@ -92,10 +92,10 @@ export function ExerciseForm({ draft, onChange, showGroupHint, kindChanged, name
       </div>
 
       <div className={styles.block}>
-        <Text variant="body-sm" color="slate" aria-hidden="true">Снаряд</Text>
-        <ChipGroup label="Снаряд">
+        <Text variant="body-sm" color="slate" aria-hidden="true">Инвентарь · можно выбрать несколько</Text>
+        <ChipGroup label="Инвентарь, можно выбрать несколько">
           {equipment.map((e) => (
-            <Chip key={e} pressed={draft.equipment === e} onClick={() => set({ equipment: draft.equipment === e ? '' : e })}>
+            <Chip key={e} pressed={draft.equipment.includes(e)} onClick={() => set({ equipment: toggleItem(draft.equipment, e) })}>
               {e}
             </Chip>
           ))}

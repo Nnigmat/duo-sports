@@ -63,6 +63,17 @@ export const SetsBlock: Story = {
   },
 };
 
+/** Список «Что взять»: инвентарь упражнений с весом там, где он нужен */
+export const WithGear: Story = {
+  args: { title: 'Силовая', blocks: [STRENGTH], equipment: { [STRENGTH.exercises[0]!.id]: ['2 гантели', 'Скамья'] } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('list', { name: 'Что взять' })).toBeVisible();
+    await expect(c.getByText('2 гантели 12 кг')).toBeVisible();
+    await expect(c.getByText('Скамья')).toBeVisible();
+  },
+};
+
 export const WarmupOnly: Story = {
   args: { title: 'Разминка', blocks: [WARMUP] },
   play: async ({ canvasElement }) => {

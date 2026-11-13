@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS exercises (
   name TEXT NOT NULL,
   aliases TEXT NOT NULL DEFAULT '[]',
   muscles TEXT NOT NULL DEFAULT '[]',
+  equipment TEXT NOT NULL DEFAULT '[]',
   kind TEXT NOT NULL CHECK (kind IN ('reps', 'weight', 'time')),
   group_id TEXT NOT NULL,
   video_url TEXT,
@@ -268,6 +269,7 @@ function migrate(db: Db) {
   if (!columns('users').includes('goal')) db.exec('ALTER TABLE users ADD COLUMN goal TEXT');
   if (!columns('users').includes('display_name')) db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
   if (!columns('users').includes('start_delay_sec')) db.exec('ALTER TABLE users ADD COLUMN start_delay_sec INTEGER');
+  if (!columns('exercises').includes('equipment')) db.exec("ALTER TABLE exercises ADD COLUMN equipment TEXT NOT NULL DEFAULT '[]'");
   if (!columns('exercises').includes('demo_female')) db.exec('ALTER TABLE exercises ADD COLUMN demo_female TEXT');
   if (!columns('exercises').includes('demo_male')) db.exec('ALTER TABLE exercises ADD COLUMN demo_male TEXT');
   if (!columns('users').includes('gender')) db.exec("ALTER TABLE users ADD COLUMN gender TEXT CHECK (gender IN ('female', 'male'))");
