@@ -96,7 +96,7 @@ function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' 
             describedBy={`${hintId}-weight`}
           />
           <Text variant="body-sm" tag="p" id={`${hintId}-weight`} className={styles.hint}>
-            {`План: ${plan.weight ?? 0}\u00a0кг · шаг ${WEIGHT_STEP}\u00a0кг`}
+            {`${plan.weight === undefined ? 'Вес не задан' : `План: ${plan.weight}\u00a0кг`} · шаг ${WEIGHT_STEP}\u00a0кг`}
           </Text>
         </>
       )}

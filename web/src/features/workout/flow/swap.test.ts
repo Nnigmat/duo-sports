@@ -40,11 +40,22 @@ describe('swapSteps', () => {
     expect(out[0].kind).toBe('weight');
   });
 
-  it('другой тип: цель и вес берутся из значений по умолчанию нового упражнения', () => {
+  it('другой тип, истории нет: повторы и секунды по умолчанию, веса в плане нет', () => {
     expect(swapSteps(sets, 0, pushUp)[0].plan).toEqual({ target: { min: 10, max: 10 } });
     expect(swapSteps(sets, 0, hold)[0].plan).toEqual({ target: { min: 40, max: 40 } });
     const fromReps = swapSteps(buildSteps([circuit]), 0, press);
-    expect(fromReps[0].plan).toEqual({ target: { min: 10, max: 10 }, weight: 20 });
+    expect(fromReps[0].plan).toEqual({ target: { min: 10, max: 10 } });
+  });
+
+  it('другой тип, история есть: последний подход последней тренировки', () => {
+    const withHistory = (o: SwapOption) => ({
+      ...o,
+      sessions: [{ sets: [] }, { sets: [{ weight: 8, reps: 12 }, { weight: 10, reps: 9 }] }, { sets: [{ weight: 5, reps: 15 }] }],
+    });
+    const fromReps = swapSteps(buildSteps([circuit]), 0, withHistory(press));
+    expect(fromReps[0].plan).toEqual({ target: { min: 9, max: 9 }, weight: 10 });
+    const toTime = swapSteps(sets, 0, { ...hold, sessions: [{ sets: [{ seconds: 55 }] }] });
+    expect(toTime[0].plan).toEqual({ target: { min: 55, max: 55 } });
   });
 
   it('сохраняет круг, подход, отдых и отметку записи видео', () => {
