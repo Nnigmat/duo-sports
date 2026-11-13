@@ -10,6 +10,7 @@
     "seed-demo": "tsx server/seedDemo.ts",
     "set-gender": "tsx server/setGender.ts",
     "migrate:routines": "tsx server/migrateRoutines.ts",
+    "migrate:equipment": "tsx server/migrateEquipment.ts",
     "link-user": "tsx server/linkUser.ts",
     "work-time": "tsx server/workTimeReport.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
