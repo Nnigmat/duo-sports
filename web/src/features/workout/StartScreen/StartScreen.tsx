@@ -8,7 +8,7 @@ import { Text } from '../../../ui/Text/Text';
 import { useMediaQuery } from '../../../shared';
 import { Chibi } from '../chibi/Chibi';
 import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
-import { blockItems, gearList, plural, restLabel, timedHeadline, videoLabel, workoutMeta } from '../flow';
+import { blockItems, gearList, plural, restLabel, timedTotal, videoLabel, workoutMeta } from '../flow';
 import styles from './StartScreen.module.css';
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
   blocks: Block[];
   /** «Пятница, 30 октября» */
   dateLabel: string;
-  /** Инвентарь по id упражнения: из него собирается список «Что взять» */
+  /** Инвентарь по id упражнения: из него собирается список «Инвентарь» */
   equipment?: Record<string, string[]>;
   /** Ролик «чибик стоит»; без него (или если не загрузился) стоит статичный чибик */
   idleUrl?: string;
@@ -51,19 +51,14 @@ export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBa
         </div>
       </div>
 
-      <ul className={styles.blocks}>
-        {blocks.map((b) => (
-          <li key={b.id}>
-            <BlockCard block={b} />
-          </li>
-        ))}
-      </ul>
-
       {gear.length > 0 && (
-        <Card className={styles.gear}>
-          <Text variant="eyebrow" id="gear-title">
-            Что взять
-          </Text>
+        <Card tone="surface" className={styles.gear}>
+          <div className={styles.gearHead}>
+            <Icon name="dumbbell" size={20} className={styles.gearIcon} />
+            <Text variant="eyebrow" id="gear-title">
+              Инвентарь
+            </Text>
+          </div>
           <ul className={styles.gearList} aria-labelledby="gear-title">
             {gear.map((g) => (
               <li key={g}>
@@ -76,6 +71,15 @@ export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBa
         </Card>
       )}
 
+      <Card tone="surface" className={styles.blocks}>
+        {blocks.map((b, i) => (
+          <section key={b.id} className={styles.section}>
+            {i > 0 && <hr className={styles.rule} />}
+            <BlockSection block={b} />
+          </section>
+        ))}
+      </Card>
+
       {/* Кнопка остаётся внизу и на длинной тренировке */}
       <div className={styles.cta}>
         <Button fullWidth icon="play" onClick={onStart}>
@@ -86,27 +90,22 @@ export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBa
   );
 }
 
-function BlockCard({ block }: { block: Block }) {
+function BlockSection({ block }: { block: Block }) {
   if (block.mode === 'timed') {
     return (
-      <Card>
+      <div className={styles.workHead}>
         <Text variant="eyebrow">{block.title}</Text>
-        <Text variant="body" tag="p" className={styles.headline}>
-          {timedHeadline(block)}
+        <Text variant="caption" tag="span" className={styles.strong}>
+          {timedTotal(block)}
         </Text>
-        {block.note && (
-          <Text variant="body-sm" color="slate">
-            {block.note}
-          </Text>
-        )}
-      </Card>
+      </div>
     );
   }
 
   const rest = restLabel(block);
   const video = videoLabel(block);
   return (
-    <Card tone="surface" className={styles.work}>
+    <>
       <div className={styles.workHead}>
         <Text variant="eyebrow">{block.mode === 'circuit' ? 'По кругу с отдыхом' : 'Подходами'}</Text>
         {block.mode === 'circuit' && (
@@ -146,6 +145,6 @@ function BlockCard({ block }: { block: Block }) {
           </Text>
         </p>
       )}
-    </Card>
+    </>
   );
 }

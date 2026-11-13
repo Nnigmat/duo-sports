@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CircuitBlock, SetsBlock } from '../../../../../shared/types';
 import { circuit, setsBlock, warmup } from './fixtures';
-import { blockItems, restLabel, timedHeadline, videoLabel, workoutMeta } from './summary';
+import { blockItems, restLabel, timedTotal, videoLabel, workoutMeta } from './summary';
 
 describe('workoutMeta', () => {
   it('круги и подходы; разминка в подходы не входит', () => {
@@ -18,27 +18,14 @@ describe('workoutMeta', () => {
   });
 });
 
-describe('timedHeadline', () => {
-  it('одинаковое время: «по 30 с»', () => {
-    expect(timedHeadline(warmup)).toBe('2 упражнения по 30 с');
+describe('timedTotal', () => {
+  it('сумма времени упражнений', () => {
+    expect(timedTotal(warmup)).toBe('01:00');
   });
-  it('разное время: без «по»', () => {
-    const mixed = { ...warmup, exercises: [warmup.exercises[0], { ...warmup.exercises[1], target: { min: 45, max: 45 } }] };
-    expect(timedHeadline(mixed)).toBe('2 упражнения');
-  });
-  it('блок со сторонами показывает общее время обеих сторон', () => {
+  it('упражнение со сторонами считается дважды', () => {
     const [a, b] = warmup.exercises;
     const sided = { ...warmup, exercises: [a, { ...b, sides: ['вправо', 'влево'] as [string, string] }, { ...a, id: 'c' }] };
-    expect(timedHeadline(sided)).toBe('3 упражнения · 02:00');
-  });
-  it('блок без сторон не меняется', () => {
-    expect(timedHeadline(warmup)).toBe('2 упражнения по 30 с');
-  });
-  it('склонение: 1, 4 и 6 упражнений', () => {
-    const n = (k: number) => ({ ...warmup, exercises: Array.from({ length: k }, () => warmup.exercises[0]) });
-    expect(timedHeadline(n(1))).toBe('1 упражнение по 30 с');
-    expect(timedHeadline(n(4))).toBe('4 упражнения по 30 с');
-    expect(timedHeadline(n(6))).toBe('6 упражнений по 30 с');
+    expect(timedTotal(sided)).toBe('02:00');
   });
 });
 
