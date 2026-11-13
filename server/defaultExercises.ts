@@ -39,7 +39,7 @@ const BASE: LibraryEntry[] = [
 ];
 
 /** Инвентарь стартового набора по id; нет записи — без снаряда */
-const EQUIPMENT: Record<string, string[]> = {
+export const DEFAULT_EQUIPMENT: Record<string, string[]> = {
   'barbell-squat': ['Штанга'],
   'romanian-deadlift': ['Штанга'],
   'leg-press': ['Тренажёр'],
@@ -62,4 +62,4 @@ const EQUIPMENT: Record<string, string[]> = {
   'jump-rope': ['Скакалка'],
 };
 
-export const DEFAULT_EXERCISES: LibraryEntry[] = BASE.map((x) => ({ ...x, equipment: EQUIPMENT[x.id] ?? [] }));
+export const DEFAULT_EXERCISES: LibraryEntry[] = BASE.map((x) => ({ ...x, equipment: DEFAULT_EQUIPMENT[x.id] ?? [] }));

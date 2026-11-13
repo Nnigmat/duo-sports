@@ -1,5 +1,5 @@
 /**
- * Одноразовая расстановка инвентаря упражнениям библиотеки по названию: npm run migrate:equipment
+ * Одноразовая расстановка инвентаря упражнениям библиотеки (стартовый набор по slug, остальные по названию): npm run migrate:equipment
  * База берётся из DATA_DIR. Перед запуском на сервере нужна копия: sqlite3 <app.db> ".backup ~/app.db.bak".
  * Трогает только упражнения с пустым инвентарём, поэтому повторный запуск безопасен.
  * Что не распознано, остаётся пустым и попадает в отчёт: его проставляют руками в форме упражнения.
@@ -7,6 +7,7 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type Db, openDb } from './db';
+import { DEFAULT_EQUIPMENT } from './defaultExercises';
 
 const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е');
 
@@ -16,14 +17,14 @@ export function guessEquipment(name: string): string[] {
   const out: string[] = [];
   const has = (re: RegExp) => re.test(n);
 
-  if (has(/штанг/)) out.push('Штанга');
+  if (has(/штанг|румынск|становая/)) out.push('Штанга');
   if (has(/гантел(ь|ью)(?![а-я])/)) out.push('Гантель');
   else if (has(/гантел/)) out.push('2 гантели');
   if (has(/(^|[^а-я])гир(я|ю|ей|и|ями)(?![а-я])/)) out.push('Гиря');
   if (has(/турник|подтягиван|в висе/)) out.push('Турник');
   if (has(/скакалк/)) out.push('Скакалка');
   if (has(/блок|тренажер|жим ногами|сгибания ног|разгибания ног|гиперэкстенз/)) out.push('Тренажёр');
-  if (has(/жим[а-я ]* леж|скамь/) || (has(/жим/) && has(/леж/))) {
+  if (has(/жим[а-я ]* леж|скамь/) || (has(/жим/) && has(/леж/)) || has(/лавочк/)) {
     if (!out.some((e) => e === 'Штанга' || e === 'Гантель' || e === '2 гантели') && has(/жим[а-я ]* леж/)) out.unshift('Штанга');
     out.push('Скамья');
   }
@@ -44,7 +45,7 @@ export function migrateEquipment(db: Db): EquipmentReport {
   const set = db.prepare('UPDATE exercises SET equipment = ? WHERE slug = ?');
   db.transaction(() => {
     for (const r of rows) {
-      const gear = guessEquipment(r.name);
+      const gear = DEFAULT_EQUIPMENT[r.slug] ?? guessEquipment(r.name);
       if (!gear.length) {
         report.unknown.push(r.name);
         continue;

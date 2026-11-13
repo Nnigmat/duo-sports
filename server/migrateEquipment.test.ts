@@ -62,3 +62,12 @@ describe('migrateEquipment', () => {
     expect(migrateEquipment(db)).toEqual({ updated: 0, unknown: ['Странное упражнение'] });
   });
 });
+
+describe('стартовый набор', () => {
+  it('инвентарь берётся по slug, даже если название его не называет', () => {
+    const db = openDb(':memory:');
+    db.prepare("INSERT INTO exercises (slug, name, kind, group_id, created_at) VALUES ('dumbbell-lunge', 'Выпады', 'weight', 'legs', 'x'), ('x', 'Румынская тяга', 'weight', 'legs', 'x')").run();
+    migrateEquipment(db);
+    expect(libraryOf(db).map((e) => e.equipment)).toEqual([['2 гантели'], ['Штанга']]);
+  });
+});
