@@ -56,6 +56,7 @@ export const DEFAULT_EQUIPMENT: Record<string, string[]> = {
   'dumbbell-fly': ['2 гантели', 'Скамья'],
   'biceps-curl': ['2 гантели'],
   'french-press': ['Гантель'],
+  dips: ['Брусья'],
   plank: ['Коврик'],
   crunch: ['Коврик'],
   'glute-bridge': ['Коврик'],
