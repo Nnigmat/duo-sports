@@ -42,6 +42,7 @@ import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
 import { createBeeper, type Beeper } from '../sound/beeper';
+import type { SoundSettings } from '../sound/styles';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
@@ -81,6 +82,8 @@ type Props = {
   onSessionChange?: (session: Session) => void;
   /** Секунд до начала записи после «Старт» */
   recordingDelaySec?: number;
+  /** Стиль и громкость сигналов из профиля; без них играет стиль по умолчанию */
+  sound?: SoundSettings;
   /** Упражнения библиотеки, на которые можно заменить текущее; нет — кнопки «Заменить» нет */
   library?: SwapOption[];
   /** Для дат комментариев; в приложении не передаётся */
@@ -94,10 +97,10 @@ type Sheet = 'result' | 'tech' | 'comments' | 'swap' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, library, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, sound, library, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
   // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
-  const [beeper] = useState(createBeeper);
+  const [beeper] = useState(() => createBeeper(sound));
   useEffect(() => () => beeper.close(), [beeper]);
   useEffect(() => onSessionChange?.(session), [session, onSessionChange]);
   const [comments, setComments] = useState(rest.comments);

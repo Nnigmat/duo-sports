@@ -145,6 +145,7 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, fi
       gender={data.gender}
       library={library ?? undefined}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
+      sound={auth.status === 'in' ? { style: auth.user.soundStyle, volume: auth.user.soundVolume } : undefined}
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}
       onFinish={(stats, steps, feedback) => onFinish(steps, stats.videos, feedback)}

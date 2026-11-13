@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { DEFAULT_START_DELAY_SEC, DISPLAY_NAME_MAX, MAX_START_DELAY_SEC, type AuthUser, type Gender, type Role } from '../shared/types';
+import { DEFAULT_SOUND_STYLE, DEFAULT_SOUND_VOLUME, DEFAULT_START_DELAY_SEC, DISPLAY_NAME_MAX, isSoundStyle, isSoundVolume, MAX_SOUND_VOLUME, MAX_START_DELAY_SEC, type AuthUser, type Gender, type Role, type SoundStyle } from '../shared/types';
 import type { Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -11,7 +11,7 @@ type Clock = () => Date;
 const now: Clock = () => new Date();
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null; display_name: string | null; start_delay_sec: number | null };
+type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null; display_name: string | null; start_delay_sec: number | null; sound_style: string | null; sound_volume: number | null };
 const toUser = (r: UserRow): AuthUser => ({
   id: r.id,
   email: r.email,
@@ -20,6 +20,8 @@ const toUser = (r: UserRow): AuthUser => ({
   ...(r.gender ? { gender: r.gender } : {}),
   ...(r.display_name ? { displayName: r.display_name } : {}),
   startDelaySec: r.start_delay_sec ?? DEFAULT_START_DELAY_SEC,
+  soundStyle: isSoundStyle(r.sound_style) ? r.sound_style : DEFAULT_SOUND_STYLE,
+  soundVolume: r.sound_volume ?? DEFAULT_SOUND_VOLUME,
 });
 
 const isGender = (v: unknown): v is Gender => v === 'female' || v === 'male';
@@ -43,6 +45,13 @@ export function setGender(db: Db, email: string, gender: Gender | null): boolean
 export function setStartDelay(db: Db, userId: number, sec: number): boolean {
   if (!Number.isInteger(sec) || sec < 0 || sec > MAX_START_DELAY_SEC) throw new Error(`startDelaySec: целое от 0 до ${MAX_START_DELAY_SEC}`);
   return db.prepare('UPDATE users SET start_delay_sec = ? WHERE id = ?').run(sec, userId).changes === 1;
+}
+
+/** Стиль и громкость сигналов. Бросает, если стиль неизвестен или громкость не целое от 0 до MAX_SOUND_VOLUME. */
+export function setSound(db: Db, userId: number, style: SoundStyle, volume: number): boolean {
+  if (!isSoundStyle(style)) throw new Error('soundStyle: classic, bell или soft');
+  if (!isSoundVolume(volume)) throw new Error(`soundVolume: целое от 0 до ${MAX_SOUND_VOLUME}`);
+  return db.prepare('UPDATE users SET sound_style = ?, sound_volume = ? WHERE id = ?').run(style, volume, userId).changes === 1;
 }
 
 /** Имя для показа: пробелы по краям убираются, пустое очищает. Бросает, если длиннее DISPLAY_NAME_MAX. */
