@@ -21,13 +21,13 @@ export const navItems: NavItem[] = [today, plan, stats, profile];
 /** Боковая панель: места больше, поэтому здесь ещё «Упражнения» и «Импорт»; «Профиль» вынесен вниз */
 export const sideNavItems: NavItem[] = [today, plan, exercises, routines, stats, imports];
 
-/** Кабинет тренера: ученики, общая библиотека упражнений и инвентарь; нижней панели у тренера нет */
-export const trainerSideNavItems: NavItem[] = [
-  { to: '/trainer', label: 'Ученики', icon: 'users' },
-  exercises,
-  routines,
-  equipment,
-];
+const athletes: NavItem = { to: '/trainer', label: 'Ученики', icon: 'users' };
+
+/** Кабинет тренера: ученики, общая библиотека упражнений и инвентарь */
+export const trainerSideNavItems: NavItem[] = [athletes, exercises, routines, equipment];
+
+/** Нижняя панель тренера на телефоне; «Выйти» в профиле */
+export const trainerNavItems: NavItem[] = [...trainerSideNavItems, profile];
 
 /** Низ бокового меню: «Профиль»; рядом с ним кнопка «Выйти» */
 export const sideNavFooterItems: NavItem[] = [profile];
