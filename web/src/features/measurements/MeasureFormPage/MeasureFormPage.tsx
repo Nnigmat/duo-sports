@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveMeasurement } from '../../../data/api';
 import { useMeasurements } from '../../../data/hooks';
-import { Skeleton } from '../../../shared';
+import { useAuth } from '../../../app/auth/AuthProvider';
+import { Skeleton, useMediaQuery } from '../../../shared';
 import { toIso } from '../../plan/plan';
 import { MeasureFormView } from '../MeasureFormView/MeasureFormView';
 
 /** /progress/measurements/new — ввод замера за сегодня; после сохранения возвращает к прогрессу. */
 export function MeasureFormPage() {
   const navigate = useNavigate();
+  const auth = useAuth();
+  const desktop = useMediaQuery('(min-width: 1024px)');
   const { data, error } = useMeasurements();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
@@ -26,6 +29,8 @@ export function MeasureFormPage() {
       today={toIso(new Date())}
       entries={data.entries}
       saving={saving}
+      layout={desktop ? 'desktop' : 'mobile'}
+      gender={auth.status === 'in' ? auth.user.gender : undefined}
       error={saveError}
       onBack={leave}
       onSave={(entry) => {

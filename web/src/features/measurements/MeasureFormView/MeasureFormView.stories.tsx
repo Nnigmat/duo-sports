@@ -141,3 +141,8 @@ export const Narrow320: Story = {
     await expect(frame.firstElementChild?.getBoundingClientRect().height).toBeLessThan(900);
   },
 };
+
+export const Desktop: Story = {
+  args: { layout: 'desktop', gender: 'male' },
+  parameters: { viewport: { defaultViewport: 'desktop' } },
+};

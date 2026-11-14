@@ -76,3 +76,51 @@
   flex: 1 1 auto;
   min-height: var(--spacing-md);
 }
+
+/* Десктоп: слева чибик и подсказка, справа поля и кнопка */
+.form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.root[data-layout='desktop'] {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 520px);
+  grid-template-areas:
+    'bar bar'
+    'intro form';
+  column-gap: var(--spacing-xl);
+  align-items: start;
+  max-width: 1000px; /* нет токена */
+}
+.root[data-layout='desktop'] > :first-child {
+  grid-area: bar;
+}
+.root[data-layout='desktop'] .intro {
+  grid-area: intro;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+.root[data-layout='desktop'] .introText {
+  flex: 0 0 auto;
+  width: 100%;
+}
+.root[data-layout='desktop'] .hint {
+  min-height: 96px; /* нет токена */
+}
+.root[data-layout='desktop'] .chibi {
+  flex-basis: auto;
+  width: auto;
+  height: auto;
+  align-self: center;
+  border: 0;
+  border-radius: var(--rounded-lg);
+}
+.root[data-layout='desktop'] .form {
+  grid-area: form;
+}
+.root[data-layout='desktop'] .card {
+  margin-top: 0;
+}
