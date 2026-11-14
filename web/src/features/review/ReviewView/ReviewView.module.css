@@ -342,3 +342,26 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+/* Десктоп: слева разбор, справа подсказки к следующей тренировке */
+.root[data-layout='desktop'] {
+  max-width: 1040px; /* нет токена */
+}
+.root[data-layout='desktop'] .main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px; /* нет токена */
+  column-gap: var(--spacing-xl);
+  align-items: start;
+  padding: var(--spacing-xl) var(--spacing-lg);
+}
+.root[data-layout='desktop'] .hints {
+  position: sticky;
+  top: var(--spacing-lg);
+}

@@ -24,9 +24,3 @@
   gap: var(--spacing-md);
   margin-top: var(--spacing-xs);
 }
-
-@media (min-width: 1024px) {
-  .root {
-    max-width: 720px;
-  }
-}

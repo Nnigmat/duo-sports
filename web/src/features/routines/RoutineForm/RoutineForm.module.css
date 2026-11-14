@@ -145,12 +145,6 @@
   cursor: pointer;
 }
 
-@media (min-width: 1024px) {
-  .root {
-    max-width: 720px;
-  }
-}
-
 .yaml {
   font-family: ui-monospace, Menlo, monospace;
   font-size: var(--caption-size);
