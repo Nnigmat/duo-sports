@@ -74,11 +74,14 @@ export function buildSteps(blocks: Block[]): Step[] {
   return blocks.flatMap((block, blockIndex) => {
     const drafts = draftsOf(block, blockIndex);
     const rest = block.mode === 'timed' ? 0 : block.restSec;
+    // Перед заминкой отдых есть и после последнего шага: человек сам нажимает «Начать»
+    const following = blocks[blockIndex + 1];
+    const beforeCooldown = following?.mode === 'timed' && following.kind === 'cooldown';
     return drafts.map((d, i) => ({
       ...d,
       indexInBlock: i + 1,
       blockSize: drafts.length,
-      restAfterSec: i < drafts.length - 1 ? rest : 0,
+      restAfterSec: i < drafts.length - 1 || beforeCooldown ? rest : 0,
     }));
   });
 }

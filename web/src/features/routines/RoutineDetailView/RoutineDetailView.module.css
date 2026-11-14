@@ -87,9 +87,3 @@
   min-height: 48px;
   border-bottom: 1px solid var(--hairline-soft);
 }
-
-@media (min-width: 1024px) {
-  .root {
-    max-width: 720px;
-  }
-}

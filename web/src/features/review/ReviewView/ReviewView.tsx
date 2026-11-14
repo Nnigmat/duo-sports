@@ -27,6 +27,7 @@ type Props = {
   onDeleteComment?: (commentId: string) => Promise<void>;
   planHref?: string;
   onOpenPlan?: () => void;
+  layout?: 'mobile' | 'desktop';
 };
 
 const author = (c: ReviewComment) => (c.author === 'trainer' ? 'Тренер' : 'Ты');
@@ -35,60 +36,63 @@ const author = (c: ReviewComment) => (c.author === 'trainer' ? 'Тренер' : 
 const deleteOf = (c: ReviewComment, onDelete?: (id: string) => Promise<void>) => (c.author === 'athlete' && onDelete ? () => onDelete(c.id) : undefined);
 
 /** Разбор для ученика: комментарии тренера по упражнениям, ответы и подсказки к следующему занятию. */
-export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, onDeleteComment, planHref, onOpenPlan }: Props) {
+export function ReviewView({ review, onBack, videoHref, onOpenVideo, onReply, onDeleteComment, planHref, onOpenPlan, layout = 'mobile' }: Props) {
   const meta = [review.durationSec ? formatMinutes(Math.round(review.durationSec / 60)) : null, review.volumeKg > 0 ? formatVolume(review.volumeKg) : null].filter(Boolean).join(' · ');
   const starts = sectionStarts(review.sections);
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-layout={layout}>
       <header className={styles.header}>
         <IconButton bare icon="back" aria-label="Назад" onClick={onBack} />
         <span className={styles.headerTitle}>Разбор тренировки</span>
       </header>
       <main className={styles.main}>
-        <div className={styles.banner}>
-          <span className={styles.bannerIcon} aria-hidden="true">
-            <Icon name="comment" size={20} />
-          </span>
-          <span className={styles.bannerText}>
-            <strong>{review.reviewedAt ? 'Тренер разобрал тренировку' : 'Тренер ещё не разобрал тренировку'}</strong>
-            <span>
-              {commentsCount(review.trainerCommentCount)}
-              {review.reviewedAt && ` · ${formatReviewedAt(review.reviewedAt)}`}
+        <div className={styles.content}>
+          <div className={styles.banner}>
+            <span className={styles.bannerIcon} aria-hidden="true">
+              <Icon name="comment" size={20} />
             </span>
-          </span>
-        </div>
+            <span className={styles.bannerText}>
+              <strong>{review.reviewedAt ? 'Тренер разобрал тренировку' : 'Тренер ещё не разобрал тренировку'}</strong>
+              <span>
+                {commentsCount(review.trainerCommentCount)}
+                {review.reviewedAt && ` · ${formatReviewedAt(review.reviewedAt)}`}
+              </span>
+            </span>
+          </div>
 
-        <div className={styles.title}>
-          <span className={styles.eyebrow}>{formatLongDate(parseIso(review.date))}</span>
-          <h1 className={styles.h1}>{review.title}</h1>
-          {meta && <span className={styles.meta}>{meta}</span>}
-        </div>
+          <div className={styles.title}>
+            <span className={styles.eyebrow}>{formatLongDate(parseIso(review.date))}</span>
+            <h1 className={styles.h1}>{review.title}</h1>
+            {meta && <span className={styles.meta}>{meta}</span>}
+          </div>
 
-        {review.general.length > 0 && (
-          <ul className={styles.thread} aria-label="Комментарии ко всей тренировке">
-            {review.general.map((c) => (
-              <Comment key={c.id} author={author(c)} text={c.text} isNew={c.isNew} reply={c.author === 'athlete'} onDelete={deleteOf(c, onDeleteComment)} />
-            ))}
-          </ul>
-        )}
-
-        {review.sections.map((sec, si) => {
-          const start = starts[si];
-          const list = (
-            <ol key={sec.key} className={styles.exercises} aria-label={sec.title}>
-              {sec.exercises.map((ex, i) => (
-                <ExerciseCard key={ex.id} index={start === null ? undefined : start + i} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
+          {review.general.length > 0 && (
+            <ul className={styles.thread} aria-label="Комментарии ко всей тренировке">
+              {review.general.map((c) => (
+                <Comment key={c.id} author={author(c)} text={c.text} isNew={c.isNew} reply={c.author === 'athlete'} onDelete={deleteOf(c, onDeleteComment)} />
               ))}
-            </ol>
-          );
-          return sec.folded ? (
-            <FoldedSection key={sec.key} section={sec}>
-              {list}
-            </FoldedSection>
-          ) : (
-            <div key={sec.key}>{list}</div>
-          );
-        })}
+            </ul>
+          )}
+
+          {review.sections.map((sec, si) => {
+            const start = starts[si];
+            const list = (
+              <ol key={sec.key} className={styles.exercises} aria-label={sec.title}>
+                {sec.exercises.map((ex, i) => (
+                  <ExerciseCard key={ex.id} index={start === null ? undefined : start + i} exercise={ex} videoHref={videoHref} onOpenVideo={onOpenVideo} onReply={onReply} onDelete={onDeleteComment} />
+                ))}
+              </ol>
+            );
+            return sec.folded ? (
+              <FoldedSection key={sec.key} section={sec}>
+                {list}
+              </FoldedSection>
+            ) : (
+              <div key={sec.key}>{list}</div>
+            );
+          })}
+
+        </div>
 
         {review.hints && (
           <section className={styles.hints} aria-labelledby="hints-title">
