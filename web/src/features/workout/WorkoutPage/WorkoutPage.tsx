@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useExercises, useToday, useWorkoutById } from '../../../data/hooks';
 import type { WorkoutData } from '../../../data/api';
 import { Skeleton } from '../../../shared';
 import { Button, EmptyState } from '../../../ui';
+import { exerciseHrefFor } from '../../exercises/library';
 import { toIso } from '../../plan/plan';
 import { useAuth } from '../../../app/auth/AuthProvider';
 import { saveSession, uploadVideo } from '../api';
@@ -136,6 +137,8 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, fi
   const auth = useAuth();
   // Библиотека нужна только для «Заменить»: пока не пришла или упала, тренировка идёт без этой кнопки
   const { data: library } = useExercises();
+  const exerciseHref = useMemo(() => exerciseHrefFor(library ?? undefined), [library]);
+  const navigate = useNavigate();
   return (
     <WorkoutFlow
       workout={data.workout}
@@ -144,6 +147,8 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, fi
       equipment={data.equipment}
       gender={data.gender}
       library={library ?? undefined}
+      exerciseHref={exerciseHref}
+      onOpenExercise={navigate}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
       sound={auth.status === 'in' ? { style: auth.user.soundStyle, volume: auth.user.soundVolume } : undefined}
       dateLabel={dateLabel}

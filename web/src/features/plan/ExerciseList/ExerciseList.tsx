@@ -1,4 +1,5 @@
 import type { PlanTemplate } from '../../../data/types';
+import { ExerciseNameLink } from '../../../ui';
 import styles from './ExerciseList.module.css';
 
 type Props = {
@@ -16,24 +17,9 @@ export function ExerciseList({ exercises, label, hrefFor, onOpen }: Props) {
   return (
     <ol className={styles.root} aria-label={label}>
       {exercises.map((e) => {
-        const href = hrefFor?.(e.name);
         return (
           <li key={e.name} className={styles.item}>
-            {href ? (
-              <a
-                className={styles.link}
-                href={href}
-                onClick={(ev) => {
-                  if (!onOpen || ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-                  ev.preventDefault();
-                  onOpen(href);
-                }}
-              >
-                {e.name}
-              </a>
-            ) : (
-              <span className={styles.name}>{e.name}</span>
-            )}
+            <ExerciseNameLink className={styles.name} name={e.name} href={hrefFor?.(e.name)} onOpen={onOpen} />
             <span className={styles.detail}>{e.detail}</span>
           </li>
         );

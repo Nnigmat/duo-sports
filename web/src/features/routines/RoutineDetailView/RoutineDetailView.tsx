@@ -1,5 +1,5 @@
 import type { RoutineDetail } from '../../../../../shared/types';
-import { Badge, Button, Notice, Text, TopBar } from '../../../ui';
+import { Badge, Button, ExerciseNameLink, Notice, Text, TopBar } from '../../../ui';
 import { countWord, itemTime, KIND_LABEL, mmss, usedText } from '../routines';
 import styles from './RoutineDetailView.module.css';
 
@@ -9,10 +9,12 @@ type Props = {
   onBack: () => void;
   /** Нет — кнопки правки нет (только чтение) */
   onEdit?: () => void;
+  /** Переход к карточке упражнения без перезагрузки страницы; без него работает обычная ссылка */
+  onOpenExercise?: (href: string) => void;
 };
 
 /** Карточка разминки или заминки: состав по порядку и где она используется. */
-export function RoutineDetailView({ routine, backLabel, onBack, onEdit }: Props) {
+export function RoutineDetailView({ routine, backLabel, onBack, onEdit, onOpenExercise }: Props) {
   const { items, usedBy, usedIn } = routine;
   return (
     <div className={styles.root}>
@@ -45,7 +47,7 @@ export function RoutineDetailView({ routine, backLabel, onBack, onEdit }: Props)
               <li key={i} className={styles.item}>
                 <span className={styles.n}>{i + 1}</span>
                 <span className={styles.name}>
-                  <span>{it.name}</span>
+                  <ExerciseNameLink name={it.name} href={`/exercises/${encodeURIComponent(it.exercise)}`} onOpen={onOpenExercise} />
                   {it.sides && <Text variant="caption">{it.sides[0]}, затем {it.sides[1].toLowerCase()}</Text>}
                 </span>
                 <span className={styles.time}>{itemTime(it)}</span>

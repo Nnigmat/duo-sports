@@ -1,6 +1,6 @@
 import type { TodayWorkout } from '../../../data/types';
 import { exerciseCount, formatApproxMinutes } from '../../../shared/format';
-import { Badge, Button } from '../../../ui';
+import { Badge, Button, ExerciseNameLink } from '../../../ui';
 import styles from './TodayHero.module.css';
 
 type Props = {
@@ -9,9 +9,11 @@ type Props = {
   onStart: () => void;
   onReschedule: () => void;
   onOpenExercises: () => void;
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
 };
 
-export function WorkoutCard({ titleId, workout, onStart, onReschedule, onOpenExercises }: Props) {
+export function WorkoutCard({ titleId, workout, onStart, onReschedule, onOpenExercises, exerciseHref, onOpenExercise }: Props) {
   return (
     <div className={styles.card}>
       <p className={styles.eyebrow}>
@@ -33,7 +35,7 @@ export function WorkoutCard({ titleId, workout, onStart, onReschedule, onOpenExe
       <ol className={styles.exercises} aria-label="Упражнения">
         {workout.exercises.map((e) => (
           <li key={e.name}>
-            <span>{e.name}</span>
+            <ExerciseNameLink name={e.name} href={exerciseHref?.(e.name)} onOpen={onOpenExercise} />
             <span className={styles.plan}>{e.plan}</span>
           </li>
         ))}
