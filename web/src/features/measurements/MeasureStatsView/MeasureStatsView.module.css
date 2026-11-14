@@ -1,6 +1,13 @@
 .root {
   gap: 0;
 }
+.embedded {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px; /* нет токена */
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
 .period {
   margin-top: var(--spacing-xxs);
 }

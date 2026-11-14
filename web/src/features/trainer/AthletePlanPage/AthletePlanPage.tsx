@@ -8,7 +8,7 @@ import { addDays, toIso } from '../../plan/plan';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
 import { moveWorkout, pausePlan, skipWorkout } from '../../schedule/api';
 import { athleteBase, copyAthleteDay, deleteAthleteDay, fetchAthletePlan, putAthleteDay } from '../api';
-import { AthleteHeader } from '../AthleteHeader/AthleteHeader';
+import { AthleteHeader, athleteTabPath } from '../AthleteHeader/AthleteHeader';
 import styles from './AthletePlanPage.module.css';
 
 /**
@@ -45,7 +45,7 @@ function Content({ athleteId }: { athleteId: number }) {
         tab="plan"
         backHref="/trainer"
         onBack={() => navigate('/trainer')}
-        onTab={(tab) => navigate(tab === 'plan' ? `${base}/plan` : base)}
+        onTab={(tab) => navigate(athleteTabPath(athleteId, tab))}
       />
       <PlanScreen
         initial={plan.data}

@@ -4,10 +4,11 @@ import { AchievementsPage } from '../features/achievements';
 import { EquipmentPage } from '../features/equipment';
 import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
+import { MeasureFormPage, MeasureStatsPage } from '../features/measurements';
 import { PlanPage } from '../features/plan';
 import { RoutinesPage } from '../features/routines';
 import { ReviewPage, VideoReviewPage } from '../features/review';
-import { AthleteImportPage, AthletePage, AthletePlanPage, OwnWorkoutEditPage, StudentsPage, WorkoutEditPage, WorkoutPreviewPage } from '../features/trainer';
+import { AthleteImportPage, AthleteMeasurementsPage, AthletePage, AthletePlanPage, OwnWorkoutEditPage, StudentsPage, WorkoutEditPage, WorkoutPreviewPage } from '../features/trainer';
 import { TodayPage } from '../features/today';
 import { ResumeFeedback, WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
@@ -34,6 +35,7 @@ export function AppRoutes() {
             <Route index element={<StudentsPage />} />
             <Route path="athletes/:id" element={<AthletePage />} />
             <Route path="athletes/:id/plan" element={<AthletePlanPage />} />
+            <Route path="athletes/:id/measurements" element={<AthleteMeasurementsPage />} />
             <Route path="athletes/:id/workouts/:wid/edit" element={<WorkoutEditPage />} />
             <Route path="athletes/:id/import/*" element={<AthleteImportPage />} />
           </Route>
@@ -46,6 +48,8 @@ export function AppRoutes() {
           <Route path="exercises/*" element={<ExercisesPage />} />
           <Route path="routines/*" element={<RoutinesPage />} />
           <Route path="progress/achievements" element={<AchievementsPage />} />
+          <Route path="progress/measurements" element={<MeasureStatsPage />} />
+          <Route path="progress/measurements/new" element={<MeasureFormPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="review/video/:videoId" element={<VideoReviewPage />} />
         </Route>

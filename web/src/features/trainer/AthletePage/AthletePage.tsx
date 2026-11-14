@@ -4,6 +4,7 @@ import { useAthletes, useAthleteSessions, useExercises, usePastComments, usePlan
 import { Skeleton } from '../../../shared';
 import { toIso } from '../../plan/plan';
 import { markReviewed, deleteComment, postComment, postHint } from '../api';
+import { athleteTabPath } from '../AthleteHeader/AthleteHeader';
 import { AthleteView } from '../AthleteView/AthleteView';
 import { PlannedDetail } from '../PlannedDetail/PlannedDetail';
 import { ReviewDetail } from '../ReviewDetail/ReviewDetail';
@@ -123,7 +124,7 @@ function AthleteContent({ athleteId }: { athleteId: number }) {
       }}
       backHref="/trainer"
       onBack={() => navigate('/trainer')}
-      onTab={(tab) => navigate(tab === 'plan' ? `/trainer/athletes/${athleteId}/plan` : `/trainer/athletes/${athleteId}`)}
+      onTab={(tab) => navigate(athleteTabPath(athleteId, tab))}
       detail={detail}
     />
   );

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
 import { Button, DeltaBadge, EmptyState, LineChart, Screen, SegmentedControl } from '../../../ui';
 import { cx } from '../../../ui/cx';
@@ -23,7 +24,8 @@ type Props = {
   onKind: (kind: MeasurementKind) => void;
   onPeriod: (period: Period) => void;
   onPoint: (index: number) => void;
-  onBack: () => void;
+  /** Без onBack своей шапки нет: экран встроен в карточку ученика у тренера */
+  onBack?: () => void;
   /** Только у ученика: у тренера экран только для чтения */
   onAdd?: () => void;
 };
@@ -34,6 +36,15 @@ const PERIODS: Array<{ value: Period; label: string }> = [
 ];
 
 /** Экран «Прогресс по замерам»: период, график выбранного показателя и список всех семи. */
+function Shell({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
+  if (!onBack) return <div className={styles.embedded}>{children}</div>;
+  return (
+    <Screen label="Прогресс" back={{ onClick: onBack }} backLabel="Назад" className={styles.root}>
+      {children}
+    </Screen>
+  );
+}
+
 export function MeasureStatsView({ today, entries, kind, period, point, onKind, onPeriod, onPoint, onBack, onAdd }: Props) {
   const addButton = onAdd && (
     <Button icon="plus" fullWidth onClick={onAdd}>
@@ -43,11 +54,11 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
 
   if (entries.length === 0) {
     return (
-      <Screen label="Прогресс" back={{ onClick: onBack }} backLabel="Назад" className={styles.root}>
+      <Shell onBack={onBack}>
         <EmptyState title="Замеров пока нет" description={onAdd ? 'Запишите вес и обхваты, чтобы видеть изменения.' : undefined} />
         <div className={styles.spacer} />
         {addButton}
-      </Screen>
+      </Shell>
     );
   }
 
@@ -67,7 +78,7 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
         : `${field.label} с ${formatDateLong(first.date)} по ${formatDateLong(last.date)}: от ${formatValue(first.value)} до ${formatValue(last.value)} ${field.unit}`;
 
   return (
-    <Screen label="Прогресс" back={{ onClick: onBack }} backLabel="Назад" className={styles.root}>
+    <Shell onBack={onBack}>
       <SegmentedControl label="Период" options={PERIODS} value={period} onChange={onPeriod} className={styles.period} />
 
       <section className={styles.card} aria-labelledby="measure-metric">
@@ -139,6 +150,6 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
 
       <div className={styles.spacer} />
       {addButton}
-    </Screen>
+    </Shell>
   );
 }

@@ -29,7 +29,7 @@ function Interactive(props: { entries: MeasurementEntry[]; init?: Init; trainer?
         setPoint(null);
       }}
       onPoint={setPoint}
-      onBack={() => {}}
+      onBack={props.trainer ? undefined : () => {}}
       onAdd={props.trainer ? undefined : props.onAdd}
     />
   );
@@ -116,6 +116,9 @@ export const TrainerReadOnly: Story = {
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('button', { name: 'Новый замер' })).toBeNull();
     await expect(within(canvasElement).queryByRole('link', { name: 'Новый замер' })).toBeNull();
+    // Внутри карточки ученика своей шапки с «Назад» нет: она у AthleteHeader
+    await expect(within(canvasElement).queryByRole('button', { name: 'Назад' })).toBeNull();
+    await expect(within(canvasElement).getByRole('region', { name: 'Вес' })).toBeVisible();
   },
 };
 
