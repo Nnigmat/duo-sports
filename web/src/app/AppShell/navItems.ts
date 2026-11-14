@@ -11,15 +11,16 @@ const plan: NavItem = { to: '/plan', label: 'План', icon: 'target' };
 const exercises: NavItem = { to: '/exercises', label: 'Упражнения', icon: 'kettlebell' };
 const routines: NavItem = { to: '/routines', label: 'Разминки', icon: 'flame' };
 const equipment: NavItem = { to: '/equipment', label: 'Инвентарь', icon: 'dumbbell' };
-const stats: NavItem = { to: '/progress/achievements', label: 'Статистика', icon: 'trophy' };
+const achievements: NavItem = { to: '/progress/achievements', label: 'Достижения', icon: 'trophy' };
+const measurements: NavItem = { to: '/progress/measurements', label: 'Замеры', icon: 'bars' };
 const imports: NavItem = { to: '/import', label: 'Импорт', icon: 'upload' };
 const profile: NavItem = { to: '/profile', label: 'Профиль', icon: 'duo' };
 
-/** Нижняя панель на телефоне: четыре пункта, как в макете */
-export const navItems: NavItem[] = [today, plan, stats, profile];
+/** Нижняя панель на телефоне: пять пунктов */
+export const navItems: NavItem[] = [today, plan, achievements, measurements, profile];
 
 /** Боковая панель: места больше, поэтому здесь ещё «Упражнения» и «Импорт»; «Профиль» вынесен вниз */
-export const sideNavItems: NavItem[] = [today, plan, exercises, routines, stats, imports];
+export const sideNavItems: NavItem[] = [today, plan, exercises, routines, achievements, measurements, imports];
 
 const athletes: NavItem = { to: '/trainer', label: 'Ученики', icon: 'users' };
 

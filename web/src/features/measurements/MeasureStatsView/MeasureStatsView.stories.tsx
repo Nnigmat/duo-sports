@@ -9,7 +9,7 @@ import { MeasureStatsView } from './MeasureStatsView';
 
 type Init = { kind?: MeasurementKind; period?: Period; point?: number | null };
 
-function Interactive(props: { entries: MeasurementEntry[]; init?: Init; trainer?: boolean; onAdd?: () => void }) {
+function Interactive(props: { entries: MeasurementEntry[]; init?: Init; trainer?: boolean; tab?: boolean; onAdd?: () => void }) {
   const [kind, setKind] = useState<MeasurementKind>(props.init?.kind ?? 'weight');
   const [period, setPeriod] = useState<Period>(props.init?.period ?? 'all');
   const [point, setPoint] = useState<number | null>(props.init?.point ?? null);
@@ -29,7 +29,8 @@ function Interactive(props: { entries: MeasurementEntry[]; init?: Init; trainer?
         setPoint(null);
       }}
       onPoint={setPoint}
-      onBack={props.trainer ? undefined : () => {}}
+      onBack={props.trainer || props.tab ? undefined : () => {}}
+      titled={props.tab}
       onAdd={props.trainer ? undefined : props.onAdd}
     />
   );
@@ -77,6 +78,18 @@ export const Default: Story = {
   },
 };
 
+export const Tab: Story = {
+  render: () => <Interactive entries={entries} tab onAdd={() => {}} />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('heading', { level: 1, name: 'Замеры' })).toBeVisible();
+    await expect(c.queryByRole('button', { name: 'Назад' })).toBeNull();
+  },
+};
+export const Desktop: Story = {
+  render: () => <Interactive entries={entries} tab onAdd={() => {}} />,
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+};
 export const SwitchesMetric: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);

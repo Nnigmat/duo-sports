@@ -1,6 +1,6 @@
 import type { Gender } from '../../../../../shared/types';
 import type { AchievementsData } from '../../../data/types';
-import { Chip, ChipGroup, IconButton, ListRow, Text, TopBar } from '../../../ui';
+import { Chip, ChipGroup, IconButton, Text, TopBar } from '../../../ui';
 import { AchievementsSummary } from '../AchievementsSummary/AchievementsSummary';
 import { CategorySection } from '../CategorySection/CategorySection';
 import { categoryTabs, visibleCategories, type CategoryFilter } from '../achievements';
@@ -14,12 +14,10 @@ type Props = {
   onBack?: () => void;
   layout?: 'mobile' | 'desktop';
   gender?: Gender;
-  /** Вход в «Замеры» над достижениями; без него строки нет */
-  onOpenMeasurements?: () => void;
 };
 
 /** Экран «Достижения»: сводка, фильтр по разделам и карточки. */
-export function AchievementsView({ data, filter, onFilterChange, onBack, layout = 'mobile', gender, onOpenMeasurements }: Props) {
+export function AchievementsView({ data, filter, onFilterChange, onBack, layout = 'mobile', gender }: Props) {
   const desktop = layout === 'desktop';
   const sections = visibleCategories(data.categories, filter);
 
@@ -32,10 +30,6 @@ export function AchievementsView({ data, filter, onFilterChange, onBack, layout 
         {desktop && <Text variant="eyebrow">Прогресс</Text>}
         <Text variant={desktop ? 'display' : 'h1'} tag="h1" className={styles.title}>Достижения</Text>
       </header>
-
-      {onOpenMeasurements && (
-        <ListRow icon="bars" title="Замеры" subtitle="Вес и обхваты, изменения по месяцам" onClick={onOpenMeasurements} />
-      )}
 
       <AchievementsSummary categories={data.categories} layout={layout} gender={gender} />
 

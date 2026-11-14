@@ -24,8 +24,10 @@ type Props = {
   onKind: (kind: MeasurementKind) => void;
   onPeriod: (period: Period) => void;
   onPoint: (index: number) => void;
-  /** Без onBack своей шапки нет: экран встроен в карточку ученика у тренера */
+  /** Стрелка «назад» в шапке; без неё и без titled шапки нет: экран встроен в карточку ученика у тренера */
   onBack?: () => void;
+  /** Заголовок страницы без стрелки: экран открыт как вкладка */
+  titled?: boolean;
   /** Только у ученика: у тренера экран только для чтения */
   onAdd?: () => void;
 };
@@ -36,20 +38,20 @@ const PERIODS: Array<{ value: Period; label: string }> = [
 ];
 
 /** Экран «Прогресс по замерам»: период, график выбранного показателя и список всех семи. */
-function Shell({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
-  if (!onBack) return <div className={styles.embedded}>{children}</div>;
+function Shell({ onBack, titled, children }: { onBack?: () => void; titled?: boolean; children: ReactNode }) {
+  if (!onBack && !titled) return <div className={styles.embedded}>{children}</div>;
   return (
     <div className={styles.root}>
-      <TopBar start={<IconButton bare icon="back" aria-label="Назад" onClick={onBack} />} />
+      {onBack && <TopBar start={<IconButton bare icon="back" aria-label="Назад" onClick={onBack} />} />}
       <Text variant="h1" tag="h1" className={styles.title}>
-        Прогресс
+        {titled ? 'Замеры' : 'Прогресс'}
       </Text>
       {children}
     </div>
   );
 }
 
-export function MeasureStatsView({ today, entries, kind, period, point, onKind, onPeriod, onPoint, onBack, onAdd }: Props) {
+export function MeasureStatsView({ today, entries, kind, period, point, onKind, onPeriod, onPoint, onBack, onAdd, titled }: Props) {
   const metricId = useId();
   const addButton = onAdd && (
     <Button icon="plus" fullWidth onClick={onAdd}>
@@ -59,7 +61,7 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
 
   if (entries.length === 0) {
     return (
-      <Shell onBack={onBack}>
+      <Shell onBack={onBack} titled={titled}>
         <EmptyState title="Замеров пока нет" description={onAdd ? 'Запишите вес и обхваты, чтобы видеть изменения.' : undefined} />
         <div className={styles.spacer} />
         {addButton}
@@ -83,9 +85,10 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
         : `${field.label} с ${formatDateLong(first.date)} по ${formatDateLong(last.date)}: от ${formatValue(first.value)} до ${formatValue(last.value)} ${field.unit}`;
 
   return (
-    <Shell onBack={onBack}>
+    <Shell onBack={onBack} titled={titled}>
       <SegmentedControl label="Период" options={PERIODS} value={period} onChange={onPeriod} className={styles.period} />
 
+      <div className={styles.body}>
       <section className={styles.card} aria-labelledby={metricId}>
         <div className={styles.head}>
           <div className={styles.headMain}>
@@ -152,9 +155,10 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
           );
         })}
       </div>
+      </div>
 
       <div className={styles.spacer} />
-      {addButton}
+      <div className={styles.add}>{addButton}</div>
     </Shell>
   );
 }

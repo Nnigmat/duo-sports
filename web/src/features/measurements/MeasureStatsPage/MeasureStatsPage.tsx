@@ -7,7 +7,7 @@ import { toIso } from '../../plan/plan';
 import { MeasureStatsView } from '../MeasureStatsView/MeasureStatsView';
 import type { Period } from '../measurements';
 
-/** /progress/measurements — прогресс по замерам ученика. */
+/** /progress/measurements — вкладка «Замеры»: прогресс ученика по замерам. */
 export function MeasureStatsPage() {
   const navigate = useNavigate();
   const { data, error } = useMeasurements();
@@ -33,7 +33,7 @@ export function MeasureStatsPage() {
         setPoint(null);
       }}
       onPoint={setPoint}
-      onBack={() => navigate('/progress/achievements')}
+      titled
       onAdd={() => navigate('/progress/measurements/new')}
     />
   );
