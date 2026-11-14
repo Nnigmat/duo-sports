@@ -29,6 +29,19 @@ describe('buildSteps', () => {
     expect(steps[8].restAfterSec).toBe(0);
   });
 
+  it('перед заминкой после последнего шага блока тоже отдых', () => {
+    const cooldown: TimedBlock = { ...warmup, id: 'cd', kind: 'cooldown' };
+    const steps = buildSteps([circuit, cooldown]);
+    expect(steps[8].restAfterSec).toBe(60);
+    // внутри самой заминки отдыха нет
+    expect(steps.slice(9).every((s) => s.restAfterSec === 0)).toBe(true);
+  });
+
+  it('без заминки после последнего шага отдыха нет, разминка перед блоком не получает отдых', () => {
+    expect(buildSteps([circuit])[8].restAfterSec).toBe(0);
+    expect(buildSteps([warmup, circuit])[1].restAfterSec).toBe(0);
+  });
+
   it('sets: все подходы упражнения, потом следующее', () => {
     const steps = buildSteps([setsBlock]);
     expect(steps.map((s) => `${s.exerciseId}:${s.round}/${s.rounds}`)).toEqual([
