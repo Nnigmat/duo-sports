@@ -209,6 +209,15 @@ CREATE TABLE IF NOT EXISTS plan_pauses (
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, start_date)
 );
+-- Замеры: одна запись на показатель в день; повторное сохранение обновляет значение
+CREATE TABLE IF NOT EXISTS measurements (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  date TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm')),
+  value REAL NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, date, kind)
+);
 `;
 
 /** Открывает базу (файл или ':memory:'), включает WAL и foreign_keys, создаёт таблицы. */
