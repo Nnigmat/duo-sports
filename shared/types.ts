@@ -857,3 +857,19 @@ export interface AchievementItem {
 export interface AchievementsResponse {
   categories: Array<{ id: string; name: string; note?: string; items: AchievementItem[] }>;
 }
+
+// ── «Замеры» ──────────────────────────────────────────────
+
+export type MeasurementKind = 'weight' | 'chest' | 'waist' | 'belly' | 'hips' | 'thigh' | 'arm';
+
+export type MeasurementEntry = {
+  /** ISO yyyy-mm-dd */
+  date: string;
+  /** Часть показателей может отсутствовать */
+  values: Partial<Record<MeasurementKind, number>>;
+};
+
+export type MeasurementsResponse = {
+  /** От старых к новым */
+  entries: MeasurementEntry[];
+};
