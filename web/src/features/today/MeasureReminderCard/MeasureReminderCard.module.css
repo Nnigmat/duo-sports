@@ -1,33 +1,15 @@
-.card {
+.reminder {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-sm);
-  box-sizing: border-box;
-  padding: var(--spacing-md);
-  border: 1px solid var(--hairline-soft);
-  border-radius: var(--rounded-lg);
-  background: var(--canvas);
+  gap: var(--spacing-xs);
   font-family: var(--font-sans);
   color: var(--ink);
 }
-@media (min-width: 768px) {
-  .card {
-    padding: var(--spacing-xl);
-  }
-}
-.text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 .when {
   margin: 0;
-  font-size: var(--body-md-medium-size);
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
   font-variant-numeric: tabular-nums;
   color: var(--slate);
-}
-.card > button {
-  flex-shrink: 0;
 }

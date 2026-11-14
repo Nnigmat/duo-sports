@@ -51,8 +51,8 @@ export const WithMeasureReminder: Story = {
   args: { measureReminder: { daysSince: 15 }, onMeasure: fn() },
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
-    await expect(c.getByRole('region', { name: 'Замеры' })).toBeVisible();
-    await userEvent.click(c.getByRole('button', { name: 'Записать' }));
+    await expect(c.getByText('Прошло 15 дней')).toBeVisible();
+    await userEvent.click(c.getByRole('button', { name: 'Замеры' }));
     await expect(args.onMeasure).toHaveBeenCalledTimes(1);
   },
 };
