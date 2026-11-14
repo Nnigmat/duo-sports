@@ -1,0 +1,22 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 28px; /* нет токена */
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--rounded-full);
+  background: var(--hairline);
+  color: var(--ink);
+  font-size: var(--caption-bold-size);
+  line-height: var(--caption-bold-line);
+  font-weight: var(--caption-bold-weight);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -13,6 +13,7 @@ export { Comment } from './Comment/Comment';
 export { CommentField } from './CommentField/CommentField';
 export { CommentBubble } from './CommentBubble/CommentBubble';
 export { DayPicker, type PickerDay } from './DayPicker/DayPicker';
+export { DeltaBadge } from './DeltaBadge/DeltaBadge';
 export { Dialog } from './Dialog/Dialog';
 export { EmptyState } from './EmptyState/EmptyState';
 export { Field } from './Field/Field';
