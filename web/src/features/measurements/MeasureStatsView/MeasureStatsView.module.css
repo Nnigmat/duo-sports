@@ -148,3 +148,34 @@
   flex: 1 1 auto;
   min-height: var(--spacing-md);
 }
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+.add {
+  display: flex;
+  flex-direction: column;
+}
+/* Десктоп: график и список рядом, кнопка не растягивается на всю ширину */
+@media (min-width: 1024px) {
+  .root,
+  .embedded {
+    max-width: 960px; /* как у «Достижений» */
+  }
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+  }
+  .body .card,
+  .body .list {
+    margin-top: 0;
+  }
+  .add {
+    align-self: flex-start;
+    width: 280px; /* нет токена */
+  }
+}

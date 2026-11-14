@@ -21,7 +21,6 @@ export function AchievementsPage() {
       filter={filter}
       onFilterChange={setFilter}
       onBack={() => navigate(-1)}
-      onOpenMeasurements={() => navigate('/progress/measurements')}
       gender={auth.status === 'in' ? auth.user.gender : undefined}
       layout={desktop ? 'desktop' : 'mobile'}
     />
