@@ -1,5 +1,6 @@
 export { COMMENTS as workoutComments, TECHNIQUES as workoutTechniques, WORKOUT as workoutFixture } from '../features/workout/WorkoutFlow/mockWorkout';
 import { addDays, parseIso } from '../features/plan/plan';
+import type { MeasurementsResponse } from '../../../shared/types';
 import type { AchievementsData, PlanData, PlanEntry, PlanTemplate, ScheduleData, TodayData, TodayState } from './types';
 
 /** 12 недель по 7 дней; детерминированно, чтобы истории не мигали */
@@ -256,4 +257,31 @@ export const todayReviewFixture: TodayData = {
     preview: { exerciseName: 'Приседания со штангой', timecodeSec: 21, text: 'На 4-м повторе колени уходят внутрь. Думай «раздвинуть пол» стопами.' },
   },
   awaitingReview: { sessionId: 8, title: 'Всё тело', whenLabel: 'вчера', videos: 2 },
+};
+
+/** Шесть замеров с 5 сентября по 14 ноября (данные макета «07 · Статистика замеров») */
+const MEASURE_DATES = ['2026-09-05', '2026-09-19', '2026-10-03', '2026-10-17', '2026-10-31', '2026-11-14'];
+const MEASURE_VALUES = {
+  weight: [74.2, 73.8, 73.5, 72.9, 72.4, 72.0],
+  chest: [96, 96, 95.5, 95, 95, 94.5],
+  waist: [84, 83.5, 82.5, 82, 81, 80.5],
+  belly: [91, 90.5, 89.5, 89, 88, 87.5],
+  hips: [99, 99, 98.5, 98.5, 98, 97.5],
+  thigh: [56.5, 56.5, 56, 56, 56, 56],
+  arm: [30.5, 30.5, 30.5, 31, 31, 31.5],
+} as const;
+
+export const measurementsFixture: MeasurementsResponse = {
+  entries: MEASURE_DATES.map((date, i) => ({
+    date,
+    values: {
+      weight: MEASURE_VALUES.weight[i],
+      chest: MEASURE_VALUES.chest[i],
+      waist: MEASURE_VALUES.waist[i],
+      belly: MEASURE_VALUES.belly[i],
+      hips: MEASURE_VALUES.hips[i],
+      thigh: MEASURE_VALUES.thigh[i],
+      arm: MEASURE_VALUES.arm[i],
+    },
+  })),
 };

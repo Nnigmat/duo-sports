@@ -4,6 +4,7 @@ import {
   chartGeometry,
   formatDateLong,
   formatDateShort,
+  formatDateWithWeekday,
   formatDelta,
   formatValue,
   lastBefore,
@@ -137,6 +138,13 @@ describe('даты', () => {
     expect(formatDateShort('2026-11-14')).toBe('14 ноя');
     expect(formatDateLong('2026-11-14')).toBe('14 ноября');
     expect(formatDateLong('2026-09-05')).toBe('5 сентября');
+  });
+});
+
+describe('formatDateWithWeekday', () => {
+  it('день недели с заглавной и длинная дата', () => {
+    expect(formatDateWithWeekday('2026-11-14')).toBe('Суббота, 14 ноября');
+    expect(formatDateWithWeekday('2026-11-16')).toBe('Понедельник, 16 ноября');
   });
 });
 

@@ -127,3 +127,11 @@ export function formatDateLong(iso: string): string {
   const [, m, d] = iso.split('-').map(Number);
   return `${d} ${MONTHS_LONG[m - 1]}`;
 }
+
+const WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+/** «Суббота, 14 ноября» */
+export function formatDateWithWeekday(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]}, ${formatDateLong(iso)}`;
+}

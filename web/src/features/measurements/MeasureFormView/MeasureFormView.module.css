@@ -1,0 +1,80 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: var(--spacing-xs) var(--spacing-md) max(28px, env(safe-area-inset-bottom)); /* 28 px: нет токена */
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.date {
+  color: var(--steel);
+  font-size: var(--caption-size);
+  font-variant-numeric: tabular-nums;
+}
+.intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xxs);
+}
+.introText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px; /* нет токена */
+  min-width: 0;
+}
+.title {
+  margin: 0;
+}
+/* Высота зарезервирована: подсказка не двигает поля */
+.hint {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  min-height: 84px; /* как в макете */
+  font-size: 14px; /* нет токена */
+  line-height: 1.5;
+}
+.hintTitle {
+  color: var(--ink);
+  font-weight: 600;
+}
+.hintText {
+  color: var(--slate);
+}
+.chibi {
+  flex: 0 0 112px;
+  width: 112px;
+  height: 112px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-full);
+  background: var(--surface);
+  overflow: hidden;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+}
+.card > * + * {
+  border-top: 1px solid var(--hairline-soft);
+}
+.note {
+  margin: 10px 0 0; /* нет токена */
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+.error {
+  margin-top: var(--spacing-sm);
+}
+.spacer {
+  flex: 1 1 auto;
+  min-height: var(--spacing-md);
+}
