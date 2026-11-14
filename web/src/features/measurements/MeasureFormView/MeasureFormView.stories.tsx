@@ -93,3 +93,38 @@ export const WithError: Story = {
     await expect(within(canvasElement).getByRole('alert')).toHaveTextContent('Не удалось сохранить');
   },
 };
+
+/** Экран внутри AppShell на телефоне 320 px: колонка 288 px (TopBar выступает на 8 px, как везде) */
+export const Narrow320: Story = {
+  decorators: [
+    (Story) => (
+      <div data-testid="frame" style={{ width: 304, padding: '0 8px', boxSizing: 'border-box' }}>
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const frame = c.getByTestId('frame');
+    // Заполняем всё, чтобы подписи «было … → …» были самыми длинными
+    for (const f of ['Вес', 'Грудь', 'Талия', 'Живот', 'Ягодицы', 'Бедро', 'Рука']) await userEvent.type(c.getByLabelText(f), '1');
+    for (const f of ['Вес', 'Грудь', 'Талия', 'Живот', 'Ягодицы', 'Бедро', 'Рука']) {
+      const input = c.getByLabelText(f);
+      const field = input.parentElement as HTMLElement;
+      const caption = document.getElementById(input.getAttribute('aria-describedby') as string) as HTMLElement;
+      const text = caption.getBoundingClientRect();
+      await expect(text.right).toBeLessThanOrEqual(field.getBoundingClientRect().left);
+    }
+    await expect(frame.scrollWidth).toBeLessThanOrEqual(frame.clientWidth);
+    // Подсказка не меняет высоту при переходе между полями
+    const status = c.getByRole('status');
+    const heights = new Set<number>();
+    for (const f of ['Вес', 'Грудь', 'Талия', 'Живот', 'Ягодицы', 'Бедро', 'Рука']) {
+      await userEvent.click(c.getByLabelText(f));
+      heights.add(Math.round(status.getBoundingClientRect().height));
+    }
+    await expect(heights.size).toBe(1);
+    // Не больше экрана в высоту сверх содержимого: кнопка не уходит за низ из-за min-height
+    await expect(frame.firstElementChild?.getBoundingClientRect().height).toBeLessThan(900);
+  },
+};

@@ -97,3 +97,19 @@ export const Flat: Story = {
     await expect(within(canvasElement).getAllByRole('button')).toHaveLength(3);
   },
 };
+
+export const Narrow: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ width: 254 }}>
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const ticks = [...canvasElement.querySelectorAll<HTMLElement>('span[style*="left"]')].filter((el) => !el.hidden);
+    await expect(ticks.length).toBeGreaterThan(1);
+    const rects = ticks.map((el) => el.getBoundingClientRect()).sort((a, b) => a.left - b.left);
+    for (let i = 1; i < rects.length; i++) await expect(rects[i].left).toBeGreaterThanOrEqual(rects[i - 1].right);
+  },
+};

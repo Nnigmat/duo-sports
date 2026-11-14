@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
-import { Button, DeltaBadge, EmptyState, LineChart, Screen, SegmentedControl } from '../../../ui';
+import { Button, DeltaBadge, EmptyState, IconButton, LineChart, SegmentedControl, Text, TopBar } from '../../../ui';
 import { cx } from '../../../ui/cx';
 import {
   formatDateLong,
@@ -39,9 +39,13 @@ const PERIODS: Array<{ value: Period; label: string }> = [
 function Shell({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
   if (!onBack) return <div className={styles.embedded}>{children}</div>;
   return (
-    <Screen label="Прогресс" back={{ onClick: onBack }} backLabel="Назад" className={styles.root}>
+    <div className={styles.root}>
+      <TopBar start={<IconButton bare icon="back" aria-label="Назад" onClick={onBack} />} />
+      <Text variant="h1" tag="h1" className={styles.title}>
+        Прогресс
+      </Text>
       {children}
-    </Screen>
+    </div>
   );
 }
 

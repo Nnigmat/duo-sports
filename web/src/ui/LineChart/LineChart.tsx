@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import { chartGeometry } from '../../features/measurements/measurements';
 import { cx } from '../cx';
 import styles from './LineChart.module.css';
+import { visibleLabels } from './labels';
 
 export type LinePoint = { shortLabel: string; ariaLabel: string; value: number };
 
@@ -15,8 +17,6 @@ type Props = {
 };
 
 const SIZE = { w: 326, h: 120, padX: 16, padY: 14 };
-/** Подписи под точками не накладываются: при большом числе точек остаются первая, последняя и выбранная */
-const MAX_LABELS = 7;
 
 /** Линия динамики. Точки — кнопки 44 px; выбранная крупнее и залита, смысл не держится на цвете. */
 export function LineChart({ points, selected, onSelect, label, className }: Props) {
@@ -24,11 +24,21 @@ export function LineChart({ points, selected, onSelect, label, className }: Prop
     points.map((p) => p.value),
     SIZE,
   );
-  const crowded = points.length > MAX_LABELS;
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState<number>(SIZE.w);
+  useEffect(() => {
+    const el = plotRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth || SIZE.w));
+    ro.observe(el);
+    setWidth(el.clientWidth || SIZE.w);
+    return () => ro.disconnect();
+  }, []);
+  const showLabel = visibleLabels(points.length, selected, width);
   const pct = (x: number) => `${(x / SIZE.w) * 100}%`;
   return (
     <div role="group" aria-label={label} className={cx(styles.root, className)}>
-      <div className={styles.plot}>
+      <div ref={plotRef} className={styles.plot}>
         <svg className={styles.svg} viewBox={`0 0 ${SIZE.w} ${SIZE.h}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
           {[SIZE.padY, SIZE.h / 2, SIZE.h - SIZE.padY].map((y) => (
             <line key={y} className={styles.grid} x1="0" x2={SIZE.w} y1={y} y2={y} />
@@ -57,7 +67,7 @@ export function LineChart({ points, selected, onSelect, label, className }: Prop
             key={i}
             className={cx(styles.tick, i === selected && styles.tickOn)}
             style={{ left: pct(xs[i]) }}
-            hidden={crowded && i !== selected && i !== 0 && i !== points.length - 1}
+            hidden={!showLabel[i]}
           >
             {p.shortLabel}
           </span>

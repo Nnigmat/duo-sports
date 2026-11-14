@@ -177,3 +177,20 @@ export const NeverFilledKind: Story = {
     await expect(canvasElement.textContent).not.toMatch(/NaN/);
   },
 };
+
+/** Колонка 288 px (телефон 320 px внутри AppShell): ничего не вылезает, подписи дат не накладываются */
+export const Narrow320: Story = {
+  render: () => (
+    <div data-testid="frame" style={{ width: 304, padding: '0 8px', boxSizing: 'border-box' }}>
+      <Interactive entries={entries} onAdd={() => {}} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const frame = within(canvasElement).getByTestId('frame');
+    await expect(frame.scrollWidth).toBeLessThanOrEqual(frame.clientWidth);
+    const ticks = [...frame.querySelectorAll<HTMLElement>('span[style*="left"]')].filter((el) => !el.hidden);
+    const rects = ticks.map((el) => el.getBoundingClientRect()).sort((a, b) => a.left - b.left);
+    await expect(rects.length).toBeGreaterThan(1);
+    for (let i = 1; i < rects.length; i++) await expect(rects[i].left).toBeGreaterThanOrEqual(rects[i - 1].right);
+  },
+};

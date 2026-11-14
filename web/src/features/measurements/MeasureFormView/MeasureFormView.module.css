@@ -1,10 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
-  box-sizing: border-box;
-  padding: var(--spacing-xs) var(--spacing-md) max(28px, env(safe-area-inset-bottom)); /* 28 px: нет токена */
-  background: var(--canvas);
+  max-width: 560px; /* нет токена */
   color: var(--ink);
   font-family: var(--font-sans);
 }
@@ -35,7 +32,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px; /* нет токена */
-  min-height: 84px; /* как в макете */
+  /* Высота зарезервирована под самую длинную подсказку на узком экране (320 px): блок не прыгает */
+  min-height: 132px; /* нет токена */
   font-size: 14px; /* нет токена */
   line-height: 1.5;
 }
