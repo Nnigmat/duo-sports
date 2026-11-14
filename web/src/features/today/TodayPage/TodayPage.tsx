@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays, toIso } from '../../plan/plan';
 import { useAuth } from '../../../app/auth/AuthProvider';
-import { useSchedule, useToday } from '../../../data/hooks';
+import { useExercises, useSchedule, useToday } from '../../../data/hooks';
+import { exerciseHrefFor } from '../../exercises/library';
 import { Skeleton } from '../../../shared';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
 import { dismissNotification } from '../../review/api';
@@ -24,6 +25,9 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
   /** Скрытая карточка исчезает сразу, не дожидаясь нового запроса «Сегодня» */
   const [dismissed, setDismissed] = useState<number | null>(null);
   const navigate = useNavigate();
+  // Библиотека нужна только для ссылок: пока не пришла (или упала), названия остаются текстом
+  const { data: library } = useExercises();
+  const exerciseHref = useMemo(() => exerciseHrefFor(library ?? undefined), [library]);
 
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={320} />;
@@ -65,6 +69,8 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
         onStart={start}
         onReschedule={reschedule}
         onOpenExercises={open('/exercises')}
+        exerciseHref={exerciseHref}
+        onOpenExercise={navigate}
         onStretch={open('/workout/stretch')}
         onTrainAnyway={open('/workout')}
         onOpenSummary={open(data.state.kind === 'done' && data.state.summary.sessionId ? `/review/${data.state.summary.sessionId}` : '/plan')}

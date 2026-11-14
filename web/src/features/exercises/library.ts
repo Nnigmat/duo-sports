@@ -396,3 +396,21 @@ export function toExercisePatch(draft: ExerciseDraft, ex: LibraryExercise): Part
   }
   return patch;
 }
+
+/**
+ * Адрес карточки упражнения по названию из тренировки или плана; совпадает с названием или псевдонимом
+ * без учёта регистра. Нет библиотеки или упражнения в ней — undefined, и название остаётся текстом.
+ */
+export function exerciseHrefFor(library: Array<Pick<LibraryExercise, 'id' | 'name' | 'aliases'>> | undefined): (name: string) => string | undefined {
+  const byName = new Map<string, string>();
+  for (const e of library ?? []) {
+    for (const n of [e.name, ...(e.aliases ?? [])]) {
+      const key = n.trim().toLowerCase();
+      if (!byName.has(key)) byName.set(key, e.id);
+    }
+  }
+  return (name) => {
+    const id = byName.get(name.trim().toLowerCase());
+    return id === undefined ? undefined : `/exercises/${encodeURIComponent(id)}`;
+  };
+}

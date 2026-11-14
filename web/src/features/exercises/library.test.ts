@@ -4,7 +4,7 @@ import {
   formatReps, formatTime, groupExercises, groupForMuscles, groupHint, groupTabs, hiddenSessions, lastSessionRows,
   latestMedia, mediaCountText, paramFields, recordText, recordTiles, searchExercises, sessionSummary, sessionTimeText, setTimeText, sortSessions, typicalSetText,
   planShort, toggleItem, totalText, trendInfo, canManageExercises, noteSteps,
-  toExerciseInput, toExercisePatch,
+  toExerciseInput, toExercisePatch, exerciseHrefFor,
 } from './library';
 import { exerciseLibrary } from './mock';
 import type { LibraryExercise } from './types';
@@ -219,5 +219,23 @@ describe('время подходов', () => {
     expect(typicalSetText({ ...squat, typicalSetSec: 45 }).replace(/\u00a0/g, ' ')).toBe('Подход обычно 45 с');
     expect(sessionTimeText(squat.sessions[0]!)).toBe('');
     expect(sessionTimeText({ ...squat.sessions[0]!, totalSec: 200 })).toBe('на упражнение ушло 03:20');
+  });
+});
+
+describe('exerciseHrefFor', () => {
+  const href = exerciseHrefFor([{ ...squat, aliases: ['Присед'] }, { ...squat, id: 'a b', name: 'Планка' }]);
+
+  it('находит упражнение по названию и по псевдониму без учёта регистра', () => {
+    expect(href('Приседания со штангой')).toBe('/exercises/squat');
+    expect(href(' присед ')).toBe('/exercises/squat');
+  });
+
+  it('кодирует id в адресе', () => {
+    expect(href('Планка')).toBe('/exercises/a%20b');
+  });
+
+  it('для названия вне библиотеки и без библиотеки даёт undefined', () => {
+    expect(href('Выпады')).toBeUndefined();
+    expect(exerciseHrefFor(undefined)('Планка')).toBeUndefined();
   });
 });
