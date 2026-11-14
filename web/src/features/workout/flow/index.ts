@@ -25,7 +25,7 @@ export { elapsedSec, formatElapsed, totalSec } from './elapsed';
 export { afterReload, canGoBack, canSwap, initSession, reduce, type Action, type Phase, type Session } from './session';
 export { hasTechnique } from './technique';
 export { demoFor } from './demo';
-export { ROUTINE_FINAL_SEC, routineLeadSec, routineSignalAt, routineView } from './routine';
+export { ROUTINE_FINAL_SEC, routineLeadSec, routineSignalAt, routineSpeechAt, routineView } from './routine';
 export { FINAL_SEC, LEAD_SEC, signalAt, timedView, type Signal, type TimedView } from './signals';
 export { LONG_BEEP_MS, POLL_MARGIN_MS, recordStartView, startSignalAt, type RecordStartView } from './recordStart';
 export { COMMENT_MAX, RATINGS, canSend, faceFor, feedbackOf, newSubmitKey, type Face, type Rating } from './feedback';

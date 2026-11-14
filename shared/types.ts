@@ -207,6 +207,8 @@ export interface AuthUser {
   soundStyle: SoundStyle;
   /** Громкость сигналов, % от 0 до MAX_SOUND_VOLUME; 0 — без звука; всегда задана */
   soundVolume: number;
+  /** Озвучивать названия упражнений в разминке и заминке; всегда задано (по умолчанию false) */
+  speakNames: boolean;
 }
 
 /** Стили сигналов: те же короткий и длинный, разное звучание */

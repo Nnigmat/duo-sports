@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { DISPLAY_NAME_MAX, MAX_SOUND_VOLUME, MAX_START_DELAY_SEC, SOUND_STYLES, type Gender, type SoundStyle } from '../../../../../shared/types';
-import { apiChangePassword, apiSetDisplayName, apiSetGender, apiSetSound, apiSetStartDelay } from '../../../app/auth/authApi';
+import { apiChangePassword, apiSetDisplayName, apiSetGender, apiSetSound, apiSetSpeakNames, apiSetStartDelay } from '../../../app/auth/authApi';
 import { useAuth } from '../../../app/auth/AuthProvider';
 import { Button, Card, ParamStepper, SegmentedControl, Text, TextInput } from '../../../ui';
 import { createBeeper } from '../../workout/sound/beeper';
@@ -20,6 +20,7 @@ export function ProfilePage() {
   // Пока идёт сохранение, показываем выбранное значение, а не то, что ещё не вернулось с сервера
   const [delayDraft, setDelayDraft] = useState<number | null>(null);
   const [soundDraft, setSoundDraft] = useState<{ style: SoundStyle; volume: number } | null>(null);
+  const [speakDraft, setSpeakDraft] = useState<boolean | null>(null);
   // Пробный сигнал: контекст создаётся по нажатию «Проверить», закрывается при уходе со страницы
   const [beeper] = useState(createBeeper);
   const previewTimer = useRef<number | undefined>(undefined);
@@ -57,6 +58,19 @@ export function ProfilePage() {
       setError(err instanceof Error ? err.message : 'Не удалось сохранить отсчёт');
     } finally {
       setDelayDraft(null);
+    }
+  }
+
+  async function saveSpeakNames(on: boolean) {
+    setError(null);
+    setSpeakDraft(on);
+    try {
+      await apiSetSpeakNames(on);
+      await auth.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось сохранить озвучку');
+    } finally {
+      setSpeakDraft(null);
     }
   }
 
@@ -160,6 +174,23 @@ export function ProfilePage() {
         <Button type="button" variant="secondary" onClick={previewSound} disabled={sound.volume === 0}>
           Проверить
         </Button>
+      </Card>
+      <Card tone="canvas" role="region" aria-labelledby="profile-speak" className={styles.card}>
+        <Text variant="h4" tag="h2" id="profile-speak">
+          Голос в разминке
+        </Text>
+        <Text variant="body-sm" color="slate">
+          Перед сменой упражнения в разминке и заминке голос назовёт следующее. Громкость берётся из настройки звука.
+        </Text>
+        <SegmentedControl<'on' | 'off'>
+          label="Называть упражнения"
+          options={[
+            { value: 'off', label: 'Выкл' },
+            { value: 'on', label: 'Вкл' },
+          ]}
+          value={(speakDraft ?? user.speakNames) ? 'on' : 'off'}
+          onChange={(v) => void saveSpeakNames(v === 'on')}
+        />
       </Card>
       <ChangePasswordView
         email={user.email}
