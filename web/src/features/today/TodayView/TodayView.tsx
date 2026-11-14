@@ -3,6 +3,7 @@ import type { Gender } from '../../../../../shared/types';
 import type { TodayData } from '../../../data/types';
 import { ReviewNoticeCard } from '../../../ui';
 import { AwaitingCard } from '../AwaitingCard/AwaitingCard';
+import { MeasureReminderCard } from '../MeasureReminderCard/MeasureReminderCard';
 import { AchievementsPreview } from '../AchievementsPreview/AchievementsPreview';
 import { ActivityCard } from '../ActivityCard/ActivityCard';
 import { PauseCard } from '../PauseCard/PauseCard';
@@ -28,6 +29,9 @@ export type TodayViewActions = TodayHeroActions & {
   reviewHref?: string;
   onOpenReview?: () => void;
   onDismissReview?: () => void;
+  /** Напоминание о замерах; карточка показывается, только если переданы оба свойства */
+  measureReminder?: { daysSince: number | null };
+  onMeasure?: () => void;
 };
 
 type Props = TodayViewActions & {
@@ -35,7 +39,7 @@ type Props = TodayViewActions & {
   gender?: Gender;
 };
 
-export function TodayView({ data, gender, onOpenAchievements, onOpenLatestAchievement, onOpenProgress, onWeekDayAction, onMoveMissed, onResume, reviewHref, onOpenReview, onDismissReview, ...hero }: Props) {
+export function TodayView({ data, gender, onOpenAchievements, onOpenLatestAchievement, onOpenProgress, onWeekDayAction, onMoveMissed, onResume, reviewHref, onOpenReview, onDismissReview, measureReminder, onMeasure, ...hero }: Props) {
   const { insights, reviewNotice, awaitingReview } = data;
   const openReview = (e: MouseEvent<HTMLAnchorElement>) => {
     if (!onOpenReview) return;
@@ -56,6 +60,7 @@ export function TodayView({ data, gender, onOpenAchievements, onOpenLatestAchiev
       <TodayHero state={data.state} gender={gender} {...hero} />
       <WeekCard days={data.week} onDayAction={onWeekDayAction} />
       {onMoveMissed && data.missed && <MissedCard items={data.missed} onMove={onMoveMissed} />}
+      {measureReminder && onMeasure && <MeasureReminderCard daysSince={measureReminder.daysSince} onMeasure={onMeasure} />}
       {insights && (
         <div className={styles.insights}>
             <AchievementsPreview

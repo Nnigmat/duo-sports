@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMeasurementKind, MEASUREMENT_KINDS, MEASUREMENT_MAX, normalizeMeasurement } from './measurements';
+import { isMeasurementKind, MEASUREMENT_KINDS, MEASUREMENT_MAX, measurementDue, normalizeMeasurement } from './measurements';
 
 describe('normalizeMeasurement', () => {
   it('округляет до 0,1', () => {
@@ -24,5 +24,32 @@ describe('isMeasurementKind', () => {
   });
   it('порядок показателей фиксирован', () => {
     expect(MEASUREMENT_KINDS).toEqual(['weight', 'chest', 'waist', 'belly', 'hips', 'thigh', 'arm']);
+  });
+});
+
+describe('measurementDue', () => {
+  const entry = (date: string) => ({ date, values: { weight: 70 } });
+  const today = '2026-11-14';
+
+  it('без замеров срок наступил, дней нет', () => {
+    expect(measurementDue([], today)).toEqual({ due: true, daysSince: null });
+  });
+  it('13 дней назад: рано', () => {
+    expect(measurementDue([entry('2026-11-01')], today)).toEqual({ due: false });
+  });
+  it('ровно 14 дней назад: пора', () => {
+    expect(measurementDue([entry('2026-10-31')], today)).toEqual({ due: true, daysSince: 14 });
+  });
+  it('считает дни, когда прошло больше', () => {
+    expect(measurementDue([entry('2026-10-01')], today)).toEqual({ due: true, daysSince: 44 });
+  });
+  it('берёт максимальную дату, порядок записей не важен', () => {
+    expect(measurementDue([entry('2026-10-01'), entry('2026-11-10'), entry('2026-09-01')], today)).toEqual({ due: false });
+  });
+  it('замер с датой в будущем срок не наступает', () => {
+    expect(measurementDue([entry('2026-11-20')], today)).toEqual({ due: false });
+  });
+  it('верно считает через границу месяца и года', () => {
+    expect(measurementDue([entry('2025-12-31')], '2026-01-14')).toEqual({ due: true, daysSince: 14 });
   });
 });

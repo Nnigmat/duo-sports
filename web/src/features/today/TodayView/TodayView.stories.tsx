@@ -32,6 +32,7 @@ export const Workout: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { level: 1 })).toHaveTextContent('Привет, Никита');
+    await expect(c.queryByRole('region', { name: 'Замеры' })).toBeNull();
     for (const name of ['Достижения', 'Неделя в цифрах', 'Рекорды', 'Активность']) {
       await expect(c.getByRole('region', { name })).toBeVisible();
     }
@@ -44,6 +45,15 @@ export const Workout: Story = {
     }
     await userEvent.click(c.getByRole('button', { name: 'Перенести' }));
     await expect(args.onReschedule).toHaveBeenCalledTimes(1);
+  },
+};
+export const WithMeasureReminder: Story = {
+  args: { measureReminder: { daysSince: 15 }, onMeasure: fn() },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('region', { name: 'Замеры' })).toBeVisible();
+    await userEvent.click(c.getByRole('button', { name: 'Записать' }));
+    await expect(args.onMeasure).toHaveBeenCalledTimes(1);
   },
 };
 export const WithReview: Story = {
