@@ -1,0 +1,150 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px; /* нет токена */
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.title {
+  margin: 0 0 var(--spacing-xs);
+}
+.embedded {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px; /* нет токена */
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+.period {
+  margin-top: var(--spacing-xxs);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.headMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+  min-width: 0;
+}
+.eyebrow {
+  color: var(--steel);
+  font-size: 11px; /* нет токена */
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* нет токена */
+}
+.valueLine {
+  display: flex;
+  align-items: baseline;
+  gap: 6px; /* нет токена */
+}
+.value {
+  font-family: var(--font-serif);
+  font-size: 40px; /* нет токена */
+  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.unit {
+  color: var(--slate);
+  font-size: var(--body-md-size);
+  line-height: 1.4;
+}
+.date {
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-variant-numeric: tabular-nums;
+}
+.delta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xxs);
+  padding-top: 2px; /* нет токена */
+  white-space: nowrap;
+}
+.noData {
+  margin: 0;
+  padding: var(--spacing-lg) 0;
+  color: var(--steel);
+  font-size: var(--body-sm-size);
+  text-align: center;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  height: 48px; /* нет токена */
+  padding: 0 var(--spacing-md);
+  border: 0;
+  border-top: 1px solid var(--hairline-soft);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.row:first-child {
+  border-top: 0;
+}
+.rowOn {
+  background: var(--surface);
+}
+.rowLabel {
+  flex: 1 1 auto;
+  font-size: 15px; /* нет токена */
+  line-height: 1.4;
+  font-weight: 500;
+}
+.rowOn .rowLabel {
+  font-weight: 700;
+}
+.rowValue {
+  font-size: 15px; /* нет токена */
+  line-height: 1.4;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rowChange {
+  width: 56px; /* как в макете */
+  color: var(--slate);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.spacer {
+  flex: 1 1 auto;
+  min-height: var(--spacing-md);
+}

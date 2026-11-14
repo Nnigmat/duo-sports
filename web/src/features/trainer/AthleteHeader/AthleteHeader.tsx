@@ -4,18 +4,29 @@ import { Icon, Text } from '../../../ui';
 import { goalText, initials, lastText } from '../students';
 import styles from './AthleteHeader.module.css';
 
+export type AthleteTab = 'sessions' | 'plan' | 'measurements';
+
+const TABS: Array<{ tab: AthleteTab; label: string; path: string }> = [
+  { tab: 'sessions', label: 'Тренировки', path: '' },
+  { tab: 'plan', label: 'План', path: '/plan' },
+  { tab: 'measurements', label: 'Замеры', path: '/measurements' },
+];
+
+/** Адрес вкладки карточки ученика */
+export const athleteTabPath = (athleteId: number, tab: AthleteTab): string =>
+  `/trainer/athletes/${athleteId}${TABS.find((t) => t.tab === tab)?.path ?? ''}`;
+
 type Props = {
   today: string;
   athlete: AthleteRow;
-  tab: 'sessions' | 'plan';
+  tab: AthleteTab;
   backHref: string;
   onBack: () => void;
-  onTab: (tab: 'sessions' | 'plan') => void;
+  onTab: (tab: AthleteTab) => void;
 };
 
-/** Шапка карточки ученика: «Все ученики», имя, цель и вкладки «Тренировки» и «План». */
+/** Шапка карточки ученика: «Все ученики», имя, цель и вкладки «Тренировки», «План» и «Замеры». */
 export function AthleteHeader({ today, athlete, tab, backHref, onBack, onTab }: Props) {
-  const base = `/trainer/athletes/${athlete.id}`;
   return (
     <>
       <a
@@ -42,18 +53,18 @@ export function AthleteHeader({ today, athlete, tab, backHref, onBack, onTab }: 
         <span className={styles.last}>{athlete.lastSession ? `Последняя тренировка: ${lastText(athlete.lastSession, today)}` : 'Тренировок ещё не было'}</span>
       </header>
       <nav className={styles.tabs} aria-label="Разделы карточки ученика">
-        {(['sessions', 'plan'] as const).map((t) => (
+        {TABS.map((t) => (
           <a
-            key={t}
+            key={t.tab}
             className={styles.tab}
-            href={t === 'plan' ? `${base}/plan` : base}
-            aria-current={tab === t ? 'page' : undefined}
+            href={athleteTabPath(athlete.id, t.tab)}
+            aria-current={tab === t.tab ? 'page' : undefined}
             onClick={(e: MouseEvent) => {
               e.preventDefault();
-              onTab(t);
+              onTab(t.tab);
             }}
           >
-            {t === 'plan' ? 'План' : 'Тренировки'}
+            {t.label}
           </a>
         ))}
       </nav>

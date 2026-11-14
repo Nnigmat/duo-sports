@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { AthleteRow, AthleteSessionsResponse } from '../../../../../shared/types';
 import { Button } from '../../../ui';
-import { AthleteHeader } from '../AthleteHeader/AthleteHeader';
+import { AthleteHeader, type AthleteTab } from '../AthleteHeader/AthleteHeader';
 import { SessionsPanel } from '../SessionsPanel/SessionsPanel';
 import type { Selection } from '../sessions';
 import styles from './AthleteView.module.css';
@@ -14,7 +14,7 @@ type Props = {
   onSelect: (selection: Selection) => void;
   backHref: string;
   onBack: () => void;
-  onTab: (tab: 'sessions' | 'plan') => void;
+  onTab: (tab: AthleteTab) => void;
   /** Выбранная тренировка по шагам: ReviewDetail, PlannedDetail или заглушка загрузки */
   detail: ReactNode;
   /** Узкий экран: открыта тренировка вместо списка. На широком обе колонки видны всегда */

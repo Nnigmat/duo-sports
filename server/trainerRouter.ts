@@ -9,6 +9,7 @@ import { addHint, validateHint } from './hints';
 import { clearDay, copyWorkoutToAthlete, planOf, setDay } from './plan';
 import { markReviewed } from './reviews';
 import { exerciseCommentsOf, listAthletes, progressOf, sessionsOf, setGoal, type AthleteFilter } from './trainerAthletes';
+import { measurementsOf } from './measurements';
 import { canAccessAthlete } from './trainerLinks';
 import { workoutOf, workoutResponse } from './workouts';
 import { updateWorkout } from './workoutEdit';
@@ -74,6 +75,14 @@ export function trainerRouter(db: Db) {
     const result = Number.isInteger(id) ? exerciseCommentsOf(db, req.user!, id, exercise, skip) : ({ ok: false, error: 'not_found' } as const);
     if (!result.ok) return void res.status(code(result.error)).json({ error: result.error });
     res.json({ comments: result.comments });
+  });
+
+  /** Замеры ученика: только чтение, писать за ученика нельзя */
+  r.get('/trainer/athletes/:id/measurements', (req, res) => {
+    const id = athleteId(req);
+    if (!Number.isInteger(id)) return void res.status(404).json({ error: 'not_found' });
+    if (!canAccessAthlete(db, req.user!, id)) return void res.status(403).json({ error: 'forbidden' });
+    res.json(measurementsOf(db, id));
   });
 
   /** План ученика целиком и правки по дням: те же данные и действия, что у самого спортсмена на /plan */

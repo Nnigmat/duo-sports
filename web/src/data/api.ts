@@ -1,5 +1,5 @@
 /** Запросы к серверу. Эндпоинтов пока нет, поэтому отдаём фикстуры тем же интерфейсом, что будет у fetch. */
-import type { CoachComment, Gender, PlanResponse, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
+import type { CoachComment, Gender, MeasurementEntry, MeasurementsResponse, PlanResponse, Technique, TodayResponse, Workout, WorkoutResponse } from '../../../shared/types';
 import { fetchLibrary } from '../features/exercises/api';
 import type { LibraryExercise } from '../features/exercises/types';
 import { fetchImportContext } from '../features/import/api';
@@ -23,6 +23,27 @@ export const fetchAchievements = async (): Promise<AchievementsData> => {
   if (!res) throw new Error('Нет связи с сервером');
   if (!res.ok) throw new Error(res.status === 401 ? 'Сессия закончилась: войдите заново' : `Сервер ответил ${res.status}`);
   return (await res.json()) as AchievementsData;
+};
+/** Замеры ученика; с athleteId — замеры ученика глазами тренера (только чтение) */
+export const fetchMeasurements = async (athleteId?: number): Promise<MeasurementsResponse> => {
+  const url = athleteId === undefined ? '/api/measurements' : `/api/trainer/athletes/${athleteId}/measurements`;
+  const res = await fetch(url).catch(() => null);
+  if (!res) throw new Error('Нет связи с сервером');
+  if (res.status === 401) throw new Error('Сессия закончилась: войдите заново');
+  if (res.status === 403) throw new Error('Нет доступа к этому ученику');
+  if (!res.ok) throw new Error(`Сервер ответил ${res.status}`);
+  return (await res.json()) as MeasurementsResponse;
+};
+/** Один замер за день; повторное сохранение за ту же дату обновляет значения */
+export const saveMeasurement = async (entry: MeasurementEntry): Promise<void> => {
+  const res = await fetch('/api/measurements', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(entry) }).catch(() => null);
+  if (!res) throw new Error('Нет связи с сервером');
+  if (res.status === 401) throw new Error('Сессия закончилась: войдите заново');
+  if (res.status === 400) {
+    const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    throw new Error(typeof body?.error === 'string' ? body.error : 'Не удалось сохранить замер');
+  }
+  if (!res.ok) throw new Error(`Сервер ответил ${res.status}`);
 };
 export const fetchSchedule = async (from?: string, base?: string): Promise<ScheduleData> => fetchScheduleResponse(toIso(new Date()), from, base);
 export const fetchExercises = (): Promise<LibraryExercise[]> => fetchLibrary();

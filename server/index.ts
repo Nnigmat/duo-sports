@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { achievementsRouter } from './achievementsRouter';
 import { authRouter } from './authRouter';
 import { equipmentRouter } from './equipmentRouter';
+import { measurementsRouter } from './measurementsRouter';
 import { exercisesRouter } from './exercisesRouter';
 import { routinesRouter } from './routinesRouter';
 import { importRouter } from './importRouter';
@@ -46,6 +47,7 @@ app.use('/api', todayRouter(db));
 app.use('/api', reviewRouter(db));
 app.use('/api', trainerRouter(db));
 app.use('/api', achievementsRouter(db));
+app.use('/api', measurementsRouter(db));
 app.use('/api', scheduleRouter(db));
 app.use('/api', videosRouter({ db, dir: videosDir, maxBytes: 300 * 1024 * 1024 }));
 
