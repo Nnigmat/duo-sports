@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { changePassword, createUser, login, logout, setDisplayName, setGender, setSound, setStartDelay, userBySession, MAX_ATTEMPTS } from './auth';
+import { changePassword, createUser, login, logout, setDisplayName, setGender, setSound, setSpeakNames, setStartDelay, userBySession, MAX_ATTEMPTS } from './auth';
 import { openDb, type Db } from './db';
 import { hashPassword, verifyPassword } from './password';
 
@@ -142,6 +142,15 @@ describe('пол спортсмена', () => {
     const id = (await sessionOf('nikita@example.com')).id;
     expect(() => setSound(db, id, 'siren' as never, 50)).toThrow();
     for (const bad of [-1, 101, 2.5, Number.NaN]) expect(() => setSound(db, id, 'bell', bad)).toThrow();
+  });
+  it('озвучка названий по умолчанию выключена, setSpeakNames включает и выключает', async () => {
+    const id = (await sessionOf('nikita@example.com')).id;
+    expect((await sessionOf('nikita@example.com')).speakNames).toBe(false);
+    setSpeakNames(db, id, true);
+    expect((await sessionOf('nikita@example.com')).speakNames).toBe(true);
+    setSpeakNames(db, id, false);
+    expect((await sessionOf('nikita@example.com')).speakNames).toBe(false);
+    expect(() => setSpeakNames(db, id, 1 as never)).toThrow();
   });
   it('слишком длинное имя отвергается', async () => {
     const id = (await sessionOf('nikita@example.com')).id;

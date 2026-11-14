@@ -25,9 +25,11 @@ import {
   restEyebrow,
   routineLeadSec,
   routineSignalAt,
+  routineSpeechAt,
   routineView,
   signalAt,
   stepLine,
+  stepTitle,
   timedView,
   timerSeconds,
   totalSec,
@@ -42,7 +44,8 @@ import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
 import { createBeeper, type Beeper } from '../sound/beeper';
-import type { SoundSettings } from '../sound/styles';
+import { createSpeaker, type Speaker } from '../sound/speaker';
+import { DEFAULT_SOUND, type SoundSettings } from '../sound/styles';
 import { RecordingScreen } from '../RecordingScreen/RecordingScreen';
 import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
@@ -84,6 +87,8 @@ type Props = {
   recordingDelaySec?: number;
   /** Стиль и громкость сигналов из профиля; без них играет стиль по умолчанию */
   sound?: SoundSettings;
+  /** Называть вслух упражнения разминки и заминки (профиль); по умолчанию нет */
+  speakNames?: boolean;
   /** Упражнения библиотеки, на которые можно заменить текущее; нет — кнопки «Заменить» нет */
   library?: SwapOption[];
   /** Адрес карточки упражнения для списка на экране старта; без него названия остаются текстом */
@@ -100,11 +105,13 @@ type Sheet = 'result' | 'tech' | 'comments' | 'swap' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, sound, library, exerciseHref, onOpenExercise, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, sound, speakNames, library, exerciseHref, onOpenExercise, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
   // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
   const [beeper] = useState(() => createBeeper(sound));
   useEffect(() => () => beeper.close(), [beeper]);
+  const [speaker] = useState<Speaker | null>(() => (speakNames ? createSpeaker((sound ?? DEFAULT_SOUND).volume) : null));
+  useEffect(() => () => speaker?.cancel(), [speaker]);
   useEffect(() => onSessionChange?.(session), [session, onSessionChange]);
   const [comments, setComments] = useState(rest.comments);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -145,6 +152,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         onBack={onExit}
         onStart={() => {
           beeper.unlock();
+          speaker?.unlock();
           dispatch({ type: 'begin' });
         }}
       />
@@ -223,6 +231,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         session={session}
         dispatch={dispatch}
         beeper={beeper}
+        speaker={speaker}
         shown={shown}
         idleUrl={idleUrl(gender)}
         restUrl={restUrl(gender)}
@@ -327,6 +336,7 @@ type StageProps = {
   session: Session;
   dispatch: Dispatch<Action>;
   beeper: Beeper;
+  speaker: Speaker | null;
   /** Шаг, про который экран: текущий или (на отдыхе) следующий */
   shown: Step;
   demoUrl?: string;
@@ -384,7 +394,7 @@ function SetStage(props: StageProps) {
  * Упражнение на время: отсчёт 5 с, работа, финиш; сигналы по расписанию, в конце кнопка «Готово».
  */
 function TimedStage(props: StageProps) {
-  const { session, dispatch, beeper, onDone } = props;
+  const { session, dispatch, beeper, speaker, onDone } = props;
   const step = session.steps[session.index];
   const routine = step.mode === 'timed';
   const workSec = timerSeconds(step.plan);
@@ -403,7 +413,20 @@ function TimedStage(props: StageProps) {
     last.current = elapsed;
     const signal = routine ? routineSignalAt(workSec, elapsed, leadSec) : signalAt(workSec, elapsed);
     if (signal) beeper.play(signal);
-  }, [routine, elapsed, workSec, leadSec, beeper]);
+    if (routine && speaker) {
+      // Называем следующее упражнение набора; у последнего шага набора фразы нет
+      const next = session.steps[session.index + 1];
+      const hasNext = step.indexInBlock < step.blockSize && next?.mode === 'timed';
+      const speech = routineSpeechAt(workSec, elapsed, leadSec, hasNext);
+      if (speech) speaker.say(`Следующее упражнение «${stepTitle(speech === 'self' ? step : next)}»`);
+    }
+  }, [routine, elapsed, workSec, leadSec, beeper, speaker, session.steps, session.index, step]);
+
+  // Пауза замораживает и речь; пропуск шага и выход обрывают её через размонтирование
+  useEffect(() => {
+    if (t.paused) speaker?.cancel();
+  }, [t.paused, speaker]);
+  useEffect(() => () => speaker?.cancel(), [speaker]);
 
   const view = routine ? routineView(workSec, elapsed, leadSec) : timedView(workSec, elapsed);
   return (

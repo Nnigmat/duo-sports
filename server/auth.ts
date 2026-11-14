@@ -11,7 +11,7 @@ type Clock = () => Date;
 const now: Clock = () => new Date();
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null; display_name: string | null; start_delay_sec: number | null; sound_style: string | null; sound_volume: number | null };
+type UserRow = { id: number; email: string; password_hash: string; role: Role; password_changed_at: string | null; gender: Gender | null; display_name: string | null; start_delay_sec: number | null; sound_style: string | null; sound_volume: number | null; speak_names: number | null };
 const toUser = (r: UserRow): AuthUser => ({
   id: r.id,
   email: r.email,
@@ -22,6 +22,7 @@ const toUser = (r: UserRow): AuthUser => ({
   startDelaySec: r.start_delay_sec ?? DEFAULT_START_DELAY_SEC,
   soundStyle: isSoundStyle(r.sound_style) ? r.sound_style : DEFAULT_SOUND_STYLE,
   soundVolume: r.sound_volume ?? DEFAULT_SOUND_VOLUME,
+  speakNames: r.speak_names === 1,
 });
 
 const isGender = (v: unknown): v is Gender => v === 'female' || v === 'male';
@@ -52,6 +53,12 @@ export function setSound(db: Db, userId: number, style: SoundStyle, volume: numb
   if (!isSoundStyle(style)) throw new Error('soundStyle: classic, bell или soft');
   if (!isSoundVolume(volume)) throw new Error(`soundVolume: целое от 0 до ${MAX_SOUND_VOLUME}`);
   return db.prepare('UPDATE users SET sound_style = ?, sound_volume = ? WHERE id = ?').run(style, volume, userId).changes === 1;
+}
+
+/** Озвучивать названия упражнений в разминке и заминке. */
+export function setSpeakNames(db: Db, userId: number, on: boolean): boolean {
+  if (typeof on !== 'boolean') throw new Error('speakNames: true или false');
+  return db.prepare('UPDATE users SET speak_names = ? WHERE id = ?').run(on ? 1 : 0, userId).changes === 1;
 }
 
 /** Имя для показа: пробелы по краям убираются, пустое очищает. Бросает, если длиннее DISPLAY_NAME_MAX. */

@@ -24,6 +24,21 @@ export function routineSignalAt(workSec: number, elapsed: number, leadSec: numbe
   return null;
 }
 
+/** За сколько секунд до смены называть следующее упражнение */
+export const ROUTINE_SPEECH_LEAD_SEC = 6;
+/** Короче этого шаг не озвучивается: фраза налезла бы на сигналы смены */
+export const ROUTINE_SPEECH_MIN_SEC = 8;
+
+/**
+ * Что назвать вслух на секунде `elapsed`: self — упражнение этого шага (в начале отсчёта первого шага набора),
+ * next — следующее упражнение набора (за 6 с до смены, если шаг не короче 8 с). После последнего шага набора фразы нет.
+ */
+export function routineSpeechAt(workSec: number, elapsed: number, leadSec: number, hasNext: boolean): 'self' | 'next' | null {
+  if (leadSec > 0 && elapsed === 0) return 'self';
+  if (hasNext && workSec >= ROUTINE_SPEECH_MIN_SEC && elapsed === leadSec + workSec - ROUTINE_SPEECH_LEAD_SEC) return 'next';
+  return null;
+}
+
 /** Что показать в кольце на секунде `elapsed`: отсчёт, работа или конец; последние 3 с подписаны «смена через». */
 export function routineView(workSec: number, elapsed: number, leadSec: number): TimedView {
   const end = leadSec + workSec;

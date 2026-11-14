@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
 import { warmup } from './fixtures';
 import { LEAD_SEC } from './signals';
-import { ROUTINE_FINAL_SEC, routineLeadSec, routineSignalAt, routineView } from './routine';
+import { ROUTINE_FINAL_SEC, routineLeadSec, routineSignalAt, routineSpeechAt, routineView } from './routine';
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
@@ -79,5 +79,28 @@ describe('routineView', () => {
 
   it('без отсчёта сразу работа', () => {
     expect(routineView(30, 0, 0)).toMatchObject({ phase: 'work', seconds: 30, alert: false });
+  });
+});
+
+describe('routineSpeechAt', () => {
+  it('первый шаг набора называет себя в начале отсчёта', () => {
+    expect(routineSpeechAt(30, 0, 5, true)).toBe('self');
+    expect(routineSpeechAt(30, 0, 5, false)).toBe('self');
+    expect(routineSpeechAt(30, 1, 5, true)).toBeNull();
+  });
+  it('следующее упражнение называется за 6 с до смены', () => {
+    expect(routineSpeechAt(30, 24, 0, true)).toBe('next');
+    expect(routineSpeechAt(30, 23, 0, true)).toBeNull();
+    expect(routineSpeechAt(30, 25, 0, true)).toBeNull();
+  });
+  it('у первого шага момент смещён на отсчёт', () => {
+    expect(routineSpeechAt(30, 29, 5, true)).toBe('next');
+  });
+  it('шаг короче 8 с не озвучивается', () => {
+    expect(routineSpeechAt(7, 1, 0, true)).toBeNull();
+    expect(routineSpeechAt(8, 2, 0, true)).toBe('next');
+  });
+  it('после последнего шага набора фразы нет', () => {
+    for (let e = 1; e <= 40; e++) expect(routineSpeechAt(30, e, 0, false)).toBeNull();
   });
 });

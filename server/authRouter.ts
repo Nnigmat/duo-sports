@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { DISPLAY_NAME_MAX, isSoundStyle, isSoundVolume, MAX_SOUND_VOLUME, MAX_START_DELAY_SEC, type AuthUser } from '../shared/types';
-import { changePassword, login, logout, setDisplayName, setGender, setSound, setStartDelay, SESSION_DAYS, userBySession } from './auth';
+import { changePassword, login, logout, setDisplayName, setGender, setSound, setSpeakNames, setStartDelay, SESSION_DAYS, userBySession } from './auth';
 import type { Db } from './db';
 
 const COOKIE = 'session';
@@ -97,6 +97,13 @@ export function authRouter(db: Db) {
     if (!isSoundStyle(soundStyle)) return void res.status(400).json({ error: 'soundStyle: classic, bell или soft' });
     if (!isSoundVolume(soundVolume)) return void res.status(400).json({ error: `soundVolume: целое от 0 до ${MAX_SOUND_VOLUME}` });
     setSound(db, req.user!.id, soundStyle, soundVolume);
+    res.json({ ok: true });
+  });
+
+  r.put('/auth/speak-names', requireUser(db), (req, res) => {
+    const on = req.body?.speakNames;
+    if (typeof on !== 'boolean') return void res.status(400).json({ error: 'speakNames: true или false' });
+    setSpeakNames(db, req.user!.id, on);
     res.json({ ok: true });
   });
 

@@ -150,6 +150,7 @@ function Flow({ data, dateLabel, onFinish, onExit, initialSession, startedAt, fi
       exerciseHref={exerciseHref}
       onOpenExercise={navigate}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
+      speakNames={auth.status === 'in' ? auth.user.speakNames : undefined}
       sound={auth.status === 'in' ? { style: auth.user.soundStyle, volume: auth.user.soundVolume } : undefined}
       dateLabel={dateLabel}
       onUploadVideo={async (blob, _step, durationSec) => (await uploadVideo(blob, durationSec)).id}

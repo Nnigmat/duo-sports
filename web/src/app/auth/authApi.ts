@@ -67,6 +67,16 @@ export async function apiSetStartDelay(startDelaySec: number): Promise<void> {
   if (!res.ok) throw new Error('Не удалось сохранить отсчёт. Попробуйте ещё раз');
 }
 
+export async function apiSetSpeakNames(speakNames: boolean): Promise<void> {
+  const res = await fetch('/api/auth/speak-names', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ speakNames }),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить озвучку. Попробуйте ещё раз');
+}
+
 export async function apiSetSound(soundStyle: SoundStyle, soundVolume: number): Promise<void> {
   const res = await fetch('/api/auth/sound', {
     method: 'PUT',

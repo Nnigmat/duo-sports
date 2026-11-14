@@ -34,6 +34,7 @@ function Preview({ athleteId, workoutId }: { athleteId: number; workoutId: numbe
       equipment={data.equipment}
       gender={data.gender}
       recordingDelaySec={auth.status === 'in' ? auth.user.startDelaySec : undefined}
+      speakNames={auth.status === 'in' ? auth.user.speakNames : undefined}
       sound={auth.status === 'in' ? { style: auth.user.soundStyle, volume: auth.user.soundVolume } : undefined}
       dateLabel={`Превью · ${formatLongDate(parseIso(day))}`}
       // Видео в превью на сервер не уходит: загрузка отключена, id не возвращается
