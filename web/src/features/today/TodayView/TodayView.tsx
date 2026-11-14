@@ -3,7 +3,6 @@ import type { Gender } from '../../../../../shared/types';
 import type { TodayData } from '../../../data/types';
 import { ReviewNoticeCard } from '../../../ui';
 import { AwaitingCard } from '../AwaitingCard/AwaitingCard';
-import { MeasureReminderCard } from '../MeasureReminderCard/MeasureReminderCard';
 import { AchievementsPreview } from '../AchievementsPreview/AchievementsPreview';
 import { ActivityCard } from '../ActivityCard/ActivityCard';
 import { PauseCard } from '../PauseCard/PauseCard';
@@ -57,10 +56,9 @@ export function TodayView({ data, gender, onOpenAchievements, onOpenLatestAchiev
       {onResume && data.pause && <PauseCard pause={data.pause} onResume={onResume} />}
       {reviewHref && reviewNotice && onDismissReview && <ReviewNoticeCard notice={reviewNotice} href={reviewHref} onLinkClick={openReview} onDismiss={onDismissReview} />}
       {awaitingReview && <AwaitingCard awaiting={awaitingReview} />}
-      <TodayHero state={data.state} gender={gender} {...hero} />
+      <TodayHero state={data.state} gender={gender} measureReminder={measureReminder} onMeasure={onMeasure} {...hero} />
       <WeekCard days={data.week} onDayAction={onWeekDayAction} />
       {onMoveMissed && data.missed && <MissedCard items={data.missed} onMove={onMoveMissed} />}
-      {measureReminder && onMeasure && <MeasureReminderCard daysSince={measureReminder.daysSince} onMeasure={onMeasure} />}
       {insights && (
         <div className={styles.insights}>
             <AchievementsPreview

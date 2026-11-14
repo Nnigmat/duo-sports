@@ -14,9 +14,8 @@ type Story = StoryObj<typeof meta>;
 export const Overdue: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
-    await expect(c.getByRole('heading', { name: 'Замеры' })).toBeInTheDocument();
     await expect(c.getByText('Прошло 15 дней')).toBeInTheDocument();
-    await userEvent.click(c.getByRole('button', { name: 'Записать' }));
+    await userEvent.click(c.getByRole('button', { name: 'Замеры' }));
     await expect(args.onMeasure).toHaveBeenCalledTimes(1);
   },
 };

@@ -6,6 +6,13 @@
   font-family: var(--font-sans);
   color: var(--ink);
 }
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
 .disk {
   display: grid;
   place-items: center;
