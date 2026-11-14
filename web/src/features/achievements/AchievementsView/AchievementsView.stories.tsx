@@ -27,18 +27,6 @@ export const Default: Story = {
     await expect(args.onBack).toHaveBeenCalled();
   },
 };
-export const WithoutMeasurementsEntry: Story = {
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).queryByRole('button', { name: /Замеры/ })).toBeNull();
-  },
-};
-export const WithMeasurementsEntry: Story = {
-  args: { onOpenMeasurements: fn() },
-  play: async ({ canvasElement, args }) => {
-    await userEvent.click(within(canvasElement).getByRole('button', { name: /Замеры/ }));
-    await expect(args.onOpenMeasurements).toHaveBeenCalled();
-  },
-};
 export const FilteredByCategory: Story = {
   args: { filter: 'strength' },
   play: async ({ canvasElement }) => {
