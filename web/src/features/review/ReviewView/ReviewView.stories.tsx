@@ -121,3 +121,13 @@ export const FoldedWithComment: Story = {
     await expect(c.getByText('Заминка · 2').closest('details')).not.toHaveAttribute('open');
   },
 };
+
+export const Desktop: Story = {
+  args: { layout: 'desktop' },
+  parameters: { viewport: { defaultViewport: 'desktop' } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('heading', { name: 'Подсказки от тренера' })).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
+  },
+};

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { ReviewExercise } from '../../../../../shared/types';
 import { useSessionReview } from '../../../data/hooks';
-import { Skeleton } from '../../../shared';
+import { Skeleton, useMediaQuery } from '../../../shared';
 import { deleteComment, postReply } from '../api';
 import { ReviewView } from '../ReviewView/ReviewView';
 
@@ -21,6 +21,7 @@ function ReviewLoader({ sessionId }: { sessionId: number }) {
 function ReviewContent({ sessionId, onChanged }: { sessionId: number; onChanged: () => void }) {
   const { data, error } = useSessionReview(sessionId);
   const navigate = useNavigate();
+  const desktop = useMediaQuery('(min-width: 1024px)');
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={480} />;
 
@@ -38,6 +39,7 @@ function ReviewContent({ sessionId, onChanged }: { sessionId: number; onChanged:
   return (
     <ReviewView
       review={data}
+      layout={desktop ? 'desktop' : 'mobile'}
       onBack={() => navigate('/')}
       videoHref={videoHref}
       onOpenVideo={(id, t) => navigate(videoHref(id, t))}
