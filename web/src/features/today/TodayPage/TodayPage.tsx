@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { measurementDue } from '../../../../../shared/measurements';
 import { addDays, toIso } from '../../plan/plan';
 import { useAuth } from '../../../app/auth/AuthProvider';
-import { useExercises, useSchedule, useToday } from '../../../data/hooks';
+import { useExercises, useMeasurements, useSchedule, useToday } from '../../../data/hooks';
 import { exerciseHrefFor } from '../../exercises/library';
 import { Skeleton } from '../../../shared';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
@@ -13,10 +14,21 @@ import { TodayView } from '../TodayView/TodayView';
 /** После переноса страница монтируется заново по новому key: «Сегодня» и расписание читаются с сервера ещё раз */
 export function TodayPage() {
   const [version, setVersion] = useState(0);
-  return <TodayContent key={version} onMoved={() => setVersion((v) => v + 1)} />;
+  const auth = useAuth();
+  const onMoved = () => setVersion((v) => v + 1);
+  // Замеры вносит только ученик: тренеру и админу карточка не нужна, запрос не уходит
+  if (auth.status === 'in' && auth.user.role === 'athlete') return <WithMeasureReminder key={version} onMoved={onMoved} />;
+  return <TodayContent key={version} onMoved={onMoved} />;
 }
 
-function TodayContent({ onMoved }: { onMoved: () => void }) {
+/** Пока замеры грузятся или не загрузились, главная работает без карточки */
+function WithMeasureReminder({ onMoved }: { onMoved: () => void }) {
+  const { data } = useMeasurements();
+  const due = data ? measurementDue(data.entries, toIso(new Date())) : undefined;
+  return <TodayContent onMoved={onMoved} measureReminder={due?.due ? { daysSince: due.daysSince } : undefined} />;
+}
+
+function TodayContent({ onMoved, measureReminder }: { onMoved: () => void; measureReminder?: { daysSince: number | null } }) {
   const { data, error } = useToday();
   const auth = useAuth();
   /** День, тренировку которого переносим; null — панель закрыта */
@@ -66,6 +78,8 @@ function TodayContent({ onMoved }: { onMoved: () => void }) {
               }
             : undefined
         }
+        measureReminder={measureReminder}
+        onMeasure={open('/progress/measurements/new')}
         onStart={start}
         onReschedule={reschedule}
         onOpenExercises={open('/exercises')}
