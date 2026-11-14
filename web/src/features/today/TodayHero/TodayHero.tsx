@@ -16,6 +16,9 @@ export type TodayHeroActions = {
   onStretch: () => void;
   onTrainAnyway: () => void;
   onOpenSummary: () => void;
+  /** Адрес карточки упражнения; без него (или если упражнения нет в библиотеке) название остаётся текстом */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
 };
 
 type Props = TodayHeroActions & {

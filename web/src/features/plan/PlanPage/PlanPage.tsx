@@ -4,6 +4,7 @@ import { useExercises, usePlan, useSchedule } from '../../../data/hooks';
 import type { PlanData } from '../../../data/types';
 import { Skeleton, useMediaQuery } from '../../../shared';
 import { Notice } from '../../../ui';
+import { exerciseHrefFor } from '../../exercises/library';
 import { PauseSheet, RescheduleSheet } from '../../schedule';
 import { moveWorkout, pausePlan, skipWorkout } from '../../schedule/api';
 import { deleteDay, putDay } from '../api';
@@ -113,11 +114,7 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
   const desktop = useMediaQuery('(min-width: 1024px)');
   // Библиотека нужна только для ссылок: пока не пришла (или упала), названия остаются текстом
   const { data: library } = useExercises();
-  const exerciseIds = useMemo(() => new Map((library ?? []).map((e) => [e.name, e.id])), [library]);
-  const exerciseHref = (name: string) => {
-    const id = exerciseIds.get(name);
-    return id ? `/exercises/${id}` : undefined;
-  };
+  const exerciseHref = useMemo(() => exerciseHrefFor(library ?? undefined), [library]);
 
   const show = (date: string, entry: Entry | null) =>
     setData((d) => {

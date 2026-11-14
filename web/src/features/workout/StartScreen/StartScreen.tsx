@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Block } from '../../../../../shared/types';
 import { Button } from '../../../ui/Button/Button';
 import { Card } from '../../../ui/Card/Card';
+import { ExerciseNameLink } from '../../../ui/ExerciseNameLink/ExerciseNameLink';
 import { Icon } from '../../../ui/Icon/Icon';
 import { Screen } from '../../../ui/Screen/Screen';
 import { Text } from '../../../ui/Text/Text';
@@ -21,12 +22,15 @@ type Props = {
   equipment?: Record<string, string[]>;
   /** Ролик «чибик стоит»; без него (или если не загрузился) стоит статичный чибик */
   idleUrl?: string;
+  /** Адрес карточки упражнения; без него (или если упражнения нет в библиотеке) название остаётся текстом */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
   onBack: () => void;
   onStart: () => void;
 };
 
 /** Экран старта: что сегодня в тренировке и кнопка «Начать». */
-export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBack, onStart }: Props) {
+export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, exerciseHref, onOpenExercise, onBack, onStart }: Props) {
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [failed, setFailed] = useState(false);
   const gear = gearList(blocks, equipment ?? {});
@@ -75,7 +79,7 @@ export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBa
         {blocks.map((b, i) => (
           <section key={b.id} className={styles.section}>
             {i > 0 && <hr className={styles.rule} />}
-            <BlockSection block={b} />
+            <BlockSection block={b} exerciseHref={exerciseHref} onOpenExercise={onOpenExercise} />
           </section>
         ))}
       </Card>
@@ -90,7 +94,7 @@ export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, onBa
   );
 }
 
-function BlockSection({ block }: { block: Block }) {
+function BlockSection({ block, exerciseHref, onOpenExercise }: { block: Block } & Pick<Props, 'exerciseHref' | 'onOpenExercise'>) {
   if (block.mode === 'timed') {
     return (
       <div className={styles.workHead}>
@@ -122,7 +126,7 @@ function BlockSection({ block }: { block: Block }) {
               {i + 1}
             </span>
             <Text variant="body-sm" tag="span" className={styles.itemName}>
-              {item.name}
+              <ExerciseNameLink name={item.name} href={exerciseHref?.(item.name)} onOpen={onOpenExercise} />
             </Text>
             <Text variant="body-sm" tag="span" color="slate" className={styles.itemTarget}>
               {item.target}

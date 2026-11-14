@@ -15,6 +15,7 @@ export { CommentBubble } from './CommentBubble/CommentBubble';
 export { DayPicker, type PickerDay } from './DayPicker/DayPicker';
 export { Dialog } from './Dialog/Dialog';
 export { EmptyState } from './EmptyState/EmptyState';
+export { ExerciseNameLink } from './ExerciseNameLink/ExerciseNameLink';
 export { Field } from './Field/Field';
 export { Icon } from './Icon/Icon';
 export { GoalChip } from './GoalChip/GoalChip';

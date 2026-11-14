@@ -87,6 +87,7 @@ export function RoutinesPage() {
                 backLabel={desktop ? 'Все разминки' : 'Разминки'}
                 onBack={() => navigate(BASE)}
                 onEdit={canManage ? () => navigate(`${BASE}/${r.id}/edit`) : undefined}
+                onOpenExercise={navigate}
               />
             )}
           />

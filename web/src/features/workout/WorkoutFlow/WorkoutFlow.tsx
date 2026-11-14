@@ -86,6 +86,9 @@ type Props = {
   sound?: SoundSettings;
   /** Упражнения библиотеки, на которые можно заменить текущее; нет — кнопки «Заменить» нет */
   library?: SwapOption[];
+  /** Адрес карточки упражнения для списка на экране старта; без него названия остаются текстом */
+  exerciseHref?: (name: string) => string | undefined;
+  onOpenExercise?: (href: string) => void;
   /** Для дат комментариев; в приложении не передаётся */
   now?: Date;
 };
@@ -97,7 +100,7 @@ type Sheet = 'result' | 'tech' | 'comments' | 'swap' | null;
  * Ход тренировки считает чистый автомат из flow/session, здесь только экран и побочные эффекты.
  * Данные и сохранение приходят пропсами: контейнер выше делает запросы к API.
  */
-export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, sound, library, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
+export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender, onUploadVideo, onFinish, onExit, recordingDelaySec, sound, library, exerciseHref, onOpenExercise, now, initialSession, onSessionChange, startedAt, finishedAt, ...rest }: Props) {
   const [session, dispatch] = useReducer(reduce, workout, (w) => initialSession ? afterReload(initialSession) : initSession(buildSteps(w.blocks)));
   // Один AudioContext на Прохождение: создаётся по «Начать тренировку», закрывается при выходе
   const [beeper] = useState(() => createBeeper(sound));
@@ -137,6 +140,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         dateLabel={dateLabel}
         equipment={equipment}
         idleUrl={idleUrl(gender)}
+        exerciseHref={exerciseHref}
+        onOpenExercise={onOpenExercise}
         onBack={onExit}
         onStart={() => {
           beeper.unlock();
