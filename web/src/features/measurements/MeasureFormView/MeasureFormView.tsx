@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import type { MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
+import type { Gender, MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
 import { Button, IconButton, MeasureRow, Notice, Text, TopBar } from '../../../ui';
-import { Chibi } from '../../workout/chibi/Chibi';
+import { idleUrl } from '../../workout/chibi/idle';
+import { ChibiClip } from '../../workout/parts/ChibiClip/ChibiClip';
 import { formatDateLong, formatDateWithWeekday, formatValue, lastBefore, MEASUREMENT_FIELDS, parseInput } from '../measurements';
 import styles from './MeasureFormView.module.css';
 
@@ -11,6 +12,8 @@ type Props = {
   /** Вся история: из неё берутся прошлые значения («было …») */
   entries: MeasurementEntry[];
   saving: boolean;
+  layout?: 'mobile' | 'desktop';
+  gender?: Gender;
   error?: string;
   onBack: () => void;
   onSave: (entry: MeasurementEntry) => void;
@@ -21,7 +24,7 @@ type Values = Partial<Record<MeasurementKind, string>>;
 const DEFAULT_HINT = 'Утром, натощак, до тренировки. Нажмите на поле — подскажу, где мерить.';
 
 /** Экран ввода замера: семь полей, подсказка по фокусу, пустые поля можно пропустить. */
-export function MeasureFormView({ today, entries, saving, error, onBack, onSave }: Props) {
+export function MeasureFormView({ today, entries, saving, error, layout = 'mobile', gender, onBack, onSave }: Props) {
   const [values, setValues] = useState<Values>(() => {
     // Повторное открытие в тот же день: подставляем уже сохранённые значения
     const saved = entries.find((e) => e.date === today);
@@ -49,7 +52,7 @@ export function MeasureFormView({ today, entries, saving, error, onBack, onSave 
   };
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-layout={layout}>
       <TopBar
         start={<IconButton bare icon="back" aria-label="Назад" onClick={onBack} />}
         end={<span className={styles.date}>{formatDateWithWeekday(today)}</span>}
@@ -65,10 +68,11 @@ export function MeasureFormView({ today, entries, saving, error, onBack, onSave 
           </div>
         </div>
         <div className={styles.chibi}>
-          <Chibi pose="stand" face="happy" size={112} />
+          <ChibiClip src={idleUrl(gender)} pose="stand" size={layout === 'desktop' ? 240 : 112} />
         </div>
       </div>
 
+      <div className={styles.form}>
       <div className={styles.card}>
         {MEASUREMENT_FIELDS.map((f) => (
           <MeasureRow
@@ -100,6 +104,7 @@ export function MeasureFormView({ today, entries, saving, error, onBack, onSave 
       <Button icon="check" fullWidth loading={saving} disabled={filled === 0} onClick={save}>
         {filled > 0 ? `Сохранить · ${filled} из ${MEASUREMENT_FIELDS.length}` : 'Сохранить'}
       </Button>
+      </div>
     </div>
   );
 }
