@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 import type { MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
 import { Button, DeltaBadge, EmptyState, IconButton, LineChart, SegmentedControl, Text, TopBar } from '../../../ui';
 import { cx } from '../../../ui/cx';
@@ -50,6 +50,7 @@ function Shell({ onBack, children }: { onBack?: () => void; children: ReactNode 
 }
 
 export function MeasureStatsView({ today, entries, kind, period, point, onKind, onPeriod, onPoint, onBack, onAdd }: Props) {
+  const metricId = useId();
   const addButton = onAdd && (
     <Button icon="plus" fullWidth onClick={onAdd}>
       Новый замер
@@ -85,10 +86,10 @@ export function MeasureStatsView({ today, entries, kind, period, point, onKind, 
     <Shell onBack={onBack}>
       <SegmentedControl label="Период" options={PERIODS} value={period} onChange={onPeriod} className={styles.period} />
 
-      <section className={styles.card} aria-labelledby="measure-metric">
+      <section className={styles.card} aria-labelledby={metricId}>
         <div className={styles.head}>
           <div className={styles.headMain}>
-            <span id="measure-metric" className={styles.eyebrow}>
+            <span id={metricId} className={styles.eyebrow}>
               {field.label}
             </span>
             <div aria-live="polite" className={styles.live}>

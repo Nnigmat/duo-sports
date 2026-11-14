@@ -1,4 +1,4 @@
-import { formatDelta, formatValue, parseInput, sanitizeInput } from '../../features/measurements/measurements';
+import { formatDelta, formatValue, parseInput, sanitizeInput } from '../measureNumbers';
 import styles from './MeasureRow.module.css';
 
 type Props = {
@@ -14,7 +14,8 @@ type Props = {
   onFocus: () => void;
 };
 
-function caption(previous: number | null, value: string): string {
+function caption(previous: number | null, value: string, invalid: boolean): string {
+  if (invalid) return 'не похоже на число, пример: 72,5';
   if (previous === null) return 'первый замер';
   const base = `было ${formatValue(previous)}`;
   const next = parseInput(value);
@@ -26,6 +27,7 @@ function caption(previous: number | null, value: string): string {
 /** Строка замера. Вся строка — label поля, поле 44 px; активное выделено рамкой 2 px. */
 export function MeasureRow({ id, label, unit, previous, value, active, onChange, onFocus }: Props) {
   const inputId = `m-${id}`;
+  const invalid = value !== '' && parseInput(value) === null;
   return (
     <label htmlFor={inputId} className={styles.row}>
       <span className={styles.text}>
@@ -33,14 +35,15 @@ export function MeasureRow({ id, label, unit, previous, value, active, onChange,
           {label}
         </span>
         <span id={`${inputId}-note`} className={styles.caption}>
-          {caption(previous, value)}
+          {caption(previous, value, invalid)}
         </span>
       </span>
-      <span className={styles.field} data-active={active}>
+      <span className={styles.field} data-active={active} data-invalid={invalid}>
         <input
           id={inputId}
           aria-labelledby={`${inputId}-label`}
           aria-describedby={`${inputId}-note`}
+          aria-invalid={invalid}
           className={styles.input}
           type="text"
           inputMode="decimal"

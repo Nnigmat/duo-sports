@@ -59,6 +59,15 @@ export const Filled: Story = {
   },
 };
 
+export const Invalid: Story = {
+  args: { value: '1.2.3' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByLabelText('Талия')).toHaveAttribute('aria-invalid', 'true');
+    await expect(c.getByText('не похоже на число, пример: 72,5')).toBeVisible();
+  },
+};
+
 export const NoPrevious: Story = {
   args: { previous: null, value: '80' },
   play: async ({ canvasElement }) => {

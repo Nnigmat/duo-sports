@@ -1,4 +1,4 @@
-import { formatDelta } from '../../features/measurements/measurements';
+import { formatDelta } from '../measureNumbers';
 import { cx } from '../cx';
 import styles from './DeltaBadge.module.css';
 
@@ -14,7 +14,7 @@ export function DeltaBadge({ value, unit, className }: Props) {
   return (
     <span className={cx(styles.badge, className)}>
       {unit ? `${formatDelta(value)} ${unit}` : formatDelta(value)}
-      <span className={styles.srOnly}>{meaning(value)}</span>
+      <span className={styles.srOnly}>{`, ${meaning(value)}`}</span>
     </span>
   );
 }

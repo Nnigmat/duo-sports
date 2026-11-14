@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { chartGeometry } from '../../features/measurements/measurements';
+import { chartGeometry } from './geometry';
 import { cx } from '../cx';
 import styles from './LineChart.module.css';
-import { visibleLabels } from './labels';
+import { hitWidth, visibleLabels } from './labels';
 
 export type LinePoint = { shortLabel: string; ariaLabel: string; value: number };
 
@@ -35,6 +35,7 @@ export function LineChart({ points, selected, onSelect, label, className }: Prop
     return () => ro.disconnect();
   }, []);
   const showLabel = visibleLabels(points.length, selected, width);
+  const hit = hitWidth(points.length, width);
   const pct = (x: number) => `${(x / SIZE.w) * 100}%`;
   return (
     <div role="group" aria-label={label} className={cx(styles.root, className)}>
@@ -52,7 +53,7 @@ export function LineChart({ points, selected, onSelect, label, className }: Prop
             key={i}
             type="button"
             className={styles.dot}
-            style={{ left: pct(xs[i]), top: ys[i] }}
+            style={{ left: pct(xs[i]), top: ys[i], width: hit, marginLeft: -hit / 2 }}
             aria-pressed={i === selected}
             aria-label={p.ariaLabel}
             onClick={() => onSelect(i)}

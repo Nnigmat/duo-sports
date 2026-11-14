@@ -13,6 +13,12 @@ export function MeasureFormPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
 
+  // Если форму открыли по прямой ссылке, назад идти некуда: заменяем запись, а не добавляем новую
+  const leave = () => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/progress/measurements', { replace: true });
+  };
+
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={480} />;
   return (
@@ -21,13 +27,13 @@ export function MeasureFormPage() {
       entries={data.entries}
       saving={saving}
       error={saveError}
-      onBack={() => navigate('/progress/measurements')}
+      onBack={leave}
       onSave={(entry) => {
         if (saving) return;
         setSaving(true);
         setSaveError(undefined);
         saveMeasurement(entry).then(
-          () => navigate('/progress/measurements'),
+          leave,
           (e: unknown) => {
             setSaving(false);
             setSaveError(e instanceof Error ? e.message : 'Не удалось сохранить замер');

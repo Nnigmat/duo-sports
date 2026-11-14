@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { visibleLabels } from './labels';
+import { hitWidth, visibleLabels } from './labels';
 
 const shown = (flags: boolean[]) => flags.flatMap((f, i) => (f ? [i] : []));
 
@@ -22,5 +22,17 @@ describe('visibleLabels', () => {
   it('одна точка и пустой список', () => {
     expect(visibleLabels(1, 0, 224)).toEqual([true]);
     expect(visibleLabels(0, 0, 224)).toEqual([]);
+  });
+});
+
+describe('hitWidth', () => {
+  it('точки далеко друг от друга: 44 px', () => {
+    expect(hitWidth(3, 326)).toBe(44);
+    expect(hitWidth(1, 326)).toBe(44);
+  });
+  it('точки ближе 44 px: кнопки не шире расстояния между ними', () => {
+    const w = hitWidth(12, 224);
+    expect(w).toBeLessThan(44);
+    expect(w).toBeLessThanOrEqual((224 * 294) / 326 / 11);
   });
 });

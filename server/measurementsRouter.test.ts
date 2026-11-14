@@ -1,7 +1,7 @@
 import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createUser, login } from './auth';
 import { type Db, openDb } from './db';
 import { measurementsRouter } from './measurementsRouter';
@@ -30,6 +30,9 @@ const call = (path: string, cookie?: string, init: RequestInit = {}) =>
 const post = (path: string, cookie: string | undefined, body: unknown) => call(path, cookie, { method: 'POST', body: JSON.stringify(body) });
 
 beforeEach(async () => {
+  // Дата заморожена в полдень: today() в тесте и на сервере не разойдутся в полночь UTC
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00Z`));
   db = openDb(':memory:');
   const trainer = await createUser(db, 'coach@example.com', 'trenirovka7', 'trainer');
   await createUser(db, 'coach2@example.com', 'trenirovka7', 'trainer');
@@ -51,7 +54,10 @@ beforeEach(async () => {
   });
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
 });
-afterEach(() => new Promise((resolve) => server.close(resolve)));
+afterEach(async () => {
+  vi.useRealTimers();
+  await new Promise((resolve) => server.close(resolve));
+});
 
 describe('/api/measurements', () => {
   it('401 без входа', async () => {

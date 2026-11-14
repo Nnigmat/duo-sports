@@ -16,7 +16,7 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByText('−1,5 кг')).toBeVisible();
-    await expect(c.getByText('снижение')).toBeInTheDocument();
+    await expect(c.getByText(', снижение')).toBeInTheDocument();
   },
 };
 
@@ -25,7 +25,7 @@ export const Growth: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByText('+0,5 см')).toBeVisible();
-    await expect(c.getByText('рост')).toBeInTheDocument();
+    await expect(c.getByText(', рост')).toBeInTheDocument();
   },
 };
 
@@ -34,6 +34,6 @@ export const Zero: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByText('0 см')).toBeVisible();
-    await expect(c.getByText('без изменений')).toBeInTheDocument();
+    await expect(c.getByText(', без изменений')).toBeInTheDocument();
   },
 };

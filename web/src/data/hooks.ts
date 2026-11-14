@@ -28,13 +28,10 @@ function useResource<T>(load: () => Promise<T>): Resource<T> {
 
 export const useToday = (): Resource<TodayData> => useResource(fetchToday);
 export const useAchievements = (): Resource<AchievementsData> => useResource(fetchAchievements);
-export const useMeasurements = (version = 0): Resource<MeasurementsResponse> =>
-  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
-  useResource(useCallback(() => fetchMeasurements(), [version]));
+export const useMeasurements = (): Resource<MeasurementsResponse> => useResource(useCallback(() => fetchMeasurements(), []));
 /** Замеры ученика глазами тренера */
-export const useAthleteMeasurements = (athleteId: number, version = 0): Resource<MeasurementsResponse> =>
-  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
-  useResource(useCallback(() => fetchMeasurements(athleteId), [athleteId, version]));
+export const useAthleteMeasurements = (athleteId: number): Resource<MeasurementsResponse> =>
+  useResource(useCallback(() => fetchMeasurements(athleteId), [athleteId]));
 export const useSchedule = (from?: string, base?: string): Resource<ScheduleData> => useResource(useCallback(() => fetchSchedule(from, base), [from, base]));
 export const useExercises = (): Resource<LibraryExercise[]> => useResource(fetchExercises);
 export const usePlan = (): Resource<PlanData> => useResource(fetchPlan);

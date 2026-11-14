@@ -9,7 +9,8 @@ const meta = {
   component: MeasureFormView,
   args: {
     today: '2026-11-14',
-    entries: measurementsFixture.entries,
+    // Сегодняшнего замера ещё нет: форма пустая
+    entries: measurementsFixture.entries.filter((e) => e.date < '2026-11-14'),
     saving: false,
     onBack: fn(),
     onSave: fn(),
@@ -49,6 +50,18 @@ export const HintFollowsFocus: Story = {
     await userEvent.click(c.getByLabelText('Грудь'));
     await expect(live).toHaveTextContent('Грудь');
     await expect(live).toHaveTextContent('По самой выступающей точке, лента под мышками. На спокойном выдохе.');
+  },
+};
+
+export const PrefilledToday: Story = {
+  args: { entries: [...measurementsFixture.entries.filter((e) => e.date < '2026-11-14'), { date: '2026-11-14', values: { weight: 72.4, waist: 79 } }] },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByLabelText('Вес')).toHaveValue('72,4');
+    await expect(c.getByLabelText('Талия')).toHaveValue('79');
+    await expect(c.getByLabelText('Рука')).toHaveValue('');
+    await userEvent.click(c.getByRole('button', { name: 'Сохранить · 2 из 7' }));
+    await expect(args.onSave).toHaveBeenCalledWith({ date: '2026-11-14', values: { weight: 72.4, waist: 79 } });
   },
 };
 

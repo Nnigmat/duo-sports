@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
 import { Button, IconButton, MeasureRow, Notice, Text, TopBar } from '../../../ui';
 import { Chibi } from '../../workout/chibi/Chibi';
-import { formatDateLong, formatDateWithWeekday, lastBefore, MEASUREMENT_FIELDS, parseInput } from '../measurements';
+import { formatDateLong, formatDateWithWeekday, formatValue, lastBefore, MEASUREMENT_FIELDS, parseInput } from '../measurements';
 import styles from './MeasureFormView.module.css';
 
 type Props = {
@@ -22,7 +22,13 @@ const DEFAULT_HINT = 'Утром, натощак, до тренировки. Н�
 
 /** Экран ввода замера: семь полей, подсказка по фокусу, пустые поля можно пропустить. */
 export function MeasureFormView({ today, entries, saving, error, onBack, onSave }: Props) {
-  const [values, setValues] = useState<Values>({});
+  const [values, setValues] = useState<Values>(() => {
+    // Повторное открытие в тот же день: подставляем уже сохранённые значения
+    const saved = entries.find((e) => e.date === today);
+    const init: Values = {};
+    if (saved) for (const f of MEASUREMENT_FIELDS) if (typeof saved.values[f.kind] === 'number') init[f.kind] = formatValue(saved.values[f.kind] as number);
+    return init;
+  });
   const [active, setActive] = useState<MeasurementKind | null>(null);
 
   const parsed: Partial<Record<MeasurementKind, number>> = {};
