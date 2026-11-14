@@ -1,12 +1,12 @@
 /** Хуки данных. Вызывать только из *Page.tsx, вниз данные уходят пропсами. */
 import { useCallback, useEffect, useState } from 'react';
 import type { LibraryExercise } from '../features/exercises/types';
-import type { AthleteListResponse, AthleteSessionsResponse, ExerciseCommentItem, SessionReviewResponse, VideoReviewResponse, Workout } from '../../../shared/types';
+import type { AthleteListResponse, AthleteSessionsResponse, ExerciseCommentItem, MeasurementsResponse, SessionReviewResponse, VideoReviewResponse, Workout } from '../../../shared/types';
 import { fetchSessionReview, fetchVideoReview } from '../features/review/api';
 import { toIso } from '../features/plan/plan';
 import { fetchAthletePlan, fetchAthletePreview, fetchAthleteSessions, fetchAthletes, fetchExerciseComments, fetchPlannedWorkout } from '../features/trainer/api';
 import type { AthleteFilter } from '../features/trainer/students';
-import { fetchAchievements, fetchExercises, fetchImport, fetchPlan, toPlanData, fetchWorkoutById, fetchSchedule, fetchToday, type WorkoutData } from './api';
+import { fetchAchievements, fetchExercises, fetchMeasurements, fetchImport, fetchPlan, toPlanData, fetchWorkoutById, fetchSchedule, fetchToday, type WorkoutData } from './api';
 import type { AchievementsData, ImportData, PlanData, ScheduleData, TodayData } from './types';
 
 export type Resource<T> = { data: T | null; error: string | null };
@@ -28,6 +28,13 @@ function useResource<T>(load: () => Promise<T>): Resource<T> {
 
 export const useToday = (): Resource<TodayData> => useResource(fetchToday);
 export const useAchievements = (): Resource<AchievementsData> => useResource(fetchAchievements);
+export const useMeasurements = (version = 0): Resource<MeasurementsResponse> =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
+  useResource(useCallback(() => fetchMeasurements(), [version]));
+/** Замеры ученика глазами тренера */
+export const useAthleteMeasurements = (athleteId: number, version = 0): Resource<MeasurementsResponse> =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version — триггер повторной загрузки
+  useResource(useCallback(() => fetchMeasurements(athleteId), [athleteId, version]));
 export const useSchedule = (from?: string, base?: string): Resource<ScheduleData> => useResource(useCallback(() => fetchSchedule(from, base), [from, base]));
 export const useExercises = (): Resource<LibraryExercise[]> => useResource(fetchExercises);
 export const usePlan = (): Resource<PlanData> => useResource(fetchPlan);
