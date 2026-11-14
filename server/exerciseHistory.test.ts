@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { createUser } from './auth';
+import { openDb } from './db';
 import type { SessionStepResult } from '../shared/types';
 import type { LibraryRow } from './comments';
-import { HISTORY_SESSIONS, exerciseHistories, median, stepSec } from './exerciseHistory';
+import { HISTORY_SESSIONS, exerciseCommentsOf, exerciseHistories, median, stepSec } from './exerciseHistory';
 
 const lib = (slug: string, name: string, aliases: string[] = []): LibraryRow => ({ slug, name, aliases, notes: null, demo: {} });
 const library = [lib('squat', 'Присед', ['приседания']), lib('plank', 'Планка'), lib('pushup', 'Отжимания')];
@@ -171,5 +173,33 @@ describe('время подходов в истории', () => {
     const out = exerciseHistories([{ date: '2026-10-01', steps: [sq(80, 5), sq(80, 5)] }], library);
     expect(out[0]).not.toHaveProperty('typicalSetSec');
     expect(out[0]!.sessions[0]).not.toHaveProperty('totalSec');
+  });
+});
+
+describe('exerciseCommentsOf: комментарии тренера для страницы упражнения', () => {
+  async function setup() {
+    const db = openDb(':memory:');
+    const clock = () => new Date('2026-11-03T10:00:00Z');
+    const athlete = await createUser(db, 'a@example.com', 'trenirovka7', 'athlete', clock);
+    const trainer = await createUser(db, 't@example.com', 'trenirovka7', 'trainer', clock);
+    db.prepare("INSERT INTO exercises (slug, name, aliases, kind, group_id, created_at) VALUES ('pushup-touch', 'Отжимания с касанием', '[\"отжимания касание\"]', 'reps', 'chest', 'z')").run();
+    const add = (slug: string | null, name: string, text: string, author: number, at: string) =>
+      db.prepare('INSERT INTO comments (athlete_id, author_id, exercise_slug, exercise_name, text, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(athlete, author, slug, name, text, at);
+    return { db, athlete, trainer, add };
+  }
+
+  it('комментарий к видео без slug находится по названию упражнения', async () => {
+    const { db, athlete, trainer, add } = await setup();
+    add('pushup-touch', 'Отжимания с касанием', 'К упражнению', trainer, '2026-11-01T10:00:00Z');
+    add(null, 'отжимания с касанием ', 'К видео', trainer, '2026-11-02T10:00:00Z');
+    add(null, 'отжимания касание', 'По псевдониму', trainer, '2026-11-03T10:00:00Z');
+    expect(exerciseCommentsOf(db, athlete)['pushup-touch']?.map((c) => c.text)).toEqual(['По псевдониму', 'К видео', 'К упражнению']);
+  });
+
+  it('ответы спортсмена и комментарии к другим упражнениям не попадают', async () => {
+    const { db, athlete, trainer, add } = await setup();
+    add(null, 'Отжимания с касанием', 'Мой ответ', athlete, '2026-11-02T10:00:00Z');
+    add(null, 'Что-то другое', 'Чужое', trainer, '2026-11-02T10:00:00Z');
+    expect(exerciseCommentsOf(db, athlete)).toEqual({});
   });
 });

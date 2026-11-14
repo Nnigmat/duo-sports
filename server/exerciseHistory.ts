@@ -99,16 +99,22 @@ export function exerciseHistoryOf(db: Db, userId: number): ExerciseHistoryRespon
   return { history: exerciseHistories(sessions, libraryOf(db)), comments: exerciseCommentsOf(db, userId) };
 }
 
-/** Комментарии тренера к упражнениям: к видео подхода и к самому упражнению; ответы спортсмена не в счёт */
+/**
+ * Комментарии тренера к упражнениям: к видео подхода и к самому упражнению; ответы спортсмена не в счёт.
+ * У комментария к видео slug пуст, остаётся только название из тренировки: находим упражнение по названию или псевдониму.
+ */
 export function exerciseCommentsOf(db: Db, userId: number): Record<string, ExerciseComment[]> {
   const rows = db
-    .prepare('SELECT id, exercise_slug, text, created_at FROM comments WHERE athlete_id = ? AND author_id <> athlete_id AND exercise_slug IS NOT NULL ORDER BY created_at DESC, id DESC')
-    .all(userId) as Array<{ id: number; exercise_slug: string; text: string; created_at: string }>;
+    .prepare('SELECT id, exercise_slug, exercise_name, text, created_at FROM comments WHERE athlete_id = ? AND author_id <> athlete_id ORDER BY created_at DESC, id DESC')
+    .all(userId) as Array<{ id: number; exercise_slug: string | null; exercise_name: string; text: string; created_at: string }>;
+  const index = libraryIndex(libraryOf(db));
   const out: Record<string, ExerciseComment[]> = {};
   for (const r of rows) {
-    const list = out[r.exercise_slug] ?? [];
+    const slug = r.exercise_slug ?? index.get(r.exercise_name.trim().toLowerCase())?.slug;
+    if (!slug) continue;
+    const list = out[slug] ?? [];
     list.push({ id: String(r.id), createdAt: r.created_at, text: r.text });
-    out[r.exercise_slug] = list;
+    out[slug] = list;
   }
   return out;
 }
