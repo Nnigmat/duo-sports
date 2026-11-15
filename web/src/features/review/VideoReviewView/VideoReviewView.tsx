@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReviewComment, VideoReviewResponse } from '../../../../../shared/types';
 import { Comment, CommentField, IconButton, VideoPlayer, type VideoPlayerHandle } from '../../../ui';
 import { activeComment, type PlayerComment } from '../../../ui/VideoPlayer/player';
+import { videoCaptions } from '../facts';
 import styles from './VideoReviewView.module.css';
 
 type Props = {
@@ -18,14 +19,11 @@ type Props = {
   onReply: (text: string, timecodeSec: number | null) => Promise<void>;
 };
 
-const FACT_MARK = { 'Меньше плана': 'Меньше', 'В плане': 'В плане', 'Больше плана': 'Больше' } as const;
-
-/** Подзаголовок плеера: с фактом «Подход 4 · сделано 85 кг × 7» и мелкой строкой «план …»; без факта только план */
+/** label с сервера — «Подход 4 · 80 кг × 5» */
 function captions(video: VideoReviewResponse['video']): { subtitle: string; note?: string } {
   if (!video.actualLabel) return { subtitle: video.label };
-  const [head, plan] = video.label.split(' · ');
-  const mark = video.factMark ? ` · ${FACT_MARK[video.factMark]}` : '';
-  return { subtitle: `${head} · сделано ${video.actualLabel}`, note: plan ? `план ${plan}${mark}` : undefined };
+  const [head = video.label, plan] = video.label.split(' · ');
+  return videoCaptions(head, plan, video.actualLabel, video.factMark);
 }
 
 const author = (c: ReviewComment) => (c.author === 'trainer' ? 'Тренер' : 'Ты');

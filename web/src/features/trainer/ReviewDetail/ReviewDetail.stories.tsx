@@ -128,6 +128,34 @@ export const VideoPanel: Story = {
   },
 };
 
+/** Под чипами плана — сколько ученик сделал на самом деле */
+export const Facts: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const facts = c.getAllByRole('list', { name: 'Факт и план' })[0]!;
+    await expect(facts).toHaveTextContent(/85\sкг × 6/);
+    await expect(facts).toHaveTextContent(/план 80\sкг × 5/);
+    await expect(within(facts).getByText('Больше')).toBeVisible();
+    await expect(within(facts).getByText('Меньше')).toBeVisible();
+    await expect(within(facts).getByText('Был доп. вес')).toBeVisible();
+  },
+};
+
+const NB = ' ';
+const addVideoFact = (e: (typeof reviewFixture.exercises)[number]) => ({ ...e, sets: e.sets.map((st) => (st.videoId ? { ...st, actualLabel: `85${NB}кг × 7`, factMark: 'Больше плана' as const } : st)) });
+
+/** В плеере факт подхода с видео, план мелкой строкой */
+export const VideoWithFact: Story = {
+  args: { review: { ...reviewFixture, exercises: reviewFixture.exercises.map(addVideoFact), sections: reviewFixture.sections.map((sec) => ({ ...sec, exercises: sec.exercises.map(addVideoFact) })) } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: /Видео, подход 4/ }));
+    await expect(await c.findByText('Подход 4 · сделано 85 кг × 7')).toBeVisible();
+    await expect(c.getByText('план 80 кг × 5 · Больше')).toBeVisible();
+    await expect(canvasElement).not.toHaveTextContent('undefined');
+  },
+};
+
 /** Свой комментарий удаляется в два нажатия; комментарий ученика без кнопки */
 export const DeleteOwnComment: Story = {
   play: async ({ canvasElement }) => {

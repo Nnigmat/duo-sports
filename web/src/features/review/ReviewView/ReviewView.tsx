@@ -7,13 +7,8 @@ import { formatLongDate } from '../../workout/flow/ru';
 import { parseIso } from '../../plan/plan';
 import { FoldedSection } from '../FoldedSection/FoldedSection';
 import { sectionStarts } from '../sections';
+import { SetFacts } from '../SetFacts/SetFacts';
 import styles from './ReviewView.module.css';
-
-const FACT_MARK = {
-  'В плане': { state: 'within', text: 'В плане' },
-  'Меньше плана': { state: 'below', text: 'Меньше' },
-  'Больше плана': { state: 'above', text: 'Больше' },
-} as const;
 
 type Props = {
   review: SessionReviewResponse;
@@ -189,25 +184,7 @@ function ExerciseCard({
           </li>
         ))}
       </ul>
-      {exercise.sets.some((s) => s.actualLabel) && (
-        <ul className={styles.facts} aria-label="Факт и план">
-          {exercise.sets.map((s) =>
-            s.actualLabel ? (
-              <li key={s.n} className={styles.fact}>
-                <span className={styles.factN}>{s.n}.</span>
-                <span className={styles.factValue}>{s.actualLabel}</span>
-                <span className={styles.factPlan}>план {s.label}</span>
-                {s.factMark && (
-                  <span className={styles.factMark} data-mark={FACT_MARK[s.factMark].state}>
-                    {FACT_MARK[s.factMark].text}
-                  </span>
-                )}
-                {s.extraWeight && <span className={styles.factExtra}>Был доп. вес</span>}
-              </li>
-            ) : null,
-          )}
-        </ul>
-      )}
+      <SetFacts sets={exercise.sets} />
       {withVideo?.videoId && (
         <a
           className={styles.video}
