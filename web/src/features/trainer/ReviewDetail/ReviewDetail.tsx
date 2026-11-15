@@ -4,8 +4,10 @@ import { formatMinutes, formatVolume } from '../../../shared/format';
 import { Button, Comment, CommentField, PastComments, SetChip, StatusBadge, Text, VideoPlayer, type VideoPlayerHandle } from '../../../ui';
 import { formatTime, type PlayerComment } from '../../../ui/VideoPlayer/player';
 import type { NewComment } from '../api';
+import { videoCaptions } from '../../review/facts';
 import { FoldedSection } from '../../review/FoldedSection/FoldedSection';
 import { sectionStarts } from '../../review/sections';
+import { SetFacts } from '../../review/SetFacts/SetFacts';
 import { ExerciseLink } from '../ExerciseLink/ExerciseLink';
 import { buildCommentRequest, movedText, rowDate } from '../sessions';
 import styles from './ReviewDetail.module.css';
@@ -172,6 +174,7 @@ function Step({
   const [attached, setAttached] = useState(true);
   const videoSets = exercise.sets.filter((s) => s.videoId);
   const openSet = videoSets.find((s) => s.videoId === video?.id);
+  const captions = openSet ? videoCaptions(`Подход ${openSet.n}`, openSet.label, openSet.actualLabel, openSet.factMark) : { subtitle: '' };
 
   useEffect(() => {
     if (video?.startSec !== undefined) player.current?.seek(video.startSec);
@@ -221,6 +224,7 @@ function Step({
             </li>
           ))}
         </ul>
+        <SetFacts sets={exercise.sets} />
 
         {videoSets.length > 0 && (
           <div className={styles.videos}>
@@ -248,7 +252,16 @@ function Step({
         )}
         {video && openSet && (
           <div id={panelId} className={styles.videoPanel}>
-            <VideoPlayer ref={player} src={videoSrc(video.id)} durationSec={openSet.videoDurationSec ?? 0} comments={timed} title={exercise.name} subtitle={`Подход ${openSet.n} · ${openSet.label}`} onTimeChange={setTime} />
+            <VideoPlayer
+              ref={player}
+              src={videoSrc(video.id)}
+              durationSec={openSet.videoDurationSec ?? 0}
+              comments={timed}
+              title={exercise.name}
+              subtitle={captions.subtitle}
+              subtitleNote={captions.note}
+              onTimeChange={setTime}
+            />
           </div>
         )}
 
