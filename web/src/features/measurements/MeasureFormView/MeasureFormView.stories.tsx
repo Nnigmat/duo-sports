@@ -32,7 +32,7 @@ export const Default: Story = {
     await expect(c.getByText('Серым — прошлый замер, 31 октября. Пустые поля можно пропустить.')).toBeVisible();
 
     await userEvent.type(c.getByLabelText('Вес'), '72');
-    const save1 = c.getByRole('button', { name: 'Сохранить · 1 из 7' });
+    const save1 = c.getByRole('button', { name: 'Сохранить · 1 из 8' });
     await expect(save1).toBeEnabled();
     await expect(c.getByText('было 72,4 → −0,4')).toBeVisible();
 
@@ -60,7 +60,7 @@ export const PrefilledToday: Story = {
     await expect(c.getByLabelText('Вес')).toHaveValue('72,4');
     await expect(c.getByLabelText('Талия')).toHaveValue('79');
     await expect(c.getByLabelText('Рука')).toHaveValue('');
-    await userEvent.click(c.getByRole('button', { name: 'Сохранить · 2 из 7' }));
+    await userEvent.click(c.getByRole('button', { name: 'Сохранить · 2 из 8' }));
     await expect(args.onSave).toHaveBeenCalledWith({ date: '2026-11-14', values: { weight: 72.4, waist: 79 } });
   },
 };
@@ -71,7 +71,7 @@ export const SkipsEmptyAndInvalid: Story = {
     await userEvent.type(c.getByLabelText('Вес'), '72,5');
     await userEvent.type(c.getByLabelText('Талия'), ',');
     await userEvent.type(c.getByLabelText('Рука'), '31.5');
-    await expect(c.getByRole('button', { name: 'Сохранить · 2 из 7' })).toBeEnabled();
+    await expect(c.getByRole('button', { name: 'Сохранить · 2 из 8' })).toBeEnabled();
     await userEvent.click(c.getByRole('button', { name: /Сохранить/ }));
     await expect(args.onSave).toHaveBeenCalledWith({ date: '2026-11-14', values: { weight: 72.5, arm: 31.5 } });
   },
@@ -89,7 +89,7 @@ export const Empty: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByText('Пустые поля можно пропустить.')).toBeVisible();
-    await expect(c.getAllByText('первый замер')).toHaveLength(7);
+    await expect(c.getAllByText('первый замер')).toHaveLength(8);
   },
 };
 

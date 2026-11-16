@@ -6,7 +6,7 @@
 }
 .plot {
   position: relative;
-  height: 120px; /* как в макете */
+  height: 160px;
 }
 .svg {
   position: absolute;
@@ -20,50 +20,46 @@
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
+.zero {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
 .pick {
   stroke: var(--hairline-strong);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
-.area {
-  fill: var(--accent-300);
-  opacity: 0.25;
-}
 .line {
   fill: none;
-  stroke: var(--primary);
-  stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
-.dot {
+.yTick {
   position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
+  left: 0;
+  transform: translateY(-100%);
+  color: var(--steel);
+  font-size: 11px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 16px;
   padding: 0;
   border: 0;
-  border-radius: var(--rounded-full);
   background: transparent;
   cursor: pointer;
 }
-.mark {
-  box-sizing: border-box;
-  width: 8px;
-  height: 8px;
-  border: 2px solid var(--primary);
-  border-radius: var(--rounded-full);
-  background: var(--canvas);
-}
-.markOn {
-  width: 12px;
-  height: 12px;
-  border-width: 0;
-  background: var(--primary);
+.strip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .axis {
   position: relative;

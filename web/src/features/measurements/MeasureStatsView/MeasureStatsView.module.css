@@ -23,7 +23,7 @@
   flex-direction: column;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   border: 1px solid var(--hairline-soft);
   border-radius: var(--rounded-lg);
 }
@@ -31,7 +31,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 .headMain {
   display: flex;
@@ -47,46 +47,26 @@
   letter-spacing: 1px;
   text-transform: uppercase;
 }
-.live {
-  display: flex;
-  flex-direction: column;
-  gap: 2px; /* нет токена */
-}
-.valueLine {
-  display: flex;
-  align-items: baseline;
-  gap: 6px; /* нет токена */
-}
-.value {
-  font-family: var(--font-serif);
-  font-size: 40px; /* нет токена */
-  line-height: 1.1;
-  font-weight: 400;
-  letter-spacing: -1px;
-  font-variant-numeric: tabular-nums;
-}
-.unit {
-  color: var(--slate);
-  font-size: var(--body-md-size);
-  line-height: 1.4;
-}
 .date {
-  color: var(--steel);
-  font-size: var(--caption-size);
-  line-height: var(--caption-line);
+  font-size: 15px; /* нет токена */
+  line-height: 1.4;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.delta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--spacing-xxs);
-  padding-top: 2px; /* нет токена */
+.mode {
+  flex: none;
+}
+.mode button {
+  padding-inline: var(--spacing-sm);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .noData {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 184px; /* высота графика с подписями дат */
   margin: 0;
-  padding: var(--spacing-lg) 0;
   color: var(--steel);
   font-size: var(--body-sm-size);
   text-align: center;
@@ -95,54 +75,130 @@
   display: flex;
   flex-direction: column;
   margin-top: var(--spacing-md);
+  padding: 0 var(--spacing-sm);
   border: 1px solid var(--hairline-soft);
   border-radius: var(--rounded-lg);
-  overflow: hidden;
+}
+.listHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  min-height: var(--size-touch);
+}
+.count {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--slate);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-variant-numeric: tabular-nums;
+}
+.textButton {
+  min-width: var(--size-touch);
+  min-height: var(--size-touch);
+  padding: 0 var(--spacing-xs);
+  border: 0;
+  border-radius: var(--rounded-md);
+  background: transparent;
+  color: var(--link);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: var(--caption-bold-weight);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.textButton:disabled {
+  color: var(--muted);
+  text-decoration: none;
+  cursor: default;
+}
+.textButton:focus-visible,
+.row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  height: 48px; /* нет токена */
-  padding: 0 var(--spacing-md);
+  gap: var(--spacing-xs);
+  min-height: var(--size-touch);
+  padding: 0;
   border: 0;
   border-top: 1px solid var(--hairline-soft);
-  background: var(--canvas);
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
   font-family: var(--font-sans);
+  font-size: var(--body-sm-size);
+  line-height: var(--body-sm-line);
   text-align: left;
   cursor: pointer;
 }
-.row:first-child {
-  border-top: 0;
+.check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px; /* нет токена */
+  height: 20px; /* нет токена */
+  border: 1.5px solid var(--hairline-strong);
+  border-radius: var(--rounded-xs);
+  box-sizing: border-box;
 }
-.rowOn {
-  background: var(--surface);
+.check svg {
+  width: 16px; /* нет токена */
+  height: 16px; /* нет токена */
+}
+.checkOn {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.swatch {
+  flex: none;
+  width: 18px; /* как в макете */
+  height: 0;
+  border-top: 2px solid;
+  border-radius: 2px; /* нет токена */
+}
+.swatchBold {
+  border-top-width: 4px;
+}
+.rowOff .swatch {
+  opacity: 0.4;
 }
 .rowLabel {
   flex: 1 1 auto;
-  font-size: 15px; /* нет токена */
-  line-height: 1.4;
+  min-width: 0;
+  overflow: hidden;
   font-weight: 500;
-}
-.rowOn .rowLabel {
-  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rowValue {
-  font-size: 15px; /* нет токена */
-  line-height: 1.4;
+  flex: none;
+  min-width: 64px; /* как в макете */
   font-weight: 600;
+  text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .rowChange {
-  width: 56px; /* как в макете */
+  flex: none;
+  min-width: 56px; /* как в макете */
   color: var(--slate);
   font-size: var(--caption-size);
   line-height: var(--caption-line);
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.rowOff .rowLabel,
+.rowOff .rowValue,
+.rowOff .rowChange {
+  color: var(--steel);
+  font-weight: 400;
 }
 .spacer {
   flex: 1 1 auto;

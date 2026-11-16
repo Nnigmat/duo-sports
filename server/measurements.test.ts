@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createUser } from './auth';
-import { type Db, openDb } from './db';
+import { type Db, migrateMeasurementKinds, openDb } from './db';
 import { measurementsOf, saveMeasurement } from './measurements';
 
 const TODAY = '2026-11-14';
@@ -93,5 +93,53 @@ describe('каскад', () => {
     saveMeasurement(db, a, { date: TODAY, values: { weight: 72 } }, TODAY, clock);
     db.prepare('DELETE FROM users WHERE id = ?').run(a);
     expect(rows()).toBe(0);
+  });
+});
+
+describe('икры', () => {
+  it('сохраняются и читаются', () => {
+    expect(saveMeasurement(db, a, { date: TODAY, values: { calf: 37.5 } }, TODAY, clock)).toEqual({ ok: true });
+    expect(measurementsOf(db, a).entries).toEqual([{ date: TODAY, values: { calf: 37.5 } }]);
+  });
+});
+
+describe('migrateMeasurementKinds', () => {
+  const tableSql = () => (db.prepare("SELECT sql FROM sqlite_master WHERE name = 'measurements'").get() as { sql: string }).sql;
+
+  const downgrade = () => {
+    db.exec(`DROP TABLE measurements;
+      CREATE TABLE measurements (
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        date TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm')),
+        value REAL NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, date, kind)
+      )`);
+    db.prepare('INSERT INTO measurements (user_id, date, kind, value, created_at) VALUES (?, ?, ?, ?, ?)').run(a, TODAY, 'weight', 72, '2026-11-14T10:00:00.000Z');
+  };
+
+  it('переносит старую таблицу с данными и разрешает икры', () => {
+    downgrade();
+    expect(() => saveMeasurement(db, a, { date: TODAY, values: { calf: 37.5 } }, TODAY, clock)).toThrow();
+    migrateMeasurementKinds(db);
+    expect(db.prepare('SELECT kind, value, created_at FROM measurements').all()).toEqual([{ kind: 'weight', value: 72, created_at: '2026-11-14T10:00:00.000Z' }]);
+    expect(saveMeasurement(db, a, { date: TODAY, values: { calf: 37.5 } }, TODAY, clock)).toEqual({ ok: true });
+    expect(tableSql()).toContain("'calf'");
+  });
+
+  it('повторный вызов ничего не меняет', () => {
+    downgrade();
+    migrateMeasurementKinds(db);
+    migrateMeasurementKinds(db);
+    expect(rows()).toBe(1);
+  });
+
+  it('на свежей базе ничего не делает', () => {
+    saveMeasurement(db, a, { date: TODAY, values: { weight: 72 } }, TODAY, clock);
+    const before = tableSql();
+    migrateMeasurementKinds(db);
+    expect(tableSql()).toBe(before);
+    expect(rows()).toBe(1);
   });
 });

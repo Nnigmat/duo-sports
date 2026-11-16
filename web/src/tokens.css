@@ -39,6 +39,15 @@
   --character-outfit-1: #2aa198;
   --character-outfit-2: #3b5bdb;
   --character-outfit-3: #e8590c;
+  /* Линии показателей на графике замеров: не текст, всегда с подписью в списке */
+  --series-weight: #0f766e;
+  --series-chest: #3b5bdb;
+  --series-waist: #e8590c;
+  --series-belly: #c2255c;
+  --series-hips: #7048e8;
+  --series-thigh: #2f9e44;
+  --series-arm: #ae3ec9;
+  --series-calf: #1098ad;
 
   /* Семейства шрифтов */
   --font-serif: Fraunces, Georgia, serif;

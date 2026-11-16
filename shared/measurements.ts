@@ -1,6 +1,6 @@
 import type { MeasurementEntry, MeasurementKind } from './types';
 
-export const MEASUREMENT_KINDS: readonly MeasurementKind[] = ['weight', 'chest', 'waist', 'belly', 'hips', 'thigh', 'arm'];
+export const MEASUREMENT_KINDS: readonly MeasurementKind[] = ['weight', 'chest', 'waist', 'belly', 'hips', 'thigh', 'arm', 'calf'];
 
 export const MEASUREMENT_MAX = 999;
 
