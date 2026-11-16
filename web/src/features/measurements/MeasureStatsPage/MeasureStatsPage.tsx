@@ -1,19 +1,15 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { MeasurementKind } from '../../../../../shared/types';
 import { useMeasurements } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { toIso } from '../../plan/plan';
 import { MeasureStatsView } from '../MeasureStatsView/MeasureStatsView';
-import type { Period } from '../measurements';
+import { useMeasureStatsState } from '../useMeasureStatsState';
 
 /** /progress/measurements — вкладка «Замеры»: прогресс ученика по замерам. */
 export function MeasureStatsPage() {
   const navigate = useNavigate();
   const { data, error } = useMeasurements();
-  const [kind, setKind] = useState<MeasurementKind>('weight');
-  const [period, setPeriod] = useState<Period>('all');
-  const [point, setPoint] = useState<number | null>(null);
+  const state = useMeasureStatsState();
 
   if (error) return <p role="alert">{error}</p>;
   if (!data) return <Skeleton height={480} />;
@@ -21,18 +17,7 @@ export function MeasureStatsPage() {
     <MeasureStatsView
       today={toIso(new Date())}
       entries={data.entries}
-      kind={kind}
-      period={period}
-      point={point}
-      onKind={(k) => {
-        setKind(k);
-        setPoint(null);
-      }}
-      onPeriod={(p) => {
-        setPeriod(p);
-        setPoint(null);
-      }}
-      onPoint={setPoint}
+      {...state}
       titled
       onAdd={() => navigate('/progress/measurements/new')}
     />

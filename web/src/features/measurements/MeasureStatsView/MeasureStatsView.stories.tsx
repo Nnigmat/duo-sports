@@ -1,34 +1,20 @@
-import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import type { MeasurementEntry, MeasurementKind } from '../../../../../shared/types';
+import { MEASUREMENT_KINDS } from '../../../../../shared/measurements';
+import type { MeasurementEntry } from '../../../../../shared/types';
 import { measurementsFixture } from '../../../data/fixtures';
 import { ARTIFACT } from '../../../ui/storyKit';
-import type { Period } from '../measurements';
+import { MEASUREMENT_FIELDS } from '../measurements';
+import { useMeasureStatsState } from '../useMeasureStatsState';
 import { MeasureStatsView } from './MeasureStatsView';
 
-type Init = { kind?: MeasurementKind; period?: Period; point?: number | null };
-
-function Interactive(props: { entries: MeasurementEntry[]; init?: Init; trainer?: boolean; tab?: boolean; onAdd?: () => void }) {
-  const [kind, setKind] = useState<MeasurementKind>(props.init?.kind ?? 'weight');
-  const [period, setPeriod] = useState<Period>(props.init?.period ?? 'all');
-  const [point, setPoint] = useState<number | null>(props.init?.point ?? null);
+function Interactive(props: { entries: MeasurementEntry[]; trainer?: boolean; tab?: boolean; onAdd?: () => void }) {
+  const state = useMeasureStatsState();
   return (
     <MeasureStatsView
       today="2026-11-14"
       entries={props.entries}
-      kind={kind}
-      period={period}
-      point={point}
-      onKind={(k) => {
-        setKind(k);
-        setPoint(null);
-      }}
-      onPeriod={(p) => {
-        setPeriod(p);
-        setPoint(null);
-      }}
-      onPoint={setPoint}
+      {...state}
       onBack={props.trainer || props.tab ? undefined : () => {}}
       titled={props.tab}
       onAdd={props.trainer ? undefined : props.onAdd}
@@ -37,6 +23,14 @@ function Interactive(props: { entries: MeasurementEntry[]; init?: Init; trainer?
 }
 
 const entries = measurementsFixture.entries;
+/** Икры появились только в двух последних замерах */
+const withCalf: MeasurementEntry[] = entries.map((e, i) =>
+  i < entries.length - 2 ? e : { date: e.date, values: { ...e.values, calf: i === entries.length - 2 ? 35 : 35.5 } },
+);
+
+const list = (el: HTMLElement) => within(within(el).getByRole('group', { name: 'Показатели' }));
+const row = (el: HTMLElement, label: string) => list(el).getByRole('button', { name: new RegExp(`^${label}`) });
+const rows = (el: HTMLElement) => MEASUREMENT_FIELDS.map((f) => row(el, f.label));
 
 const meta = {
   title: 'Features/Measurements/MeasureStatsView',
@@ -44,11 +38,13 @@ const meta = {
   args: {
     today: '2026-11-14',
     entries,
-    kind: 'weight',
+    visible: [...MEASUREMENT_KINDS],
     period: 'all',
+    mode: 'percent',
     point: null,
-    onKind: fn(),
+    onVisible: fn(),
     onPeriod: fn(),
+    onMode: fn(),
     onPoint: fn(),
     onBack: fn(),
     onAdd: fn(),
@@ -56,7 +52,7 @@ const meta = {
   render: () => <Interactive entries={entries} onAdd={() => {}} />,
   parameters: {
     layout: 'fullscreen',
-    docs: { description: { component: `Экран «Прогресс по замерам». Артборд «07 · Статистика замеров». ${ARTIFACT}` } },
+    docs: { description: { component: `Экран «Прогресс по замерам»: общий график изменений и список показателей. ${ARTIFACT}` } },
   },
 } satisfies Meta<typeof MeasureStatsView>;
 export default meta;
@@ -65,16 +61,127 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    const card = c.getByRole('region', { name: 'Вес' });
-    await expect(within(card).getByText('72')).toBeVisible();
-    await expect(within(card).getByText('Последний замер · 14 ноября')).toBeVisible();
-    await expect(within(card).getByText('−2,2 кг')).toBeVisible();
-    await expect(within(card).getByText('с 5 сентября')).toBeVisible();
+    const card = c.getByRole('region', { name: 'Изменение с 5 сентября' });
+    await expect(within(card).getByText('14 ноября')).toBeVisible();
+    await expect(within(card).getByRole('group', { name: 'Изменение показателей с 5 сентября по 14 ноября' })).toBeVisible();
+    const all = rows(canvasElement);
+    await expect(all).toHaveLength(8);
+    for (const r of all) await expect(r).toHaveAttribute('aria-pressed', 'true');
+    await expect(list(canvasElement).getByText('Показатели · 8 из 8')).toBeVisible();
+    const waist = within(row(canvasElement, 'Талия'));
+    await expect(waist.getByText('80,5 см')).toBeVisible();
+    await expect(waist.getByText('−4,2 %')).toBeVisible();
+    await expect(within(row(canvasElement, 'Икры')).getAllByText('—')).toHaveLength(2);
+    await expect(canvasElement.textContent).not.toMatch(/NaN|Infinity/);
+  },
+};
 
-    await userEvent.click(c.getByRole('button', { name: '5 сентября: 74,2 кг' }));
-    await expect(within(card).getByText('74,2')).toBeVisible();
+export const Units: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('tab', { name: 'кг, см' }));
+    await expect(c.getByRole('tab', { name: 'кг, см' })).toHaveAttribute('aria-selected', 'true');
+    await expect(within(row(canvasElement, 'Талия')).getByText('−3,5 см')).toBeVisible();
+    await expect(within(row(canvasElement, 'Вес')).getByText('−2,2 кг')).toBeVisible();
+  },
+};
+
+export const ClearAndAll: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const l = list(canvasElement);
+    await expect(l.getByRole('button', { name: 'Все' })).toBeDisabled();
+    await userEvent.click(l.getByRole('button', { name: 'Очистить' }));
+    for (const r of rows(canvasElement)) await expect(r).toHaveAttribute('aria-pressed', 'false');
+    await expect(l.getByText('Показатели · 0 из 8')).toBeVisible();
+    await expect(l.getByRole('button', { name: 'Очистить' })).toBeDisabled();
+    await expect(c.getByText('Выберите показатели в списке')).toBeVisible();
+    await expect(c.queryByRole('group', { name: /^Изменение показателей/ })).toBeNull();
+
+    await userEvent.click(l.getByRole('button', { name: 'Все' }));
+    await expect(l.getByText('Показатели · 8 из 8')).toBeVisible();
+    await expect(c.queryByText('Выберите показатели в списке')).toBeNull();
+    await expect(c.getByRole('group', { name: /^Изменение показателей/ })).toBeVisible();
+
+    await userEvent.click(row(canvasElement, 'Рука'));
+    await expect(row(canvasElement, 'Рука')).toHaveAttribute('aria-pressed', 'false');
+    await expect(l.getByText('Показатели · 7 из 8')).toBeVisible();
+    for (const r of rows(canvasElement).filter((r) => !r.textContent?.startsWith('Рука'))) {
+      await expect(r).toHaveAttribute('aria-pressed', 'true');
+    }
+  },
+};
+
+export const PickDate: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: '5 сентября' }));
+    await expect(c.getByRole('button', { name: '5 сентября' })).toHaveAttribute('aria-pressed', 'true');
+    const card = c.getByRole('region', { name: 'Изменение с 5 сентября' });
     await expect(within(card).getByText('5 сентября')).toBeVisible();
-    await expect(within(card).queryByText(/Последний/)).toBeNull();
+    await expect(within(card).queryByText('14 ноября')).toBeNull();
+    const waist = within(row(canvasElement, 'Талия'));
+    await expect(waist.getByText('84 см')).toBeVisible();
+    await expect(waist.getByText('0 %')).toBeVisible();
+  },
+};
+
+export const Month: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: '14 ноября' }));
+    await userEvent.click(c.getByRole('tab', { name: 'Месяц' }));
+    await expect(c.getByRole('tab', { name: 'Месяц' })).toHaveAttribute('aria-selected', 'true');
+    const card = c.getByRole('region', { name: 'Изменение с 17 октября' });
+    const chart = within(card).getByRole('group', { name: 'Изменение показателей с 17 октября по 14 ноября' });
+    await expect(within(chart).getAllByRole('button')).toHaveLength(3);
+    await expect(within(chart).getByRole('button', { name: '14 ноября' })).toHaveAttribute('aria-pressed', 'true');
+    // База сдвинулась на 17 октября: 82 → 80,5
+    await expect(within(row(canvasElement, 'Талия')).getByText('−1,8 %')).toBeVisible();
+  },
+};
+
+/** Выбранная дата сбрасывается при смене периода: без сброса в «Месяц» осталась бы 17 октября (индекс 1) */
+export const PeriodResetsPoint: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const card = within(c.getByRole('region', { name: 'Изменение с 5 сентября' }));
+    await userEvent.click(c.getByRole('button', { name: '5 сентября' }));
+    await expect(card.getByText('5 сентября')).toBeVisible();
+    await userEvent.click(c.getByRole('tab', { name: 'Месяц' }));
+    const month = within(c.getByRole('region', { name: 'Изменение с 17 октября' }));
+    await expect(month.getByText('14 ноября')).toBeVisible();
+    await expect(c.getByRole('button', { name: '14 ноября' })).toHaveAttribute('aria-pressed', 'true');
+  },
+};
+
+export const NoDataForSelection: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const l = list(canvasElement);
+    await userEvent.click(l.getByRole('button', { name: 'Очистить' }));
+    await userEvent.click(row(canvasElement, 'Икры'));
+    await expect(row(canvasElement, 'Икры')).toHaveAttribute('aria-pressed', 'true');
+    await expect(c.getByText('Нет данных за период')).toBeVisible();
+    await expect(c.queryByRole('group', { name: /^Изменение показателей/ })).toBeNull();
+    await expect(c.queryByText('Выберите показатели в списке')).toBeNull();
+    await userEvent.click(row(canvasElement, 'Вес'));
+    await expect(c.queryByText('Нет данных за период')).toBeNull();
+    await expect(c.getByRole('group', { name: /^Изменение показателей/ })).toBeVisible();
+  },
+};
+
+export const WithCalf: Story = {
+  render: () => <Interactive entries={withCalf} onAdd={() => {}} />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: '5 сентября' }));
+    await expect(within(row(canvasElement, 'Икры')).getAllByText('—')).toHaveLength(2);
+    await userEvent.click(c.getByRole('button', { name: '14 ноября' }));
+    const calf = within(row(canvasElement, 'Икры'));
+    await expect(calf.getByText('35,5 см')).toBeVisible();
+    await expect(calf.getByText('+1,4 %')).toBeVisible();
+    await expect(canvasElement.textContent).not.toMatch(/NaN|Infinity/);
   },
 };
 
@@ -90,39 +197,6 @@ export const Desktop: Story = {
   render: () => <Interactive entries={entries} tab onAdd={() => {}} />,
   globals: { viewport: { value: 'desktop', isRotated: false } },
 };
-export const SwitchesMetric: Story = {
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    const row = c.getByRole('button', { name: /^Талия/ });
-    await expect(row).toHaveAttribute('aria-pressed', 'false');
-    await userEvent.click(row);
-    await expect(row).toHaveAttribute('aria-pressed', 'true');
-    const card = c.getByRole('region', { name: 'Талия' });
-    await expect(within(card).getByText('80,5')).toBeVisible();
-    await expect(within(card).getByText('−3,5 см')).toBeVisible();
-  },
-};
-
-export const Month: Story = {
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    await userEvent.click(c.getByRole('tab', { name: 'Месяц' }));
-    await expect(c.getByRole('tab', { name: 'Месяц' })).toHaveAttribute('aria-selected', 'true');
-    const card = c.getByRole('region', { name: 'Вес' });
-    await expect(within(card).getAllByRole('button')).toHaveLength(3);
-    await expect(within(card).getByText('−0,9 кг')).toBeVisible();
-    await expect(within(card).getByText('с 17 октября')).toBeVisible();
-  },
-};
-
-export const WaistSelected: Story = {
-  render: () => <Interactive entries={entries} init={{ kind: 'waist', point: 2 }} onAdd={() => {}} />,
-  play: async ({ canvasElement }) => {
-    const card = within(canvasElement).getByRole('region', { name: 'Талия' });
-    await expect(within(card).getByText('82,5')).toBeVisible();
-    await expect(within(card).getByText('3 октября')).toBeVisible();
-  },
-};
 
 export const TrainerReadOnly: Story = {
   render: () => <Interactive entries={entries} trainer />,
@@ -131,7 +205,7 @@ export const TrainerReadOnly: Story = {
     await expect(within(canvasElement).queryByRole('link', { name: 'Новый замер' })).toBeNull();
     // Внутри карточки ученика своей шапки с «Назад» нет: она у AthleteHeader
     await expect(within(canvasElement).queryByRole('button', { name: 'Назад' })).toBeNull();
-    await expect(within(canvasElement).getByRole('region', { name: 'Вес' })).toBeVisible();
+    await expect(within(canvasElement).getByRole('region', { name: 'Изменение с 5 сентября' })).toBeVisible();
   },
 };
 
@@ -165,33 +239,27 @@ export const EmptyForTrainer: Story = {
 export const SingleEntry: Story = {
   render: () => <Interactive entries={entries.slice(-1)} onAdd={() => {}} />,
   play: async ({ canvasElement }) => {
-    const card = within(canvasElement).getByRole('region', { name: 'Вес' });
-    await expect(within(card).getByText('72')).toBeVisible();
-    await expect(within(card).getAllByRole('button')).toHaveLength(1);
-    await expect(within(card).getByText('0 кг')).toBeVisible();
+    const c = within(canvasElement);
+    const chart = c.getByRole('group', { name: /^Изменение показателей/ });
+    await expect(within(chart).getAllByRole('button')).toHaveLength(1);
+    await expect(within(row(canvasElement, 'Вес')).getByText('72 кг')).toBeVisible();
+    for (const f of MEASUREMENT_FIELDS.filter((f) => f.kind !== 'calf')) {
+      await expect(within(row(canvasElement, f.label)).getByText('0 %')).toBeVisible();
+    }
     await expect(canvasElement.textContent).not.toMatch(/NaN|Infinity/);
   },
 };
 
 export const NeverFilledKind: Story = {
-  render: () => (
-    <Interactive
-      entries={entries.map((e) => ({ date: e.date, values: { weight: e.values.weight } }))}
-      init={{ kind: 'arm' }}
-      onAdd={() => {}}
-    />
-  ),
+  render: () => <Interactive entries={entries.map((e) => ({ date: e.date, values: { weight: e.values.weight } }))} onAdd={() => {}} />,
   play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    const card = c.getByRole('region', { name: 'Рука' });
-    await expect(within(card).getByText('Нет данных')).toBeVisible();
-    await expect(within(card).getByText('—')).toBeVisible();
-    await expect(within(c.getByRole('button', { name: /^Рука/ })).getByText('—')).toBeVisible();
+    await expect(within(row(canvasElement, 'Рука')).getAllByText('—')).toHaveLength(2);
+    await expect(within(row(canvasElement, 'Вес')).getByText('−3 %')).toBeVisible();
     await expect(canvasElement.textContent).not.toMatch(/NaN/);
   },
 };
 
-/** Колонка 288 px (телефон 320 px внутри AppShell): ничего не вылезает, подписи дат не накладываются */
+/** Телефон 320 px внутри AppShell: колонка 288 px. Строки списка не вылезают, подписи дат не накладываются */
 export const Narrow320: Story = {
   render: () => (
     <div data-testid="frame" style={{ width: 304, padding: '0 8px', boxSizing: 'border-box' }}>
@@ -199,11 +267,18 @@ export const Narrow320: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const frame = within(canvasElement).getByTestId('frame');
-    await expect(frame.scrollWidth).toBeLessThanOrEqual(frame.clientWidth);
+    const c = within(canvasElement);
+    const frame = c.getByTestId('frame');
+    const check = async () => {
+      await expect(frame.scrollWidth).toBeLessThanOrEqual(frame.clientWidth);
+      for (const b of list(canvasElement).getAllByRole('button')) await expect(b.scrollWidth).toBeLessThanOrEqual(b.clientWidth);
+    };
+    await check();
     const ticks = [...frame.querySelectorAll<HTMLElement>('span[style*="left"]')].filter((el) => !el.hidden);
     const rects = ticks.map((el) => el.getBoundingClientRect()).sort((a, b) => a.left - b.left);
     await expect(rects.length).toBeGreaterThan(1);
     for (let i = 1; i < rects.length; i++) await expect(rects[i].left).toBeGreaterThanOrEqual(rects[i - 1].right);
+    await userEvent.click(c.getByRole('tab', { name: 'кг, см' }));
+    await check();
   },
 };
