@@ -83,7 +83,7 @@ export const Outside: Story = {
 export const Mobile: Story = {
   args: { layout: 'mobile', date: '2026-10-26', status: 'done', past: true },
   decorators: [(Story) => <div style={{ width: 52 }}><Story /></div>],
-  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
 };
 
 export const AllVariants: Story = {

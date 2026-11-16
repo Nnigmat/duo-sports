@@ -30,7 +30,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Mobile: Story = {
-  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { level: 1, name: 'План' })).toBeVisible();
@@ -71,7 +71,7 @@ export const CopyOpen: Story = {
 };
 export const WeekView: Story = {
   args: { state: { ...initialPlanState(planFixture.today), view: 'week' } },
-  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { level: 2, name: '26 октября – 1 ноября' })).toBeVisible();
@@ -107,7 +107,7 @@ function Live({ layout }: { layout: 'mobile' | 'desktop' }) {
 }
 export const InteractiveMobile: Story = {
   render: () => <Live layout="mobile" />,
-  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     // Ноябрь, пустой вторник: добавляем готовую тренировку, затем убираем

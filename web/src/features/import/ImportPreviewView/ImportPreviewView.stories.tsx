@@ -42,7 +42,7 @@ export const TotalFollowsChoices: Story = {
   },
 };
 
-export const Mobile: Story = { globals: { viewport: { value: 'mobile1', isRotated: false } } };
+export const Mobile: Story = { globals: { viewport: { value: 'a15', isRotated: false } } };
 
 export const WithWarnings: Story = {
   args: { data: { ...previewFixture, warnings: ['Строка 2: Незнакомое поле: мечта', 'Строка 30: «Растяжка» без даты'] } },

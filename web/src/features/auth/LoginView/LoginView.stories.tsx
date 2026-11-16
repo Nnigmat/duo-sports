@@ -15,7 +15,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Mobile: Story = {
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { level: 1, name: 'Вход' })).toBeVisible();
@@ -42,7 +42,7 @@ export const Desktop: Story = {
   },
 };
 export const InvalidEmail: Story = {
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await userEvent.type(c.getByLabelText('Email'), 'nikita@');
@@ -54,7 +54,7 @@ export const InvalidEmail: Story = {
 };
 export const WrongPassword: Story = {
   args: { status: 'wrongPassword', initial: { email: 'nikita@example.com', password: 'trenirovka7' } },
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('alert')).toHaveTextContent('Неверный email или пароль');
@@ -69,7 +69,7 @@ export const WrongPasswordDesktop: Story = {
 };
 export const Locked: Story = {
   args: { status: 'locked', initial: { email: 'nikita@example.com', password: 'trenirovka7' } },
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
     await expect(c.getByText(/Попробуйте снова через 15 минут/)).toBeVisible();
