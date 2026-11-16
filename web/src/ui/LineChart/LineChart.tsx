@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { chartGeometry } from './geometry';
 import { cx } from '../cx';
 import styles from './LineChart.module.css';
-import { hitWidth, visibleLabels } from './labels';
+import { hitWidth, visibleLabels } from '../MultiLineChart/labels';
 
 export type LinePoint = { shortLabel: string; ariaLabel: string; value: number };
 

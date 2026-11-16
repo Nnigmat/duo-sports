@@ -23,6 +23,7 @@ export { GoalChip } from './GoalChip/GoalChip';
 export { IconButton } from './IconButton/IconButton';
 export { Notice } from './Notice/Notice';
 export { LineChart, type LinePoint } from './LineChart/LineChart';
+export { MultiLineChart, type MultiLine, type MultiLineDate } from './MultiLineChart/MultiLineChart';
 export { ListRow } from './ListRow/ListRow';
 export { MediaLink } from './MediaLink/MediaLink';
 export { PastComments } from './PastComments/PastComments';

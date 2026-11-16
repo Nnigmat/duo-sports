@@ -1,0 +1,82 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  width: 100%;
+}
+.plot {
+  position: relative;
+  height: 160px;
+}
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.grid {
+  stroke: var(--hairline-soft);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.zero {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+.pick {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.yTick {
+  position: absolute;
+  left: 0;
+  transform: translateY(-100%);
+  color: var(--steel);
+  font-size: 11px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.strip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.axis {
+  position: relative;
+  height: 20px;
+}
+.tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  color: var(--steel);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: var(--caption-weight);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tickOn {
+  color: var(--ink);
+  font-weight: var(--caption-bold-weight);
+}
