@@ -1,7 +1,9 @@
+import { SIZE } from './geometry';
+
 /** Ширина подписи даты («14 ноя») с запасом, px */
 const LABEL_W = 52;
-/** Доля ширины графика между первой и последней точкой: (326 − 2·16) / 326, как в SIZE из geometry.ts */
-const SPAN = 294 / 326;
+/** Доля ширины графика между первой и последней точкой */
+const SPAN = (SIZE.w - 2 * SIZE.padX) / SIZE.w;
 
 /** Ширина кнопки-точки: 44 px, но не шире расстояния между соседними точками, чтобы зоны не перекрывались */
 export function hitWidth(count: number, width: number): number {
