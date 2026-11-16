@@ -3,6 +3,9 @@ import { MEASUREMENT_KINDS } from '../../../../shared/measurements';
 import type { MeasurementEntry } from '../../../../shared/types';
 import {
   chartGeometry,
+  changeSeries,
+  entriesInPeriod,
+  formatChange,
   formatDateLong,
   formatDateShort,
   formatDateWithWeekday,
@@ -154,5 +157,61 @@ describe('MEASUREMENT_FIELDS', () => {
     expect(MEASUREMENT_FIELDS.map((f) => f.kind)).toEqual([...MEASUREMENT_KINDS]);
     expect(MEASUREMENT_FIELDS[0]).toMatchObject({ label: 'Вес', unit: 'кг' });
     expect(MEASUREMENT_FIELDS.at(-1)).toMatchObject({ kind: 'calf', label: 'Икры', unit: 'см' });
+  });
+});
+
+describe('entriesInPeriod', () => {
+  it('месяц: замеры за 30 дней, всё: все', () => {
+    expect(entriesInPeriod(entries, 'month', '2026-11-14').map((e) => e.date)).toEqual([
+      '2026-10-17',
+      '2026-10-31',
+      '2026-11-14',
+    ]);
+    expect(entriesInPeriod(entries, 'all', '2026-11-14')).toHaveLength(6);
+  });
+  it('старые замеры: два последних; один замер: он же', () => {
+    const old: MeasurementEntry[] = ['2026-08-01', '2026-08-15', '2026-09-01'].map((date) => ({
+      date,
+      values: { weight: 70 },
+    }));
+    expect(entriesInPeriod(old, 'month', '2026-11-14').map((e) => e.date)).toEqual(['2026-08-15', '2026-09-01']);
+    expect(entriesInPeriod(old.slice(0, 1), 'month', '2026-11-14')).toHaveLength(1);
+  });
+  it('в окне один замер: два последних, включая старый', () => {
+    const mixed: MeasurementEntry[] = ['2026-09-01', '2026-10-01', '2026-11-10'].map((date) => ({
+      date,
+      values: { weight: 70 },
+    }));
+    expect(entriesInPeriod(mixed, 'month', '2026-11-14').map((e) => e.date)).toEqual(['2026-10-01', '2026-11-10']);
+  });
+});
+
+describe('changeSeries', () => {
+  it('вес в кг и в процентах', () => {
+    const u = changeSeries(entries, 'weight', 'units');
+    expect(u[0]).toBe(0);
+    expect(u[5]).toBeCloseTo(-2.2);
+    expect(changeSeries(entries, 'weight', 'percent')[5]).toBeCloseTo(-2.965, 3);
+  });
+  it('пропуски дают null, база — первое заполненное', () => {
+    const sparse: MeasurementEntry[] = dates.map((date, i) => ({
+      date,
+      values: i === 2 ? { waist: 80 } : i === 4 ? { waist: 78 } : {},
+    }));
+    const r = changeSeries(sparse, 'waist', 'units');
+    expect(r).toEqual([null, null, 0, null, -2, null]);
+  });
+  it('нигде не заполнен: все null, без NaN', () => {
+    const r = changeSeries(entries, 'arm', 'percent');
+    expect(r).toEqual([null, null, null, null, null, null]);
+  });
+});
+
+describe('formatChange', () => {
+  it('проценты и единицы', () => {
+    expect(formatChange(-4.27, 'percent', 'см')).toBe('−4,3 %');
+    expect(formatChange(0.01, 'percent', 'см')).toBe('0 %');
+    expect(formatChange(-4, 'units', 'см')).toBe('−4 см');
+    expect(formatChange(1.5, 'units', 'кг')).toBe('+1,5 кг');
   });
 });
