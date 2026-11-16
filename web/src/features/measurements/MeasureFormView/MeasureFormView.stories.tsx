@@ -107,11 +107,12 @@ export const WithError: Story = {
   },
 };
 
-/** Экран внутри AppShell на телефоне 320 px: колонка 288 px (TopBar выступает на 8 px, как везде) */
-export const Narrow320: Story = {
+/** Телефон Samsung A15, 384 px: колонка 352 px, как в AppShell (рамка шире на 8 px с боков: туда выступает TopBar) */
+export const PhoneA15: Story = {
+  globals: { viewport: { value: 'a15', isRotated: false } },
   decorators: [
     (Story) => (
-      <div data-testid="frame" style={{ width: 304, padding: '0 8px', boxSizing: 'border-box' }}>
+      <div data-testid="frame" style={{ margin: '0 calc(-1 * var(--spacing-xs))', padding: '0 var(--spacing-xs)' }}>
         <Story />
       </div>
     ),
@@ -144,5 +145,5 @@ export const Narrow320: Story = {
 
 export const Desktop: Story = {
   args: { layout: 'desktop', gender: 'male' },
-  parameters: { viewport: { defaultViewport: 'desktop' } },
+  globals: { viewport: { value: 'desktop', isRotated: false } },
 };

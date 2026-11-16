@@ -62,4 +62,4 @@ export const UndoAndRedo: Story = {
 
 export const Undone: Story = { args: { undone: true } };
 
-export const Mobile: Story = { globals: { viewport: { value: 'mobile1', isRotated: false } } };
+export const Mobile: Story = { globals: { viewport: { value: 'a15', isRotated: false } } };

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createUser } from './auth';
 import { type Db, migrateMeasurementKinds, openDb } from './db';
+import { MEASUREMENT_KINDS } from '../shared/measurements';
 import { measurementsOf, saveMeasurement } from './measurements';
 
 const TODAY = '2026-11-14';
@@ -103,6 +104,16 @@ describe('икры', () => {
   });
 });
 
+/** Строка каждого вида из MEASUREMENT_KINDS прямо в таблицу: проверяет CHECK, а не нормализацию */
+const insertEachKind = () => {
+  const ins = db.prepare('INSERT INTO measurements (user_id, date, kind, value, created_at) VALUES (?, ?, ?, ?, ?)');
+  for (const kind of MEASUREMENT_KINDS) ins.run(a, '2026-01-01', kind, 1, '2026-01-01T00:00:00.000Z');
+};
+
+it('CHECK свежей базы пропускает каждый вид из MEASUREMENT_KINDS', () => {
+  expect(insertEachKind).not.toThrow();
+});
+
 describe('migrateMeasurementKinds', () => {
   const tableSql = () => (db.prepare("SELECT sql FROM sqlite_master WHERE name = 'measurements'").get() as { sql: string }).sql;
 
@@ -126,6 +137,7 @@ describe('migrateMeasurementKinds', () => {
     expect(db.prepare('SELECT kind, value, created_at FROM measurements').all()).toEqual([{ kind: 'weight', value: 72, created_at: '2026-11-14T10:00:00.000Z' }]);
     expect(saveMeasurement(db, a, { date: TODAY, values: { calf: 37.5 } }, TODAY, clock)).toEqual({ ok: true });
     expect(tableSql()).toContain("'calf'");
+    expect(insertEachKind).not.toThrow();
   });
 
   it('повторный вызов ничего не меняет', () => {

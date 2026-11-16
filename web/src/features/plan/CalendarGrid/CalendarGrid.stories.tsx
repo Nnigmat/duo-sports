@@ -53,7 +53,7 @@ export const CopyReplaces: Story = {
 };
 export const Mobile: Story = {
   args: { layout: 'mobile' },
-  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByText('перенесена')).toBeNull();
     await expect(within(canvasElement).getAllByRole('button')).toHaveLength(31);
