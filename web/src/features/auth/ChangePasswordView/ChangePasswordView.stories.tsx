@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Mobile: Story = {
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('heading', { level: 2, name: 'Смена пароля' })).toBeVisible();

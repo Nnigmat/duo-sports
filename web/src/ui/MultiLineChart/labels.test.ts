@@ -13,6 +13,18 @@ describe('visibleLabels', () => {
     const gap = (224 * 294) / 326 / 5;
     for (let k = 1; k < idx.length; k++) expect((idx[k] - idx[k - 1]) * gap).toBeGreaterThanOrEqual(52);
   });
+  it('перебор числа точек, ширины и выбора: видимые подписи не ближе 52 px, выбранная видна', () => {
+    for (const width of [224, 288, 352, 600, 1000])
+      for (let count = 2; count <= 30; count++) {
+        const gap = (width * 294) / 326 / (count - 1);
+        for (let selected = 0; selected < count; selected++) {
+          const idx = shown(visibleLabels(count, selected, width));
+          expect(idx).toContain(selected);
+          for (let k = 1; k < idx.length; k++) expect((idx[k] - idx[k - 1]) * gap).toBeGreaterThanOrEqual(52);
+        }
+      }
+  });
+
   it('выбранная подпись всегда видна, соседи рядом с ней скрыты', () => {
     const flags = visibleLabels(12, 1, 224);
     expect(flags[1]).toBe(true);

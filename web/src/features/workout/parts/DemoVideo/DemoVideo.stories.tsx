@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, waitFor } from 'storybook/test';
 import { DemoVideo } from './DemoVideo';
 import sample from './sample.mp4';
 
@@ -26,7 +26,6 @@ export const Playing: Story = {
 
 export const MissingFile: Story = {
   play: async ({ args }) => {
-    await new Promise((r) => setTimeout(r, 300));
-    await expect(args.onFail).toHaveBeenCalled();
+    await waitFor(() => expect(args.onFail).toHaveBeenCalled());
   },
 };

@@ -1,8 +1,12 @@
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { MEASUREMENT_KINDS } from '../shared/measurements';
 
 export type Db = Database.Database;
+
+/** CHECK по виду замера: список из MEASUREMENT_KINDS, без пробелов, как в уже созданных базах */
+const MEASUREMENT_KIND_CHECK = `CHECK (kind IN (${MEASUREMENT_KINDS.map((k) => `'${k}'`).join(',')}))`;
 
 const schema = `
 CREATE TABLE IF NOT EXISTS users (
@@ -213,7 +217,7 @@ CREATE TABLE IF NOT EXISTS plan_pauses (
 CREATE TABLE IF NOT EXISTS measurements (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm','calf')),
+  kind TEXT NOT NULL ${MEASUREMENT_KIND_CHECK},
   value REAL NOT NULL,
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, date, kind)
@@ -265,15 +269,15 @@ export function migrateSharedExercises(db: Db) {
   })();
 }
 
-/** Таблица measurements со старым CHECK по kind (без 'calf') пересоздаётся с новым списком. Идемпотентно. */
+/** Таблица measurements со старым CHECK по kind (без нового вида) пересоздаётся с текущим списком. Идемпотентно. */
 export function migrateMeasurementKinds(db: Db) {
   const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'measurements'").get() as { sql: string } | undefined;
-  if (!row || row.sql.includes("'calf'")) return;
+  if (!row || row.sql.includes(MEASUREMENT_KIND_CHECK)) return;
   db.transaction(() => {
     db.exec(`CREATE TABLE measurements_new (
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       date TEXT NOT NULL,
-      kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm','calf')),
+      kind TEXT NOT NULL ${MEASUREMENT_KIND_CHECK},
       value REAL NOT NULL,
       created_at TEXT NOT NULL,
       PRIMARY KEY (user_id, date, kind)

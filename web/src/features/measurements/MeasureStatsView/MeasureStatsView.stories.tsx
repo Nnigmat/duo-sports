@@ -259,10 +259,11 @@ export const NeverFilledKind: Story = {
   },
 };
 
-/** Телефон 320 px внутри AppShell: колонка 288 px. Строки списка не вылезают, подписи дат не накладываются */
-export const Narrow320: Story = {
+/** Телефон Samsung A15, 384 px: колонка 352 px, как в AppShell (рамка шире на 8 px с боков: туда выступает TopBar). Строки списка не вылезают, подписи дат не накладываются */
+export const PhoneA15: Story = {
+  globals: { viewport: { value: 'a15', isRotated: false } },
   render: () => (
-    <div data-testid="frame" style={{ width: 304, padding: '0 8px', boxSizing: 'border-box' }}>
+    <div data-testid="frame" style={{ margin: '0 calc(-1 * var(--spacing-xs))', padding: '0 var(--spacing-xs)' }}>
       <Interactive entries={entries} onAdd={() => {}} />
     </div>
   ),
