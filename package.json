@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build --config web/vite.config.ts",
     "create-user": "tsx server/createUser.ts",
     "seed-demo": "tsx server/seedDemo.ts",
+    "seed-measurements": "tsx server/seedMeasurements.ts",
     "set-gender": "tsx server/setGender.ts",
     "migrate:routines": "tsx server/migrateRoutines.ts",
     "migrate:equipment": "tsx server/migrateEquipment.ts",
