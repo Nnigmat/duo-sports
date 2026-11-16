@@ -62,6 +62,16 @@ describe('axisTicks', () => {
     expect(ticks.filter((t) => t.v === 0)).toHaveLength(1);
   });
 
+  it('перебор диапазонов: соседние подписи не ближе высоты строки, ноль всегда есть', () => {
+    const values = [-50, -5, -1, -0.3, -0.1, 0, 0.1, 0.3, 1, 5, 50];
+    for (const a of values)
+      for (const b of values) {
+        const ticks = axisTicks(multiChartGeometry([[0, a], [b]], SIZE, 2), SIZE);
+        apart(ticks);
+        expect(ticks.filter((t) => t.v === 0)).toHaveLength(1);
+      }
+  });
+
   it('ноль у верхнего края (мелкий разброс вверх): подписи не налезают, ноль остаётся', () => {
     const ticks = axisTicks(multiChartGeometry([[0, -2, -5], [0, 0.1, 0.3]], SIZE, 2), SIZE);
     apart(ticks);
