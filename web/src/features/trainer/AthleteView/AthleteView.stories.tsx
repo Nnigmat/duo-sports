@@ -108,7 +108,7 @@ export const ManySessions: Story = {
 
 /** Телефон, список: тренировка скрыта, кнопки «Назад к списку» нет */
 export const PhoneList: Story = {
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.queryByText('Выбранная тренировка по шагам')).not.toBeVisible();
@@ -120,7 +120,7 @@ export const PhoneList: Story = {
 /** Телефон, открыта тренировка: вместо списка, сверху «← Тренировки» */
 export const PhoneDetail: Story = {
   args: { open: true },
-  globals: { viewport: { value: 'phone', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByText('Выбранная тренировка по шагам')).toBeVisible();

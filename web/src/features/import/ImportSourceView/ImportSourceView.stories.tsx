@@ -63,7 +63,7 @@ export const Typed: Story = {
 };
 
 export const Mobile: Story = {
-  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  globals: { viewport: { value: 'a15', isRotated: false } },
 };
 
 export const WithErrors: Story = {

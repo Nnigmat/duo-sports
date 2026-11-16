@@ -46,4 +46,4 @@ export const ResolveConflicts: Story = {
   },
 };
 
-export const Mobile: Story = { globals: { viewport: { value: 'mobile1', isRotated: false } } };
+export const Mobile: Story = { globals: { viewport: { value: 'a15', isRotated: false } } };

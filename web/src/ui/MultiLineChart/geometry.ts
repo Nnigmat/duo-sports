@@ -1,6 +1,6 @@
 export type ChartSize = { w: number; h: number; padX: number; padY: number };
 
-/** Размер в единицах viewBox. `w` и `padX` должны совпадать с SPAN в labels.ts */
+/** Размер в единицах viewBox */
 export const SIZE: ChartSize = { w: 326, h: 160, padX: 16, padY: 14 };
 
 /**
