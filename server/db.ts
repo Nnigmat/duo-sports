@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS plan_pauses (
 CREATE TABLE IF NOT EXISTS measurements (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm')),
+  kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm','calf')),
   value REAL NOT NULL,
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, date, kind)
@@ -265,6 +265,24 @@ export function migrateSharedExercises(db: Db) {
   })();
 }
 
+/** Таблица measurements со старым CHECK по kind (без 'calf') пересоздаётся с новым списком. Идемпотентно. */
+export function migrateMeasurementKinds(db: Db) {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'measurements'").get() as { sql: string } | undefined;
+  if (!row || row.sql.includes("'calf'")) return;
+  db.transaction(() => {
+    db.exec(`CREATE TABLE measurements_new (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK (kind IN ('weight','chest','waist','belly','hips','thigh','arm','calf')),
+      value REAL NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, date, kind)
+    )`);
+    db.exec('INSERT INTO measurements_new SELECT user_id, date, kind, value, created_at FROM measurements');
+    db.exec('DROP TABLE measurements; ALTER TABLE measurements_new RENAME TO measurements');
+  })();
+}
+
 /** coach_comments → comments: до появления ответов ученика таблица называлась иначе. Идемпотентно. */
 function renameCoachComments(db: Db) {
   const has = (name: string) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
@@ -298,4 +316,5 @@ function migrate(db: Db) {
   if (!columns('workouts').includes('warmup_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN warmup_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
   if (!columns('workouts').includes('cooldown_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN cooldown_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
   migrateSharedExercises(db);
+  migrateMeasurementKinds(db);
 }

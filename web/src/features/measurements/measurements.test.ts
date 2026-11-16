@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MEASUREMENT_KINDS } from '../../../../shared/measurements';
 import type { MeasurementEntry } from '../../../../shared/types';
 import {
   chartGeometry,
@@ -149,8 +150,9 @@ describe('formatDateWithWeekday', () => {
 });
 
 describe('MEASUREMENT_FIELDS', () => {
-  it('семь полей в порядке макета', () => {
-    expect(MEASUREMENT_FIELDS.map((f) => f.kind)).toEqual(['weight', 'chest', 'waist', 'belly', 'hips', 'thigh', 'arm']);
+  it('восемь полей в порядке макета, как MEASUREMENT_KINDS', () => {
+    expect(MEASUREMENT_FIELDS.map((f) => f.kind)).toEqual([...MEASUREMENT_KINDS]);
     expect(MEASUREMENT_FIELDS[0]).toMatchObject({ label: 'Вес', unit: 'кг' });
+    expect(MEASUREMENT_FIELDS.at(-1)).toMatchObject({ kind: 'calf', label: 'Икры', unit: 'см' });
   });
 });

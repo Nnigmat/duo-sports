@@ -862,7 +862,7 @@ export interface AchievementsResponse {
 
 // ── «Замеры» ──────────────────────────────────────────────
 
-export type MeasurementKind = 'weight' | 'chest' | 'waist' | 'belly' | 'hips' | 'thigh' | 'arm';
+export type MeasurementKind = 'weight' | 'chest' | 'waist' | 'belly' | 'hips' | 'thigh' | 'arm' | 'calf';
 
 export type MeasurementEntry = {
   /** ISO yyyy-mm-dd */

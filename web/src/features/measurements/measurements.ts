@@ -27,6 +27,12 @@ export const MEASUREMENT_FIELDS: ReadonlyArray<MeasurementField> = [
     unit: 'см',
     hint: 'Середина плеча, рука расслаблена и опущена. Всегда одна и та же рука.',
   },
+  {
+    kind: 'calf',
+    label: 'Икры',
+    unit: 'см',
+    hint: 'Самая широкая часть голени, стоя, вес на обе ноги. Всегда одна и та же нога.',
+  },
 ];
 
 export type SeriesPoint = { date: string; value: number };
