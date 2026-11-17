@@ -67,6 +67,41 @@ describe('buildWorkout', () => {
   });
 });
 
+describe('разминка и заминка: выбор тренера важнее ответа агента', () => {
+  const neck = { id: 'neck-roll', name: 'Наклоны головы', muscles: [], measure: 'time' as const, equipment: [], aliases: [] };
+  const fresh = (id: string) => ({ new_routine: { id, title: 'Своя', exercises: [{ exercise_id: 'neck-roll', time: '30s' }] } });
+  const draftOf = async (ask: Partial<DraftRequest>, answer: AgentWorkout) => {
+    const r = await buildWorkout({ ...req, ...ask }, ctx, [], fakeSend(answer).send);
+    if (!r.ok) throw new Error(JSON.stringify(r.errors));
+    return r.draft;
+  };
+
+  it('library choice wins over new routine and null', async () => {
+    const d = await draftOf(
+      { warmup: { routine: 'neck-shoulders' }, cooldown: { routine: 'back-stretch' } },
+      agent({ new_exercises: [neck], warmup: fresh('my-warm'), cooldown: null }),
+    );
+    expect(d.warmup).toEqual({ kind: 'library', slug: 'neck-shoulders' });
+    expect(d.cooldown).toEqual({ kind: 'library', slug: 'back-stretch' });
+    // Упражнение только из выброшенной разминки не остаётся невидимым новым
+    expect(d.newExercises).toEqual([]);
+  });
+
+  it('«Без разминки» wins over any answer', async () => {
+    const d = await draftOf({ warmup: null, cooldown: null }, agent({ new_exercises: [neck], warmup: { routine: 'neck-shoulders' }, cooldown: fresh('my-cool') }));
+    expect(d.warmup).toEqual({ kind: 'none' });
+    expect(d.cooldown).toEqual({ kind: 'none' });
+    expect(d.newExercises).toEqual([]);
+  });
+
+  it('own text takes the answer', async () => {
+    const d = await draftOf({ warmup: { text: 'шея' }, cooldown: { text: 'спина' } }, agent({ new_exercises: [neck], warmup: fresh('my-warm'), cooldown: { routine: 'back-stretch' } }));
+    expect(d.warmup).toMatchObject({ kind: 'new', items: [{ name: 'Наклоны головы', sec: 30 }] });
+    expect(d.cooldown).toEqual({ kind: 'library', slug: 'back-stretch' });
+    expect(d.newExercises.map((e) => e.name)).toEqual(['Наклоны головы']);
+  });
+});
+
 describe('ввод', () => {
   const input = (over: Partial<BuilderInput>): BuilderInput => ({ ...EMPTY_INPUT, ...over });
 
