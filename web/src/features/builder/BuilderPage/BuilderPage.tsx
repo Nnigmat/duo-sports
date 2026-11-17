@@ -105,6 +105,7 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
       if (id !== run.current) return;
       if (result.ok) {
         setDraft(result.draft);
+        setRestoredAt(null);
         setProblems([]);
         setFailure(null);
         setStep('review');
@@ -169,6 +170,8 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
           setProblems([]);
           setFailure(null);
         }}
+        restoredAt={restoredAt}
+        onReset={reset}
       />
     );
 

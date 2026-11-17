@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Text } from '../../../ui';
+import { formatDateTime } from '../../../shared/format';
+import { Button, Card, Notice, Text } from '../../../ui';
 import type { LibraryExercise } from '../../exercises/types';
 import type { ParseContext } from '../../import/parse';
 import { WorkoutEditView } from '../../trainer/WorkoutEditPage/WorkoutEditView';
@@ -23,10 +24,13 @@ type Props = {
   onDraft: (d: BuilderDraft) => void;
   onSave: () => void;
   onRebuild: () => void;
+  /** Когда сохранён восстановленный черновик; null — черновик не восстанавливали */
+  restoredAt: number | null;
+  onReset: () => void;
 };
 
 /** Проверка собранной тренировки: форма редактора с новыми упражнениями, новой разминкой и заметками агента. */
-export function BuilderReviewView({ draft, library, routines, saving, problems, failure, onDraft, onSave, onRebuild }: Props) {
+export function BuilderReviewView({ draft, library, routines, saving, problems, failure, onDraft, onSave, onRebuild, restoredAt, onReset }: Props) {
   const [open, setOpen] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const newNames = useMemo(() => new Set(draft.newExercises.map((e) => e.name)), [draft.newExercises]);
@@ -62,6 +66,18 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
 
   const top = (
     <>
+      {restoredAt !== null && (
+        <Notice
+          tone="info"
+          action={
+            <Button variant="ghost" compact onClick={onReset}>
+              Начать заново
+            </Button>
+          }
+        >
+          <span className={styles.num}>{`Восстановлен черновик от ${formatDateTime(new Date(restoredAt).toISOString())}`}</span>
+        </Notice>
+      )}
       {confirm && (
         <Card tone="surface" role="region" aria-label="Пересобрать тренировку" className={styles.confirm}>
           <Text variant="body">Правки формы пропадут</Text>

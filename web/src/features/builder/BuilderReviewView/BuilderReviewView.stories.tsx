@@ -43,6 +43,8 @@ const meta = {
     onDraft: fn(),
     onSave: fn(),
     onRebuild: fn(),
+    restoredAt: null,
+    onReset: fn(),
   },
 } satisfies Meta<typeof BuilderReviewView>;
 export default meta;
@@ -120,6 +122,16 @@ export const NewExerciseInCooldown: Story = {
     await expect(card.queryByRole('button', { name: 'Открыть «Вращение руками»' })).toBeNull();
     await userEvent.click(card.getByRole('button', { name: 'Открыть «Наклоны головы»' }));
     await expect(await within(document.body).findByLabelText('Название')).toHaveValue('Наклоны головы');
+  },
+};
+
+export const Restored: Story = {
+  args: { restoredAt: new Date(2026, 10, 17, 21, 40).getTime() },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Восстановлен черновик от 17 ноя, 21:40')).toBeVisible();
+    await userEvent.click(c.getByRole('button', { name: 'Начать заново' }));
+    await expect(args.onReset).toHaveBeenCalled();
   },
 };
 
