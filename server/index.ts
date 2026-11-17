@@ -4,6 +4,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { achievementsRouter } from './achievementsRouter';
+import { aiRulesRouter } from './aiRulesRouter';
 import { authRouter } from './authRouter';
 import { equipmentRouter } from './equipmentRouter';
 import { measurementsRouter } from './measurementsRouter';
@@ -49,6 +50,7 @@ app.use('/api', trainerRouter(db));
 app.use('/api', achievementsRouter(db));
 app.use('/api', measurementsRouter(db));
 app.use('/api', scheduleRouter(db));
+app.use('/api', aiRulesRouter(db));
 app.use('/api', videosRouter({ db, dir: videosDir, maxBytes: 300 * 1024 * 1024 }));
 
 app.get('/api/health', (_req, res) => {

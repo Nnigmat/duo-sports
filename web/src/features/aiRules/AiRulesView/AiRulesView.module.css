@@ -1,0 +1,17 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.area {
+  min-height: 240px;
+}
+.meta {
+  font-variant-numeric: tabular-nums;
+}

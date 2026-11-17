@@ -222,6 +222,13 @@ CREATE TABLE IF NOT EXISTS measurements (
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, date, kind)
 );
+-- Правила админа для агента, собирающего тренировки: одна строка
+CREATE TABLE IF NOT EXISTS ai_rules (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  text TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
 `;
 
 /** Открывает базу (файл или ':memory:'), включает WAL и foreign_keys, создаёт таблицы. */

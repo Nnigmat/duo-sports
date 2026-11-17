@@ -69,3 +69,10 @@ export function formatReviewedAt(iso: string, now: Date = new Date()): string {
   if (diff === 1) return `вчера в ${time}`;
   return `${d.getDate()} ${MONTHS[d.getMonth()]} в ${time}`;
 }
+
+/** «17 ноя, 21:40»: когда что-то изменили или сохранили; по местному времени */
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}, ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+}

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { DISPLAY_NAME_MAX, MAX_SOUND_VOLUME, MAX_START_DELAY_SEC, SOUND_STYLES, type Gender, type SoundStyle } from '../../../../../shared/types';
 import { apiChangePassword, apiSetDisplayName, apiSetGender, apiSetSound, apiSetSpeakNames, apiSetStartDelay } from '../../../app/auth/authApi';
 import { useAuth } from '../../../app/auth/AuthProvider';
+import { isAdmin } from '../../../app/auth/roles';
 import { Button, Card, ParamStepper, SegmentedControl, Text, TextInput } from '../../../ui';
 import { createBeeper } from '../../workout/sound/beeper';
 import { STYLE_LABELS } from '../../workout/sound/styles';
@@ -192,6 +194,16 @@ export function ProfilePage() {
           onChange={(v) => void saveSpeakNames(v === 'on')}
         />
       </Card>
+      {isAdmin(user.role) && (
+        <Card tone="canvas" role="region" aria-labelledby="profile-admin" className={styles.card}>
+          <Text variant="h4" tag="h2" id="profile-admin">
+            Админ
+          </Text>
+          <Link to="/admin/ai-rules" className={styles.link}>
+            Правила агента
+          </Link>
+        </Card>
+      )}
       <ChangePasswordView
         email={user.email}
         displayName={user.displayName}

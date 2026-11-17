@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { LoginPage, ProfilePage } from '../features/auth';
 import { AchievementsPage } from '../features/achievements';
+import { AiRulesPage } from '../features/aiRules';
 import { EquipmentPage } from '../features/equipment';
 import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
@@ -12,6 +13,7 @@ import { AthleteImportPage, AthleteMeasurementsPage, AthletePage, AthletePlanPag
 import { TodayPage } from '../features/today';
 import { ResumeFeedback, WorkoutPage } from '../features/workout';
 import { AppShell } from './AppShell/AppShell';
+import { RequireAdmin } from './auth/RequireAdmin';
 import { RequireAuth } from './auth/RequireAuth';
 import { HomeRedirect, RequireTrainer } from './auth/RequireRole';
 
@@ -41,6 +43,9 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequireTrainer />}>
             <Route path="equipment" element={<EquipmentPage />} />
+          </Route>
+          <Route element={<RequireAdmin />}>
+            <Route path="admin/ai-rules" element={<AiRulesPage />} />
           </Route>
           <Route path="plan" element={<PlanPage />} />
           <Route path="plan/workouts/:wid/edit" element={<OwnWorkoutEditPage />} />
