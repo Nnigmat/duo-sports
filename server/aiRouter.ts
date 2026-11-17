@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { AGENT_WORKOUT_SCHEMA, DRAFT_TEXT_MAX, isAgentWorkout, type DraftRequest, type DraftResponse, type RoutineAsk } from '../shared/aiDraft';
+import { AGENT_WORKOUT_SCHEMA, compactAgentWorkout, DRAFT_TEXT_MAX, isAgentWorkout, type DraftRequest, type DraftResponse, type RoutineAsk } from '../shared/aiDraft';
 import { AiError, type AiClient } from './aiClient';
 import { buildPrompt, promptLibrary, promptRoutines } from './aiPrompt';
 import { getAiRules } from './aiRules';
@@ -81,9 +81,10 @@ export function aiRouter(db: Db, client: AiClient | null) {
     ensureLibrary(db);
     const prompt = buildPrompt({ rules: getAiRules(db).text, routines: promptRoutines(db), library: promptLibrary(db), request, today: localToday() });
     try {
-      const { json, usage } = await client.draft(prompt, AGENT_WORKOUT_SCHEMA);
+      const { json: raw, usage } = await client.draft(prompt, AGENT_WORKOUT_SCHEMA);
       // Только пользователь и токены: текст ввода и ответа в лог не пишем
       logger.info({ userId: user.id, athleteId: request.athleteId, usage }, 'ai draft');
+      const json = compactAgentWorkout(raw);
       if (!isAgentWorkout(json)) {
         logger.warn({ userId: user.id }, 'ai draft: ответ не по схеме');
         return void res.status(502).json({ error: NO_ANSWER });
@@ -92,7 +93,13 @@ export function aiRouter(db: Db, client: AiClient | null) {
       res.json(body);
     } catch (e) {
       const status = e instanceof AiError ? e.status : undefined;
-      logger.warn({ userId: user.id, status, message: e instanceof Error ? e.message : 'unknown' }, 'ai draft failed');
+      const log = { userId: user.id, status, message: e instanceof Error ? e.message : 'unknown' };
+      // 400 — API отклонил сам запрос (схему, параметры): ошибка у нас, повтор не поможет
+      if (status === 400) {
+        logger.error(log, 'ai draft rejected');
+        return void res.status(503).json({ error: UNAVAILABLE });
+      }
+      logger.warn(log, 'ai draft failed');
       res.status(502).json({ error: NO_ANSWER });
     }
   });

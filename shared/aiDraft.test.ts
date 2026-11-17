@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AGENT_WORKOUT_SCHEMA, isAgentWorkout, type AgentWorkout } from './aiDraft';
+import { AGENT_WORKOUT_SCHEMA, compactAgentWorkout, isAgentWorkout, type AgentWorkout } from './aiDraft';
 
 type Node = Record<string, unknown>;
 
@@ -53,6 +53,18 @@ describe('схема ответа агента', () => {
     expect(unions).toBeLessThanOrEqual(16);
   });
 
+  // Сверх опубликованных лимитов: каждое необязательное поле объекта удваивает его грамматику.
+  // Упражнение с 10 необязательными полями — 400 «Schema is too complex» через 2,5 минуты (проверено 2026-11-17).
+  it('keeps at most 3 optional properties per object', () => {
+    for (const o of objects()) expect(Object.keys(o.properties as Node).length - (o.required as string[]).length).toBeLessThanOrEqual(3);
+  });
+
+  it('block exercise requires every field: empty is "", 0 or false', () => {
+    const ex = ((AGENT_WORKOUT_SCHEMA.properties as Node).blocks as Node).items as Node;
+    const item = ((ex.properties as Node).exercises as Node).items as Node;
+    expect(new Set(item.required as string[])).toEqual(new Set(Object.keys(item.properties as Node)));
+  });
+
   it('uses no keywords outside the supported subset', () => {
     const banned = ['minimum', 'maximum', 'minLength', 'maxLength', 'multipleOf', 'pattern', 'oneOf'];
     walk(AGENT_WORKOUT_SCHEMA, (n) => {
@@ -100,5 +112,47 @@ describe('isAgentWorkout', () => {
   it('rejects empty exercise lists, as schema minItems: 1', () => {
     expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [] }] })).toBe(false);
     expect(isAgentWorkout({ ...minimal, warmup: { new_routine: { id: 'empty', title: 'Пусто', exercises: [] } } })).toBe(false);
+  });
+});
+
+describe('compactAgentWorkout', () => {
+  const full = { exercise_id: 'bench-press', name: '', do: '4x8 @ 60', sets: 0, reps: '', weight: '', time: '', rest: '90s', per_side: false, notes: '  ' };
+
+  it('drops empty fields of block exercises: "", blank, 0, false', () => {
+    const w = compactAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [full] }] });
+    expect(w).toEqual({ ...minimal, blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', do: '4x8 @ 60', rest: '90s' }] }] });
+    expect(isAgentWorkout(w)).toBe(true);
+  });
+
+  it('keeps filled values', () => {
+    const e = { name: 'Планка', sets: 3, time: '45s', per_side: true };
+    expect(compactAgentWorkout({ ...minimal, blocks: [{ type: 'timed', exercises: [e] }] })).toEqual({ ...minimal, blocks: [{ type: 'timed', exercises: [e] }] });
+  });
+
+  // Модель пишет "" и в необязательные поля, хотя могла их опустить: парсер импорта на rest: "" падает
+  it('drops empty optional fields of workout, blocks and advice', () => {
+    const w = compactAgentWorkout({
+      ...minimal,
+      notes: '',
+      blocks: [{ type: 'superset', title: '', rounds: 0, rest: '', exercises: [{ exercise_id: 'squat', reps: '12' }] }],
+      advice: [{ text: 'Есть похожее', exercise: '', suggest: '' }],
+    });
+    expect(w).toEqual({ ...minimal, blocks: [{ type: 'superset', exercises: [{ exercise_id: 'squat', reps: '12' }] }], advice: [{ text: 'Есть похожее' }] });
+  });
+
+  it('keeps required fields even when empty: title, new exercise lists', () => {
+    const ne = { id: 'clap-pushup', name: 'Отжимания с хлопком', muscles: [], measure: 'reps', equipment: [], aliases: [] };
+    expect(compactAgentWorkout({ ...minimal, title: '', new_exercises: [{ ...ne, notes: '' }] })).toEqual({ ...minimal, title: '', new_exercises: [ne] });
+  });
+
+  it('exercise without id and name stays invalid', () => {
+    const w = compactAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ ...full, exercise_id: '' }] }] });
+    expect(isAgentWorkout(w)).toBe(false);
+  });
+
+  it('leaves other shapes for isAgentWorkout to reject', () => {
+    for (const v of [null, 5, 'x', { title: 'Без блоков' }, { ...minimal, blocks: 'нет' }, { ...minimal, blocks: [null, { type: 'sets' }] }]) {
+      expect(compactAgentWorkout(v)).toEqual(v);
+    }
   });
 });
