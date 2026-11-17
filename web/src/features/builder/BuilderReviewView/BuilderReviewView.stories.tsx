@@ -91,6 +91,18 @@ export const NewWarmup: Story = {
   },
 };
 
+export const DropNewCooldown: Story = {
+  args: {
+    draft: { ...reviewDraft, advice: [], cooldown: { kind: 'new', title: 'Растяжка после жима', items: [{ name: 'Вращение руками', sec: 30 }] } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Убрать заминку' }));
+    await expect(args.onDraft).toHaveBeenLastCalledWith(expect.objectContaining({ cooldown: { kind: 'none' } }));
+    await expect(c.queryByText('новая заминка')).toBeNull();
+  },
+};
+
 export const Problems: Story = {
   args: { problems: ['У нового упражнения «Отжимания с хлопком» не указаны мышцы', 'Заминка «Растяжка спины» уже есть — дайте другое название'] },
   play: async ({ canvasElement }) => {

@@ -5,7 +5,7 @@ import type { ParseContext } from '../../import/parse';
 import { WorkoutEditView } from '../../trainer/WorkoutEditPage/WorkoutEditView';
 import { AdviceList } from '../AdviceList/AdviceList';
 import {
-  applyAdvice, createExercise, dismissAdvice, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeNew, removeRoutineItem, renameRoutine, replaceExercise,
+  applyAdvice, createExercise, dismissAdvice, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine,
 } from '../draftOps';
 import { NewExerciseSheet } from '../NewExerciseSheet/NewExerciseSheet';
 import { NewRoutineCard } from '../NewRoutineCard/NewRoutineCard';
@@ -43,6 +43,7 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
           onSec={(i, sec) => onDraft(patchRoutineItem(draft, which, i, sec))}
           onMove={(i, d) => onDraft(moveRoutineItem(draft, which, i, d))}
           onRemove={(i) => onDraft(removeRoutineItem(draft, which, i))}
+          onDrop={() => onDraft(pruneNew(setRoutine(draft, which, { kind: 'none' })))}
         />
       );
     if (pick.kind === 'library') {

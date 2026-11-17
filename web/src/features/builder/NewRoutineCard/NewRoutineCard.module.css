@@ -40,3 +40,6 @@
 .down {
   transform: rotate(-90deg);
 }
+.drop {
+  align-self: flex-start;
+}

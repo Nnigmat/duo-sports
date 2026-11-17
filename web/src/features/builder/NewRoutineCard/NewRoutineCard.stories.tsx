@@ -13,6 +13,7 @@ const meta = {
     onSec: fn(),
     onMove: fn(),
     onRemove: fn(),
+    onDrop: fn(),
   },
 } satisfies Meta<typeof NewRoutineCard>;
 export default meta;

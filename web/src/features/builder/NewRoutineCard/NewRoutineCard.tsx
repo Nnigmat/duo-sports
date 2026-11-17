@@ -1,4 +1,4 @@
-import { Badge, Card, IconButton, ParamStepper, Text, TextInput } from '../../../ui';
+import { Badge, Button, Card, IconButton, ParamStepper, Text, TextInput } from '../../../ui';
 import type { RoutinePick } from '../types';
 import styles from './NewRoutineCard.module.css';
 
@@ -9,12 +9,15 @@ type Props = {
   onSec: (index: number, sec: number) => void;
   onMove: (index: number, delta: -1 | 1) => void;
   onRemove: (index: number) => void;
+  /** «Убрать разминку» целиком */
+  onDrop: () => void;
 };
 
 /** Новая разминка или заминка из ответа агента: название, упражнения по таймеру, секунды и порядок. */
-export function NewRoutineCard({ label, pick, onRename, onSec, onMove, onRemove }: Props) {
+export function NewRoutineCard({ label, pick, onRename, onSec, onMove, onRemove, onDrop }: Props) {
   const word = label === 'Разминка' ? 'разминка' : 'заминка';
   const genitive = label === 'Разминка' ? 'разминки' : 'заминки';
+  const accusative = label === 'Разминка' ? 'разминку' : 'заминку';
   return (
     <Card tone="surface" className={styles.root} aria-label={`Новая ${word}`}>
       <div className={styles.head}>
@@ -47,6 +50,9 @@ export function NewRoutineCard({ label, pick, onRename, onSec, onMove, onRemove 
           ))}
         </ol>
       )}
+      <Button variant="danger-text" compact onClick={onDrop} className={styles.drop}>
+        {`Убрать ${accusative}`}
+      </Button>
     </Card>
   );
 }
