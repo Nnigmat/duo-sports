@@ -3,7 +3,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentWorkout, DraftRequest, DraftUsage } from '../shared/aiDraft';
-import type { AiClient } from './aiClient';
+import { AiError, type AiClient } from './aiClient';
 import type { Prompt } from './aiPrompt';
 import { setAiRules } from './aiRules';
 import { aiRouter } from './aiRouter';
@@ -163,6 +163,25 @@ describe('POST /api/ai/workout-draft', () => {
     const r = await call('trainer', body());
     expect(r.status).toBe(502);
     expect(await r.json()).toEqual({ error: 'Агент не ответил, попробуйте ещё раз' });
+  });
+
+  it('returns 503 when API rejects request (400): our bug, retry will not help', async () => {
+    fake.answer = () => {
+      throw new AiError('400 Schema is too complex.', 400);
+    };
+    await start(fake);
+    const r = await call('trainer', body());
+    expect(r.status).toBe(503);
+    expect(await r.json()).toEqual({ error: 'Сборка недоступна' });
+  });
+
+  it('drops empty exercise fields of strict schema before check', async () => {
+    const full = { exercise_id: 'bench-press', name: '', do: '4x8 @ 60', sets: 0, reps: '', weight: '', time: '', rest: '', per_side: false, notes: '' };
+    fake.answer = () => ({ ...workout, blocks: [{ type: 'sets', exercises: [full] }] });
+    await start(fake);
+    const r = await call('trainer', body());
+    expect(r.status).toBe(200);
+    expect((await r.json()).workout).toEqual(workout);
   });
 
   it('returns 502 when json is not a workout', async () => {

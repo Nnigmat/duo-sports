@@ -102,7 +102,12 @@ export const DRAFT_TEXT_MAX = 2000;
 // - нельзя minimum/maximum, minLength/maxLength, minItems > 1, рекурсию;
 // - на запрос не больше 24 необязательных параметров и 16 параметров с union-типом (anyOf или массив в type),
 //   иначе 400 «Schema is too complex». Поэтому необязательное выражено отсутствием в required, а не null:
-//   null остался только у warmup/cooldown (2 union). Счёт держит тест в aiDraft.test.ts.
+//   null остался только у warmup/cooldown (2 union);
+// - сверх этих лимитов есть предел размера грамматики: каждое необязательное поле объекта её удваивает.
+//   Упражнение блока с 10 необязательными полями API отклонял через 2,5 минуты, поэтому у него все поля
+//   обязательные, а «нет значения» — "", 0 или false; compactAgentWorkout убирает их до проверки.
+//   В одном объекте не больше 3 необязательных полей. Счёт держит тест в aiDraft.test.ts,
+//   настоящий запрос с этой схемой — npm run smoke:ai.
 
 type Schema = Record<string, unknown>;
 const str: Schema = { type: 'string' };
@@ -122,7 +127,7 @@ const exerciseSchema = obj(
     per_side: { type: 'boolean' },
     notes: str,
   },
-  [],
+  ['exercise_id', 'name', 'do', 'sets', 'reps', 'weight', 'time', 'rest', 'per_side', 'notes'],
 );
 
 const routineItemSchema = obj(
@@ -193,6 +198,32 @@ const isExercise = (e: unknown) =>
   isObj(e) && (typeof e.exercise_id === 'string' || typeof e.name === 'string') &&
   optStr(e.exercise_id) && optStr(e.name) && optStr(e.do) && optNum(e.sets) && optStr(e.reps) && optStr(e.weight) &&
   optStr(e.time) && optStr(e.rest) && optBool(e.per_side) && optStr(e.notes);
+
+/** Пустое значение необязательного поля: модель пишет его вместо того, чтобы опустить поле */
+const isEmptyField = (v: unknown) => v === 0 || v === false || (typeof v === 'string' && !v.trim());
+/** Убирает пустые значения у перечисленных полей; keys не задан — у всех */
+const dropEmpty = (o: Obj, keys?: readonly string[]): Obj => Object.fromEntries(Object.entries(o).filter(([k, v]) => !(isEmptyField(v) && (!keys || keys.includes(k)))));
+/** Тот же dropEmpty у каждого объекта списка; не список и не объекты оставляет как есть */
+const dropEmptyEach = (v: unknown, keys?: readonly string[]) => (Array.isArray(v) ? v.map((x) => (isObj(x) ? dropEmpty(x, keys) : x)) : v);
+
+/**
+ * Ответ модели к виду AgentWorkout: убирает пустые значения ("", 0, false) необязательных полей.
+ * У упражнения блока в схеме обязательно всё, поэтому чистятся все его поля; обязательные поля остальных
+ * объектов не трогаются. Чужую форму не исправляет — её отклонит isAgentWorkout.
+ */
+export function compactAgentWorkout(v: unknown): unknown {
+  if (!isObj(v)) return v;
+  const block = (b: unknown) => {
+    if (!isObj(b)) return b;
+    const out = dropEmpty(b, ['title', 'rounds', 'rest']);
+    return 'exercises' in out ? { ...out, exercises: dropEmptyEach(out.exercises) } : out;
+  };
+  const out = dropEmpty(v, ['notes']);
+  if ('blocks' in out) out.blocks = Array.isArray(out.blocks) ? out.blocks.map(block) : out.blocks;
+  if ('new_exercises' in out) out.new_exercises = dropEmptyEach(out.new_exercises, ['notes']);
+  if ('advice' in out) out.advice = dropEmptyEach(out.advice, ['exercise', 'suggest']);
+  return out;
+}
 
 const isBlock = (b: unknown) =>
   isObj(b) && typeof b.type === 'string' && BLOCK_TYPES.has(b.type) && optStr(b.title) && optNum(b.rounds) && optStr(b.rest) &&

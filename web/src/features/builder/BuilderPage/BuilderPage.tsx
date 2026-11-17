@@ -20,6 +20,8 @@ import { EMPTY_INPUT, toRequest, type BuilderDraft, type BuilderInput } from '..
 
 /** Черновик пишется не на каждую букву, а через полсекунды после последней правки */
 const SAVE_DELAY_MS = 500;
+/** Дольше — предупреждаем, что сборка затянулась: API, не принявший запрос, отвечает только через минуты */
+const SLOW_AFTER_MS = 40_000;
 
 const isDay = (s: string | null): s is string => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s) && toIso(parseIso(s)) === s;
 
@@ -76,6 +78,7 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
   const [input, setInput] = useState<BuilderInput>(restored?.input ?? EMPTY_INPUT);
   const [draft, setDraft] = useState<BuilderDraft | null>(restored?.draft ?? null);
   const [building, setBuilding] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [issues, setIssues] = useState<ParseIssue[]>([]);
@@ -93,6 +96,13 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
     const t = window.setTimeout(() => saveBuilder(storageKey, { v: 1, savedAt: Date.now(), step, input, draft }), SAVE_DELAY_MS);
     return () => window.clearTimeout(t);
   }, [storageKey, step, input, draft, pristine]);
+
+  useEffect(() => {
+    setSlow(false);
+    if (!building) return;
+    const t = window.setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    return () => window.clearTimeout(t);
+  }, [building]);
 
   async function build() {
     const id = ++run.current;
@@ -182,6 +192,7 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
       library={ctx.library}
       routines={ctx.routines}
       building={building}
+      slow={slow}
       error={buildError}
       unavailableHref={unavailable ? importHref : null}
       issues={issues}

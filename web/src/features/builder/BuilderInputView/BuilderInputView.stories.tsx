@@ -40,6 +40,7 @@ const meta = {
     library: libraryEntries,
     routines,
     building: false,
+    slow: false,
     error: null,
     unavailableHref: null,
     issues: [],
@@ -100,6 +101,16 @@ export const Building: Story = {
     const button = within(canvasElement).getByRole('button', { name: /Собрать тренировку/ });
     await expect(button).toBeDisabled();
     await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(within(canvasElement).queryByText(/дольше обычного/)).toBeNull();
+  },
+};
+
+export const SlowBuilding: Story = {
+  args: { input: filled, building: true, slow: true },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('status')).toHaveTextContent(/Сборка идёт дольше обычного/);
+    await expect(c.getByRole('button', { name: /Собрать тренировку/ })).toHaveAttribute('aria-busy', 'true');
   },
 };
 

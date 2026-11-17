@@ -31,8 +31,8 @@ export class AiError extends Error {
  * Размышление adaptive (у Haiku 5.5 включено по умолчанию), грамматика схемы действует только на ответ, не на размышление:
  * https://platform.claude.com/docs/en/build-with-claude/thinking
  */
-export function anthropicClient(apiKey: string, opts: { fetch?: typeof globalThis.fetch; maxRetries?: number } = {}): AiClient {
-  // opts — только для тестов: подставной fetch и без повторов
+export function anthropicClient(apiKey: string, opts: { fetch?: typeof globalThis.fetch; maxRetries?: number; timeout?: number } = {}): AiClient {
+  // opts — для тестов (подставной fetch, без повторов) и smoke-проверки (без повторов, ждать отказа API дольше)
   const client = new Anthropic({ apiKey, timeout: TIMEOUT_MS, ...opts });
   return {
     async draft(prompt, schema) {
