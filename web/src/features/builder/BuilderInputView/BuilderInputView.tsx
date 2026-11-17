@@ -13,6 +13,8 @@ type Props = {
   library: LibraryEntry[];
   routines: ParseContext['routines'];
   building: boolean;
+  /** Сборка идёт дольше обычного: предупредить, что, возможно, что-то не так */
+  slow: boolean;
   error: string | null;
   /** Сборка выключена на сервере (503): ссылка на импорт за этот день */
   unavailableHref: string | null;
@@ -30,7 +32,7 @@ const COUNTER_FROM = DRAFT_TEXT_MAX - 400;
 const MAX_FOUND = 6;
 
 /** Ввод для агента: разминка, основная часть (текст и упражнения из библиотеки), заминка. */
-export function BuilderInputView({ dateLabel, input, library, routines, building, error, unavailableHref, issues, restoredAt, onInput, onBuild, onReset }: Props) {
+export function BuilderInputView({ dateLabel, input, library, routines, building, slow, error, unavailableHref, issues, restoredAt, onInput, onBuild, onReset }: Props) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (canBuild(input) && !building) onBuild();
@@ -99,6 +101,8 @@ export function BuilderInputView({ dateLabel, input, library, routines, building
           </ul>
         </Notice>
       )}
+
+      {building && slow && <Notice tone="warn">Сборка идёт дольше обычного — возможно, что-то пошло не так. Можно подождать ещё или попробовать позже.</Notice>}
 
       <Button type="submit" fullWidth loading={building} disabled={!canBuild(input)} className={styles.submit}>
         Собрать тренировку
