@@ -109,3 +109,17 @@ export const removeRoutineItem = (d: BuilderDraft, which: Which, index: number):
   pruneNew(editNew(d, which, (p) => ({ ...p, items: p.items.filter((_, k) => k !== index) })));
 
 export const renameRoutine = (d: BuilderDraft, which: Which, title: string): BuilderDraft => editNew(d, which, (p) => ({ ...p, title }));
+
+/** «Убрать» в панели нового упражнения: строки в блоках и наборах, советы про него и сама запись */
+export function removeNew(d: BuilderDraft, name: string): BuilderDraft {
+  const blocks = d.blocks.map((b) => ({ ...b, exercises: b.exercises.filter((e) => e.name !== name) }) as Block);
+  const drop = (p: RoutinePick): RoutinePick => (p.kind === 'new' ? { ...p, items: p.items.filter((i) => i.name !== name) } : p);
+  return {
+    ...d,
+    blocks,
+    warmup: drop(d.warmup),
+    cooldown: drop(d.cooldown),
+    newExercises: d.newExercises.filter((e) => e.name !== name),
+    advice: d.advice.filter((a) => a.exercise !== name),
+  };
+}

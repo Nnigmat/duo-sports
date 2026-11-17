@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SetsExercise } from '../../../../shared/types';
 import { toLibraryExercise } from '../exercises/api';
 import {
-  applyAdvice, createExercise, dismissAdvice, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine, usedNames,
+  applyAdvice, createExercise, dismissAdvice, removeNew, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine, usedNames,
 } from './draftOps';
 import { library as entries } from './testkit';
 import type { BuilderDraft, NewExerciseDraft } from './types';
@@ -132,5 +132,16 @@ describe('правка черновика', () => {
   it('keeps sets of a sets exercise after replace', () => {
     const d = replaceExercise(base(), 'Отжимания с хлопком', dips);
     expect((d.blocks[0]!.exercises[0] as SetsExercise).sets).toBe(3);
+  });
+  it('removeNew drops rows, routine items, advice and the entry', () => {
+    let d = createExercise(base(), 'b2', 'Наклон к ногам');
+    d = removeNew(d, 'Наклон к ногам');
+    expect(names(d, 1)).toEqual(['Жим лёжа']);
+    expect(d.cooldown).toMatchObject({ items: [{ name: 'Вращение руками' }] });
+    expect(d.newExercises.map((e) => e.name)).toEqual(['Отжимания с хлопком']);
+    const r = removeNew(base(), 'Отжимания с хлопком');
+    expect(r.advice.map((a) => a.id)).toEqual(['a1']);
+    // Блок без упражнений остаётся: его покажет проверка перед сохранением
+    expect(r.blocks[0]!.exercises).toEqual([]);
   });
 });

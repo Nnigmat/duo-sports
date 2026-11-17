@@ -1,0 +1,18 @@
+.routine {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px dashed var(--hairline);
+  border-radius: var(--rounded-xl);
+}
+.confirm {
+  gap: var(--spacing-xs);
+}
+.confirmActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
