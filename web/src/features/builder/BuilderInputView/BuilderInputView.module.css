@@ -1,0 +1,101 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-width: 720px; /* нет токена: как у формы тренировки */
+  margin: 0 auto;
+  padding-bottom: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.legend {
+  margin-bottom: var(--spacing-xs);
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--heading-4-size);
+  line-height: var(--heading-4-line);
+  font-weight: var(--heading-4-weight);
+}
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.limited {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.counter {
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.found {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--rounded-md);
+  overflow: hidden;
+}
+.found > li + li {
+  border-top: 1px solid var(--hairline-soft);
+}
+.pick {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--spacing-md);
+  border: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: var(--spacing-sm);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-full);
+  background: var(--canvas);
+}
+.issues {
+  margin: var(--spacing-xs) 0 0;
+  padding-left: var(--spacing-md);
+}
+.submit {
+  position: sticky;
+  bottom: calc(var(--spacing-sm) + env(safe-area-inset-bottom));
+}

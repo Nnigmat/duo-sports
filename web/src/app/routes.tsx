@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { LoginPage, ProfilePage } from '../features/auth';
 import { AchievementsPage } from '../features/achievements';
 import { AiRulesPage } from '../features/aiRules';
+import { AthleteBuilderPage, OwnBuilderPage } from '../features/builder';
 import { EquipmentPage } from '../features/equipment';
 import { ExercisesPage } from '../features/exercises';
 import { ImportPage } from '../features/import';
@@ -40,9 +41,11 @@ export function AppRoutes() {
             <Route path="athletes/:id/measurements" element={<AthleteMeasurementsPage />} />
             <Route path="athletes/:id/workouts/:wid/edit" element={<WorkoutEditPage />} />
             <Route path="athletes/:id/import/*" element={<AthleteImportPage />} />
+            <Route path="athletes/:id/new" element={<AthleteBuilderPage />} />
           </Route>
           <Route element={<RequireTrainer />}>
             <Route path="equipment" element={<EquipmentPage />} />
+            <Route path="plan/new" element={<OwnBuilderPage />} />
           </Route>
           <Route element={<RequireAdmin />}>
             <Route path="admin/ai-rules" element={<AiRulesPage />} />

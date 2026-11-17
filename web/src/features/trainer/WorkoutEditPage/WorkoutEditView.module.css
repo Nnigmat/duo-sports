@@ -141,3 +141,12 @@
   font-size: var(--caption-size);
   color: var(--slate);
 }
+
+.open {
+  align-self: flex-start;
+}
+.create {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
