@@ -4,10 +4,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# SENTRY_DSN и VITE_SENTRY_DSN приходят из GitHub Secrets (deploy.yml)
+# SENTRY_DSN, VITE_SENTRY_DSN и ANTHROPIC_API_KEY приходят из GitHub Secrets (deploy.yml)
 for name in SENTRY_DSN VITE_SENTRY_DSN; do
   [ -n "${!name:-}" ] || echo "Предупреждение: $name не задан, Sentry будет выключен" >&2
 done
+[ -n "${ANTHROPIC_API_KEY:-}" ] || echo "Предупреждение: ANTHROPIC_API_KEY не задан, сборка тренировок будет выключена" >&2
 
 git fetch origin main
 git reset --hard origin/main
