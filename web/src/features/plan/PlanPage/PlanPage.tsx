@@ -1,5 +1,7 @@
 import { useMemo, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../app/auth/AuthProvider';
+import { canEnterTrainer } from '../../../app/auth/roles';
 import { useExercises, usePlan, useSchedule } from '../../../data/hooks';
 import type { PlanData } from '../../../data/types';
 import { Skeleton, useMediaQuery } from '../../../shared';
@@ -94,6 +96,9 @@ export type PlanNav = {
  * nav: переходы кнопок; без него — как у спортсмена. onMove заменяет переход «Перенести» (панель переноса открывает страница). Новые данные сверху (initial) заменяют показанные.
  */
 export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; save: PlanSave; nav?: PlanNav; onMove?: (date: string) => void }) {
+  const auth = useAuth();
+  /** Тренер и админ собирают тренировку агентом, спортсмен — через импорт */
+  const trainer = auth.status === 'in' && canEnterTrainer(auth.user.role);
   const [data, setData] = useState(initial);
   const [seen, setSeen] = useState(initial);
   if (seen !== initial) {
@@ -163,7 +168,7 @@ export function PlanScreen({ initial, save, nav, onMove }: { initial: PlanData; 
         onOpenReview={nav ? undefined : (id) => navigate(`/review/${id}`)}
         onMove={onMove ?? (nav ? nav.onMove : () => navigate('/'))}
         onEdit={nav ? nav.onEdit : edit}
-        onCreate={nav ? nav.onCreate : (date) => navigate(`/import?date=${date}`)}
+        onCreate={nav ? nav.onCreate : (date) => navigate(trainer ? `/plan/new?date=${date}` : `/import?date=${date}`)}
         onImport={nav ? nav.onImport : () => navigate('/import')}
         onAdd={(date, templateId) => change(date, { templateId, status: 'planned', custom: true }, () => save.put(date, templateId))}
         onRemove={(date) => change(date, null, () => save.remove(date))}

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Block, Exercise, SetsExercise, Workout } from '../../../../../shared/types';
-import { Button, Card, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
+import { Badge, Button, Card, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
 import type { ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
 import {
@@ -21,9 +21,9 @@ const VIEWS: Array<{ value: EditView; label: string }> = [
 export type YamlState = { text: string; issues: ParseIssue[]; onText: (text: string) => void };
 
 type Props = {
-  view: EditView;
-  yaml: YamlState;
-  onView: (view: EditView) => void;
+  view?: EditView;
+  yaml?: YamlState;
+  onView?: (view: EditView) => void;
   title: string;
   blocks: Block[];
   /** Подключённые разминка и заминка: показываются строками и здесь не меняются */
@@ -37,12 +37,31 @@ type Props = {
   onBlocks: (blocks: Block[]) => void;
   onSave: () => void;
   onCancel: () => void;
+  /** 'create' — без переключателя «Форма / YAML» и без плашки «Изменения увидят все дни плана…» */
+  mode?: 'edit' | 'create';
+  /** Имена новых упражнений: строка с пометкой «новое» (текстом) и кнопкой «Открыть» */
+  newNames?: ReadonlySet<string>;
+  onOpenNew?: (name: string) => void;
+  /** Есть — в выборе упражнения, когда поиск ничего не нашёл, кнопка «Создать „…“» */
+  onCreateExercise?: (blockId: string, name: string) => void;
+  /** Заменяют строку подключённой разминки/заминки */
+  warmupSlot?: ReactNode;
+  cooldownSlot?: ReactNode;
+  /** Над формой: заметки агента */
+  topSlot?: ReactNode;
+  /** По умолчанию «Сохранить» и «Отмена» */
+  saveLabel?: string;
+  cancelLabel?: string;
 };
 
 const MODES = (Object.keys(MODE_LABELS) as BlockMode[]).map((value) => ({ value, label: MODE_LABELS[value] }));
 
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
-export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel }: Props) {
+export function WorkoutEditView({
+  view = 'form', yaml, onView, title, blocks, routines, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel,
+  mode = 'edit', newNames, onOpenNew, onCreateExercise, warmupSlot, cooldownSlot, topSlot, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
+}: Props) {
+  const create = mode === 'create';
   const [pickFor, setPickFor] = useState<string | null>(null);
   const change = (fn: (b: Block[]) => Block[]) => onBlocks(fn(blocks));
 
@@ -50,17 +69,18 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
     <div className={styles.root}>
       <div className={styles.bar}>
         <Button variant="ghost" compact icon="back" onClick={onCancel}>
-          Отмена
+          {cancelLabel}
         </Button>
         <Button compact loading={saving} onClick={onSave}>
-          Сохранить
+          {saveLabel}
         </Button>
       </div>
       <Text variant="h2" tag="h1">
         Состав тренировки
       </Text>
-      <Notice tone="info">Изменения увидят все дни плана с этой тренировкой. Выполненные занятия остаются как были.</Notice>
-      <SegmentedControl label="Как править" options={VIEWS} value={view} onChange={onView} />
+      {!create && <Notice tone="info">Изменения увидят все дни плана с этой тренировкой. Выполненные занятия остаются как были.</Notice>}
+      {!create && onView && <SegmentedControl label="Как править" options={VIEWS} value={view} onChange={onView} />}
+      {topSlot}
       {failure && <Notice tone="error">{failure}</Notice>}
       {issues.length > 0 && (
         <Notice tone="warn">
@@ -72,7 +92,7 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
         </Notice>
       )}
 
-      {view === 'yaml' ? (
+      {view === 'yaml' && yaml ? (
         <>
           {yaml.issues.length > 0 && (
             <Notice tone="error">
@@ -103,7 +123,7 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
         <>
       <TextInput label="Название тренировки" value={title} maxLength={200} onChange={(e) => onTitle(e.target.value)} />
 
-      {routines?.warmup && <RoutineLink label="Разминка" routine={routines.warmup} />}
+      {warmupSlot ?? (routines?.warmup && <RoutineLink label="Разминка" routine={routines.warmup} />)}
 
       {blocks.map((b, i) => (
         <Card key={b.id} tone="surface" className={styles.block} aria-label={`Блок ${i + 1}`}>
@@ -131,6 +151,8 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
                 exercise={e as SetsExercise}
                 first={j === 0}
                 last={j === b.exercises.length - 1}
+                isNew={newNames?.has(e.name) ?? false}
+                onOpen={onOpenNew ? () => onOpenNew(e.name) : undefined}
                 onPatch={(patch) => change((x) => patchExercise(x, b.id, e.id, patch))}
                 onTarget={(edge, v) => change((x) => setTarget(x, b.id, e.id, edge, v))}
                 onMove={(d) => change((x) => moveExercise(x, b.id, e.id, d))}
@@ -157,7 +179,7 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
         </Card>
       ))}
 
-      {routines?.cooldown && <RoutineLink label="Заминка" routine={routines.cooldown} />}
+      {cooldownSlot ?? (routines?.cooldown && <RoutineLink label="Заминка" routine={routines.cooldown} />)}
 
       <section className={styles.addBlock} aria-label="Добавить блок">
         <Text variant="eyebrow">Добавить блок</Text>
@@ -176,6 +198,14 @@ export function WorkoutEditView({ view, yaml, onView, title, blocks, routines, l
         open={pickFor !== null}
         library={library}
         onClose={() => setPickFor(null)}
+        onCreate={
+          onCreateExercise
+            ? (name) => {
+                if (pickFor) onCreateExercise(pickFor, name);
+                setPickFor(null);
+              }
+            : undefined
+        }
         onPick={(ex) => {
           if (pickFor) change((x) => addExercise(x, pickFor, ex));
           setPickFor(null);
@@ -202,13 +232,16 @@ type RowProps = {
   exercise: SetsExercise;
   first: boolean;
   last: boolean;
+  /** Новое упражнение: пометка текстом и кнопка «Открыть» его поля */
+  isNew: boolean;
+  onOpen?: () => void;
   onPatch: (patch: Partial<SetsExercise>) => void;
   onTarget: (edge: 'min' | 'max', value: number) => void;
   onMove: (delta: -1 | 1) => void;
   onRemove: () => void;
 };
 
-function ExerciseRow({ mode, exercise: e, first, last, onPatch, onTarget, onMove, onRemove }: RowProps) {
+function ExerciseRow({ mode, exercise: e, first, last, isNew, onOpen, onPatch, onTarget, onMove, onRemove }: RowProps) {
   const time = e.kind === 'time';
   const unit = time ? 'с' : 'повт';
   return (
@@ -217,10 +250,16 @@ function ExerciseRow({ mode, exercise: e, first, last, onPatch, onTarget, onMove
         <Text variant="body" className={styles.name}>
           {e.name}
         </Text>
+        {isNew && <Badge tone="highlight">новое</Badge>}
         <IconButton bare icon="back" aria-label={`${e.name}: выше`} disabled={first} onClick={() => onMove(-1)} className={styles.up} />
         <IconButton bare icon="back" aria-label={`${e.name}: ниже`} disabled={last} onClick={() => onMove(1)} className={styles.down} />
         <IconButton bare icon="close" aria-label={`Убрать «${e.name}»`} onClick={onRemove} />
       </div>
+      {isNew && onOpen && (
+        <Button variant="secondary" compact aria-label={`Открыть «${e.name}»`} onClick={onOpen} className={styles.open}>
+          Открыть
+        </Button>
+      )}
       {mode === 'sets' && <ParamStepper label="Подходы" unit="" min={1} max={100} value={e.sets} onChange={(v) => onPatch({ sets: v })} />}
       <ParamStepper label={time ? 'Время от' : 'Повторы от'} unit={unit} mode={time ? 'duration' : 'number'} min={0} max={86_400} value={e.target.min} onChange={(v) => onTarget('min', v)} />
       <ParamStepper label={time ? 'Время до' : 'Повторы до'} unit={unit} mode={time ? 'duration' : 'number'} min={0} max={86_400} value={e.target.max} onChange={(v) => onTarget('max', v)} />
@@ -229,7 +268,16 @@ function ExerciseRow({ mode, exercise: e, first, last, onPatch, onTarget, onMove
   );
 }
 
-function PickerSheet({ open, library, onClose, onPick }: { open: boolean; library: LibraryExercise[]; onClose: () => void; onPick: (ex: LibraryExercise) => void }) {
+type PickerProps = {
+  open: boolean;
+  library: LibraryExercise[];
+  onClose: () => void;
+  onPick: (ex: LibraryExercise) => void;
+  /** Есть — когда поиск ничего не нашёл, можно создать новое упражнение с этим названием */
+  onCreate?: (name: string) => void;
+};
+
+function PickerSheet({ open, library, onClose, onPick, onCreate }: PickerProps) {
   const [q, setQ] = useState('');
   const found = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -239,7 +287,21 @@ function PickerSheet({ open, library, onClose, onPick }: { open: boolean; librar
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Упражнение" tall>
       <SearchField label="Поиск упражнения" placeholder="Название" value={q} onValueChange={setQ} />
-      {found.length === 0 ? (
+      {found.length === 0 && onCreate && q.trim() ? (
+        <div className={styles.create}>
+          <p className={styles.empty}>В библиотеке такого нет.</p>
+          <Button
+            variant="secondary"
+            icon="plus"
+            onClick={() => {
+              onCreate(q.trim());
+              setQ('');
+            }}
+          >
+            {`Создать „${q.trim()}“`}
+          </Button>
+        </div>
+      ) : found.length === 0 ? (
         <p className={styles.empty}>Ничего не нашлось. Новые упражнения добавляются в разделе «Упражнения».</p>
       ) : (
         <ul className={styles.picker}>

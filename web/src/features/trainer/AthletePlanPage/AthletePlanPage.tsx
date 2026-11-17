@@ -62,7 +62,8 @@ function Content({ athleteId }: { athleteId: number }) {
           },
           onResults: (date) => navigate(`${base}?date=${date}`),
           onMove: setMoveFrom,
-          onCreate: (date) => navigate(`${base}/import?date=${date}`),
+          // Тренер собирает тренировку агентом; импорт остаётся отдельной кнопкой
+          onCreate: (date) => navigate(`${base}/new?date=${date}`),
           onImport: () => navigate(`${base}/import`),
           copyAthletes: list.data.athletes.filter((a) => a.id !== athleteId).map((a) => ({ id: a.id, name: a.name })),
           loadAthletePlan: async (id) => toPlanData(await fetchAthletePlan(id)),
