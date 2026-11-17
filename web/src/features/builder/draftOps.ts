@@ -60,18 +60,20 @@ export function patchNewExercise(d: BuilderDraft, name: string, patch: Partial<N
   if (next.name === name && next.kind === current.kind) return { ...d, newExercises };
   const blocks = mapRows(d.blocks, (e, b) => (e.name === name ? retype(e, b.mode === 'timed' ? 'time' : next.kind, next.name) : e));
   const rename = (i: NewRoutineItem) => (i.name === name ? { ...i, name: next.name } : i);
-  return { ...d, newExercises, blocks, warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename) };
+  // Советы про упражнение идут за новым названием, иначе «Заменить» его не найдёт
+  const advice = next.name === name ? d.advice : d.advice.map((a) => (a.exercise !== undefined && same(a.exercise, name) ? { ...a, exercise: next.name } : a));
+  return { ...d, newExercises, blocks, warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename), advice };
 }
 
 /**
- * Меняет упражнение на библиотечное: имя и тип в блоках; в новой разминке и заминке — только если замена на время
+ * Меняет упражнение на библиотечное (имя без учёта регистра и ё): имя и тип в блоках; в новой разминке и заминке — только если замена на время
  * (разминка принимает только такие). Новое без использования удаляется, советы про него — тоже.
  */
 export function replaceExercise(d: BuilderDraft, from: string, to: LibraryExercise): BuilderDraft {
-  const blocks = mapRows(d.blocks, (e, b) => (e.name === from ? retype(e, b.mode === 'timed' ? 'time' : to.kind, to.name) : e));
-  const rename = (i: NewRoutineItem) => (i.name === from ? { ...i, name: to.name } : i);
+  const blocks = mapRows(d.blocks, (e, b) => (same(e.name, from) ? retype(e, b.mode === 'timed' ? 'time' : to.kind, to.name) : e));
+  const rename = (i: NewRoutineItem) => (same(i.name, from) ? { ...i, name: to.name } : i);
   const routines = to.kind === 'time' ? { warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename) } : {};
-  const advice = d.advice.filter((a) => a.exercise !== from);
+  const advice = d.advice.filter((a) => a.exercise === undefined || !same(a.exercise, from));
   return pruneNew({ ...d, blocks, ...routines, advice });
 }
 

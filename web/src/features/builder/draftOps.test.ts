@@ -89,6 +89,26 @@ describe('правка черновика', () => {
     expect(d.newExercises.find((e) => e.name === 'Отжимания с хлопком')).toBeUndefined();
   });
 
+  it('applyAdvice replaces renamed new exercise', () => {
+    const d = patchNewExercise(base(), 'Отжимания с хлопком', { name: 'Хлопки' });
+    expect(d.advice[0]).toMatchObject({ exercise: 'Хлопки' });
+    const r = applyAdvice(d, 'a0', library);
+    expect(names(r, 0)).toEqual(['Отжимания на брусьях']);
+    expect(r.newExercises.map((e) => e.name)).toEqual(['Наклон к ногам']);
+  });
+
+  it('applyAdvice matches exercise name ignoring case and ё', () => {
+    const d = { ...base(), advice: [{ id: 'a0', text: 'Похожее', exercise: 'отжимания С ХЛОПКОМ ', suggest: 'Отжимания на брусьях' }] };
+    const r = applyAdvice(d, 'a0', library);
+    expect(names(r, 0)).toEqual(['Отжимания на брусьях']);
+    expect(r.newExercises.map((e) => e.name)).toEqual(['Наклон к ногам']);
+    expect(r.advice).toEqual([]);
+    const arm = library.find((l) => l.id === 'arm-circles')!;
+    const c = replaceExercise(base(), 'наклон к ногам', arm);
+    expect(c.cooldown).toMatchObject({ items: [{ name: 'Вращение руками', sec: 45 }, { name: 'Вращение руками' }] });
+    expect(names(replaceExercise(base(), 'жим лежа', dips), 1)).toEqual(['Отжимания на брусьях']);
+  });
+
   it('applyAdvice without suggest only dismisses', () => {
     const d = applyAdvice(base(), 'a1', library);
     expect(d.advice.map((a) => a.id)).toEqual(['a0']);
