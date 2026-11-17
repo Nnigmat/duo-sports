@@ -104,6 +104,13 @@ export interface RoutineInput {
   items: Array<{ exercise: string; sec: Range; sides?: [string, string] }>;
 }
 
+/** Правила админа для агента, собирающего тренировки. updatedBy — имя или email автора; null — правила по умолчанию */
+export interface AiRules {
+  text: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
 export interface RoutinesResponse {
   routines: RoutineSummary[];
 }
