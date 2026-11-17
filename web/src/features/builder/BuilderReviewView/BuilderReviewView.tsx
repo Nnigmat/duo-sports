@@ -44,6 +44,8 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
           onMove={(i, d) => onDraft(moveRoutineItem(draft, which, i, d))}
           onRemove={(i) => onDraft(removeRoutineItem(draft, which, i))}
           onDrop={() => onDraft(pruneNew(setRoutine(draft, which, { kind: 'none' })))}
+          newNames={newNames}
+          onOpenNew={setOpen}
         />
       );
     if (pick.kind === 'library') {

@@ -103,6 +103,26 @@ export const DropNewCooldown: Story = {
   },
 };
 
+export const NewExerciseInCooldown: Story = {
+  args: {
+    draft: {
+      ...reviewDraft,
+      advice: [],
+      blocks: [{ id: 'b1', mode: 'sets', title: 'Подходами', restSec: 90, videoRounds: [], exercises: [{ id: 'x1', name: 'Жим лёжа', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 4 }] }],
+      newExercises: [{ name: 'Наклоны головы', slug: 'neck-roll', muscles: [], kind: 'time', equipment: [], notes: '', aliases: [] }],
+      cooldown: { kind: 'new', title: 'Растяжка шеи', items: [{ name: 'Наклоны головы', sec: 30 }, { name: 'Вращение руками', sec: 30 }] },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const card = within(c.getByLabelText('Новая заминка'));
+    await expect(card.getByText('новое')).toBeVisible();
+    await expect(card.queryByRole('button', { name: 'Открыть «Вращение руками»' })).toBeNull();
+    await userEvent.click(card.getByRole('button', { name: 'Открыть «Наклоны головы»' }));
+    await expect(await within(document.body).findByLabelText('Название')).toHaveValue('Наклоны головы');
+  },
+};
+
 export const Problems: Story = {
   args: { problems: ['У нового упражнения «Отжимания с хлопком» не указаны мышцы', 'Заминка «Растяжка спины» уже есть — дайте другое название'] },
   play: async ({ canvasElement }) => {

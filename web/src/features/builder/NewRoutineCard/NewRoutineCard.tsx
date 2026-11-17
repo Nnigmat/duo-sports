@@ -11,10 +11,13 @@ type Props = {
   onRemove: (index: number) => void;
   /** «Убрать разминку» целиком */
   onDrop: () => void;
+  /** Имена новых упражнений: пометка «новое» (текстом) и кнопка «Открыть», как в строках формы */
+  newNames?: ReadonlySet<string>;
+  onOpenNew?: (name: string) => void;
 };
 
 /** Новая разминка или заминка из ответа агента: название, упражнения по таймеру, секунды и порядок. */
-export function NewRoutineCard({ label, pick, onRename, onSec, onMove, onRemove, onDrop }: Props) {
+export function NewRoutineCard({ label, pick, onRename, onSec, onMove, onRemove, onDrop, newNames, onOpenNew }: Props) {
   const word = label === 'Разминка' ? 'разминка' : 'заминка';
   const genitive = label === 'Разминка' ? 'разминки' : 'заминки';
   const accusative = label === 'Разминка' ? 'разминку' : 'заминку';
@@ -33,21 +36,30 @@ export function NewRoutineCard({ label, pick, onRename, onSec, onMove, onRemove,
         </Text>
       ) : (
         <ol className={styles.list}>
-          {pick.items.map((item, i) => (
+          {pick.items.map((item, i) => {
+            const isNew = newNames?.has(item.name) ?? false;
             // Одно упражнение может стоять в наборе дважды: ключ — позиция
-            <li key={`${i}-${item.name}`} className={styles.item}>
-              <div className={styles.itemHead}>
-                <span className={styles.name}>
-                  <Text variant="body">{item.name}</Text>
-                  {item.sides && <Text variant="caption">на сторону</Text>}
-                </span>
-                <IconButton bare icon="back" aria-label={`${item.name}: выше`} disabled={i === 0} onClick={() => onMove(i, -1)} className={styles.up} />
-                <IconButton bare icon="back" aria-label={`${item.name}: ниже`} disabled={i === pick.items.length - 1} onClick={() => onMove(i, 1)} className={styles.down} />
-                <IconButton bare icon="close" aria-label={`Убрать «${item.name}»`} onClick={() => onRemove(i)} />
-              </div>
-              <ParamStepper label="Время" unit="с" mode="duration" step={5} min={5} max={600} value={item.sec} onChange={(v) => onSec(i, v)} />
-            </li>
-          ))}
+            return (
+              <li key={`${i}-${item.name}`} className={styles.item}>
+                <div className={styles.itemHead}>
+                  <span className={styles.name}>
+                    <Text variant="body">{item.name}</Text>
+                    {item.sides && <Text variant="caption">на сторону</Text>}
+                  </span>
+                  {isNew && <Badge tone="highlight">новое</Badge>}
+                  <IconButton bare icon="back" aria-label={`${item.name}: выше`} disabled={i === 0} onClick={() => onMove(i, -1)} className={styles.up} />
+                  <IconButton bare icon="back" aria-label={`${item.name}: ниже`} disabled={i === pick.items.length - 1} onClick={() => onMove(i, 1)} className={styles.down} />
+                  <IconButton bare icon="close" aria-label={`Убрать «${item.name}»`} onClick={() => onRemove(i)} />
+                </div>
+                {isNew && onOpenNew && (
+                  <Button variant="secondary" compact aria-label={`Открыть «${item.name}»`} onClick={() => onOpenNew(item.name)} className={styles.open}>
+                    Открыть
+                  </Button>
+                )}
+                <ParamStepper label="Время" unit="с" mode="duration" step={5} min={5} max={600} value={item.sec} onChange={(v) => onSec(i, v)} />
+              </li>
+            );
+          })}
         </ol>
       )}
       <Button variant="danger-text" compact onClick={onDrop} className={styles.drop}>
