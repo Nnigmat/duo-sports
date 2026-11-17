@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AgentWorkout, DraftRequest, DraftResponse } from '../../../../shared/aiDraft';
+import { DRAFT_TEXT_MAX, type AgentWorkout, type DraftRequest, type DraftResponse } from '../../../../shared/aiDraft';
 import { buildWorkout } from './build';
 import { agent, ctx } from './testkit';
 import { canBuild, EMPTY_INPUT, toRequest, type BuilderInput } from './types';
@@ -41,6 +41,22 @@ describe('buildWorkout', () => {
     expect(f.calls).toHaveLength(2);
     if (r.ok) throw new Error('ожидали ошибку');
     expect(r.errors.length).toBeGreaterThan(0);
+  });
+
+  it('sends at most 50 errors of at most 2000 chars on retry', async () => {
+    const blocks = Array.from({ length: 60 }, (_, i) => ({ type: 'sets' as const, exercises: [{ exercise_id: `unknown-${i}`, do: '3x10' }] }));
+    blocks.unshift({ type: 'sets', exercises: [{ exercise_id: 'x'.repeat(2500), do: '3x10' }] });
+    const many = agent({ blocks });
+    const f = fakeSend(many, many);
+    const r = await buildWorkout(req, ctx, [], f.send);
+    if (r.ok) throw new Error('ожидали ошибку');
+    // Разбор действительно дал больше 50 ошибок, и одна из них длиннее предела
+    expect(r.errors.length).toBeGreaterThan(50);
+    expect(r.errors.some((e) => e.message.length > DRAFT_TEXT_MAX)).toBe(true);
+    const sent = f.calls[1]!.errors!;
+    expect(sent.length).toBeGreaterThan(0);
+    expect(sent.length).toBeLessThanOrEqual(50);
+    for (const e of sent) expect(e.length).toBeLessThanOrEqual(DRAFT_TEXT_MAX);
   });
 
   it('passes send errors through', async () => {
