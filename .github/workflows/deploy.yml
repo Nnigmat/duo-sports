@@ -36,6 +36,7 @@ jobs:
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           ssh -i ~/.ssh/id sport@${{ secrets.SSH_HOST }} \
-            "SENTRY_DSN='$SENTRY_DSN' VITE_SENTRY_DSN='$VITE_SENTRY_DSN' ~/duo-sport/scripts/deploy.sh"
+            "SENTRY_DSN='$SENTRY_DSN' VITE_SENTRY_DSN='$VITE_SENTRY_DSN' ANTHROPIC_API_KEY='$ANTHROPIC_API_KEY' ~/duo-sport/scripts/deploy.sh"

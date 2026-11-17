@@ -4,6 +4,8 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { achievementsRouter } from './achievementsRouter';
+import { anthropicClient } from './aiClient';
+import { aiRouter } from './aiRouter';
 import { aiRulesRouter } from './aiRulesRouter';
 import { authRouter } from './authRouter';
 import { equipmentRouter } from './equipmentRouter';
@@ -51,6 +53,9 @@ app.use('/api', achievementsRouter(db));
 app.use('/api', measurementsRouter(db));
 app.use('/api', scheduleRouter(db));
 app.use('/api', aiRulesRouter(db));
+// Ключ только на сервере; без него сборка тренировок отвечает 503
+const anthropicKey = process.env.ANTHROPIC_API_KEY;
+app.use('/api', aiRouter(db, anthropicKey ? anthropicClient(anthropicKey) : null));
 app.use('/api', videosRouter({ db, dir: videosDir, maxBytes: 300 * 1024 * 1024 }));
 
 app.get('/api/health', (_req, res) => {
