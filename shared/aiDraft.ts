@@ -4,8 +4,11 @@
  * плюс заметки агента и поля новых упражнений; браузер прогоняет его через parseImport.
  */
 
-export type AgentMeasure = 'reps' | 'weight' | 'time' | 'distance';
-export type AgentBlockType = 'sets' | 'circuit' | 'superset' | 'timed';
+/** Единственный список значений: из него тип, enum схемы и проверка ответа */
+export const AGENT_MEASURES = ['reps', 'weight', 'time', 'distance'] as const;
+export const AGENT_BLOCK_TYPES = ['sets', 'circuit', 'superset', 'timed'] as const;
+export type AgentMeasure = (typeof AGENT_MEASURES)[number];
+export type AgentBlockType = (typeof AGENT_BLOCK_TYPES)[number];
 
 /** Упражнение блока: exercise_id или name; нагрузка — do или sets/reps/weight, у упражнений на время — time */
 export interface AgentExercise {
@@ -144,7 +147,7 @@ export const AGENT_WORKOUT_SCHEMA: Schema = obj(
     blocks: {
       type: 'array',
       items: obj(
-        { type: { type: 'string', enum: ['sets', 'circuit', 'superset', 'timed'] }, title: str, rounds: { type: 'integer' }, rest: str, exercises: { type: 'array', items: exerciseSchema, minItems: 1 } },
+        { type: { type: 'string', enum: [...AGENT_BLOCK_TYPES] }, title: str, rounds: { type: 'integer' }, rest: str, exercises: { type: 'array', items: exerciseSchema, minItems: 1 } },
         ['type', 'exercises'],
       ),
     },
@@ -155,7 +158,7 @@ export const AGENT_WORKOUT_SCHEMA: Schema = obj(
           id: { type: 'string', description: 'латиница, цифры, дефис' },
           name: str,
           muscles: strs,
-          measure: { type: 'string', enum: ['reps', 'weight', 'time', 'distance'] },
+          measure: { type: 'string', enum: [...AGENT_MEASURES] },
           equipment: strs,
           notes: { type: 'string', description: 'Техника выполнения' },
           aliases: strs,
@@ -179,18 +182,21 @@ const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !
 const optStr = (v: unknown) => v === undefined || typeof v === 'string';
 const optNum = (v: unknown) => v === undefined || typeof v === 'number';
 const optBool = (v: unknown) => v === undefined || typeof v === 'boolean';
+/** Непустой список: в схеме minItems: 1 */
+const isNonEmpty = (v: unknown): v is unknown[] => Array.isArray(v) && v.length > 0;
 const isStrs = (v: unknown) => Array.isArray(v) && v.every((s) => typeof s === 'string');
-const BLOCK_TYPES = new Set<string>(['sets', 'circuit', 'superset', 'timed']);
-const MEASURES = new Set<string>(['reps', 'weight', 'time', 'distance']);
+const BLOCK_TYPES = new Set<string>(AGENT_BLOCK_TYPES);
+const MEASURES = new Set<string>(AGENT_MEASURES);
 
+/** Хотя бы exercise_id или name: иначе упражнение не найти и не создать */
 const isExercise = (e: unknown) =>
-  isObj(e) &&
+  isObj(e) && (typeof e.exercise_id === 'string' || typeof e.name === 'string') &&
   optStr(e.exercise_id) && optStr(e.name) && optStr(e.do) && optNum(e.sets) && optStr(e.reps) && optStr(e.weight) &&
   optStr(e.time) && optStr(e.rest) && optBool(e.per_side) && optStr(e.notes);
 
 const isBlock = (b: unknown) =>
   isObj(b) && typeof b.type === 'string' && BLOCK_TYPES.has(b.type) && optStr(b.title) && optNum(b.rounds) && optStr(b.rest) &&
-  Array.isArray(b.exercises) && b.exercises.every(isExercise);
+  isNonEmpty(b.exercises) && b.exercises.every(isExercise);
 
 const isRoutineItem = (i: unknown) =>
   isObj(i) && typeof i.exercise_id === 'string' && typeof i.time === 'string' && optBool(i.per_side) && (i.sides === undefined || isStrs(i.sides));
@@ -200,7 +206,7 @@ const isRoutine = (r: unknown) => {
   if (!isObj(r)) return false;
   if ('routine' in r) return typeof r.routine === 'string';
   const n = r.new_routine;
-  return isObj(n) && typeof n.id === 'string' && typeof n.title === 'string' && Array.isArray(n.exercises) && n.exercises.every(isRoutineItem);
+  return isObj(n) && typeof n.id === 'string' && typeof n.title === 'string' && isNonEmpty(n.exercises) && n.exercises.every(isRoutineItem);
 };
 
 const isNewExercise = (e: unknown) =>
