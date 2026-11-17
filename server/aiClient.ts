@@ -2,11 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { DraftUsage } from '../shared/aiDraft';
 import type { Prompt } from './aiPrompt';
 
-export type AiUsage = DraftUsage;
-
 /** Клиент модели за интерфейсом: в тестах — подделка, в сеть тесты не ходят. */
 export interface AiClient {
-  draft(prompt: Prompt, schema: Record<string, unknown>): Promise<{ json: unknown; usage: AiUsage }>;
+  draft(prompt: Prompt, schema: Record<string, unknown>): Promise<{ json: unknown; usage: DraftUsage }>;
 }
 
 export const AI_MODEL = 'claude-haiku-5-5';

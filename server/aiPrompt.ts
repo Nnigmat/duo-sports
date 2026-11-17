@@ -27,11 +27,12 @@ export interface Prompt {
 /** Сортировка по коду символов, без учёта локали: один и тот же текст на любой машине */
 const byId = <T extends { id: string }>(a: T, b: T) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
+/** Только поля PromptExercise: лишнее в библиотеке сбило бы кеш */
+const toPromptExercise = ({ id, name, aliases, kind, muscles, equipment }: PromptExercise): PromptExercise => ({ id, name, aliases, kind, muscles, equipment });
+
 /** Библиотека для агента: только то, по чему он выбирает упражнение. Без demo, notes и group — они меняются сами и сбили бы кеш. */
 export function promptLibrary(db: Db): PromptExercise[] {
-  return libraryOf(db)
-    .map(({ id, name, aliases, kind, muscles, equipment }) => ({ id, name, aliases, kind, muscles, equipment }))
-    .sort(byId);
+  return libraryOf(db).map(toPromptExercise).sort(byId);
 }
 
 type RoutineItemRow = { slug: string; kind: RoutineKind; title: string; exercise: string; max_sec: number; sides: string | null };
@@ -56,7 +57,8 @@ export function promptRoutines(db: Db): PromptRoutine[] {
 
 const cache = { type: 'ephemeral' } as const;
 
-const routineAsk = (label: string, ask: DraftRequest['warmup']) => {
+/** Строка запроса агенту про разминку или заминку */
+const routineLine = (label: string, ask: DraftRequest['warmup']) => {
   if (!ask) return `${label}: null — без неё`;
   if ('routine' in ask) return `${label}: набор из библиотеки, id ${ask.routine}`;
   return `${label}: собрать новый набор по описанию:\n${ask.text}`;
@@ -70,7 +72,7 @@ const routineAsk = (label: string, ask: DraftRequest['warmup']) => {
  */
 export function buildPrompt(p: { rules: string; routines: PromptRoutine[]; library: PromptExercise[]; request: DraftRequest; today: string }): Prompt {
   const routines = [...p.routines].sort(byId).map((r) => ({ ...r, items: r.items.map((i) => ({ ...i })) }));
-  const library = [...p.library].sort(byId).map(({ id, name, aliases, kind, muscles, equipment }) => ({ id, name, aliases, kind, muscles, equipment }));
+  const library = [...p.library].sort(byId).map(toPromptExercise);
   const system: SystemBlock[] = [
     { type: 'text', text: AGENT_INSTRUCTIONS },
     { type: 'text', text: AGENT_FORMAT },
@@ -82,10 +84,10 @@ export function buildPrompt(p: { rules: string; routines: PromptRoutine[]; libra
   const lines = [
     `Сегодня ${p.today}. Тренировка на ${r.date}.`,
     r.title.trim() ? `Название: ${r.title.trim()}` : 'Название: придумай сам.',
-    routineAsk('Разминка', r.warmup),
+    routineLine('Разминка', r.warmup),
     `Основная часть:\n${r.main.text.trim() || '(без описания)'}`,
     r.main.exercises.length ? `Выбраны из библиотеки (обязательно в основной части): ${r.main.exercises.join(', ')}` : 'Выбраны из библиотеки: нет',
-    routineAsk('Заминка', r.cooldown),
+    routineLine('Заминка', r.cooldown),
   ];
   if (r.errors?.length) lines.push(`Ошибки разбора прошлой попытки, исправь их:\n${r.errors.map((e) => `- ${e}`).join('\n')}`);
   return { system, user: lines.join('\n\n') };

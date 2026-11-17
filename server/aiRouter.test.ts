@@ -2,8 +2,8 @@ import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { AgentWorkout, DraftRequest } from '../shared/aiDraft';
-import type { AiClient, AiUsage } from './aiClient';
+import type { AgentWorkout, DraftRequest, DraftUsage } from '../shared/aiDraft';
+import type { AiClient } from './aiClient';
 import type { Prompt } from './aiPrompt';
 import { setAiRules } from './aiRules';
 import { aiRouter } from './aiRouter';
@@ -19,7 +19,7 @@ const workout: AgentWorkout = {
   new_exercises: [],
   advice: [],
 };
-const usage: AiUsage = { input: 120, cacheCreation: 3000, cacheRead: 0, output: 800 };
+const usage: DraftUsage = { input: 120, cacheCreation: 3000, cacheRead: 0, output: 800 };
 
 /** Подделка клиента: запоминает запрос, отдаёт заданное или бросает */
 class FakeClient implements AiClient {

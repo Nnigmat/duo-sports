@@ -20,7 +20,8 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 const text = (v: unknown) => typeof v === 'string' && v.length <= DRAFT_TEXT_MAX;
 const textList = (v: unknown) => Array.isArray(v) && v.length <= LIST_MAX && v.every(text);
 
-function routineAsk(v: unknown): RoutineAsk | undefined {
+/** Разминка или заминка из тела запроса; undefined — не по формату */
+function parseRoutineAsk(v: unknown): RoutineAsk | undefined {
   if (v === null) return null;
   if (!isObj(v)) return undefined;
   if (typeof v.routine === 'string' && v.routine.length <= 200) return { routine: v.routine };
@@ -37,8 +38,8 @@ export function validateDraftRequest(body: unknown): Checked {
   if (!isDate(date)) return fail('date: вида 2026-11-18');
   if (!text(title)) return fail(`title: строка до ${DRAFT_TEXT_MAX} символов`);
   if (!isObj(main) || !text(main.text) || !textList(main.exercises)) return fail(`main: text до ${DRAFT_TEXT_MAX} символов и exercises — список id`);
-  const warmup = routineAsk(body.warmup);
-  const cooldown = routineAsk(body.cooldown);
+  const warmup = parseRoutineAsk(body.warmup);
+  const cooldown = parseRoutineAsk(body.cooldown);
   if (warmup === undefined || cooldown === undefined) return fail(`warmup и cooldown: { routine }, { text } до ${DRAFT_TEXT_MAX} символов или null`);
   if (body.errors !== undefined && !textList(body.errors)) return fail('errors: список строк');
   const mainText = main.text as string;
