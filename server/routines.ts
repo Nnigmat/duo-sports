@@ -4,7 +4,7 @@ import type {
 import { composeBlocks, routineBlock } from '../shared/routines';
 import type { Db } from './db';
 import { type Checked, slugify, uniqueSlug } from './exercises';
-import { displayBlocks } from './workoutEdit';
+import { displayBlocks } from '../shared/displayBlocks';
 
 type Clock = () => Date;
 const now: Clock = () => new Date();
