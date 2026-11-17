@@ -91,4 +91,14 @@ describe('isAgentWorkout', () => {
     expect(isAgentWorkout({ ...minimal, warmup: { routine: 5 } })).toBe(false);
     expect(isAgentWorkout({ ...minimal, new_exercises: [{ id: 'x', name: 'X', muscles: [], measure: 'kg', equipment: [], aliases: [] }] })).toBe(false);
   });
+
+  it('rejects exercise without exercise_id and name', () => {
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ do: '3x12' }] }] })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ name: 'Жим лёжа', do: '3x12' }] }] })).toBe(true);
+  });
+
+  it('rejects empty exercise lists, as schema minItems: 1', () => {
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [] }] })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, warmup: { new_routine: { id: 'empty', title: 'Пусто', exercises: [] } } })).toBe(false);
+  });
 });

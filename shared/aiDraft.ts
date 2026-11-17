@@ -179,18 +179,21 @@ const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !
 const optStr = (v: unknown) => v === undefined || typeof v === 'string';
 const optNum = (v: unknown) => v === undefined || typeof v === 'number';
 const optBool = (v: unknown) => v === undefined || typeof v === 'boolean';
+/** Непустой список: в схеме minItems: 1 */
+const isNonEmpty = (v: unknown): v is unknown[] => Array.isArray(v) && v.length > 0;
 const isStrs = (v: unknown) => Array.isArray(v) && v.every((s) => typeof s === 'string');
 const BLOCK_TYPES = new Set<string>(['sets', 'circuit', 'superset', 'timed']);
 const MEASURES = new Set<string>(['reps', 'weight', 'time', 'distance']);
 
+/** Хотя бы exercise_id или name: иначе упражнение не найти и не создать */
 const isExercise = (e: unknown) =>
-  isObj(e) &&
+  isObj(e) && (typeof e.exercise_id === 'string' || typeof e.name === 'string') &&
   optStr(e.exercise_id) && optStr(e.name) && optStr(e.do) && optNum(e.sets) && optStr(e.reps) && optStr(e.weight) &&
   optStr(e.time) && optStr(e.rest) && optBool(e.per_side) && optStr(e.notes);
 
 const isBlock = (b: unknown) =>
   isObj(b) && typeof b.type === 'string' && BLOCK_TYPES.has(b.type) && optStr(b.title) && optNum(b.rounds) && optStr(b.rest) &&
-  Array.isArray(b.exercises) && b.exercises.every(isExercise);
+  isNonEmpty(b.exercises) && b.exercises.every(isExercise);
 
 const isRoutineItem = (i: unknown) =>
   isObj(i) && typeof i.exercise_id === 'string' && typeof i.time === 'string' && optBool(i.per_side) && (i.sides === undefined || isStrs(i.sides));
@@ -200,7 +203,7 @@ const isRoutine = (r: unknown) => {
   if (!isObj(r)) return false;
   if ('routine' in r) return typeof r.routine === 'string';
   const n = r.new_routine;
-  return isObj(n) && typeof n.id === 'string' && typeof n.title === 'string' && Array.isArray(n.exercises) && n.exercises.every(isRoutineItem);
+  return isObj(n) && typeof n.id === 'string' && typeof n.title === 'string' && isNonEmpty(n.exercises) && n.exercises.every(isRoutineItem);
 };
 
 const isNewExercise = (e: unknown) =>
