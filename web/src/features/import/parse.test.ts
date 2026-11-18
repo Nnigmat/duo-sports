@@ -373,6 +373,10 @@ describe('наборы разминки и заминки (routines)', () => {
     const e = parsed(full('      - { name: Подтягиваня, time: 30s }\n')).preview.newExercises[0]!;
     expect(e.candidates).toContain('Подтягивания');
   });
+  it('похожее для упражнения набора: слова библиотечного названия входят в новое', () => {
+    const e = parsed(full('      - { name: Подтягивания с резинкой, time: 30s }\n')).preview.newExercises[0]!;
+    expect(e.similar).toBe('Подтягивания');
+  });
   it('sides не из двух строк — ошибка', () => {
     expect(fails(full('      - { name: Планка, time: 30s, sides: [вправо] }\n'))[0]!.message).toContain('sides');
   });
