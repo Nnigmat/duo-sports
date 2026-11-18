@@ -98,6 +98,13 @@ describe('встроенная разминка и заминка', () => {
     expect(text).not.toContain('exercise_id: Разминка');
     expect(workoutFromYaml(text, library, all, TODAY)).toMatchObject({ ok: true, blocks: all });
   });
+  it('notes with a «blocks:» line keep the warmup comment out of notes', () => {
+    const notes = 'Строка один\nblocks:\nещё';
+    const text = workoutToYaml('Т', all, {}, library, notes);
+    const r = workoutFromYaml(text, library, all, TODAY);
+    expect(r.ok && r.notes).toBe(notes);
+    expect(text).toMatch(/^ {4}blocks:\n {6}# Разминка «Разминка» — правится в форме\n/m);
+  });
   it('embedded warmup kept out of yaml and restored unchanged', () => {
     const rich: Block = { ...plainWarm, exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 45 }, sides: ['вправо', 'влево'] }] };
     const text = workoutToYaml('Т', [rich, main], {}, library);

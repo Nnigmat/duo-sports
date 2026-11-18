@@ -75,9 +75,10 @@ export function workoutToYaml(title: string, blocks: Block[], links: RoutineLink
   const note = (b: Block) => `      # ${isCooldown(b) ? 'Заминка' : 'Разминка'} «${b.title.replace(/[\r\n]+/g, ' ')}» — правится в форме\n`;
   const head = embedded.filter((b) => !isCooldown(b)).map(note).join('');
   const tail = embedded.filter(isCooldown).map(note).join('');
-  const list = text.replace('    blocks: []\n', '    blocks:\n');
-  const at = list.indexOf('    blocks:\n') + '    blocks:\n'.length;
-  return list.slice(0, at) + head + list.slice(at) + tail;
+  // Ключ blocks тренировки — с начала строки: строка «blocks:» в notes стоит глубже и не совпадёт
+  const key = /^ {4}blocks:(?: \[\])?\n/m.exec(text)!;
+  const at = key.index + key[0].length;
+  return `${text.slice(0, key.index)}    blocks:\n${head}${text.slice(at)}${tail}`;
 }
 
 const toEntry = (l: LibraryExercise): LibraryEntry => ({ id: l.id, name: l.name, aliases: l.aliases ?? [], kind: l.kind, group: l.group, muscles: l.muscles, equipment: l.equipment });
