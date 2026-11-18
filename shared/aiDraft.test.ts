@@ -3,18 +3,26 @@ import { AGENT_WORKOUT_SCHEMA, compactAgentWorkout, isAgentWorkout, type AgentWo
 
 type Node = Record<string, unknown>;
 
-/** Обходит все подсхемы: properties, items, anyOf, $defs */
-function walk(node: unknown, visit: (n: Node) => void) {
+/** Обходит все подсхемы: properties, items, anyOf, $defs; path — ключи до подсхемы */
+function walk(node: unknown, visit: (n: Node, path: string) => void, path = '') {
   if (!node || typeof node !== 'object') return;
   const n = node as Node;
-  visit(n);
+  visit(n, path);
   for (const key of ['properties', '$defs'] as const) {
     const group = n[key] as Record<string, unknown> | undefined;
-    if (group) for (const child of Object.values(group)) walk(child, visit);
+    if (group) for (const [name, child] of Object.entries(group)) walk(child, visit, path ? `${path}.${name}` : name);
   }
-  if (n.items) walk(n.items, visit);
-  if (Array.isArray(n.anyOf)) for (const child of n.anyOf) walk(child, visit);
+  if (n.items) walk(n.items, visit, `${path}[]`);
+  if (Array.isArray(n.anyOf)) n.anyOf.forEach((child, i) => walk(child, visit, `${path}|${i}`));
 }
+
+const prop = (n: Node, key: string) => (n.properties as Node)[key] as Node;
+const requiresAll = (n: Node) => expect(new Set(n.required as string[])).toEqual(new Set(Object.keys(n.properties as Node)));
+const blockSchema = () => prop(AGENT_WORKOUT_SCHEMA, 'blocks').items as Node;
+const routineItemSchema = () => {
+  const own = (prop(AGENT_WORKOUT_SCHEMA, 'warmup').anyOf as Node[]).find((o) => (o.properties as Node | undefined)?.new_routine) as Node;
+  return prop(prop(own, 'new_routine'), 'exercises').items as Node;
+};
 
 const objects = () => {
   const out: Node[] = [];
@@ -38,7 +46,7 @@ describe('схема ответа агента', () => {
   });
 
   it('top level requires every structural key', () => {
-    expect(new Set(AGENT_WORKOUT_SCHEMA.required as string[])).toEqual(new Set(['title', 'warmup', 'cooldown', 'blocks', 'new_exercises', 'advice']));
+    expect(new Set(AGENT_WORKOUT_SCHEMA.required as string[])).toEqual(new Set(['title', 'notes', 'warmup', 'cooldown', 'blocks', 'new_exercises', 'advice']));
   });
 
   // Лимиты строгого режима: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
@@ -59,10 +67,34 @@ describe('схема ответа агента', () => {
     for (const o of objects()) expect(Object.keys(o.properties as Node).length - (o.required as string[]).length).toBeLessThanOrEqual(3);
   });
 
-  it('block exercise requires every field: empty is "", 0 or false', () => {
-    const ex = ((AGENT_WORKOUT_SCHEMA.properties as Node).blocks as Node).items as Node;
-    const item = ((ex.properties as Node).exercises as Node).items as Node;
-    expect(new Set(item.required as string[])).toEqual(new Set(Object.keys(item.properties as Node)));
+  it('time_sec of block exercise is the only union besides warmup and cooldown', () => {
+    const paths: string[] = [];
+    walk(AGENT_WORKOUT_SCHEMA, (n, path) => {
+      if (Array.isArray(n.anyOf) || Array.isArray(n.type)) paths.push(path);
+    });
+    expect(new Set(paths)).toEqual(new Set(['warmup', 'cooldown', 'blocks[].exercises[].time_sec']));
+  });
+
+  it('block exercise follows v2 and requires every field: empty is "", 0 or []', () => {
+    const item = prop(blockSchema(), 'exercises').items as Node;
+    expect(new Set(Object.keys(item.properties as Node))).toEqual(new Set(['exercise_id', 'sets', 'reps', 'time_sec', 'weight_kg', 'rest_sec', 'sides', 'notes']));
+    requiresAll(item);
+    expect(prop(item, 'time_sec').anyOf).toEqual([{ type: 'integer' }, { type: 'string', enum: ['max'] }]);
+  });
+
+  it('block requires every field and allows empty exercises for note', () => {
+    const block = blockSchema();
+    expect(new Set(Object.keys(block.properties as Node))).toEqual(new Set(['type', 'title', 'rounds', 'rest_sec', 'text', 'exercises']));
+    requiresAll(block);
+    expect(prop(block, 'type').enum).toEqual(['sets', 'circuit', 'timed', 'note']);
+    expect(prop(block, 'exercises')).not.toHaveProperty('minItems');
+  });
+
+  it('routine item requires exercise_id, integer time_sec and sides', () => {
+    const item = routineItemSchema();
+    expect(new Set(Object.keys(item.properties as Node))).toEqual(new Set(['exercise_id', 'time_sec', 'sides']));
+    requiresAll(item);
+    expect(prop(item, 'time_sec').type).toBe('integer');
   });
 
   it('uses no keywords outside the supported subset', () => {
@@ -83,12 +115,19 @@ describe('isAgentWorkout', () => {
     const w: AgentWorkout = {
       ...minimal,
       warmup: { routine: 'neck-shoulders' },
-      cooldown: { new_routine: { id: 'my-cool', title: 'Растяжка', exercises: [{ exercise_id: 'forward-bend', time: '30s', per_side: true, sides: ['вправо', 'влево'] }] } },
-      blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', do: '4x8 @ 60' }] }],
+      cooldown: { new_routine: { id: 'my-cool', title: 'Растяжка', exercises: [{ exercise_id: 'forward-bend', time_sec: 30, sides: ['вправо', 'влево'] }] } },
+      blocks: [
+        { type: 'sets', exercises: [{ exercise_id: 'bench-press', sets: 4, reps: '8', weight_kg: 60, rest_sec: 180, notes: 'Пауза внизу' }] },
+        { type: 'circuit', rounds: 2, rest_sec: 90, exercises: [{ exercise_id: 'dead-hang', time_sec: 'max' }, { exercise_id: 'lunge', reps: '10', sides: ['левая нога', 'правая нога'] }] },
+      ],
       new_exercises: [{ id: 'clap-pushup', name: 'Отжимания с хлопком', muscles: ['грудь'], measure: 'reps', equipment: [], aliases: [] }],
       advice: [{ text: 'Есть похожее', exercise: 'Отжимания с хлопком', suggest: 'pushup' }],
     };
     expect(isAgentWorkout(w)).toBe(true);
+  });
+
+  it('accepts note block with empty exercises', () => {
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'note', title: 'Тест большого пальца', text: 'Есть ли боль', exercises: [] }] })).toBe(true);
   });
 
   it('rejects missing blocks', () => {
@@ -100,44 +139,67 @@ describe('isAgentWorkout', () => {
     expect(isAgentWorkout(null)).toBe(false);
     expect(isAgentWorkout({ ...minimal, title: 5 })).toBe(false);
     expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'yoga', exercises: [] }] })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'superset', exercises: [] }] })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ exercise_id: 'plank', time_sec: 'long' }] }] })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ exercise_id: 'plank', sides: 'обе' }] }] })).toBe(false);
     expect(isAgentWorkout({ ...minimal, warmup: { routine: 5 } })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, warmup: { new_routine: { id: 'w', title: 'W', exercises: [{ exercise_id: 'x', time: '30s' }] } } })).toBe(false);
     expect(isAgentWorkout({ ...minimal, new_exercises: [{ id: 'x', name: 'X', muscles: [], measure: 'kg', equipment: [], aliases: [] }] })).toBe(false);
   });
 
-  it('rejects exercise without exercise_id and name', () => {
-    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ do: '3x12' }] }] })).toBe(false);
-    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ name: 'Жим лёжа', do: '3x12' }] }] })).toBe(true);
+  it('rejects exercise without exercise_id: v2 has no search by name', () => {
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ reps: '12' }] }] })).toBe(false);
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ name: 'Жим лёжа', reps: '12' }] }] })).toBe(false);
   });
 
-  it('rejects empty exercise lists, as schema minItems: 1', () => {
-    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [] }] })).toBe(false);
+  it('rejects empty new routine, as schema minItems: 1', () => {
     expect(isAgentWorkout({ ...minimal, warmup: { new_routine: { id: 'empty', title: 'Пусто', exercises: [] } } })).toBe(false);
   });
 });
 
 describe('compactAgentWorkout', () => {
-  const full = { exercise_id: 'bench-press', name: '', do: '4x8 @ 60', sets: 0, reps: '', weight: '', time: '', rest: '90s', per_side: false, notes: '  ' };
+  const full = { exercise_id: 'bench-press', sets: 0, reps: '', time_sec: 0, weight_kg: 0, rest_sec: 0, sides: [], notes: '  ' };
 
-  it('drops empty fields of block exercises: "", blank, 0, false', () => {
-    const w = compactAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [full] }] });
-    expect(w).toEqual({ ...minimal, blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', do: '4x8 @ 60', rest: '90s' }] }] });
+  it('drops empty fields of block exercises: "", blank, 0, []', () => {
+    const w = compactAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ ...full, reps: '8' }] }] });
+    expect(w).toEqual({ ...minimal, blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', reps: '8' }] }] });
     expect(isAgentWorkout(w)).toBe(true);
   });
 
-  it('keeps filled values', () => {
-    const e = { name: 'Планка', sets: 3, time: '45s', per_side: true };
-    expect(compactAgentWorkout({ ...minimal, blocks: [{ type: 'timed', exercises: [e] }] })).toEqual({ ...minimal, blocks: [{ type: 'timed', exercises: [e] }] });
-  });
-
-  // Модель пишет "" и в необязательные поля, хотя могла их опустить: парсер импорта на rest: "" падает
-  it('drops empty optional fields of workout, blocks and advice', () => {
+  it('compact drops empty time_sec, weight_kg, rest_sec, sides, notes, text', () => {
     const w = compactAgentWorkout({
       ...minimal,
       notes: '',
-      blocks: [{ type: 'superset', title: '', rounds: 0, rest: '', exercises: [{ exercise_id: 'squat', reps: '12' }] }],
-      advice: [{ text: 'Есть похожее', exercise: '', suggest: '' }],
+      blocks: [
+        { type: 'sets', title: '', rounds: 0, rest_sec: 0, text: '', exercises: [full] },
+        { type: 'note', title: 'Замер', rounds: 0, rest_sec: 0, text: ' ', exercises: [] },
+      ],
+      warmup: { new_routine: { id: 'my-warm', title: 'Своя', exercises: [{ exercise_id: 'arm-circles', time_sec: 30, sides: [] }] } },
     });
-    expect(w).toEqual({ ...minimal, blocks: [{ type: 'superset', exercises: [{ exercise_id: 'squat', reps: '12' }] }], advice: [{ text: 'Есть похожее' }] });
+    expect(w).toEqual({
+      ...minimal,
+      blocks: [
+        { type: 'sets', exercises: [{ exercise_id: 'bench-press' }] },
+        { type: 'note', title: 'Замер', exercises: [] },
+      ],
+      warmup: { new_routine: { id: 'my-warm', title: 'Своя', exercises: [{ exercise_id: 'arm-circles', time_sec: 30 }] } },
+    });
+  });
+
+  it('keeps filled values', () => {
+    const e = { exercise_id: 'plank', sets: 3, time_sec: 'max', rest_sec: 60, sides: ['влево', 'вправо'], notes: 'Корпус прямой' };
+    const b = { type: 'circuit', title: 'Кор', rounds: 2, rest_sec: 90, exercises: [e] };
+    expect(compactAgentWorkout({ ...minimal, notes: 'Легко', blocks: [b] })).toEqual({ ...minimal, notes: 'Легко', blocks: [b] });
+  });
+
+  it('keeps required routine item time_sec even when 0: parse names the error', () => {
+    const warmup = { new_routine: { id: 'w', title: 'W', exercises: [{ exercise_id: 'arm-circles', time_sec: 0, sides: [] }] } };
+    expect(compactAgentWorkout({ ...minimal, warmup })).toEqual({ ...minimal, warmup: { new_routine: { id: 'w', title: 'W', exercises: [{ exercise_id: 'arm-circles', time_sec: 0 }] } } });
+  });
+
+  it('drops empty optional fields of advice', () => {
+    const w = compactAgentWorkout({ ...minimal, advice: [{ text: 'Есть похожее', exercise: '', suggest: '' }] });
+    expect(w).toEqual({ ...minimal, advice: [{ text: 'Есть похожее' }] });
   });
 
   it('keeps required fields even when empty: title, new exercise lists', () => {
@@ -145,13 +207,13 @@ describe('compactAgentWorkout', () => {
     expect(compactAgentWorkout({ ...minimal, title: '', new_exercises: [{ ...ne, notes: '' }] })).toEqual({ ...minimal, title: '', new_exercises: [ne] });
   });
 
-  it('exercise without id and name stays invalid', () => {
+  it('exercise without id stays invalid', () => {
     const w = compactAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ ...full, exercise_id: '' }] }] });
     expect(isAgentWorkout(w)).toBe(false);
   });
 
   it('leaves other shapes for isAgentWorkout to reject', () => {
-    for (const v of [null, 5, 'x', { title: 'Без блоков' }, { ...minimal, blocks: 'нет' }, { ...minimal, blocks: [null, { type: 'sets' }] }]) {
+    for (const v of [null, 5, 'x', { title: 'Без блоков' }, { ...minimal, blocks: 'нет' }, { ...minimal, blocks: [null, { type: 'sets' }] }, { ...minimal, warmup: { new_routine: 'нет' } }]) {
       expect(compactAgentWorkout(v)).toEqual(v);
     }
   });

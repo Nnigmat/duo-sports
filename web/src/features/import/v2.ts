@@ -36,8 +36,8 @@ export const BLOCK_FIELDS: Record<BlockTypeV2, string[]> = {
   note: ['type', 'title', 'text'],
 };
 export const ROUTINE_BLOCK_HINT = 'В version: 2 разминка и заминка — только routine: id набора.';
-const EXERCISE_FIELDS = ['exercise_id', 'sets', 'reps', 'time_sec', 'weight_kg', 'rest_sec', 'sides', 'notes'];
-const TIMED_FIELDS = ['exercise_id', 'time_sec', 'sides'];
+export const EXERCISE_FIELDS = ['exercise_id', 'sets', 'reps', 'time_sec', 'weight_kg', 'rest_sec', 'sides', 'notes'];
+export const TIMED_FIELDS = ['exercise_id', 'time_sec', 'sides'];
 
 export const DEFAULT_SETS_REST_SEC = 90;
 const REST_HINT = 'rest_sec — целое число секунд, например 180';

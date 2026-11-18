@@ -6,7 +6,7 @@ import { canBuild, EMPTY_INPUT, toRequest, type BuilderInput } from './types';
 
 const req: DraftRequest = { athleteId: 3, date: '2026-11-18', title: '', warmup: null, main: { text: 'жим', exercises: [] }, cooldown: null };
 const usage = { input: 1, cacheCreation: 0, cacheRead: 0, output: 1 };
-const bad = agent({ blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-pres', do: '4x8 @ 60' }] }] });
+const bad = agent({ blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-pres', sets: 4, reps: '8', weight_kg: 60 }] }] });
 
 /** Подделка send: отдаёт ответы по очереди и запоминает запросы */
 function fakeSend(...answers: AgentWorkout[]) {
@@ -44,8 +44,8 @@ describe('buildWorkout', () => {
   });
 
   it('sends at most 50 errors of at most 2000 chars on retry', async () => {
-    const blocks = Array.from({ length: 60 }, (_, i) => ({ type: 'sets' as const, exercises: [{ exercise_id: `unknown-${i}`, do: '3x10' }] }));
-    blocks.unshift({ type: 'sets', exercises: [{ exercise_id: 'x'.repeat(2500), do: '3x10' }] });
+    const blocks = Array.from({ length: 60 }, (_, i) => ({ type: 'sets' as const, exercises: [{ exercise_id: `unknown-${i}`, sets: 3, reps: '10' }] }));
+    blocks.unshift({ type: 'sets', exercises: [{ exercise_id: 'x'.repeat(2500), sets: 3, reps: '10' }] });
     const many = agent({ blocks });
     const f = fakeSend(many, many);
     const r = await buildWorkout(req, ctx, [], f.send);
@@ -69,7 +69,7 @@ describe('buildWorkout', () => {
 
 describe('разминка и заминка: выбор тренера важнее ответа агента', () => {
   const neck = { id: 'neck-roll', name: 'Наклоны головы', muscles: [], measure: 'time' as const, equipment: [], aliases: [] };
-  const fresh = (id: string) => ({ new_routine: { id, title: 'Своя', exercises: [{ exercise_id: 'neck-roll', time: '30s' }] } });
+  const fresh = (id: string) => ({ new_routine: { id, title: 'Своя', exercises: [{ exercise_id: 'neck-roll', time_sec: 30 }] } });
   const draftOf = async (ask: Partial<DraftRequest>, answer: AgentWorkout) => {
     const r = await buildWorkout({ ...req, ...ask }, ctx, [], fakeSend(answer).send);
     if (!r.ok) throw new Error(JSON.stringify(r.errors));
