@@ -94,3 +94,16 @@ export const StartWithNotes: Story = {
     await expect(note.compareDocumentPosition(blocks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   },
 };
+
+/** Блок-заметка в составе: показан заголовком, без пустого списка «Подходами» */
+export const WithNoteBlock: Story = {
+  args: { title: 'Силовая', blocks: [{ id: 'note', mode: 'note', title: 'Про запястье', text: 'Если болит, пропусти отжимания.' }, STRENGTH] },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Про запястье')).toBeVisible();
+    await expect(c.getByText('Заметка')).toBeVisible();
+    // «Подходами» одна: у заметки своей секции со списком нет
+    await expect(c.getAllByText('Подходами')).toHaveLength(1);
+    await expect(c.getAllByRole('list')).toHaveLength(1);
+  },
+};

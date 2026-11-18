@@ -103,6 +103,18 @@ export function StartScreen({ title, notes, blocks, dateLabel, equipment, idleUr
 }
 
 function BlockSection({ block, exerciseHref, onOpenExercise }: { block: Block } & Pick<Props, 'exerciseHref' | 'onOpenExercise'>) {
+  // Заметка — отдельный шаг без упражнений: показываем её заголовок, чтобы спортсмен видел, что шаг есть
+  if (block.mode === 'note') {
+    return (
+      <div className={styles.workHead}>
+        <Text variant="eyebrow">{block.title}</Text>
+        <Text variant="caption" tag="span" className={styles.strong}>
+          Заметка
+        </Text>
+      </div>
+    );
+  }
+
   if (block.mode === 'timed') {
     return (
       <div className={styles.workHead}>
