@@ -55,5 +55,6 @@ describe('agent instructions', () => {
 
   it('allow notes only in sets and circuit', () => {
     expect(AGENT_FORMAT).toContain('только в блоках sets и circuit; в timed ""');
+    expect(AGENT_INSTRUCTIONS).toContain('в блоке timed notes у упражнения пусто — такой остаток клади в text блока или в advice');
   });
 });
