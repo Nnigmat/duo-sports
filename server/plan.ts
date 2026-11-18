@@ -19,11 +19,11 @@ const REP_SEC = 4;
 const UNKNOWN_WORK_SEC = 40;
 const SETUP_SEC = 20;
 
-/** Секунды работы в одном подходе: время — как задано, повторы — по REP_SEC на повтор, «макс.» без числа — UNKNOWN_WORK_SEC; упражнение с sides идёт на обе стороны */
+/** Секунды работы в одном подходе: время — как задано, повторы — по REP_SEC на повтор, «макс.» (и повторов, и времени) без числа — UNKNOWN_WORK_SEC; упражнение с sides идёт на обе стороны */
 function workSec(e: Exercise, real?: Map<string, number>): number {
   const measured = real?.get(e.name.trim().toLowerCase());
   if (measured !== undefined) return measured; // подход целиком, обе стороны уже внутри
-  const one = e.kind === 'time' ? e.target.max : e.target.max > 0 ? Math.max(15, e.target.max * REP_SEC) : UNKNOWN_WORK_SEC;
+  const one = e.target.max <= 0 ? UNKNOWN_WORK_SEC : e.kind === 'time' ? e.target.max : Math.max(15, e.target.max * REP_SEC);
   return e.sides ? one * 2 : one;
 }
 
@@ -48,8 +48,10 @@ export function estimateMinutes(blocks: CommitBlock[], structure: Block[] | null
   const sec = structure.reduce((total, b) => {
     if (b.mode === 'note') return total;
     if (b.mode === 'timed') return total + b.exercises.reduce((n, e) => n + workSec(e, realWork), 0);
-    if (b.mode === 'sets') return total + b.exercises.reduce((n, e) => n + e.sets * (workSec(e, realWork) + b.restSec) + SETUP_SEC, 0);
-    return total + b.rounds * (b.exercises.reduce((n, e) => n + workSec(e, realWork), 0) + b.exercises.length * b.restSec) + SETUP_SEC;
+    if (b.mode === 'sets') return total + b.exercises.reduce((n, e) => n + e.sets * (workSec(e, realWork) + (e.restSec ?? b.restSec)) + SETUP_SEC, 0);
+    // restAfter: 'round' — отдых один раз за круг, иначе после каждого упражнения
+    const rests = b.restAfter === 'round' ? 1 : b.exercises.length;
+    return total + b.rounds * (b.exercises.reduce((n, e) => n + workSec(e, realWork), 0) + rests * b.restSec) + SETUP_SEC;
   }, 0);
   return roundMinutes(sec);
 }

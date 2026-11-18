@@ -201,6 +201,25 @@ describe('estimateMinutes по структуре', () => {
     // 120 + 4 × (60 + 80 + 120) + 20 = 1180 с ≈ 20 мин
     expect(estimateMinutes([], structure)).toBe(20);
   });
+  it('время на максимум считается как повторы на максимум', () => {
+    const timedMax = estimateMinutes([], [{ id: 'a', mode: 'sets', title: 'С', restSec: 0, videoRounds: [], exercises: Array.from({ length: 20 }, (_, i) => ({ ...ex(`t${i}`, 0, { kind: 'time' }), sets: 1 })) }]);
+    const repsMax = estimateMinutes([], [{ id: 'a', mode: 'sets', title: 'С', restSec: 0, videoRounds: [], exercises: Array.from({ length: 20 }, (_, i) => ({ ...ex(`r${i}`, 0), sets: 1 })) }]);
+    // 20 × (40 + 0) + 20 × 20 = 1200 с → 20 мин, а не 400 с → 15
+    expect(timedMax).toBe(20);
+    expect(timedMax).toBe(repsMax);
+  });
+  it('у упражнения подходов свой отдых вместо отдыха блока', () => {
+    const mk = (extra: Partial<Exercise>): Block[] => [{ id: 'a', mode: 'sets', title: 'С', restSec: 60, videoRounds: [], exercises: [{ ...ex('x', 15), sets: 10, ...extra }] }];
+    // 10 × (60 + 60) + 20 = 1220 с → 20 мин; 10 × (60 + 180) + 20 = 2420 с → 40 мин
+    expect(estimateMinutes([], mk({}))).toBe(20);
+    expect(estimateMinutes([], mk({ restSec: 180 }))).toBe(40);
+  });
+  it('круг с отдыхом после круга: отдых один раз за круг; без restAfter как раньше', () => {
+    const circ = (extra: Partial<Block>): Block[] => [{ id: 'c', mode: 'circuit', title: 'К', rounds: 5, restSec: 60, videoRounds: [], exercises: [ex('x', 15), ex('y', 15), ex('z', 15)], ...extra } as Block];
+    // за круг 3 × 60 работы; после каждого: 5 × (180 + 180) + 20 = 1820 с → 30 мин; после круга: 5 × (180 + 60) + 20 = 1220 с → 20 мин
+    expect(estimateMinutes([], circ({}))).toBe(30);
+    expect(estimateMinutes([], circ({ restAfter: 'round' }))).toBe(20);
+  });
   it('прошлые прохождения важнее расчёта: берём медиану', () => {
     const structure: Block[] = [{ id: 'c', mode: 'circuit', title: 'Круг', rounds: 3, restSec: 60, videoRounds: [], exercises: [ex('x', 15)] }];
     expect(estimateMinutes([], structure, [3300, 3600, 4200])).toBe(60);
