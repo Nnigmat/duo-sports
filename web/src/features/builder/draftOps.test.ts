@@ -59,13 +59,13 @@ describe('правка черновика', () => {
     expect(d.advice.map((a) => a.id)).toEqual(['a1']);
   });
 
-  it('replaceExercise keeps new exercise still used elsewhere', () => {
-    // Наклон стоит и в блоке, и в заминке; замена на упражнение не на время в заминку не попадает — новое остаётся
+  it('replaceExercise renames the routine item to any library exercise and drops the unused new one', () => {
+    // Наклон стоит и в блоке, и в заминке; заминка принимает любое упражнение, так что имя меняется и там
     const d = createExercise(base(), 'b2', 'Наклон к ногам');
     const r = replaceExercise(d, 'Наклон к ногам', dips);
     expect(names(r, 1)).toEqual(['Жим лёжа', 'Отжимания на брусьях']);
-    expect(r.cooldown).toMatchObject({ items: [{ name: 'Наклон к ногам' }, { name: 'Вращение руками' }] });
-    expect(r.newExercises.map((e) => e.name)).toContain('Наклон к ногам');
+    expect(r.cooldown).toMatchObject({ items: [{ name: 'Отжимания на брусьях' }, { name: 'Вращение руками' }] });
+    expect(r.newExercises.map((e) => e.name)).not.toContain('Наклон к ногам');
   });
 
   it('replaceExercise with time exercise reaches new routine too', () => {

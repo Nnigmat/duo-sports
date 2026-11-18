@@ -5,12 +5,11 @@ import type { Db } from './db';
 import { canAddExercises } from './imports';
 import {
   createRoutine, deleteRoutine, getRoutine, listRoutines, ROUTINE_DUPLICATE, ROUTINE_IN_USE, ROUTINE_KIND_IN_USE,
-  ROUTINE_NOT_FOUND, ROUTINE_NOT_TIME, ROUTINE_UNKNOWN_EXERCISE, ROUTINES_WRITE_FORBIDDEN, updateRoutine, validateRoutine,
+  ROUTINE_NOT_FOUND, ROUTINE_UNKNOWN_EXERCISE, ROUTINES_WRITE_FORBIDDEN, updateRoutine, validateRoutine,
 } from './routines';
 
 const FAIL = {
   unknown_exercise: [400, ROUTINE_UNKNOWN_EXERCISE],
-  not_time: [400, ROUTINE_NOT_TIME],
   duplicate: [409, ROUTINE_DUPLICATE],
   not_found: [404, ROUTINE_NOT_FOUND],
   in_use: [409, ROUTINE_KIND_IN_USE],

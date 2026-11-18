@@ -16,7 +16,6 @@ export const ROUTINE_DUPLICATE = 'Разминка с таким названи�
 export const ROUTINE_IN_USE = 'Разминка стоит в тренировках';
 export const ROUTINE_KIND_IN_USE = 'Вид разминки нельзя менять, пока она стоит в тренировках';
 export const ROUTINE_UNKNOWN_EXERCISE = 'Нет такого упражнения в библиотеке';
-export const ROUTINE_NOT_TIME = 'В разминке и заминке нужны упражнения с измерением time';
 
 const bad = (error: string): { ok: false; error: string } => ({ ok: false, error });
 const KINDS: RoutineKind[] = ['warmup', 'cooldown'];
@@ -127,16 +126,15 @@ export function getRoutine(db: Db, slug: string, viewerId: number): RoutineDetai
   return { ...build(db, r), usedIn: all.length, usedBy: mine };
 }
 
-type Resolved = { id: number; kind: string };
-type WriteError = 'unknown_exercise' | 'not_time' | 'duplicate';
+type Resolved = { id: number };
+type WriteError = 'unknown_exercise' | 'duplicate';
 
-/** Находит упражнения по slug и проверяет, что все они по времени */
+/** Находит упражнения по slug: подходит любое упражнение библиотеки */
 function resolveItems(db: Db, input: RoutineInput): { ok: true; rows: Array<{ exerciseId: number }> } | { ok: false; error: WriteError } {
   const rows: Array<{ exerciseId: number }> = [];
   for (const it of input.items) {
-    const e = db.prepare('SELECT id, kind FROM exercises WHERE slug = ?').get(it.exercise) as Resolved | undefined;
+    const e = db.prepare('SELECT id FROM exercises WHERE slug = ?').get(it.exercise) as Resolved | undefined;
     if (!e) return { ok: false, error: 'unknown_exercise' };
-    if (e.kind !== 'time') return { ok: false, error: 'not_time' };
     rows.push({ exerciseId: e.id });
   }
   return { ok: true, rows };

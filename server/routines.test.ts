@@ -48,10 +48,12 @@ describe('createRoutine', () => {
     expect(r.routine.items[1]!.sides).toEqual(['вправо', 'влево']);
     expect(r.routine.totalSec).toBe(30 + 30 * 2);
   });
-  it('rejects an exercise that is not a time exercise', () => {
+  it('createRoutine accepts reps exercise', () => {
     const w = createExercise(db, { ...timeEx('Жим'), kind: 'weight' });
     if (!w.ok) throw new Error('x');
-    expect(createRoutine(db, input({ items: [{ exercise: w.entry.id, sec: { min: 10, max: 10 } }] }))).toEqual({ ok: false, error: 'not_time' });
+    const r = createRoutine(db, input({ items: [{ exercise: w.entry.id, sec: { min: 10, max: 10 } }] }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.routine.items.map((i) => [i.name, i.sec])).toEqual([['Жим', { min: 10, max: 10 }]]);
   });
   it('rejects an unknown exercise', () => {
     expect(createRoutine(db, input({ items: [{ exercise: 'nope', sec: { min: 10, max: 10 } }] }))).toEqual({ ok: false, error: 'unknown_exercise' });

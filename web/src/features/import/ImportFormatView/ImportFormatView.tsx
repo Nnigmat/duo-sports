@@ -147,7 +147,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
             </Text>
             <Text variant="body-sm" color="slate">
               Один раз упражнения можно написать прямо в блоке <code>warmup</code> или <code>cooldown</code>, списком <code>exercises</code>. Если набор нужен в нескольких тренировках, опишите его один раз в <code>routines</code> и подключите в любом блоке <code>warmup</code> или <code>cooldown</code> через <code>routine</code>. В тренировку набор копируется
-              при импорте: правка набора не меняет уже импортированные тренировки. Упражнения должны быть «на время»; незнакомые предложим создать на проверке.
+              при импорте: правка набора не меняет уже импортированные тренировки. Подойдёт любое упражнение, время задаёт time на сторону; незнакомые предложим создать на проверке.
             </Text>
             <CodeBlock lines={ROUTINE_EXAMPLE} label="Пример набора" />
             <FieldTable rows={ROUTINE_FIELDS} caption="Поля набора и его упражнений" />

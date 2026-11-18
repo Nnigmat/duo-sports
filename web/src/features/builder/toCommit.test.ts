@@ -89,10 +89,8 @@ describe('draftToCommit', () => {
     expect(problemsOf(base({ newExercises: [clap, bend], cooldown: { kind: 'new', title: 'Шея и плечи', items: [{ name: 'Наклон к ногам', sec: 45 }] } }))).toEqual([]);
   });
 
-  it('reports non-time exercise in routine', () => {
-    expect(problemsOf(base({ warmup: { kind: 'new', title: 'Своя', items: [{ name: 'Жим лёжа', sec: 30 }, { name: 'Отжимания с хлопком', sec: 30 }] } }))).toEqual([
-      'В разминке только упражнения на время: Жим лёжа, Отжимания с хлопком',
-    ]);
+  it('accepts any exercise in a new routine', () => {
+    expect(problemsOf(base({ warmup: { kind: 'new', title: 'Своя', items: [{ name: 'Жим лёжа', sec: 30 }, { name: 'Отжимания с хлопком', sec: 30 }] } }))).toEqual([]);
   });
 
   it('reports empty new routine', () => {

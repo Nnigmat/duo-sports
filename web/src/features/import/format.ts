@@ -89,8 +89,8 @@ export const BLOCK_TYPES: BlockType[] = [
   { type: 'superset', title: 'Суперсет', description: '2–3 упражнения без отдыха между ними.', code: ['- type: superset', '  rounds: 3', '  rest: 60s', '  exercises: [ … ]'] },
   { type: 'timed', title: 'По таймеру', description: 'Упражнения на время в основной части, например планка. В отличие от warmup и cooldown, остаётся в составе дня.', code: ['- type: timed', '  exercises:', '    - { name: Планка, time: 45s }'] },
   { type: 'warmup | cooldown', title: 'Разминка и заминка', description: 'Свободный текст и время — когда тренер пишет «любым способом», а не список упражнений.', code: ['- type: warmup', '  time: 5-7m', '  text: Скакалка, ОРУ ~10 мин'] },
-  { type: 'warmup | cooldown + exercises', title: 'Упражнения прямо в блоке', description: 'Упражнения на время из библиотеки, по порядку. Поля те же, что у набора: name, time, per_side, sides.', code: ['- type: cooldown', '  exercises:', '    - { name: Наклон к ногам, time: 45s }', '    - { name: Растяжка бедра, time: 30s, per_side: true }'] },
-  { type: 'warmup | cooldown + routine', title: 'Набор упражнений', description: 'Упражнения на время с видео, отсчётом и сигналами. Набор из библиотеки разминок или описанный в routines файла подключается по id; правка набора меняет все тренировки, где он стоит.', code: ['- type: warmup', '  routine: neck-shoulders'] },
+  { type: 'warmup | cooldown + exercises', title: 'Упражнения прямо в блоке', description: 'Любые упражнения, по порядку, у каждого time на сторону. Поля те же, что у набора: name, time, per_side, sides.', code: ['- type: cooldown', '  exercises:', '    - { name: Наклон к ногам, time: 45s }', '    - { name: Растяжка бедра, time: 30s, per_side: true }'] },
+  { type: 'warmup | cooldown + routine', title: 'Набор упражнений', description: 'Упражнения с видео, отсчётом и сигналами. Набор из библиотеки разминок или описанный в routines файла подключается по id; правка набора меняет все тренировки, где он стоит.', code: ['- type: warmup', '  routine: neck-shoulders'] },
 ];
 
 export const SHORT_FORMS: Array<{ code: string; description: string }> = [

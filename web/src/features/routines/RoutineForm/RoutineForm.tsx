@@ -21,7 +21,7 @@ import {
 } from '../routines';
 import styles from './RoutineForm.module.css';
 
-/** Упражнение библиотеки для выбора; в состав идут только упражнения на время */
+/** Упражнение библиотеки для выбора; в состав идёт любое */
 export type PickerExercise = { id: string; name: string; kind: ExerciseKind };
 
 type Common = {
@@ -73,11 +73,10 @@ export function RoutineForm(props: Props) {
       setBusy(false);
     }
   }
-  const timeLib = exercises.filter((e) => e.kind === 'time');
 
   /** Читает YAML; при ошибках показывает их и ничего не меняет */
   function readYaml(): RoutineDraft | null {
-    const r = draftFromYaml(yaml, timeLib, draft);
+    const r = draftFromYaml(yaml, exercises, draft);
     if (!r.ok) {
       setYamlIssues(r.issues);
       return null;
@@ -116,9 +115,8 @@ export function RoutineForm(props: Props) {
     }
   }
 
-  const timeOnly = timeLib;
   const q = pickerQuery.trim().toLowerCase();
-  const pickable = q ? timeOnly.filter((e) => e.name.toLowerCase().includes(q)) : timeOnly;
+  const pickable = q ? exercises.filter((e) => e.name.toLowerCase().includes(q)) : exercises;
   const workoutsInError = error instanceof RoutineError ? error.workouts : [];
 
   return (
@@ -191,7 +189,7 @@ export function RoutineForm(props: Props) {
             <Button variant="ghost" compact aria-expanded={slugs} onClick={() => setSlugs((v) => !v)}>Упражнения для поля exercise</Button>
             {slugs && (
               <ul className={styles.slugs}>
-                {timeLib.map((e) => (
+                {exercises.map((e) => (
                   <li key={e.id}>
                     <code>{e.id}</code> <span>{e.name}</span>
                   </li>
@@ -213,7 +211,7 @@ export function RoutineForm(props: Props) {
             <Text variant="h5" tag="h2" id="rf-items">Упражнения</Text>
             <Text variant="caption" className={styles.num}>{draft.items.length > 0 ? mmss(draftTotal(draft)) : ''}</Text>
           </div>
-          {draft.items.length === 0 && <Text variant="body-sm" color="slate">Пока пусто. Добавьте упражнения на время из библиотеки.</Text>}
+          {draft.items.length === 0 && <Text variant="body-sm" color="slate">Пока пусто. Добавьте упражнения из библиотеки.</Text>}
           <ol className={styles.rows}>
             {draft.items.map((it, i) => {
               const err = itemError(it);
@@ -308,10 +306,10 @@ export function RoutineForm(props: Props) {
         )}
       </div>
 
-      <Sheet open={picker} onOpenChange={setPicker} title="Добавить из библиотеки" eyebrow="Только упражнения на время" tall>
+      <Sheet open={picker} onOpenChange={setPicker} title="Добавить из библиотеки" eyebrow="Время на сторону" tall>
         <SearchField label="Поиск по названию" placeholder="Название" value={pickerQuery} onValueChange={setPickerQuery} />
         {pickable.length === 0 ? (
-          <Text variant="body-sm" color="slate">{timeOnly.length === 0 ? 'В библиотеке нет упражнений на время.' : 'Ничего не нашлось.'}</Text>
+          <Text variant="body-sm" color="slate">{exercises.length === 0 ? 'В библиотеке нет упражнений.' : 'Ничего не нашлось.'}</Text>
         ) : (
           <ul className={styles.pick}>
             {pickable.map((e) => (

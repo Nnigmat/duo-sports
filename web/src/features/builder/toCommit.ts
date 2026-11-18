@@ -30,8 +30,8 @@ const libraryMatch = (name: string, library: LibraryEntry[]) =>
 
 /**
  * Черновик → коммит импорта: одна тренировка на дату, новые упражнения с явным slug, новая разминка или заминка.
- * Сначала проверки, которые сервер не прощает или прощает молча (дубль названия разминки, занятый slug,
- * упражнение разминки не на время): найденное — список проблем вместо коммита.
+ * Сначала проверки, которые сервер не прощает или прощает молча (дубль названия разминки, занятый slug):
+ * найденное — список проблем вместо коммита.
  */
 export function draftToCommit(d: BuilderDraft, ctx: ParseContext): CommitCheck {
   const out = problems(d.title, d.blocks);
@@ -65,7 +65,6 @@ export function draftToCommit(d: BuilderDraft, ctx: ParseContext): CommitCheck {
       ...(e.notes.trim() ? { notes: e.notes.trim() } : {}),
     };
   });
-  const kindOfNew = new Map(created.map((e) => [norm(e.name), e.kind]));
 
   const takenRoutines = new Set(ctx.routines.map((r) => r.id));
   const routines: CommitRoutine[] = [];
@@ -80,15 +79,11 @@ export function draftToCommit(d: BuilderDraft, ctx: ParseContext): CommitCheck {
       out.push(`${w.inNew} нет упражнений`);
       return undefined;
     }
-    const notTime: string[] = [];
     const items = pick.items.map((i) => {
       const name = rename.get(i.name) ?? i.name;
       const lib = libraryMatch(name, ctx.library);
-      const kindOf = lib ? lib.kind : kindOfNew.get(norm(name));
-      if (kindOf !== 'time' && !notTime.includes(name)) notTime.push(name);
       return { exercise: lib ? lib.id : (slugOf.get(norm(name)) ?? importSlug(name)), sec: { min: i.sec, max: i.sec }, ...(i.sides ? { sides: i.sides } : {}) };
     });
-    if (notTime.length) out.push(`${w.in} только упражнения на время: ${notTime.join(', ')}`);
     const id = freeSlug(importSlug(title || w.title), takenRoutines);
     routines.push({ id, kind, title, items });
     return id;

@@ -35,7 +35,7 @@ export interface ParseIssue {
 }
 
 export type ParseResult =
-  | { ok: true; preview: PreviewData; plan: PlanSource; workouts: ParsedWorkout[]; routines: CommitRoutine[]; /** Упражнения библиотеки на время: название → slug, чтобы «Использовать похожее» работало и в разминках */ timeLibrary: Record<string, string>; warnings: ParseIssue[] }
+  | { ok: true; preview: PreviewData; plan: PlanSource; workouts: ParsedWorkout[]; routines: CommitRoutine[]; /** Упражнения библиотеки: название → slug, чтобы «Использовать похожее» работало и в разминках */ libraryIds: Record<string, string>; warnings: ParseIssue[] }
   | { ok: false; errors: ParseIssue[] };
 
 /** Тренировка файла целиком: её записываем в базу; PlanWorkout.ref указывает на номер в этом списке */
@@ -243,7 +243,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
   const foundLib = new Set<string>();
 
   /** Имя для показа или null, если упражнение не нашлось (ошибка уже записана) */
-  const resolve = (ex: Obj, path: Path, workout: number, timeOnly = workout === IN_ROUTINE): string | null => {
+  const resolve = (ex: Obj, path: Path, workout: number): string | null => {
     let lib: LibraryEntry | undefined;
     let def: Def | undefined;
     let name: string | null = null;
@@ -270,15 +270,13 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       return lib.name;
     }
     const shown = name ?? '';
-    // Для набора «похожее» ищем только среди упражнений на время: иначе замена обойдёт проверку типа
-    const pool = timeOnly ? ctx.library.filter((l) => l.kind === 'time') : ctx.library;
     const entry = used.get(norm(shown)) ?? {
       name: shown,
       workouts: new Set<number>(),
       hasVideo: !!def?.video,
       muscles: def?.muscles.join(', ') ?? '',
-      similar: similarTo(shown, pool),
-      candidates: candidatesFor(shown, pool),
+      similar: similarTo(shown, ctx.library),
+      candidates: candidatesFor(shown, ctx.library),
       slug: def?.id,
       aliases: def?.aliases ?? [],
       equipment: def?.equipment ?? [],
@@ -408,7 +406,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     note?: string;
   }
   const routineList = new Map<string, Routine>();
-  /** Упражнения на время: в наборе и прямо в блоке разминки или заминки. owner — номер тренировки или IN_ROUTINE. */
+  /** Упражнения набора: любое упражнение со временем на сторону; в наборе и прямо в блоке разминки или заминки. owner — номер тренировки или IN_ROUTINE. */
   const readTimed = (list: Json[], path: Path, owner: number, where: 'набора' | 'блока'): Routine => {
     const exercises: RawExercise[] = [];
     const slugs: string[] = [];
@@ -417,7 +415,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
     list.forEach((e: Json, ei: number) => {
       const ep: Path = [...path, ei];
       if (!isObj(e)) return fail(ep, 'Упражнение должно быть набором полей: name, time');
-      const name = resolve(e, ep, owner, true);
+      const name = resolve(e, ep, owner);
       let time = null;
       if (e.time === undefined) fail(ep, `У упражнения ${where} нет time`, 'Время обязательно: time: 30s.');
       else {
@@ -436,8 +434,6 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       } else if (e.per_side === true) sides = ['вправо', 'влево'];
       if (!name) return;
       const lib = libByName.get(norm(name));
-      const measure = lib ? lib.kind : defByName.get(norm(name))?.measure;
-      if (measure && measure !== 'time') fail(ep, `«${name}» — не упражнение на время`, 'В разминке и заминке нужны упражнения с измерением time.');
       if (!time) return;
       exercises.push({ name, load: { time }, ...(sides ? { sides } : {}) });
       slugs.push(lib?.id ?? defByName.get(norm(name))?.id ?? importSlug(name));
@@ -732,7 +728,7 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
       ...(b.warmupRoutine ? { warmupRoutine: b.warmupRoutine } : {}),
       ...(b.cooldownRoutine ? { cooldownRoutine: b.cooldownRoutine } : {}),
     })),
-    timeLibrary: Object.fromEntries(ctx.library.filter((l) => l.kind === 'time').map((l) => [l.name, l.id])),
+    libraryIds: Object.fromEntries(ctx.library.map((l) => [l.name, l.id])),
     routines: [...routineKinds].map(([id, kind]): CommitRoutine => {
       const r = routineList.get(id)!;
       return {

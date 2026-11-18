@@ -86,7 +86,7 @@ function commitRoutines(parsed: ParsedImport, choices: ExerciseChoices): { routi
       if (action === 'skip') return [];
       if (action === 'use') {
         const to = replacementOf(e, choices);
-        const slug = to ? parsed.timeLibrary[to] : undefined;
+        const slug = to ? parsed.libraryIds[to] : undefined;
         return slug ? [{ ...i, exercise: slug }] : [];
       }
       return [i];

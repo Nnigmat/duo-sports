@@ -369,16 +369,17 @@ describe('наборы разминки и заминки (routines)', () => {
   it('время 0 — ошибка, а не упражнение нулевой длины', () => {
     expect(fails(full('      - { name: Планка, time: 0 }\n'))[0]!.message).toContain('time');
   });
-  it('похожее для упражнения набора ищется только среди упражнений на время', () => {
+  it('похожее для упражнения набора ищется по всей библиотеке', () => {
     const e = parsed(full('      - { name: Подтягиваня, time: 30s }\n')).preview.newExercises[0]!;
-    expect(e.candidates).not.toContain('Подтягивания');
-    expect(e.similar).not.toBe('Подтягивания');
+    expect(e.candidates).toContain('Подтягивания');
   });
   it('sides не из двух строк — ошибка', () => {
     expect(fails(full('      - { name: Планка, time: 30s, sides: [вправо] }\n'))[0]!.message).toContain('sides');
   });
-  it('упражнение библиотеки с другим kind — ошибка', () => {
-    expect(fails(full('      - { name: Подтягивания, time: 30s }\n'))[0]!.message).toContain('на время');
+  it('v1 routine accepts reps exercise', () => {
+    const r = parsed(full('      - { name: Подтягивания, time: 30s }\n'));
+    expect(r.routines[0]!.items[0]!.sec).toEqual({ min: 30, max: 30 });
+    expect(r.preview.newExercises).toEqual([]);
   });
   it('незнакомое упражнение набора попадает в newExercises с measure time', () => {
     const r = parsed(full('      - { name: Вращение тазом, time: 30s }\n'));

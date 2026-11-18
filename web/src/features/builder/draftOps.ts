@@ -67,15 +67,13 @@ export function patchNewExercise(d: BuilderDraft, name: string, patch: Partial<N
 }
 
 /**
- * Меняет упражнение на библиотечное (имя без учёта регистра и ё): имя и тип в блоках; в новой разминке и заминке — только если замена на время
- * (разминка принимает только такие). Новое без использования удаляется, советы про него — тоже.
+ * Меняет упражнение на библиотечное (имя без учёта регистра и ё): имя и тип в блоках; в новой разминке и заминке — только имя. Новое без использования удаляется, советы про него — тоже.
  */
 export function replaceExercise(d: BuilderDraft, from: string, to: LibraryExercise): BuilderDraft {
   const blocks = mapRows(d.blocks, (e, b) => (same(e.name, from) ? retype(e, b.mode === 'timed' ? 'time' : to.kind, to.name) : e));
   const rename = (i: NewRoutineItem) => (same(i.name, from) ? { ...i, name: to.name } : i);
-  const routines = to.kind === 'time' ? { warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename) } : {};
   const advice = d.advice.filter((a) => a.exercise === undefined || !same(a.exercise, from));
-  return pruneNew({ ...d, blocks, ...routines, advice });
+  return pruneNew({ ...d, blocks, warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename), advice });
 }
 
 export const dismissAdvice = (d: BuilderDraft, adviceId: string): BuilderDraft => ({ ...d, advice: d.advice.filter((a) => a.id !== adviceId) });
