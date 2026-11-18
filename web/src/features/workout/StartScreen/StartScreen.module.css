@@ -168,3 +168,9 @@
   padding: var(--spacing-md) 0 max(28px, env(safe-area-inset-bottom));
   background: var(--canvas);
 }
+
+/* Заметка тренера над составом: переносы строк сохраняются */
+.notes {
+  margin: var(--spacing-md) 0 0;
+  white-space: pre-line;
+}

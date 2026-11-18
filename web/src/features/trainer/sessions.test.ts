@@ -128,6 +128,13 @@ describe('planSteps', () => {
     expect(plain(steps[3]!.sets)).toEqual(['18–20 повт', '18–20 повт']);
     expect(steps[1]!.key).toBe('b1-e0');
   });
+  it('упражнение со сторонами — «на сторону», время на максимум — «макс.»', () => {
+    const steps = planSteps([
+      { id: 's', mode: 'sets', title: 'С', restSec: 60, videoRounds: [], exercises: [{ id: 'a', name: 'Выпады', kind: 'reps', target: { min: 10, max: 10 }, sets: 2, sides: ['л', 'п'] }, { id: 'p', name: 'Планка', kind: 'time', target: { min: 0, max: 0 }, sets: 1 }] },
+      { id: 'w', mode: 'timed', title: 'Р', exercises: [{ id: 'c', name: 'Круги', kind: 'time', target: { min: 30, max: 30 }, sides: ['л', 'п'] }] },
+    ]);
+    expect(steps.map((x) => x.sets.map((t) => t.replaceAll('\u00a0', ' ')))).toEqual([['10 повт на сторону', '10 повт на сторону'], ['макс.'], ['00:30']]);
+  });
 });
 
 describe('selectionFor: тренировка дня из плана', () => {

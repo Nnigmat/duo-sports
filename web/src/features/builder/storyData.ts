@@ -31,4 +31,6 @@ export const reviewDraft: BuilderDraft = {
   warmup: { kind: 'library', slug: 'neck-shoulders' },
   cooldown: { kind: 'none' },
   advice: [{ id: 'a0', text: 'В библиотеке есть похожее — Отжимания на брусьях', exercise: 'Отжимания с хлопком', suggest: 'Отжимания на брусьях' }],
+  marks: {},
+  unparsed: [],
 };

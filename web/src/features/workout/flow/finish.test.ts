@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { NoteBlock } from '../../../../../shared/types';
 import { buildSteps } from './buildSteps';
-import { finishStats, formatFinishStats, sessionSteps } from './finish';
+import { finishStats, formatFinishStats, sessionAnswers, sessionSteps } from './finish';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 const all = (steps: unknown[], v: boolean) => steps.map(() => v);
@@ -144,5 +145,29 @@ describe('sessionSteps: замена упражнения', () => {
     const out = sessionSteps(steps, steps.map(() => true));
     expect(out[0]).toMatchObject({ exerciseId: 'push-up', exerciseName: 'Отжимания', replacedFrom: 'Обратные отжимания' });
     expect('replacedFrom' in out[1]!).toBe(false);
+  });
+});
+
+describe('шаг-заметка в итогах', () => {
+  const note: NoteBlock = { id: 'n1', mode: 'note', title: 'Тест большого пальца', text: 'Есть боль?' };
+  const steps = buildSteps([warmup, note, setsBlock]);
+  const noteIndex = steps.findIndex((s) => s.mode === 'note');
+
+  it('note step is not a set in finish stats', () => {
+    expect(finishStats(steps, all(steps, true), 0)).toEqual({ setsDone: 5, setsTotal: 5, videos: 0 });
+  });
+
+  it('sessionSteps не возвращает шаг-заметку', () => {
+    const result = sessionSteps(steps, all(steps, true));
+    expect(result).toHaveLength(steps.length - 1);
+    expect(result.every((r) => r.exerciseId !== 'n1')).toBe(true);
+  });
+
+  it('ответы: только выполненные шаги и непустой текст, blockIndex блока', () => {
+    const done = all(steps, true);
+    expect(sessionAnswers(steps, done, { [noteIndex]: ' Боли нет ' })).toEqual([{ blockIndex: 1, title: 'Тест большого пальца', text: 'Боли нет' }]);
+    expect(sessionAnswers(steps, done, { [noteIndex]: '   ' })).toEqual([]);
+    expect(sessionAnswers(steps, all(steps, false), { [noteIndex]: 'Боли нет' })).toEqual([]);
+    expect(sessionAnswers(steps, done, {})).toEqual([]);
   });
 });

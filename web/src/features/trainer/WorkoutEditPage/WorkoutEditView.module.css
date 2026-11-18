@@ -13,6 +13,27 @@
   align-items: center;
   justify-content: space-between;
 }
+.saveGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.blocked {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.marked {
+  border-left: 4px solid var(--ink);
+}
+.mark {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--body-sm-size);
+}
+.markWhy {
+  color: var(--slate);
+}
 .issues {
   margin: 0;
   padding-left: var(--spacing-md);
@@ -149,4 +170,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+}
+
+.sides {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  color: var(--slate);
+  font-size: var(--body-sm-size);
 }

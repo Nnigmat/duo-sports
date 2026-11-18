@@ -60,6 +60,10 @@ export function applyToStructure(blocks: Block[], rename: Map<string, string | n
   const name = (n: string) => (rename.has(n) ? rename.get(n) : n);
   const out: Block[] = [];
   for (const b of blocks) {
+    if (b.mode === 'note') {
+      out.push(b);
+      continue;
+    }
     const exercises = (b.exercises as Array<{ name: string }>).flatMap((e) => {
       const n = name(e.name);
       return n ? [{ ...e, name: n }] : [];
@@ -82,7 +86,7 @@ function commitRoutines(parsed: ParsedImport, choices: ExerciseChoices): { routi
       if (action === 'skip') return [];
       if (action === 'use') {
         const to = replacementOf(e, choices);
-        const slug = to ? parsed.timeLibrary[to] : undefined;
+        const slug = to ? parsed.libraryIds[to] : undefined;
         return slug ? [{ ...i, exercise: slug }] : [];
       }
       return [i];
@@ -115,6 +119,7 @@ export function buildCommit(parsed: ParsedImport, choices: ExerciseChoices, opti
       return [{ kind: b.kind, heading: trimmed ? b.heading.split(' · ')[0]! : b.heading, ...(b.text ? { text: b.text } : {}), items }];
     }),
     ...structureOf(w.structure, rename),
+    ...(w.notes ? { notes: w.notes } : {}),
     ...(w.warmupRoutine && !dropped.has(w.warmupRoutine) ? { warmupRoutine: w.warmupRoutine } : {}),
     ...(w.cooldownRoutine && !dropped.has(w.cooldownRoutine) ? { cooldownRoutine: w.cooldownRoutine } : {}),
   }));

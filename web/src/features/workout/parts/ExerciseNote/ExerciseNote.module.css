@@ -1,0 +1,34 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.text {
+  margin: var(--spacing-xxs) 0 0;
+  color: var(--slate);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: var(--caption-weight);
+}
+
+.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Кнопка не меньше 44 px по высоте и ширине */
+.more {
+  min-width: 44px; /* нет токена */
+  min-height: 44px; /* нет токена */
+  padding: 0 var(--spacing-sm);
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-family: var(--font-sans);
+  font-size: var(--body-sm-size);
+  font-weight: var(--button-md-weight);
+  cursor: pointer;
+}

@@ -569,3 +569,132 @@ export const RoutinePauseStopsCount: Story = {
     await expect(body().getByRole('button', { name: /Продолжить, \d\d:\d\d/ }).textContent).toBe(before);
   },
 };
+
+const STOPWATCH_WORKOUT = {
+  ...WORKOUT,
+  blocks: [
+    {
+      id: 'max',
+      mode: 'sets' as const,
+      title: 'Планка на максимум',
+      restSec: 5,
+      videoRounds: [],
+      exercises: [{ id: 'plank', name: 'Планка', kind: 'time' as const, pose: 'plank' as const, target: { min: 0, max: 0 }, sets: 1 }],
+    },
+  ],
+};
+
+/** Время на максимум: «Старт» запускает секундомер вверх, «Стоп» открывает результат с прошедшим временем */
+export const StopwatchMax: Story = {
+  name: 'Время на максимум: секундомер',
+  tags: hidden,
+  args: { workout: STOPWATCH_WORKOUT },
+  play: async () => {
+    await click('Начать тренировку');
+    // до «Старт» вместо времени «макс.»
+    await expect(await body().findByText('Планка · макс.')).toBeVisible();
+    await click('Старт');
+    // без отсчёта перед стартом: сразу идёт вверх с 0:00
+    const ring = await body().findByRole('button', { name: /Пауза, 00:0\d\s*прошло/ });
+    await expect(ring).toBeVisible();
+    await waitFor(() => expect(body().getByRole('button', { name: /Пауза, 00:0[2-9]\s*прошло/ })).toBeVisible(), { timeout: 5000 });
+    // пауза замораживает время
+    await click(/Пауза, /);
+    const paused = await body().findByRole('button', { name: /Продолжить, 00:0\d/ });
+    const before = paused.textContent;
+    await new Promise((r) => setTimeout(r, 1200));
+    await expect(body().getByRole('button', { name: /Продолжить, 00:0\d/ }).textContent).toBe(before);
+    await click(/Продолжить, /);
+    await body().findByRole('button', { name: /Пауза, 00:0\d/ });
+    // «Стоп»: окно результата с прошедшим временем вместо плана
+    await click('Стоп');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько продержались?' }));
+    await expect(dialog.getByText('План: макс.')).toBeVisible();
+    await expect(dialog.getByText(/^00:0[2-9]$/)).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(await body().findByText('Дальше')).toBeVisible();
+  },
+};
+
+const V2_WORKOUT = {
+  ...WORKOUT,
+  blocks: [
+    {
+      id: 'sets',
+      mode: 'sets' as const,
+      title: 'Силовая',
+      restSec: 5,
+      videoRounds: [],
+      exercises: [
+        { id: 'lunge', name: 'Выпады', kind: 'reps' as const, target: { min: 10, max: 10 }, sets: 1, sides: ['левая', 'правая'] as [string, string], note: 'Держи спину прямой' },
+        { id: 'plank', name: 'Планка', kind: 'time' as const, pose: 'plank' as const, target: { min: 0, max: 0 }, sets: 1 },
+      ],
+    },
+    { id: 'wrist', mode: 'note' as const, title: 'Про запястье', text: 'Если запястье болит, сделай следующий круг без отжиманий.' },
+    {
+      id: 'circuit',
+      mode: 'circuit' as const,
+      title: 'Круг',
+      rounds: 2,
+      restSec: 5,
+      restAfter: 'round' as const,
+      videoRounds: [],
+      exercises: [
+        { id: 'pushup', name: 'Отжимания', kind: 'reps' as const, target: { min: 10, max: 10 } },
+        { id: 'crunch', name: 'Скручивания', kind: 'reps' as const, target: { min: 15, max: 15 } },
+      ],
+    },
+  ],
+};
+
+/** Формат v2: стороны и заметка упражнения, время на максимум, шаг-заметка с ответом, отдых после круга; заметка в подходы не входит */
+export const WorkoutV2: Story = {
+  name: 'Формат v2: стороны, заметки, отдых после круга',
+  tags: hidden,
+  args: { workout: V2_WORKOUT },
+  play: async () => {
+    await click('Начать тренировку');
+    // стороны и заметка упражнения
+    await expect(await body().findByText('Выпады · 10 повт на сторону')).toBeVisible();
+    await expect(body().getByText('Держи спину прямой')).toBeVisible();
+    await doneAndSkipRest();
+
+    // время на максимум: секундомер и окно результата
+    await expect(await body().findByText('Планка · макс.')).toBeVisible();
+    await click('Старт');
+    await body().findByRole('button', { name: /Пауза, 00:0\d\s*прошло/ });
+    await click('Стоп');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько продержались?' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // шаг-заметка: свой экран, ответ необязателен
+    await expect(await body().findByRole('heading', { name: 'Про запястье' })).toBeVisible();
+    await userEvent.type(body().getByRole('textbox', { name: /Ответ/ }), 'Запястье в порядке');
+    await click('Готово');
+
+    // круг с отдыхом после круга: между упражнениями отдыха нет
+    await expect(await body().findByText('Отжимания · 10 повт')).toBeVisible();
+    await done();
+    await expect(body().queryByRole('timer', { name: /отдых/i })).toBeNull();
+    await expect(await body().findByText('Скручивания · 15 повт')).toBeVisible();
+    await doneAndSkipRest();
+    await done();
+    await done();
+
+    // Финиш: заметка не подход, считаются 6 из 6
+    await expect(await body().findByText('Тренировка пройдена')).toBeVisible();
+    await expect(body().getByText('6 из 6')).toBeVisible();
+    await click('Дальше');
+    await click('Хорошо');
+    await click('Отправить тренеру');
+    await expect(onFinish).toHaveBeenCalledWith(
+      { setsDone: 6, setsTotal: 6, videos: 0 },
+      expect.any(Array),
+      { feeling: 4, answers: [{ blockIndex: 1, title: 'Про запястье', text: 'Запястье в порядке' }] },
+    );
+    const steps = onFinish.mock.calls[0]![1] as Array<{ exerciseName: string }>;
+    await expect(steps).toHaveLength(6);
+  },
+};

@@ -74,7 +74,8 @@ const exerciseCount = (w: TodayWorkoutInfo) => w.blocks.filter((b) => b.kind ===
 
 export function modeLabel(structure: Block[] | null): string {
   if (!structure) return '';
-  const modes = new Set(structure.map((b) => b.mode));
+  // Блок-заметка не режим тренировки: подпись по остальным блокам
+  const modes = new Set(structure.filter((b) => b.mode !== 'note').map((b) => b.mode));
   const sets = modes.has('sets');
   const circuit = modes.has('circuit');
   if (sets && circuit) return 'Подходами + круг';

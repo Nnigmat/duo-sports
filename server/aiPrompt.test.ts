@@ -36,6 +36,12 @@ describe('buildPrompt', () => {
     expect(p.system[4]!.text).toContain('Жим лёжа');
   });
 
+  it('labels exercise and routine ids', () => {
+    const p = build();
+    expect(p.system[3]!.text.startsWith('Разминки и заминки — id наборов (JSON)')).toBe(true);
+    expect(p.system[4]!.text.startsWith('Библиотека упражнений — id упражнений (JSON)')).toBe(true);
+  });
+
   it('puts cache breakpoints after rules and library only', () => {
     const p = build();
     expect(p.system.map((b) => b.cache_control ?? null)).toEqual([null, null, { type: 'ephemeral' }, null, { type: 'ephemeral' }]);

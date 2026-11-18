@@ -58,7 +58,7 @@ export function RoutineListView({ routines, error, onRetry, kind, onKindChange, 
       ) : ofKind.length === 0 ? (
         <EmptyState
           title={kind === 'warmup' ? 'Разминок пока нет' : 'Заминок пока нет'}
-          description={onCreate ? 'Соберите первую из упражнений на время.' : 'Их добавят тренер или администратор.'}
+          description={onCreate ? 'Соберите первую из упражнений библиотеки.' : 'Их добавят тренер или администратор.'}
           action={onCreate && <Button onClick={onCreate}>{label.newLabel}</Button>}
         />
       ) : shown.length === 0 ? (

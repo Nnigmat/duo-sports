@@ -18,6 +18,8 @@ type Props = {
   plan: SetPlan;
   /** Уже введённый факт этого подхода (после «Назад»): шторка открывается с ним */
   actual?: SetActual | null;
+  /** Время из секундомера: подставляется в «Время» вместо плана и прошлого факта, правится как обычно */
+  initialSec?: number;
   /** «Записать»: шторка закрывается сама */
   onSave: (actual: SetActual) => void;
 };
@@ -35,7 +37,7 @@ const MAX_WEIGHT_KG = 500;
 const LABEL_STATE = { 'Меньше плана': 'below', 'В плане': 'within', 'Больше плана': 'above' } as const;
 
 /** Шторка после «Готово»: сколько спортсмен реально сделал. План подхода она не меняет. */
-export function ResultSheet({ open, onOpenChange, eyebrow, kind, plan, actual, onSave }: Props) {
+export function ResultSheet({ open, onOpenChange, eyebrow, kind, plan, actual, initialSec, onSave }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange} eyebrow={eyebrow} title={TITLES[kind]}>
       {/* Форма монтируется заново при каждом открытии: черновик начинается с факта или плана */}
@@ -43,6 +45,7 @@ export function ResultSheet({ open, onOpenChange, eyebrow, kind, plan, actual, o
         kind={kind}
         plan={plan}
         actual={actual}
+        initialSec={initialSec}
         onSave={(next) => {
           onSave(next);
           onOpenChange(false);
@@ -52,8 +55,11 @@ export function ResultSheet({ open, onOpenChange, eyebrow, kind, plan, actual, o
   );
 }
 
-function ResultForm({ kind, plan, actual, onSave }: Pick<Props, 'kind' | 'plan' | 'actual' | 'onSave'>) {
-  const [draft, setDraft] = useState<FactDraft>(() => factDraft(kind, plan, actual));
+function ResultForm({ kind, plan, actual, initialSec, onSave }: Pick<Props, 'kind' | 'plan' | 'actual' | 'initialSec' | 'onSave'>) {
+  const [draft, setDraft] = useState<FactDraft>(() => {
+    const base = factDraft(kind, plan, actual);
+    return kind === 'time' && initialSec !== undefined ? { ...base, value: initialSec } : base;
+  });
   const hintId = useId();
   const label = factLabel(plan, draft.value);
   const planHint = `План: ${formatTarget(kind, plan.target)}`;

@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { ARTIFACT } from '../../../ui/storyKit';
 import { StartScreen } from './StartScreen';
 import { CIRCUIT, COOLDOWN, STRENGTH, WARMUP } from './storyData';
+import { exercisesOf } from '../../../../../shared/blocks';
 
 const onBack = fn();
 const onStart = fn();
@@ -66,7 +67,7 @@ export const SetsBlock: Story = {
 
 /** Список «Инвентарь»: инвентарь упражнений с весом там, где он нужен */
 export const WithGear: Story = {
-  args: { title: 'Силовая', blocks: [STRENGTH], equipment: { [STRENGTH.exercises[0]!.id]: ['2 гантели', 'Скамья'] } },
+  args: { title: 'Силовая', blocks: [STRENGTH], equipment: { [exercisesOf(STRENGTH)[0]!.id]: ['2 гантели', 'Скамья'] } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('list', { name: 'Инвентарь' })).toBeVisible();
@@ -79,5 +80,30 @@ export const WarmupOnly: Story = {
   args: { title: 'Разминка', blocks: [WARMUP] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByText('6 упражнений')).toBeVisible();
+  },
+};
+
+/** Заметка тренера к тренировке стоит над составом */
+export const StartWithNotes: Story = {
+  args: { notes: 'Сегодня без отжиманий: болит запястье. Выпады делай на 14 повторов, не больше.' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const note = c.getByText(/Сегодня без отжиманий/);
+    await expect(note).toBeVisible();
+    const blocks = c.getByText('По кругу с отдыхом');
+    await expect(note.compareDocumentPosition(blocks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  },
+};
+
+/** Блок-заметка в составе: показан заголовком, без пустого списка «Подходами» */
+export const WithNoteBlock: Story = {
+  args: { title: 'Силовая', blocks: [{ id: 'note', mode: 'note', title: 'Про запястье', text: 'Если болит, пропусти отжимания.' }, STRENGTH] },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Про запястье')).toBeVisible();
+    await expect(c.getByText('Заметка')).toBeVisible();
+    // «Подходами» одна: у заметки своей секции со списком нет
+    await expect(c.getAllByText('Подходами')).toHaveLength(1);
+    await expect(c.getAllByRole('list')).toHaveLength(1);
   },
 };

@@ -5,6 +5,7 @@ import { DEFAULT_EXERCISES } from './defaultExercises';
 import { openDb, type Db } from './db';
 import { createExercise } from './exercises';
 import { createRoutine } from './routines';
+import { workoutOf } from './workouts';
 import { applyImport, checkStructure, ensureLibrary, ImportForbiddenError, ImportInvalidError, libraryOf, planTitles, redoImport, undoImport, validateCommit } from './imports';
 
 let db: Db;
@@ -256,14 +257,55 @@ describe('checkStructure: стороны', () => {
     expect(checkStructure(timed(['а', 'б', 'в']))).toBe(false);
     expect(checkStructure(timed('вправо'))).toBe(false);
   });
-  it('отклоняет sides вне таймерного блока', () => {
+  it('accepts sides in sets block', () => {
     const sets = [
       {
         id: 'b0', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [],
         exercises: [{ id: 'b0-e0', name: 'Приседания', kind: 'reps', target: { min: 10, max: 10 }, sets: 3, sides: ['вправо', 'влево'] }],
       },
     ];
+    expect(checkStructure(sets)).toBe(true);
+    sets[0]!.exercises[0]!.sides = ['вправо'];
     expect(checkStructure(sets)).toBe(false);
+  });
+});
+
+describe('checkStructure: формат v2', () => {
+  const ex = (extra: Record<string, unknown> = {}) => ({ id: 'e0', name: 'Приседания', kind: 'reps', target: { min: 10, max: 10 }, sets: 3, ...extra });
+  const sets = (extra: Record<string, unknown> = {}) => [{ id: 'b0', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [], exercises: [ex(extra)] }];
+  const circuit = (extra: Record<string, unknown> = {}) => [{ id: 'b0', mode: 'circuit', title: 'Круг', rounds: 3, restSec: 60, videoRounds: [], exercises: [ex()], ...extra }];
+
+  it('accepts exercise note', () => {
+    expect(checkStructure(sets({ note: 'Спина прямая' }))).toBe(true);
+    expect(checkStructure(sets({ note: 'я'.repeat(1001) }))).toBe(false);
+    expect(checkStructure(sets({ note: 5 }))).toBe(false);
+  });
+  it('accepts exercise restSec 0..3600', () => {
+    expect(checkStructure(sets({ restSec: 0 }))).toBe(true);
+    expect(checkStructure(sets({ restSec: 3600 }))).toBe(true);
+  });
+  it('rejects exercise restSec 3601', () => {
+    expect(checkStructure(sets({ restSec: 3601 }))).toBe(false);
+    expect(checkStructure(sets({ restSec: -1 }))).toBe(false);
+    expect(checkStructure(sets({ restSec: 1.5 }))).toBe(false);
+  });
+  it('accepts circuit restAfter round', () => {
+    expect(checkStructure(circuit({ restAfter: 'round' }))).toBe(true);
+  });
+  it('rejects restAfter other', () => {
+    expect(checkStructure(circuit({ restAfter: 'set' }))).toBe(false);
+  });
+  const note = (extra: Record<string, unknown> = {}) => ({ id: 'n0', mode: 'note', title: 'Важно', text: 'Рабочих подходов сегодня нет', ...extra });
+  it('accepts note block without exercises next to a working block', () => {
+    expect(checkStructure([note(), ...sets()])).toBe(true);
+  });
+  it('rejects structure with only note blocks', () => {
+    expect(checkStructure([note()])).toBe(false);
+    expect(checkStructure([note(), note({ id: 'n1' })])).toBe(false);
+  });
+  it('rejects note block with text over 1000', () => {
+    expect(checkStructure([note({ text: 'я'.repeat(1001) }), ...sets()])).toBe(false);
+    expect(checkStructure([{ id: 'n0', mode: 'note', title: 'Важно' }, ...sets()])).toBe(false);
   });
 });
 
@@ -373,5 +415,14 @@ describe('разминки и заминки в импорте', () => {
     expect(links()[0]!.w).toBe(routineRow('legs-light')!.id);
     undoImport(db, me, rec.id, clock);
     expect(links()).toEqual([{ slug: 'w01-tue', w: old, c: null }]);
+  });
+});
+
+describe('заметка тренировки', () => {
+  it('applyImport stores workout notes', () => {
+    const structure = [{ id: 'b0', mode: 'timed', title: 'Планка', exercises: [{ id: 'e0', name: 'Планка', kind: 'time', target: { min: 30, max: 30 } }] }];
+    applyImport(db, me, commit({ workouts: [{ id: 'n', title: 'С заметкой', blocks: blocks('Планка'), structure: structure as never, notes: 'Рабочих подходов отжиманий сегодня нет' }], entries: [], exercises: [] }), clock);
+    const wid = (db.prepare('SELECT id FROM workouts WHERE slug = ?').get('n') as { id: number }).id;
+    expect(workoutOf(db, me, wid)!.notes).toBe('Рабочих подходов отжиманий сегодня нет');
   });
 });

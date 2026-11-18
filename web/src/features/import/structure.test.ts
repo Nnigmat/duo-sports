@@ -115,6 +115,10 @@ describe('разминка и заминка со списком упражне�
       { id: 'b0-e1', name: 'Планка', kind: 'time', pose: 'stand', target: r(45) },
     ]);
   });
+  it('упражнение на повторы в разминке идёт шагом на время', () => {
+    const b = buildBlock({ type: 'warmup', exercises: [{ name: 'Подтягивания', load: { time: r(30) } }] }, 'b0') as TimedBlock;
+    expect(b.exercises).toEqual([{ id: 'b0-e0', name: 'Подтягивания', kind: 'time', pose: 'stand', target: r(30) }]);
+  });
   it('cooldown: поза stretch', () => {
     const b = buildBlock(raw('cooldown'), 'b2') as TimedBlock;
     expect(b.title).toBe('Заминка');

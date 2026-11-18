@@ -1,4 +1,5 @@
 import type { AthleteSessionsResponse, Block, TrainerHistoryItem, TrainerPlanItem } from '../../../../shared/types';
+import { exercisesOf } from '../../../../shared/blocks';
 import { parseIso } from '../plan/plan';
 import { formatPlan } from '../workout/flow/format';
 import { MONTHS, plural } from '../workout/flow/ru';
@@ -127,9 +128,9 @@ export function buildCommentRequest(a: { text: string; sessionId: number; slug: 
 export type PlanStep = { key: string; name: string; sets: string[] };
 
 function blockSteps(b: Block): PlanStep[] {
-  return b.exercises.map((e) => {
-    const count = b.mode === 'sets' ? (e as { sets: number }).sets : b.mode === 'circuit' ? b.rounds : 1;
-    return { key: e.id, name: e.name, sets: Array.from({ length: count }, () => formatPlan(e.kind, { target: e.target, weight: e.weight })) };
+  return exercisesOf(b).map((e) => {
+    const count = b.mode === 'sets' ? (e as unknown as { sets: number }).sets : b.mode === 'circuit' ? b.rounds : 1;
+    return { key: e.id, name: e.name, sets: Array.from({ length: count }, () => formatPlan(e.kind, { target: e.target, weight: e.weight }, b.mode === 'timed' ? undefined : e.sides)) };
   });
 }
 

@@ -3,6 +3,7 @@ import type { ImportCommit } from '../../../../shared/types';
 import { ctx } from './testkit';
 import { draftToCommit } from './toCommit';
 import type { BuilderDraft, NewExerciseDraft } from './types';
+import { exercisesOf } from '../../../../shared/blocks';
 
 const clap: NewExerciseDraft = { name: 'Отжимания с хлопком', slug: 'clap-pushup', muscles: ['грудь'], kind: 'reps', equipment: ['Коврик'], notes: 'Корпус прямой', aliases: ['хлопки'] };
 const bend: NewExerciseDraft = { name: 'Наклон к ногам', slug: 'bend', muscles: ['спина'], kind: 'time', equipment: [], notes: '', aliases: [] };
@@ -17,6 +18,8 @@ const base = (over: Partial<BuilderDraft> = {}): BuilderDraft => ({
   warmup: { kind: 'library', slug: 'neck-shoulders' },
   cooldown: { kind: 'none' },
   advice: [],
+  marks: {},
+  unparsed: [],
   ...over,
 });
 
@@ -31,6 +34,12 @@ const problemsOf = (d: BuilderDraft): string[] => {
 };
 
 describe('draftToCommit', () => {
+  it('workout notes go to the commit, blank ones do not', () => {
+    expect(commitOf(base({ notes: '  Замер в конце ' })).workouts[0]!.notes).toBe('Замер в конце');
+    expect(commitOf(base({ notes: '  ' })).workouts[0]).not.toHaveProperty('notes');
+    expect(commitOf(base()).workouts[0]).not.toHaveProperty('notes');
+  });
+
   it('builds one workout on the date', () => {
     const c = commitOf(base());
     expect(c.workouts).toHaveLength(1);
@@ -54,10 +63,10 @@ describe('draftToCommit', () => {
 
   it('new exercise renamed to library name is not created', () => {
     const renamed = { ...clap, name: 'брусья' };
-    const blocks = base().blocks.map((b) => ({ ...b, exercises: b.exercises.map((e) => (e.name === clap.name ? { ...e, name: 'брусья' } : e)) })) as BuilderDraft['blocks'];
+    const blocks = base().blocks.map((b) => ({ ...b, exercises: exercisesOf(b).map((e) => (e.name === clap.name ? { ...e, name: 'брусья' } : e)) })) as BuilderDraft['blocks'];
     const c = commitOf(base({ newExercises: [renamed], blocks }));
     expect(c.exercises).toEqual([]);
-    expect(c.workouts[0]!.structure![0]!.exercises.map((e) => e.name)).toEqual(['Отжимания на брусьях', 'Жим лёжа']);
+    expect(exercisesOf(c.workouts[0]!.structure![0]!).map((e) => e.name)).toEqual(['Отжимания на брусьях', 'Жим лёжа']);
     expect(c.workouts[0]!.blocks[0]!.items[0]!.name).toBe('Отжимания на брусьях');
   });
 
@@ -88,10 +97,8 @@ describe('draftToCommit', () => {
     expect(problemsOf(base({ newExercises: [clap, bend], cooldown: { kind: 'new', title: 'Шея и плечи', items: [{ name: 'Наклон к ногам', sec: 45 }] } }))).toEqual([]);
   });
 
-  it('reports non-time exercise in routine', () => {
-    expect(problemsOf(base({ warmup: { kind: 'new', title: 'Своя', items: [{ name: 'Жим лёжа', sec: 30 }, { name: 'Отжимания с хлопком', sec: 30 }] } }))).toEqual([
-      'В разминке только упражнения на время: Жим лёжа, Отжимания с хлопком',
-    ]);
+  it('accepts any exercise in a new routine', () => {
+    expect(problemsOf(base({ warmup: { kind: 'new', title: 'Своя', items: [{ name: 'Жим лёжа', sec: 30 }, { name: 'Отжимания с хлопком', sec: 30 }] } }))).toEqual([]);
   });
 
   it('reports empty new routine', () => {

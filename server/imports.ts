@@ -89,7 +89,7 @@ function checkBlock(b: unknown): b is CommitBlock {
   return b.items.every((i) => isObj(i) && isStr(i.name, LIMITS.name) && isStr(i.value, LIMITS.text));
 }
 
-const MODES = ['timed', 'sets', 'circuit'];
+const MODES = ['timed', 'sets', 'circuit', 'note'];
 const EX_KINDS = ['reps', 'weight', 'time'];
 
 function checkRange(r: unknown): boolean {
@@ -100,24 +100,29 @@ function checkSides(sides: unknown): boolean {
   return Array.isArray(sides) && sides.length === 2 && sides.every((s) => isStr(s, LIMITS.name));
 }
 
-/** `sides` бывает только у упражнений таймерного блока (разминка, заминка) */
-function checkExercise(e: unknown, withSets: boolean, timed: boolean): boolean {
+function checkExercise(e: unknown, withSets: boolean): boolean {
   if (!isObj(e) || !isStr(e.id, 100) || !isStr(e.name, LIMITS.name) || !EX_KINDS.includes(String(e.kind)) || !checkRange(e.target)) return false;
   if (e.weight !== undefined && !(typeof e.weight === 'number' && e.weight >= 0 && e.weight <= 1000)) return false;
-  if (e.sides !== undefined && !(timed && checkSides(e.sides))) return false;
+  if (e.sides !== undefined && !checkSides(e.sides)) return false;
+  if (!optStr(e.note, LIMITS.text)) return false;
+  if (e.restSec !== undefined && !(Number.isInteger(e.restSec) && (e.restSec as number) >= 0 && (e.restSec as number) <= 3600)) return false;
   return !withSets || (Number.isInteger(e.sets) && (e.sets as number) >= 1 && (e.sets as number) <= 100);
 }
 
 /** Блоки экрана тренировки: форма и пределы, чтобы в базу не попало то, на чём экран упадёт */
 export function checkStructure(blocks: unknown): boolean {
   if (!Array.isArray(blocks) || blocks.length === 0 || blocks.length > LIMITS.blocks) return false;
+  // Одни заметки без шагов: спортсмену нечего выполнять и нечем завершить тренировку
+  if (!blocks.some((b) => isObj(b) && b.mode !== 'note')) return false;
   return blocks.every((b) => {
     if (!isObj(b) || !MODES.includes(String(b.mode)) || !isStr(b.id, 100) || !isStr(b.title, LIMITS.name)) return false;
+    if (b.mode === 'note') return isStr(b.text, LIMITS.text);
     if (!Array.isArray(b.exercises) || b.exercises.length === 0 || b.exercises.length > LIMITS.items) return false;
-    if (!b.exercises.every((e) => checkExercise(e, b.mode === 'sets', b.mode === 'timed'))) return false;
+    if (!b.exercises.every((e) => checkExercise(e, b.mode === 'sets'))) return false;
     if (b.mode === 'timed') return b.kind === undefined || b.kind === 'warmup' || b.kind === 'cooldown';
     const rest = Number.isInteger(b.restSec) && (b.restSec as number) >= 0 && (b.restSec as number) <= 3600;
     const video = Array.isArray(b.videoRounds) && b.videoRounds.every((n) => Number.isInteger(n));
+    if (b.restAfter !== undefined && !(b.mode === 'circuit' && b.restAfter === 'round')) return false;
     return rest && video && (b.mode === 'sets' || (Number.isInteger(b.rounds) && (b.rounds as number) >= 1 && (b.rounds as number) <= 100));
   });
 }
@@ -154,7 +159,7 @@ export function validateCommit(body: unknown, db?: Db): Validated {
     const ok =
       isObj(w) && isStr(w.title, LIMITS.name) && (w.id === undefined || (typeof w.id === 'string' && SLUG.test(w.id))) &&
       Array.isArray(w.blocks) && w.blocks.length > 0 && w.blocks.length <= LIMITS.blocks && w.blocks.every(checkBlock) &&
-      (w.structure === undefined || checkStructure(w.structure)) &&
+      (w.structure === undefined || checkStructure(w.structure)) && optStr(w.notes, LIMITS.text) &&
       (w.warmupRoutine === undefined || (typeof w.warmupRoutine === 'string' && SLUG.test(w.warmupRoutine))) &&
       (w.cooldownRoutine === undefined || (typeof w.cooldownRoutine === 'string' && SLUG.test(w.cooldownRoutine)));
     if (!ok) return { ok: false, error: `workouts[${i}]: неверные поля` };
@@ -181,7 +186,7 @@ interface Snapshot {
   /** Свои записи плана, которые заменил импорт */
   removed: Array<{ date: string; workoutId: number; importId: number | null }>;
   /** Тренировки, которые импорт обновил по id: как они выглядели до того */
-  updated: Array<{ id: number; title: string; blocks: string; structure: string | null; warmup_routine_id?: number | null; cooldown_routine_id?: number | null }>;
+  updated: Array<{ id: number; title: string; blocks: string; structure: string | null; notes?: string | null; warmup_routine_id?: number | null; cooldown_routine_id?: number | null }>;
 }
 
 type ImportRow = { id: number; user_id: number; created_at: string; undone_at: string | null; summary: string; payload: string; snapshot: string };
@@ -225,23 +230,24 @@ function apply(db: Db, userId: number, importId: number, commit: ImportCommit, c
     return row.id;
   };
 
-  const findWorkout = db.prepare('SELECT id, title, blocks, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ? AND slug = ?');
-  const insertWorkout = db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, warmup_routine_id, cooldown_routine_id, import_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  const updateWorkout = db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ?, warmup_routine_id = ?, cooldown_routine_id = ? WHERE id = ?');
+  const findWorkout = db.prepare('SELECT id, title, blocks, structure, notes, warmup_routine_id, cooldown_routine_id FROM workouts WHERE user_id = ? AND slug = ?');
+  const insertWorkout = db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, notes, warmup_routine_id, cooldown_routine_id, import_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  const updateWorkout = db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ?, notes = ?, warmup_routine_id = ?, cooldown_routine_id = ? WHERE id = ?');
   const ids: number[] = [];
   for (const w of commit.workouts as CommitWorkout[]) {
     const blocks = JSON.stringify(w.blocks);
     const structure = w.structure ? JSON.stringify(w.structure) : null;
-    const old = w.id ? (findWorkout.get(userId, w.id) as { id: number; title: string; blocks: string; structure: string | null; warmup_routine_id: number | null; cooldown_routine_id: number | null } | undefined) : undefined;
+    const old = w.id ? (findWorkout.get(userId, w.id) as { id: number; title: string; blocks: string; structure: string | null; notes: string | null; warmup_routine_id: number | null; cooldown_routine_id: number | null } | undefined) : undefined;
+    const notes = w.notes || null;
     const warmup = linkOf(w.warmupRoutine);
     const cooldown = linkOf(w.cooldownRoutine);
     if (old) {
       snapshot.updated.push(old);
-      updateWorkout.run(w.title, blocks, structure, warmup, cooldown, old.id);
+      updateWorkout.run(w.title, blocks, structure, notes, warmup, cooldown, old.id);
       ids.push(old.id);
       summary.updated++;
     } else {
-      ids.push(Number(insertWorkout.run(userId, w.id ?? null, w.title, blocks, structure, warmup, cooldown, importId, at).lastInsertRowid));
+      ids.push(Number(insertWorkout.run(userId, w.id ?? null, w.title, blocks, structure, notes, warmup, cooldown, importId, at).lastInsertRowid));
     }
   }
 
@@ -310,7 +316,7 @@ export function undoImport(db: Db, userId: number, id: number, clock: Clock = no
     db.prepare('DELETE FROM plan_entries WHERE import_id = ? AND user_id = ?').run(id, userId);
     db.prepare('DELETE FROM workouts WHERE import_id = ? AND user_id = ?').run(id, userId);
     // Прежние ссылки возвращаем до удаления разминок: иначе RESTRICT не даст убрать то, на что ещё ссылаются
-    for (const u of snap.updated) db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ?, warmup_routine_id = ?, cooldown_routine_id = ? WHERE id = ? AND user_id = ?').run(u.title, u.blocks, u.structure ?? null, u.warmup_routine_id ?? null, u.cooldown_routine_id ?? null, u.id, userId);
+    for (const u of snap.updated) db.prepare('UPDATE workouts SET title = ?, blocks = ?, structure = ?, notes = ?, warmup_routine_id = ?, cooldown_routine_id = ? WHERE id = ? AND user_id = ?').run(u.title, u.blocks, u.structure ?? null, u.notes ?? null, u.warmup_routine_id ?? null, u.cooldown_routine_id ?? null, u.id, userId);
     // Разминки и упражнения, созданные импортом, уходят, только если на них больше никто не ссылается
     db.prepare('DELETE FROM routines WHERE import_id = ? AND id NOT IN (SELECT warmup_routine_id FROM workouts WHERE warmup_routine_id IS NOT NULL UNION SELECT cooldown_routine_id FROM workouts WHERE cooldown_routine_id IS NOT NULL)').run(id);
     db.prepare('DELETE FROM exercises WHERE import_id = ? AND id NOT IN (SELECT exercise_id FROM routine_items)').run(id);

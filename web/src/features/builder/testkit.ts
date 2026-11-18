@@ -23,7 +23,7 @@ export const agent = (over: Partial<AgentWorkout> = {}): AgentWorkout => ({
   title: 'Верх тела',
   warmup: { routine: 'neck-shoulders' },
   cooldown: null,
-  blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', do: '4x8 @ 60' }] }],
+  blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', sets: 4, reps: '8', weight_kg: 60 }] }],
   new_exercises: [],
   advice: [],
   ...over,

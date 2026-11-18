@@ -15,7 +15,7 @@ const workout: AgentWorkout = {
   title: 'Верх тела',
   warmup: null,
   cooldown: null,
-  blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', do: '4x8 @ 60' }] }],
+  blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', sets: 4, reps: '8', weight_kg: 60 }] }],
   new_exercises: [],
   advice: [],
 };
@@ -176,7 +176,7 @@ describe('POST /api/ai/workout-draft', () => {
   });
 
   it('drops empty exercise fields of strict schema before check', async () => {
-    const full = { exercise_id: 'bench-press', name: '', do: '4x8 @ 60', sets: 0, reps: '', weight: '', time: '', rest: '', per_side: false, notes: '' };
+    const full = { exercise_id: 'bench-press', sets: 4, reps: '8', time_sec: 0, weight_kg: 60, rest_sec: 0, sides: [], notes: '' };
     fake.answer = () => ({ ...workout, blocks: [{ type: 'sets', exercises: [full] }] });
     await start(fake);
     const r = await call('trainer', body());

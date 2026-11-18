@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import sample from '../../../ui/VideoPlayer/sample.webm';
-import { reviewFixture, reviewFoldedFixture, reviewPendingFixture } from '../../review/fixtures';
+import { reviewAnswersFixture, reviewFixture, reviewFoldedFixture, reviewPendingFixture } from '../../review/fixtures';
 import { pastCommentsFixture, TODAY } from '../fixtures';
 import { ReviewDetail } from './ReviewDetail';
 
@@ -45,6 +45,25 @@ export const Reviewed: Story = {
     await expect(c.getByText('Понял, попробую с паузой внизу на разминочных.')).toBeVisible();
     await expect(c.getByText('Прошлые комментарии')).toBeVisible();
     await expect(c.getByText('Тренировка разобрана')).toBeVisible();
+  },
+};
+
+export const Answers: Story = {
+  args: { review: reviewAnswersFixture },
+  globals: { viewport: { value: 'a15', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('heading', { level: 3, name: 'Ответы' })).toBeVisible();
+    await expect(c.getByText('Тест большого пальца')).toBeVisible();
+    await expect(c.getByText('Боли нет, сгибается до конца.')).toBeVisible();
+    await expect(c.getByText('Как колено после приседаний')).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
+  },
+};
+
+export const NoAnswers: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByRole('heading', { name: 'Ответы' })).toBeNull();
   },
 };
 

@@ -24,11 +24,11 @@ export const deleteDay = (date: string) => request(`/api/plan/entries/${date}`, 
 /** Состав своей тренировки для редактора; комментарии не помечаются прочитанными */
 export const fetchOwnWorkout = async (workoutId: number): Promise<Workout> => (await request(`/api/workouts/${workoutId}/plan`)).json();
 
-export const putOwnWorkout = async (workoutId: number, title: string, blocks: Block[], links: RoutineSlugs): Promise<Workout> =>
+export const putOwnWorkout = async (workoutId: number, title: string, blocks: Block[], links: RoutineSlugs, notes?: string): Promise<Workout> =>
   (
     await request(`/api/workouts/${workoutId}`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ title, blocks, warmupRoutine: links.warmup ?? null, cooldownRoutine: links.cooldown ?? null }),
+      body: JSON.stringify({ title, blocks, warmupRoutine: links.warmup ?? null, cooldownRoutine: links.cooldown ?? null, ...(notes === undefined ? {} : { notes }) }),
     })
   ).json();

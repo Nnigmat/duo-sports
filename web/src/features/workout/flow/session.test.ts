@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { NoteBlock } from '../../../../../shared/types';
 import { buildSteps } from './buildSteps';
 import { circuit, setsBlock, warmup } from './fixtures';
 import { afterReload, canGoBack, canSwap, initSession, reduce, type Session } from './session';
@@ -335,6 +336,12 @@ describe('afterReload', () => {
     expect(afterReload(running(3)).timerStarted).toBe(false);
   });
 
+  it('время на максимум после перезагрузки снова ждёт «Старт»: секундомер не продолжается', () => {
+    const maxSteps = buildSteps([{ id: 'max', mode: 'sets', title: 'Планка', restSec: 30, videoRounds: [], exercises: [{ id: 'plank', name: 'Планка', kind: 'time', target: { min: 0, max: 0 }, sets: 1 }] }]);
+    const s: Session = { ...at(initSession(maxSteps), 0), timerStarted: true };
+    expect(afterReload(s).timerStarted).toBe(false);
+  });
+
   it('разминка и заминка продолжают идти сами', () => {
     const s = { ...at(fresh(), 0), timerStarted: true };
     expect(afterReload(s)).toBe(s);
@@ -400,5 +407,49 @@ describe('canSwap', () => {
     expect(canSwap(w(2, 'rest'))).toBe(false);
     expect(canSwap(w(2, 'finish'))).toBe(false);
     expect(canSwap(fresh())).toBe(false);
+  });
+});
+
+describe('шаг-заметка', () => {
+  const note: NoteBlock = { id: 'n1', mode: 'note', title: 'Тест', text: 'Есть боль?' };
+  const noteSteps = buildSteps([note, setsBlock]);
+  const onNote = () => reduce(initSession(noteSteps), { type: 'begin' });
+
+  it('answer stored by step index', () => {
+    const s = reduce(onNote(), { type: 'answer', text: 'Боли нет' });
+    expect(s.answers).toEqual({ 0: 'Боли нет' });
+    expect(reduce(s, { type: 'answer', text: 'Чуть тянет' }).answers).toEqual({ 0: 'Чуть тянет' });
+  });
+
+  it('answer вне шага-заметки и вне работы игнорируется', () => {
+    const s = reduce(onNote(), { type: 'done' });
+    expect(reduce(s, { type: 'answer', text: 'x' })).toBe(s);
+    expect(reduce(initSession(noteSteps), { type: 'answer', text: 'x' }).answers).toEqual({});
+  });
+
+  it('«Готово» идёт дальше без отдыха и без факта', () => {
+    const s = reduce(reduce(onNote(), { type: 'answer', text: 'ok' }), { type: 'done' });
+    expect(s).toMatchObject({ phase: 'work', index: 1, answers: { 0: 'ok' } });
+    expect(s.completed[0]).toBe(true);
+    expect(s.actuals[0]).toBeNull();
+  });
+
+  it('«Пропустить» не засчитывает шаг и стирает ответ', () => {
+    const s = reduce(reduce(onNote(), { type: 'answer', text: 'ok' }), { type: 'skip' });
+    expect(s).toMatchObject({ index: 1, answers: {} });
+    expect(s.completed[0]).toBe(false);
+  });
+
+  it('«Назад» на заметку сохраняет ответ', () => {
+    const s = reduce(reduce(reduce(onNote(), { type: 'answer', text: 'ok' }), { type: 'done' }), { type: 'back' });
+    expect(s).toMatchObject({ index: 0, answers: { 0: 'ok' } });
+    expect(s.completed[0]).toBe(false);
+  });
+
+  it('заменить упражнение на заметке нельзя', () => {
+    expect(canSwap(onNote())).toBe(false);
+    const swapTo = { id: 'x', name: 'X', kind: 'reps' as const, group: 'legs' as const, muscles: [], defaults: { reps: 10, weight: 0, seconds: 30 } };
+    const s = onNote();
+    expect(reduce(s, { type: 'swap', to: swapTo })).toBe(s);
   });
 });

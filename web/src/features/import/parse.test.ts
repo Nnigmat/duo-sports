@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { libraryFixture } from './fixtures';
-import { EXAMPLE } from './format';
+import { libraryFixture, V1_EXAMPLE as EXAMPLE } from './fixtures';
 import { SAMPLE_YAML, newWorkoutYaml, sampleYaml } from './import';
 import { buildPlan, DEFAULT_OPTIONS } from './importPlan';
 import { importSlug } from '../../../../shared/importSlug';
 import { candidatesFor, parseImport, similarTo, type ParseContext, type ParseResult } from './parse';
+import { exercisesOf } from '../../../../shared/blocks';
 
 const ctx: ParseContext = { library: libraryFixture, routines: [], today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
 const ok = (r: ParseResult) => {
@@ -164,7 +164,7 @@ describe('ошибки со страницы «Формат»', () => {
     expect(fails(text)[0]).toMatchObject({ message: 'В schedule неизвестная тренировка: upper-c', hint: 'В плане можно ссылаться только на id из workouts.' });
   });
   it('нет version, workouts, title, blocks; неверная дата и тип блока', () => {
-    expect(fails('workouts: []\n').map((e) => e.message)).toEqual(['Нужно version: 1', 'Нужна хотя бы одна тренировка в workouts']);
+    expect(fails('workouts: []\n').map((e) => e.message)).toEqual(['Нужно version: 1 или 2', 'Нужна хотя бы одна тренировка в workouts']);
     expect(fails('version: 1\nworkouts:\n  - date: вчера\n    blocks: []\n').map((e) => e.message)).toEqual(['У тренировки нет title', 'Неверная дата: вчера', 'У тренировки нет blocks']);
     expect(fails(wrap('      - type: yoga\n'))[0]!.message).toBe('Неизвестный type: yoga');
   });
@@ -267,7 +267,7 @@ describe('базовый шаблон новой тренировки', () => {
     const s = r.preview.weeks[0]!.sessions[0]!;
     expect(s.date).toBe('Вт, 10 нояб');
     expect(s.title).toBe('Новая тренировка');
-    expect(s.blocks.map((b) => b.heading)).toEqual(['Разминка · 5 мин', 'Подходами', 'Заминка']);
+    expect(s.blocks.map((b) => b.heading)).toEqual(['Подходами']);
     expect(r.plan.workouts).toHaveLength(1);
   });
 });
@@ -368,16 +368,21 @@ describe('наборы разминки и заминки (routines)', () => {
   it('время 0 — ошибка, а не упражнение нулевой длины', () => {
     expect(fails(full('      - { name: Планка, time: 0 }\n'))[0]!.message).toContain('time');
   });
-  it('похожее для упражнения набора ищется только среди упражнений на время', () => {
+  it('похожее для упражнения набора ищется по всей библиотеке', () => {
     const e = parsed(full('      - { name: Подтягиваня, time: 30s }\n')).preview.newExercises[0]!;
-    expect(e.candidates).not.toContain('Подтягивания');
-    expect(e.similar).not.toBe('Подтягивания');
+    expect(e.candidates).toContain('Подтягивания');
+  });
+  it('похожее для упражнения набора: слова библиотечного названия входят в новое', () => {
+    const e = parsed(full('      - { name: Подтягивания с резинкой, time: 30s }\n')).preview.newExercises[0]!;
+    expect(e.similar).toBe('Подтягивания');
   });
   it('sides не из двух строк — ошибка', () => {
     expect(fails(full('      - { name: Планка, time: 30s, sides: [вправо] }\n'))[0]!.message).toContain('sides');
   });
-  it('упражнение библиотеки с другим kind — ошибка', () => {
-    expect(fails(full('      - { name: Подтягивания, time: 30s }\n'))[0]!.message).toContain('на время');
+  it('v1 routine accepts reps exercise', () => {
+    const r = parsed(full('      - { name: Подтягивания, time: 30s }\n'));
+    expect(r.routines[0]!.items[0]!.sec).toEqual({ min: 30, max: 30 });
+    expect(r.preview.newExercises).toEqual([]);
   });
   it('незнакомое упражнение набора попадает в newExercises с measure time', () => {
     const r = parsed(full('      - { name: Вращение тазом, time: 30s }\n'));
@@ -414,8 +419,8 @@ describe('упражнения прямо в блоке разминки и за
     const r = ok(parseImport(wrap(block()), ctx));
     const b = r.workouts[0]!.structure[0]!;
     expect(b).toMatchObject({ mode: 'timed', title: 'Разминка' });
-    expect(b.exercises.map((e) => e.name)).toEqual(['Вращение головой', 'Планка']);
-    expect(b.exercises[1]).toMatchObject({ sides: ['вправо', 'влево'] });
+    expect(exercisesOf(b).map((e) => e.name)).toEqual(['Вращение головой', 'Планка']);
+    expect(exercisesOf(b)[1]).toMatchObject({ sides: ['вправо', 'влево'] });
     expect(r.workouts[0]!.blocks[0]!.heading).toBe('Разминка · 2 мин');
   });
   it('type: timed — блок по таймеру без kind, в составе дня остаётся', () => {

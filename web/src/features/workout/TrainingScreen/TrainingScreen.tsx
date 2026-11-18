@@ -8,6 +8,7 @@ import { useMediaQuery } from '../../../shared';
 import { Chibi } from '../chibi/Chibi';
 import { ActionBar } from '../parts/ActionBar/ActionBar';
 import { DemoVideo } from '../parts/DemoVideo/DemoVideo';
+import { ExerciseNote } from '../parts/ExerciseNote/ExerciseNote';
 import { CoachNote } from '../parts/CoachNote/CoachNote';
 import { ElapsedSince } from '../parts/ElapsedTime/ElapsedTime';
 import { ThoughtBubble } from '../parts/ThoughtBubble/ThoughtBubble';
@@ -34,6 +35,8 @@ type Props = {
   thinkPose?: Pose;
   /** Ролик следующего упражнения для облачка-мысли */
   thinkDemoUrl?: string;
+  /** Заметка к упражнению: под названием в облачке */
+  exerciseNote?: string;
   /** Последний комментарий тренера; без него карточки нет */
   note?: string;
   /** Точка «есть новое» на кнопке «Техника» */
@@ -69,6 +72,7 @@ export function TrainingScreen({
   cameraUrl,
   thinkPose,
   thinkDemoUrl,
+  exerciseNote,
   note,
   techNew,
   recordable,
@@ -102,7 +106,9 @@ export function TrainingScreen({
       />
 
       <div className={styles.bubble}>
-        <SpeechBubble eyebrow={eyebrow} line={line} />
+        <SpeechBubble eyebrow={eyebrow} line={line}>
+          {exerciseNote && <ExerciseNote key={exerciseNote} text={exerciseNote} />}
+        </SpeechBubble>
       </div>
 
       <div className={styles.stage}>

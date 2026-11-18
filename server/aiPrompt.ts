@@ -77,8 +77,8 @@ export function buildPrompt(p: { rules: string; routines: PromptRoutine[]; libra
     { type: 'text', text: AGENT_INSTRUCTIONS },
     { type: 'text', text: AGENT_FORMAT },
     { type: 'text', text: `Правила админа:\n${p.rules.trim() || 'нет'}`, cache_control: cache },
-    { type: 'text', text: `Разминки и заминки библиотеки (JSON):\n${JSON.stringify(routines)}` },
-    { type: 'text', text: `Библиотека упражнений (JSON):\n${JSON.stringify(library)}`, cache_control: cache },
+    { type: 'text', text: `Разминки и заминки — id наборов (JSON):\n${JSON.stringify(routines)}` },
+    { type: 'text', text: `Библиотека упражнений — id упражнений (JSON):\n${JSON.stringify(library)}`, cache_control: cache },
   ];
   const r = p.request;
   const lines = [

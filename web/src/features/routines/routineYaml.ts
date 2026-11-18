@@ -57,7 +57,7 @@ export function draftFromYaml(text: string, library: KnownExercise[], current: P
       const slug = typeof raw.exercise === 'string' ? raw.exercise : '';
       const known = library.find((e) => e.id === slug);
       if (!slug) bad(`${n}нет поля exercise`);
-      else if (!known) bad(`${n}нет упражнения на время «${slug}»`);
+      else if (!known) bad(`${n}нет упражнения «${slug}» в библиотеке`);
       const sm = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(String(raw.sec ?? '').trim());
       let min = 0;
       let max = 0;

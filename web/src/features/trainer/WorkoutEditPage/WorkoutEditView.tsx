@@ -1,12 +1,13 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Block, Exercise, SetsExercise, Workout } from '../../../../../shared/types';
-import { Badge, Button, Card, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
+import { Badge, Button, Card, Checkbox, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
+import { cx } from '../../../ui/cx';
 import type { ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
 import {
-  MODE_LABELS, addBlock, addExercise, changeMode, moveBlock, moveExercise, patchExercise, removeBlock, removeExercise, renameBlock, roundsOf, setRest, setRounds, setTarget,
-  toggleVideoRound, type BlockMode,
+  MODE_LABELS, addBlock, addExercise, changeMode, clearSides, moveBlock, moveExercise, patchExercise, removeBlock, removeExercise, renameBlock, roundsOf, setExerciseNote, setExerciseRest, setNoteText,
+  setOpen, setRest, setRounds, setTarget, toggleVideoRound, type BlockMode, type ExerciseMode,
 } from './draft';
 import styles from './WorkoutEditView.module.css';
 
@@ -18,7 +19,10 @@ const VIEWS: Array<{ value: EditView; label: string }> = [
 ];
 
 /** Текст режима YAML и то, что в нём не разобралось */
-export type YamlState = { text: string; issues: ParseIssue[]; onText: (text: string) => void };
+export type YamlState = { text: string; issues: ParseIssue[]; /** Что изменится после сохранения; показывается над текстом */ warnings?: string[]; onText: (text: string) => void };
+
+/** Пометка упражнения: нагрузку поставила программа, тренер её проверяет */
+export type ExerciseMark = { wrote: string; message: string };
 
 type Props = {
   view?: EditView;
@@ -34,6 +38,9 @@ type Props = {
   issues: string[];
   failure: string | null;
   onTitle: (title: string) => void;
+  /** Заметка тренировки целиком; нет onNotes — поле не показывается */
+  notes?: string;
+  onNotes?: (notes: string) => void;
   onBlocks: (blocks: Block[]) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -49,17 +56,23 @@ type Props = {
   cooldownSlot?: ReactNode;
   /** Над формой: заметки агента */
   topSlot?: ReactNode;
+  /** Пометки по id упражнения: текст «Проверьте нагрузку» и что написал агент */
+  marks?: Record<string, ExerciseMark>;
+  /** «Сохранить» недоступна, рядом объяснение (например, «Осталось проверить: 2») */
+  saveBlocked?: string;
   /** По умолчанию «Сохранить» и «Отмена» */
   saveLabel?: string;
   cancelLabel?: string;
 };
 
 const MODES = (Object.keys(MODE_LABELS) as BlockMode[]).map((value) => ({ value, label: MODE_LABELS[value] }));
+/** Режимы блока с упражнениями: в заметку блок не переключить */
+const EXERCISE_MODES = MODES.filter((m): m is { value: ExerciseMode; label: string } => m.value !== 'note');
 
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
 export function WorkoutEditView({
-  view = 'form', yaml, onView, title, blocks, routines, library, saving, issues, failure, onTitle, onBlocks, onSave, onCancel,
-  mode = 'edit', newNames, onOpenNew, onCreateExercise, warmupSlot, cooldownSlot, topSlot, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
+  view = 'form', yaml, onView, title, blocks, routines, library, saving, issues, failure, notes, onNotes, onTitle, onBlocks, onSave, onCancel,
+  mode = 'edit', newNames, onOpenNew, onCreateExercise, warmupSlot, cooldownSlot, topSlot, marks, saveBlocked, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
 }: Props) {
   const create = mode === 'create';
   const [pickFor, setPickFor] = useState<string | null>(null);
@@ -71,9 +84,16 @@ export function WorkoutEditView({
         <Button variant="ghost" compact icon="back" onClick={onCancel}>
           {cancelLabel}
         </Button>
-        <Button compact loading={saving} onClick={onSave}>
-          {saveLabel}
-        </Button>
+        <div className={styles.saveGroup}>
+          {saveBlocked && (
+            <Text variant="caption" className={styles.blocked} id="save-blocked">
+              {saveBlocked}
+            </Text>
+          )}
+          <Button compact loading={saving} disabled={Boolean(saveBlocked)} aria-describedby={saveBlocked ? 'save-blocked' : undefined} onClick={onSave}>
+            {saveLabel}
+          </Button>
+        </div>
       </div>
       <Text variant="h2" tag="h1">
         Состав тренировки
@@ -94,6 +114,15 @@ export function WorkoutEditView({
 
       {view === 'yaml' && yaml ? (
         <>
+          {yaml.warnings && yaml.warnings.length > 0 && (
+            <Notice tone="warn">
+              <ul className={styles.issues}>
+                {yaml.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </Notice>
+          )}
           {yaml.issues.length > 0 && (
             <Notice tone="error">
               <ul className={styles.issues}>
@@ -122,11 +151,12 @@ export function WorkoutEditView({
       ) : (
         <>
       <TextInput label="Название тренировки" value={title} maxLength={200} onChange={(e) => onTitle(e.target.value)} />
+      {onNotes && <TextArea label="Заметка к тренировке" rows={2} maxLength={1000} value={notes ?? ''} onChange={(e) => onNotes(e.target.value)} />}
 
       {warmupSlot ?? (routines?.warmup && <RoutineLink label="Разминка" routine={routines.warmup} />)}
 
-      {blocks.map((b, i) => (
-        <Card key={b.id} tone="surface" className={styles.block} aria-label={`Блок ${i + 1}`}>
+      {blocks.map((b, i) => {
+        const head = (
           <div className={styles.blockHead}>
             <TextInput label={`Название блока ${i + 1}`} value={b.title} maxLength={200} onChange={(e) => change((x) => renameBlock(x, b.id, e.target.value))} />
             <div className={styles.tools}>
@@ -135,11 +165,22 @@ export function WorkoutEditView({
               <IconButton bare icon="close" aria-label={`Удалить блок «${b.title}»`} onClick={() => change((x) => removeBlock(x, b.id))} />
             </div>
           </div>
+        );
+        if (b.mode === 'note')
+          return (
+            <Card key={b.id} tone="surface" className={styles.block} aria-label={`Блок ${i + 1}`}>
+              {head}
+              <TextArea label={`Текст заметки ${i + 1}`} rows={3} maxLength={1000} value={b.text} onChange={(e) => change((x) => setNoteText(x, b.id, e.target.value))} />
+            </Card>
+          );
+        return (
+        <Card key={b.id} tone="surface" className={styles.block} aria-label={`Блок ${i + 1}`}>
+          {head}
 
-          <SegmentedControl label="Режим блока" options={MODES} value={b.mode} onChange={(m) => change((x) => changeMode(x, b.id, m))} />
+          <SegmentedControl label="Режим блока" options={EXERCISE_MODES} value={b.mode} onChange={(m) => change((x) => changeMode(x, b.id, m))} />
 
           {b.mode !== 'timed' && (
-            <ParamStepper label="Отдых" unit="с" mode="duration" step={15} min={0} max={3600} value={b.restSec} onChange={(v) => change((x) => setRest(x, b.id, v))} />
+            <ParamStepper label={b.mode === 'circuit' && b.restAfter === 'round' ? 'Отдых после круга' : 'Отдых'} unit="с" mode="duration" step={15} min={0} max={3600} value={b.restSec} onChange={(v) => change((x) => setRest(x, b.id, v))} />
           )}
           {b.mode === 'circuit' && <ParamStepper label="Круги" unit="" min={1} max={100} value={b.rounds} onChange={(v) => change((x) => setRounds(x, b.id, v))} />}
 
@@ -152,9 +193,15 @@ export function WorkoutEditView({
                 first={j === 0}
                 last={j === b.exercises.length - 1}
                 isNew={newNames?.has(e.name) ?? false}
+                mark={marks?.[e.id]}
                 onOpen={onOpenNew ? () => onOpenNew(e.name) : undefined}
                 onPatch={(patch) => change((x) => patchExercise(x, b.id, e.id, patch))}
                 onTarget={(edge, v) => change((x) => setTarget(x, b.id, e.id, edge, v))}
+                onNote={(note) => change((x) => setExerciseNote(x, b.id, e.id, note))}
+                onRest={(v) => change((x) => setExerciseRest(x, b.id, e.id, v))}
+                onOpenEnded={(open) => change((x) => setOpen(x, b.id, e.id, open, library.find((l) => l.name === e.name)?.defaults))}
+                onClearSides={() => change((x) => clearSides(x, b.id, e.id))}
+                restDefault={b.mode === 'sets' ? b.restSec : 0}
                 onMove={(d) => change((x) => moveExercise(x, b.id, e.id, d))}
                 onRemove={() => change((x) => removeExercise(x, b.id, e.id))}
               />
@@ -177,7 +224,8 @@ export function WorkoutEditView({
             </fieldset>
           )}
         </Card>
-      ))}
+        );
+      })}
 
       {cooldownSlot ?? (routines?.cooldown && <RoutineLink label="Заминка" routine={routines.cooldown} />)}
 
@@ -234,18 +282,35 @@ type RowProps = {
   last: boolean;
   /** Новое упражнение: пометка текстом и кнопка «Открыть» его поля */
   isNew: boolean;
+  mark?: ExerciseMark;
   onOpen?: () => void;
   onPatch: (patch: Partial<SetsExercise>) => void;
   onTarget: (edge: 'min' | 'max', value: number) => void;
+  onNote: (note: string) => void;
+  /** Свой отдых упражнения, только в «подходами» */
+  onRest: (restSec: number) => void;
+  /** Отдых блока: показывается, пока у упражнения нет своего */
+  restDefault: number;
+  onOpenEnded: (open: boolean) => void;
+  onClearSides: () => void;
   onMove: (delta: -1 | 1) => void;
   onRemove: () => void;
 };
 
-function ExerciseRow({ mode, exercise: e, first, last, isNew, onOpen, onPatch, onTarget, onMove, onRemove }: RowProps) {
+function ExerciseRow({ mode, exercise: e, first, last, isNew, mark, onOpen, onPatch, onTarget, onNote, onRest, restDefault, onOpenEnded, onClearSides, onMove, onRemove }: RowProps) {
   const time = e.kind === 'time';
+  const canOpen = e.kind !== 'weight' && mode !== 'timed';
+  const open = canOpen && e.target.min === 0 && e.target.max === 0;
   const unit = time ? 'с' : 'повт';
   return (
-    <li className={styles.exercise}>
+    <li className={cx(styles.exercise, mark && styles.marked)}>
+      {mark && (
+        <div className={styles.mark} role="note">
+          <strong>Проверьте нагрузку</strong>
+          <span>{`Агент написал: ${mark.wrote}`}</span>
+          <span className={styles.markWhy}>{mark.message}</span>
+        </div>
+      )}
       <div className={styles.exerciseHead}>
         <Text variant="body" className={styles.name}>
           {e.name}
@@ -261,9 +326,24 @@ function ExerciseRow({ mode, exercise: e, first, last, isNew, onOpen, onPatch, o
         </Button>
       )}
       {mode === 'sets' && <ParamStepper label="Подходы" unit="" min={1} max={100} value={e.sets} onChange={(v) => onPatch({ sets: v })} />}
-      <ParamStepper label={time ? 'Время от' : 'Повторы от'} unit={unit} mode={time ? 'duration' : 'number'} min={0} max={86_400} value={e.target.min} onChange={(v) => onTarget('min', v)} />
-      <ParamStepper label={time ? 'Время до' : 'Повторы до'} unit={unit} mode={time ? 'duration' : 'number'} min={0} max={86_400} value={e.target.max} onChange={(v) => onTarget('max', v)} />
+      {canOpen && <Checkbox label="На максимум" hint={time ? 'Сколько удастся продержаться' : 'Сколько удастся сделать'} checked={open} onChange={(ev) => onOpenEnded(ev.target.checked)} />}
+      {!open && (
+        <>
+          <ParamStepper label={time ? 'Время от' : 'Повторы от'} unit={unit} mode={time ? 'duration' : 'number'} min={0} max={86_400} value={e.target.min} onChange={(v) => onTarget('min', v)} />
+          <ParamStepper label={time ? 'Время до' : 'Повторы до'} unit={unit} mode={time ? 'duration' : 'number'} min={0} max={86_400} value={e.target.max} onChange={(v) => onTarget('max', v)} />
+        </>
+      )}
       {e.kind === 'weight' && <ParamStepper label="Вес" unit="кг" step={2.5} min={0} max={1000} value={e.weight ?? 0} onChange={(v) => onPatch({ weight: v } as Partial<Exercise>)} />}
+      {mode === 'sets' && <ParamStepper label="Отдых" unit="с" mode="duration" step={15} min={0} max={3600} value={e.restSec ?? restDefault} onChange={onRest} />}
+      {e.sides && (
+        <div className={styles.sides}>
+          <span>{`На сторону: ${e.sides[0]}, ${e.sides[1]}`}</span>
+          <Button variant="secondary" compact aria-label={`${e.name}: убрать стороны`} onClick={onClearSides}>
+            Убрать стороны
+          </Button>
+        </div>
+      )}
+      <TextInput label="Заметка" value={e.note ?? ''} maxLength={1000} onChange={(ev) => onNote(ev.target.value)} />
     </li>
   );
 }

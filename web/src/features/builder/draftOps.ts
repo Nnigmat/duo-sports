@@ -1,3 +1,4 @@
+import { exercisesOf } from '../../../../shared/blocks';
 import { importSlug } from '../../../../shared/importSlug';
 import type { Block, Exercise, ExerciseKind } from '../../../../shared/types';
 import { DEFAULT_PARAMS } from '../exercises/library';
@@ -15,7 +16,7 @@ const same = (a: string, b: string) => norm(a) === norm(b);
 /** Имена из блоков и новых разминки и заминки */
 export function usedNames(d: BuilderDraft): Set<string> {
   const out = new Set<string>();
-  for (const b of d.blocks) for (const e of b.exercises) out.add(e.name);
+  for (const b of d.blocks) for (const e of exercisesOf(b)) out.add(e.name);
   for (const pick of [d.warmup, d.cooldown]) if (pick.kind === 'new') for (const i of pick.items) out.add(i.name);
   return out;
 }
@@ -37,7 +38,7 @@ function retype(e: Exercise, kind: ExerciseKind, name: string): Exercise {
 
 /** В блоке по таймеру упражнение всегда на время */
 const mapRows = (blocks: Block[], fn: (e: Exercise, b: Block) => Exercise): Block[] =>
-  blocks.map((b) => ({ ...b, exercises: b.exercises.map((e) => fn(e, b)) }) as Block);
+  blocks.map((b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.map((e) => fn(e, b)) } as Block)));
 
 const mapItems = (pick: RoutinePick, fn: (i: NewRoutineItem) => NewRoutineItem): RoutinePick => (pick.kind === 'new' ? { ...pick, items: pick.items.map(fn) } : pick);
 
@@ -66,15 +67,13 @@ export function patchNewExercise(d: BuilderDraft, name: string, patch: Partial<N
 }
 
 /**
- * Меняет упражнение на библиотечное (имя без учёта регистра и ё): имя и тип в блоках; в новой разминке и заминке — только если замена на время
- * (разминка принимает только такие). Новое без использования удаляется, советы про него — тоже.
+ * Меняет упражнение на библиотечное (имя без учёта регистра и ё): имя и тип в блоках; в новой разминке и заминке — только имя. Новое без использования удаляется, советы про него — тоже.
  */
 export function replaceExercise(d: BuilderDraft, from: string, to: LibraryExercise): BuilderDraft {
   const blocks = mapRows(d.blocks, (e, b) => (same(e.name, from) ? retype(e, b.mode === 'timed' ? 'time' : to.kind, to.name) : e));
   const rename = (i: NewRoutineItem) => (same(i.name, from) ? { ...i, name: to.name } : i);
-  const routines = to.kind === 'time' ? { warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename) } : {};
   const advice = d.advice.filter((a) => a.exercise === undefined || !same(a.exercise, from));
-  return pruneNew({ ...d, blocks, ...routines, advice });
+  return pruneNew({ ...d, blocks, warmup: mapItems(d.warmup, rename), cooldown: mapItems(d.cooldown, rename), advice });
 }
 
 export const dismissAdvice = (d: BuilderDraft, adviceId: string): BuilderDraft => ({ ...d, advice: d.advice.filter((a) => a.id !== adviceId) });
@@ -114,7 +113,7 @@ export const renameRoutine = (d: BuilderDraft, which: Which, title: string): Bui
 
 /** «Убрать» в панели нового упражнения: строки в блоках и наборах, советы про него и сама запись */
 export function removeNew(d: BuilderDraft, name: string): BuilderDraft {
-  const blocks = d.blocks.map((b) => ({ ...b, exercises: b.exercises.filter((e) => e.name !== name) }) as Block);
+  const blocks = d.blocks.map((b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.filter((e) => e.name !== name) } as Block)));
   const drop = (p: RoutinePick): RoutinePick => (p.kind === 'new' ? { ...p, items: p.items.filter((i) => i.name !== name) } : p);
   return {
     ...d,
@@ -125,3 +124,24 @@ export function removeNew(d: BuilderDraft, name: string): BuilderDraft {
     advice: d.advice.filter((a) => a.exercise !== name),
   };
 }
+
+/** Что у упражнения считается нагрузкой: заметка и название сюда не входят */
+const loadKey = (e: Exercise): string => {
+  const x = e as Exercise & { sets?: number; restSec?: number };
+  return JSON.stringify([x.kind, x.target, x.weight, x.sets, x.restSec, x.sides]);
+};
+
+/**
+ * Пометка снимается, когда у упражнения изменилась нагрузка (вид, цель, вес, подходы, отдых, стороны) или оно убрано.
+ * Ключ пометки — id упражнения, поэтому правки других упражнений и перестановки её не задевают.
+ */
+export function clearMarkOnChange(d: BuilderDraft, before: Block[], after: Block[]): BuilderDraft {
+  if (Object.keys(d.marks).length === 0) return d;
+  const was = new Map(before.flatMap((b) => exercisesOf(b).map((e) => [e.id, loadKey(e)] as const)));
+  const now = new Map(after.flatMap((b) => exercisesOf(b).map((e) => [e.id, loadKey(e)] as const)));
+  const kept = Object.entries(d.marks).filter(([id]) => now.has(id) && (!was.has(id) || was.get(id) === now.get(id)));
+  return kept.length === Object.keys(d.marks).length ? d : { ...d, marks: Object.fromEntries(kept) };
+}
+
+/** Сохранять можно, когда не осталось пометок; «Не разобрал» не мешает */
+export const canSave = (d: BuilderDraft): boolean => Object.keys(d.marks).length === 0;

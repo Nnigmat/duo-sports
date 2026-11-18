@@ -1,3 +1,4 @@
+import { exercisesOf } from '../../../../../shared/blocks';
 import type { Block } from '../../../../../shared/types';
 
 /** Снаряды, которые берут с конкретным весом; у остальных (скамья, коврик, тренажёр) вес в списке не нужен */
@@ -14,7 +15,7 @@ export function gearList(blocks: Block[], equipment: Record<string, string[]>): 
   const order: string[] = [];
   const weights = new Map<string, Set<number>>();
   for (const block of blocks) {
-    for (const ex of block.exercises) {
+    for (const ex of exercisesOf(block)) {
       for (const name of equipment[ex.id] ?? []) {
         if (!weights.has(name)) {
           weights.set(name, new Set());

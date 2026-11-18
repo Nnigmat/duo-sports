@@ -33,13 +33,17 @@ export interface Exercise {
   target: Range;
   /** кг, только для kind === 'weight' */
   weight?: number;
-  /** Подписи двух сторон по порядку («вправо», «влево»); есть — упражнение в таймерном блоке идёт два раза, по target на сторону */
+  /** Подписи двух сторон по порядку («вправо», «влево»); есть — упражнение идёт два раза, по target на сторону */
   sides?: [string, string];
+  /** Подсказка к упражнению */
+  note?: string;
 }
 
 export interface SetsExercise extends Exercise {
   /** число подходов этого упражнения */
   sets: number;
+  /** Отдых после подхода этого упражнения, секунды; нет — отдых блока */
+  restSec?: number;
 }
 
 /** Упражнения по таймеру подряд: разминка, заминка или обычный блок (например, планка в основной части) */
@@ -134,11 +138,21 @@ export interface CircuitBlock {
   exercises: Exercise[];
   rounds: number;
   restSec: number;
+  /** 'round' — отдых только после круга, не после каждого упражнения */
+  restAfter?: 'round';
   /** номера кругов (с 1), которые пишем на видео */
   videoRounds: number[];
 }
 
-export type Block = TimedBlock | SetsBlock | CircuitBlock;
+/** Текст на экране тренировки без упражнений */
+export interface NoteBlock {
+  id: string;
+  mode: 'note';
+  title: string;
+  text: string;
+}
+
+export type Block = TimedBlock | SetsBlock | CircuitBlock | NoteBlock;
 
 /** План подхода: из него считается строка в облачке и значения в «Изменить» */
 export interface SetPlan {
@@ -175,6 +189,8 @@ export interface Technique {
 export interface Workout {
   id: string;
   title: string;
+  /** Заметка к тренировке целиком */
+  notes?: string;
   /** Для экрана: разминка и заминка по ссылке уже стоят в начале и в конце */
   blocks: Block[];
   /** Подключённые разминка и заминка (slug и название); редактор показывает их строками-ссылками */
@@ -395,6 +411,8 @@ export interface CommitWorkout {
   blocks: CommitBlock[];
   /** Те же блоки для экрана тренировки; без них тренировку нельзя запустить */
   structure?: Block[];
+  /** Заметка к тренировке целиком */
+  notes?: string;
   /** slug подключённой разминки и заминки; в blocks и structure их блоков нет */
   warmupRoutine?: string;
   cooldownRoutine?: string;
@@ -522,6 +540,16 @@ export interface SessionStepResult {
   endedAt?: number;
 }
 
+/** Ответ спортсмена на шаг-заметку */
+export interface NoteAnswer {
+  /** Индекс блока-заметки в структуре тренировки */
+  blockIndex: number;
+  /** Заголовок заметки на момент тренировки */
+  title: string;
+  /** Ответ спортсмена, до 1000 знаков */
+  text: string;
+}
+
 /** Итог выполненной тренировки: POST /api/workouts/:id/sessions */
 export interface SessionResult {
   /** День плана, «2026-11-03» */
@@ -534,6 +562,8 @@ export interface SessionResult {
   feeling?: number;
   /** Комментарий ко всей тренировке, необязательный */
   comment?: string;
+  /** Ответы спортсмена на шаги-заметки; пустые не пишутся. Нет — ответов нет или старый клиент. */
+  answers?: NoteAnswer[];
   /** Ключ против дубликата (uuid): повторная отправка того же итога возвращает уже созданный */
   key?: string;
 }
@@ -684,6 +714,8 @@ export interface SessionReviewResponse {
   feelingLabel: string | null;
   /** Комментарий спортсмена ко всей тренировке из «Обратной связи» */
   feedbackComment: string | null;
+  /** Ответы спортсмена на шаги-заметки; пусто, если заметок не было */
+  answers: NoteAnswer[];
   volumeKg: number;
   /** ISO-время разбора; null — ждёт разбора */
   reviewedAt: string | null;

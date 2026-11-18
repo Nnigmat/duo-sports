@@ -8,6 +8,7 @@ import { markReviewed } from './reviews';
 import { createRoutine } from './routines';
 import { actualLabel, awaitingReviewOf, setLabel, sessionReviewOf, videoReviewOf } from './sessionReview';
 import { linkAthlete } from './trainerLinks';
+import { saveSession } from './workouts';
 
 let db: Db;
 let athlete: number;
@@ -65,6 +66,16 @@ describe('sessionReviewOf', () => {
     expect(view(T())).toMatchObject({ feeling: 2, feelingLabel: 'Устал', feedbackComment: 'колено ныло' });
     db.prepare('UPDATE sessions_done SET comment = NULL WHERE id = ?').run(sid);
     expect(view(T())).toMatchObject({ feeling: 2, feedbackComment: null });
+  });
+  it('server: session answers saved and shown in review', () => {
+    expect(view(T()).answers).toEqual([]);
+    const wid = Number(db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, created_at) VALUES (?, 'Ноги', '[]', '[]', 'x')").run(athlete).lastInsertRowid);
+    const answers = [{ blockIndex: 2, title: 'Тест большого пальца', text: 'Боли нет' }];
+    saveSession(db, athlete, wid, { date: '2026-10-31', videos: 0, steps: [step({})], answers }, at('2026-10-31T18:00:00Z'));
+    const saved = db.prepare('SELECT id FROM sessions_done ORDER BY id DESC LIMIT 1').get() as { id: number };
+    const r = sessionReviewOf(db, T(), saved.id, '2026-11-02');
+    if (!r.ok) throw new Error(r.error);
+    expect(r.review.answers).toEqual(answers);
   });
   it('секции по блокам: разминка и заминка свёрнуты, основная нет', () => {
     const structure = [

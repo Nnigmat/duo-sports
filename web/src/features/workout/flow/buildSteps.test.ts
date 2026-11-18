@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
-import type { CircuitBlock, SetsBlock, TimedBlock } from '../../../../../shared/types';
+import type { CircuitBlock, NoteBlock, SetsBlock, TimedBlock } from '../../../../../shared/types';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 describe('buildSteps', () => {
@@ -102,5 +102,86 @@ describe('buildSteps', () => {
       expect(buildSteps([s])).toHaveLength(5);
       expect(buildSteps([c, s]).every((st) => st.side === undefined)).toBe(true);
     });
+
+    it('в sets и circuit шаг несёт sides, в timed — нет (там сторона в side)', () => {
+      const c: CircuitBlock = { ...circuit, exercises: circuit.exercises.map((e) => ({ ...e, sides })) };
+      expect(buildSteps([c]).every((st) => st.sides === sides)).toBe(true);
+      expect(buildSteps([withSides])[0].sides).toBeUndefined();
+      expect(buildSteps([circuit])[0].sides).toBeUndefined();
+    });
+  });
+
+  describe('заметка упражнения', () => {
+    it('шаг несёт note упражнения; без неё поля нет', () => {
+      const s: SetsBlock = { ...setsBlock, exercises: [{ ...setsBlock.exercises[0], note: 'Локти назад' }, ...setsBlock.exercises.slice(1)] };
+      const steps = buildSteps([s]);
+      expect(steps[0].note).toBe('Локти назад');
+      expect(steps[steps.length - 1].note).toBeUndefined();
+    });
+  });
+});
+
+describe('buildSteps: отдых v2', () => {
+  const rests = (b: CircuitBlock | SetsBlock) => buildSteps([b]).map((s) => s.restAfterSec);
+
+  it('sets exercise restSec overrides block', () => {
+    const [a, b] = setsBlock.exercises;
+    const block: SetsBlock = {
+      ...setsBlock,
+      restSec: 90,
+      exercises: [
+        { ...a, sets: 2, restSec: 180 },
+        { ...b, sets: 2 },
+      ],
+    };
+    expect(rests(block)).toEqual([180, 180, 90, 0]);
+  });
+
+  it('circuit restAfter round rests only after last exercise', () => {
+    const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90, restAfter: 'round' };
+    expect(rests(block)).toEqual([0, 0, 90, 0, 0, 0]);
+  });
+
+  it('circuit without restAfter rests after every exercise', () => {
+    const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90 };
+    expect(rests(block)).toEqual([90, 90, 90, 90, 90, 0]);
+  });
+
+  it('circuit restAfter round перед заминкой: последний шаг получает отдых', () => {
+    const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90, restAfter: 'round' };
+    const cooldown: TimedBlock = { ...warmup, id: 'cd', kind: 'cooldown' };
+    const steps = buildSteps([block, cooldown]);
+    expect(steps.slice(0, 6).map((s) => s.restAfterSec)).toEqual([0, 0, 90, 0, 0, 90]);
+    expect(steps.slice(6).every((s) => s.restAfterSec === 0)).toBe(true);
+  });
+});
+
+describe('шаг-заметка', () => {
+  const noteBlock: NoteBlock = { id: 'n1', mode: 'note', title: 'Тест большого пальца', text: 'Согни палец, есть ли боль?' };
+
+  it('note block becomes one step', () => {
+    const steps = buildSteps([warmup, noteBlock, setsBlock]);
+    const step = steps.find((s) => s.mode === 'note');
+    expect(steps.filter((s) => s.mode === 'note')).toHaveLength(1);
+    expect(step).toMatchObject({
+      blockIndex: 1,
+      blockTitle: 'Тест большого пальца',
+      noteStep: { title: 'Тест большого пальца', text: 'Согни палец, есть ли боль?' },
+      record: false,
+      restAfterSec: 0,
+      indexInBlock: 1,
+      blockSize: 1,
+    });
+  });
+
+  it('заметка не меняет шаги соседей', () => {
+    const note: NoteBlock = { id: 'n', mode: 'note', title: 'Важно', text: 'Сегодня без отжиманий' };
+    expect(buildSteps([note, circuit])).toHaveLength(buildSteps([circuit]).length + 1);
+    expect(buildSteps([note, circuit]).slice(1).map((s) => s.restAfterSec)).toEqual(buildSteps([circuit]).map((s) => s.restAfterSec));
+  });
+
+  it('перед заминкой у шага-заметки отдыха нет', () => {
+    const cooldown: TimedBlock = { ...warmup, id: 'cd', kind: 'cooldown' };
+    expect(buildSteps([noteBlock, cooldown])[0].restAfterSec).toBe(0);
   });
 });

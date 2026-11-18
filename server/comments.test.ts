@@ -8,6 +8,7 @@ import { applyImport, ensureLibrary } from './imports';
 import { sessionReviewOf } from './sessionReview';
 import { linkAthlete } from './trainerLinks';
 import { saveSession, workoutResponse } from './workouts';
+import { exercisesOf } from '../shared/blocks';
 
 const V = '11111111-1111-4111-8111-111111111111';
 const clock = () => new Date('2026-11-03T10:00:00Z');
@@ -40,7 +41,7 @@ describe('техника', () => {
   });
   it('привязывает к id из структуры по названию и псевдониму', () => {
     expect(Object.keys(techniquesFor(blocks, lib))).toEqual(['b1-e0']);
-    const alias = [{ ...blocks[0]!, exercises: [{ ...blocks[0]!.exercises[0]!, name: 'Жим штанги' }] }] as Block[];
+    const alias = [{ ...blocks[0]!, exercises: [{ ...exercisesOf(blocks[0]!)[0]!, name: 'Жим штанги' }] }] as Block[];
     expect(techniquesFor(alias, lib)['b1-e0']?.instructions).toEqual(['Лопатки сведены', 'Гриф к груди']);
   });
 });

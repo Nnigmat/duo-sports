@@ -23,7 +23,7 @@ describe('YAML разминки', () => {
   it('собирает все ошибки', () => {
     const r = draftFromYaml('kind: x\nexercises:\n  - exercise: nope\n    sec: 70-5', lib, { kind: 'warmup' });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.issues.map((i) => i.message)).toEqual(['kind: warmup или cooldown', 'Нет названия (title)', 'Упражнение 1: нет упражнения на время «nope»', 'Упражнение 1: начало диапазона больше конца']);
+    if (!r.ok) expect(r.issues.map((i) => i.message)).toEqual(['kind: warmup или cooldown', 'Нет названия (title)', 'Упражнение 1: нет упражнения «nope» в библиотеке', 'Упражнение 1: начало диапазона больше конца']);
   });
   it('битый YAML даёт номер строки', () => {
     const r = draftFromYaml('title: [a\nkind: warmup', lib, { kind: 'warmup' });

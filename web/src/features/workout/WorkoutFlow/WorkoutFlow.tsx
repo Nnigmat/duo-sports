@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState, type Dispatch } from 'react';
-import type { CoachComment, Gender, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
+import type { CoachComment, Gender, NoteAnswer, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
 import { cameraUrl, idleUrl, restUrl, successUrl } from '../chibi/idle';
 import { poseFor } from '../chibi/poseFor';
@@ -14,6 +14,7 @@ import {
   eyebrow,
   feedbackOf,
   finishStats,
+  sessionAnswers,
   sessionSteps,
   hasNewComments,
   initSession,
@@ -30,9 +31,11 @@ import {
   signalAt,
   stepLine,
   stepTitle,
+  stopwatchView,
   timedView,
   timerSeconds,
   totalSec,
+  usesStopwatch,
   type Action,
   type FinishStats,
   type Session,
@@ -43,6 +46,7 @@ import { FeedbackScreen } from '../FeedbackScreen/FeedbackScreen';
 import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
+import { useStopwatch } from '../parts/TimerRing/useStopwatch';
 import { createBeeper, type Beeper } from '../sound/beeper';
 import { createSpeaker, type Speaker } from '../sound/speaker';
 import { DEFAULT_SOUND, type SoundSettings } from '../sound/styles';
@@ -51,6 +55,7 @@ import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
 import { SwapSheet } from '../sheets/SwapSheet/SwapSheet';
 import { TechSheet } from '../sheets/TechSheet/TechSheet';
+import { NoteStage } from '../NoteStage/NoteStage';
 import { StartScreen } from '../StartScreen/StartScreen';
 import { TrainingScreen } from '../TrainingScreen/TrainingScreen';
 
@@ -72,7 +77,7 @@ type Props = {
    * «Отправить тренеру» на обратной связи: итоги, каждый подход с планом и отметкой «выполнен» и самочувствие.
    * Reject оставляет экран как есть с текстом ошибки: можно отправить ещё раз, итог не задвоится (ключ тот же).
    */
-  onFinish: (stats: FinishStats, steps: SessionStepResult[], feedback: { feeling: number; comment?: string }) => Promise<void>;
+  onFinish: (stats: FinishStats, steps: SessionStepResult[], feedback: { feeling: number; comment?: string; answers?: NoteAnswer[] }) => Promise<void>;
   /** Выход с экрана старта и ✕ на финише */
   onExit: () => void;
   /** Сохранённое прохождение: тренировка продолжается с него, а не с экрана старта */
@@ -119,6 +124,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
   const [recording, setRecording] = useState(false);
   // Видео записано и загружено, ждём факт подхода; шаг засчитывается после шторки
   const [recorded, setRecorded] = useState<{ videoId?: string } | null>(null);
+  // Секунды секундомера на момент «Стоп»: подставляются в окно результата, пока оно открыто
+  const [stoppedSec, setStoppedSec] = useState<number | null>(null);
   const [exiting, setExiting] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -134,8 +141,9 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
     workStart.current = Date.now();
     workEnd.current = null;
   }, [index, phase, session.timerStarted]);
+  // Побеждает последняя отметка: после «Стоп» → закрыли шторку → продолжили → «Стоп» подход кончился во второй раз
   const markWorkEnd = () => {
-    workEnd.current ??= Date.now();
+    workEnd.current = Date.now();
   };
   const timeNow = () => ({ startedAt: workStart.current, endedAt: workEnd.current ?? Date.now() });
 
@@ -143,6 +151,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
     return (
       <StartScreen
         title={workout.title}
+        notes={workout.notes}
         blocks={workout.blocks}
         dateLabel={dateLabel}
         equipment={equipment}
@@ -161,9 +170,11 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
 
   if (phase === 'feedback') {
     const send = async () => {
-      const feedback = feedbackOf(session);
+      const rated = feedbackOf(session);
       // Без оценки итог не уходит, даже если кнопку как-то нажали
-      if (!feedback || sending) return;
+      if (!rated || sending) return;
+      const answers = sessionAnswers(steps, session.completed, session.answers);
+      const feedback = answers.length > 0 ? { ...rated, answers } : rated;
       setSending(true);
       setSendError(null);
       try {
@@ -192,6 +203,40 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
     // Время на финише то же, что в шапке, и дальше не растёт
     const total = startedAt == null ? 0 : totalSec(startedAt, finishedAt, Date.now());
     return <FinishScreen stats={stats} totalSec={total} successUrl={successUrl(gender)} onNext={() => dispatch({ type: 'toFeedback' })} onClose={onExit} />;
+  }
+
+  const exitDialog = (
+    <Dialog
+      open={exiting}
+      onOpenChange={setExiting}
+      title="Закончить тренировку?"
+      description="Выполненные подходы сохранятся"
+      confirmLabel="Закончить"
+      onConfirm={() => {
+        setExiting(false);
+        dispatch({ type: 'finishNow' });
+      }}
+    />
+  );
+
+  // Шаг-заметка: свой экран без камеры, таймеров и шторок
+  if (phase === 'work' && step.noteStep) {
+    return (
+      <>
+        <NoteStage
+          key={index}
+          title={step.noteStep.title}
+          text={step.noteStep.text}
+          answer={session.answers[index] ?? ''}
+          onAnswer={(text) => dispatch({ type: 'answer', text })}
+          onDone={() => dispatch({ type: 'done' })}
+          onBack={canGoBack(session) ? () => dispatch({ type: 'back' }) : undefined}
+          onSkip={() => dispatch({ type: 'skip' })}
+          onExit={() => setExiting(true)}
+        />
+        {exitDialog}
+      </>
+    );
   }
 
   if (recording) {
@@ -247,6 +292,11 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
           if (step.mode === 'timed') dispatch({ type: 'done', time: timeNow() });
           else setSheet('result');
         }}
+        onStop={(sec) => {
+          markWorkEnd();
+          setStoppedSec(sec);
+          setSheet('result');
+        }}
         onTech={() => setSheet('tech')}
         onSwap={library && library.length > 0 && canSwap(session) ? () => setSheet('swap') : undefined}
         onOpenNotes={() => {
@@ -262,6 +312,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         onOpenChange={(open) => {
           if (open) return;
           setSheet(null);
+          setStoppedSec(null);
           // Шторку после записи закрыли без факта: видео уже на сервере, подход засчитываем по плану
           if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), time: timeNow() });
           setRecorded(null);
@@ -270,10 +321,12 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         kind={step.kind}
         plan={step.plan}
         actual={session.actuals[index]}
+        initialSec={stoppedSec ?? undefined}
         onSave={(actual) => {
           if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), actual, time: timeNow() });
           else dispatch({ type: 'done', actual, time: timeNow() });
           setRecorded(null);
+          setStoppedSec(null);
         }}
       />
 
@@ -317,17 +370,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         now={now}
       />
 
-      <Dialog
-        open={exiting}
-        onOpenChange={setExiting}
-        title="Закончить тренировку?"
-        description="Выполненные подходы сохранятся"
-        confirmLabel="Закончить"
-        onConfirm={() => {
-          setExiting(false);
-          dispatch({ type: 'finishNow' });
-        }}
-      />
+      {exitDialog}
     </>
   );
 }
@@ -350,6 +393,8 @@ type StageProps = {
   startedAt?: number | null;
   /** «Готово» на подходе: у упражнения откроет шторку факта, у разминки завершит шаг */
   onDone: () => void;
+  /** «Стоп» у времени на максимум: секунды секундомера уходят в окно результата */
+  onStop: (sec: number) => void;
   onTech: () => void;
   /** Нет — кнопки «Заменить» нет */
   onSwap?: () => void;
@@ -363,7 +408,8 @@ function Stage(props: StageProps) {
   const { session } = props;
   const step = session.steps[session.index];
   if (session.phase === 'rest') return <RestStage {...props} />;
-  return step.kind === 'time' && session.timerStarted ? <TimedStage {...props} /> : <SetStage {...props} />;
+  if (step.kind !== 'time' || !session.timerStarted) return <SetStage {...props} />;
+  return usesStopwatch(step) ? <StopwatchStage {...props} /> : <TimedStage {...props} />;
 }
 
 /** Подход на повторы или упражнение на время до «Старт» */
@@ -448,6 +494,26 @@ function TimedStage(props: StageProps) {
   );
 }
 
+/** Время на максимум: секундомер вверх от «Старт», без отсчёта и сигналов; «Стоп» ставит на паузу и спрашивает результат */
+function StopwatchStage(props: StageProps) {
+  const { dispatch, onStop } = props;
+  const w = useStopwatch();
+  return (
+    <StageView
+      {...props}
+      onBack={() => dispatch({ type: 'back' })}
+      bar={{
+        mode: 'stopwatch',
+        label: stopwatchView(w.elapsed).label,
+        paused: w.paused,
+        onPauseToggle: w.toggle,
+        onStop: () => onStop(w.stop()),
+        onSkip: () => dispatch({ type: 'skip' }),
+      }}
+    />
+  );
+}
+
 /** Отдых: считает вверх до цели и дальше; сколько он шёл, уходит в факт при «Начать» и «Пропустить» */
 function RestStage(props: StageProps) {
   const { session, dispatch } = props;
@@ -487,6 +553,7 @@ function StageView({ session, shown, demoUrl, thinkDemoUrl, idleUrl, restUrl, ca
       progress={{ count: shown.blockSize, current: shown.indexInBlock - 1 }}
       eyebrow={resting ? restEyebrow(shown, restOver) : eyebrow(step)}
       line={stepLine(shown)}
+      exerciseNote={shown.note}
       demoUrl={demoUrl}
       idleUrl={idleUrl}
       restUrl={restUrl}

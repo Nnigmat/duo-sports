@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { SetsExercise } from '../../../../shared/types';
 import { toLibraryExercise } from '../exercises/api';
 import {
-  applyAdvice, createExercise, dismissAdvice, removeNew, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine, usedNames,
+  applyAdvice, canSave, clearMarkOnChange, createExercise, dismissAdvice, removeNew, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine, usedNames,
 } from './draftOps';
 import { library as entries } from './testkit';
 import type { BuilderDraft, NewExerciseDraft } from './types';
+import { exercisesOf } from '../../../../shared/blocks';
 
 const library = entries.map(toLibraryExercise);
 const dips = library.find((l) => l.id === 'dips')!;
@@ -26,8 +27,10 @@ const base = (): BuilderDraft => ({
     { id: 'a0', text: 'В библиотеке есть похожее — Отжимания на брусьях', exercise: 'Отжимания с хлопком', suggest: 'Отжимания на брусьях' },
     { id: 'a1', text: 'Отдых добавлен по правилам' },
   ],
+  marks: {},
+  unparsed: [],
 });
-const names = (d: BuilderDraft, block: number) => d.blocks[block]!.exercises.map((e) => e.name);
+const names = (d: BuilderDraft, block: number) => exercisesOf(d.blocks[block]!).map((e) => e.name);
 
 describe('правка черновика', () => {
   it('createExercise adds row and new entry', () => {
@@ -48,23 +51,23 @@ describe('правка черновика', () => {
 
   it('changing kind of new exercise updates its rows', () => {
     const d = patchNewExercise(base(), 'Отжимания с хлопком', { kind: 'weight' });
-    expect(d.blocks[0]!.exercises[0]).toMatchObject({ kind: 'weight', weight: expect.any(Number) });
+    expect(exercisesOf(d.blocks[0]!)[0]).toMatchObject({ kind: 'weight', weight: expect.any(Number) });
   });
 
   it('replaceExercise swaps name and kind and drops unused new', () => {
     const d = replaceExercise(base(), 'Отжимания с хлопком', dips);
-    expect(d.blocks[0]!.exercises[0]).toMatchObject({ id: 'x1', name: 'Отжимания на брусьях', kind: 'reps', sets: 3 });
+    expect(exercisesOf(d.blocks[0]!)[0]).toMatchObject({ id: 'x1', name: 'Отжимания на брусьях', kind: 'reps', sets: 3 });
     expect(d.newExercises.map((e) => e.name)).toEqual(['Наклон к ногам']);
     expect(d.advice.map((a) => a.id)).toEqual(['a1']);
   });
 
-  it('replaceExercise keeps new exercise still used elsewhere', () => {
-    // Наклон стоит и в блоке, и в заминке; замена на упражнение не на время в заминку не попадает — новое остаётся
+  it('replaceExercise renames the routine item to any library exercise and drops the unused new one', () => {
+    // Наклон стоит и в блоке, и в заминке; заминка принимает любое упражнение, так что имя меняется и там
     const d = createExercise(base(), 'b2', 'Наклон к ногам');
     const r = replaceExercise(d, 'Наклон к ногам', dips);
     expect(names(r, 1)).toEqual(['Жим лёжа', 'Отжимания на брусьях']);
-    expect(r.cooldown).toMatchObject({ items: [{ name: 'Наклон к ногам' }, { name: 'Вращение руками' }] });
-    expect(r.newExercises.map((e) => e.name)).toContain('Наклон к ногам');
+    expect(r.cooldown).toMatchObject({ items: [{ name: 'Отжимания на брусьях' }, { name: 'Вращение руками' }] });
+    expect(r.newExercises.map((e) => e.name)).not.toContain('Наклон к ногам');
   });
 
   it('replaceExercise with time exercise reaches new routine too', () => {
@@ -77,7 +80,7 @@ describe('правка черновика', () => {
   it('replaceExercise to time kind resets target to seconds', () => {
     const arm = library.find((l) => l.id === 'arm-circles')!;
     const d = replaceExercise(base(), 'Жим лёжа', arm);
-    const e = d.blocks[1]!.exercises[0]!;
+    const e = exercisesOf(d.blocks[1]!)[0]!;
     expect(e).toMatchObject({ name: 'Вращение руками', kind: 'time', target: { min: 30, max: 30 } });
     expect(e).not.toHaveProperty('weight');
   });
@@ -151,7 +154,7 @@ describe('правка черновика', () => {
 
   it('keeps sets of a sets exercise after replace', () => {
     const d = replaceExercise(base(), 'Отжимания с хлопком', dips);
-    expect((d.blocks[0]!.exercises[0] as SetsExercise).sets).toBe(3);
+    expect((exercisesOf(d.blocks[0]!)[0] as SetsExercise).sets).toBe(3);
   });
   it('removeNew drops rows, routine items, advice and the entry', () => {
     let d = createExercise(base(), 'b2', 'Наклон к ногам');
@@ -162,6 +165,60 @@ describe('правка черновика', () => {
     const r = removeNew(base(), 'Отжимания с хлопком');
     expect(r.advice.map((a) => a.id)).toEqual(['a1']);
     // Блок без упражнений остаётся: его покажет проверка перед сохранением
-    expect(r.blocks[0]!.exercises).toEqual([]);
+    expect(exercisesOf(r.blocks[0]!)).toEqual([]);
+  });
+});
+
+describe('пометки ремонта', () => {
+  const mark = (field = 'reps') => ({ blockIndex: 0, exerciseIndex: 0, field, wrote: 'много', message: 'Не понимаю reps: много' });
+  const marked = (): BuilderDraft => ({ ...base(), marks: { x1: mark(), x2: mark('weight_kg') } });
+  const withBlocks = (d: BuilderDraft, blocks: BuilderDraft['blocks']): BuilderDraft => ({ ...d, blocks });
+  const patchFirst = (d: BuilderDraft, patch: Partial<SetsExercise>) =>
+    withBlocks(d, d.blocks.map((b, i) => (i === 0 && b.mode === 'sets' ? { ...b, exercises: b.exercises.map((e) => ({ ...e, ...patch })) } : b)));
+
+  it('mark cleared when load changed', () => {
+    const d = marked();
+    for (const patch of [{ sets: 5 }, { target: { min: 12, max: 12 } }, { restSec: 30 }, { kind: 'time' as const }, { sides: ['влево', 'вправо'] as [string, string] }]) {
+      const after = patchFirst(d, patch);
+      expect(Object.keys(clearMarkOnChange(after, d.blocks, after.blocks).marks), JSON.stringify(patch)).toEqual(['x2']);
+    }
+  });
+
+  it('mark cleared when weight changed', () => {
+    const d = marked();
+    const after = withBlocks(d, d.blocks.map((b, i) => (i === 1 && b.mode === 'circuit' ? { ...b, exercises: b.exercises.map((e) => ({ ...e, weight: 62.5 })) } : b)));
+    expect(Object.keys(clearMarkOnChange(after, d.blocks, after.blocks).marks)).toEqual(['x1']);
+  });
+
+  it('mark kept when only note changed', () => {
+    const d = marked();
+    const after = patchFirst(d, { note: 'Медленно' });
+    expect(clearMarkOnChange(after, d.blocks, after.blocks)).toBe(after);
+    expect(Object.keys(after.marks)).toEqual(['x1', 'x2']);
+  });
+
+  it('mark cleared when exercise removed, others keep theirs', () => {
+    const d = marked();
+    const gone = withBlocks(d, d.blocks.slice(0, 1));
+    expect(Object.keys(clearMarkOnChange(gone, d.blocks, gone.blocks).marks)).toEqual(['x1']);
+    const other = withBlocks(d, d.blocks.slice(1));
+    expect(Object.keys(clearMarkOnChange(other, d.blocks, other.blocks).marks)).toEqual(['x2']);
+  });
+
+  it('mark kept when a different exercise is removed or blocks move', () => {
+    const d = marked();
+    const moved = withBlocks(d, [...d.blocks].reverse());
+    expect(Object.keys(clearMarkOnChange(moved, d.blocks, moved.blocks).marks)).toEqual(['x1', 'x2']);
+    const extra = patchFirst(d, {});
+    const two = withBlocks(extra, extra.blocks.map((b, i) => (i === 0 && b.mode === 'sets' ? { ...b, exercises: [...b.exercises, { id: 'x9', name: 'Ещё', kind: 'reps' as const, target: { min: 5, max: 5 }, sets: 1 }] } : b)));
+    const before = two.blocks;
+    const removed = withBlocks({ ...two, marks: { x1: mark(), x2: mark() } }, before.map((b, i) => (i === 0 && b.mode === 'sets' ? { ...b, exercises: b.exercises.filter((e) => e.id !== 'x9') } : b)));
+    expect(Object.keys(clearMarkOnChange(removed, before, removed.blocks).marks)).toEqual(['x1', 'x2']);
+  });
+
+  it('save disabled while marks remain', () => {
+    expect(canSave(marked())).toBe(false);
+    expect(canSave({ ...base(), marks: {} })).toBe(true);
+    expect(canSave({ ...base(), unparsed: [{ what: 'bench-pres', message: 'Неизвестный exercise_id' }] })).toBe(true);
   });
 });

@@ -307,6 +307,7 @@ function migrate(db: Db) {
   if (!columns('sessions_done').includes('duration_sec')) db.exec('ALTER TABLE sessions_done ADD COLUMN duration_sec INTEGER');
   if (!columns('sessions_done').includes('feeling')) db.exec('ALTER TABLE sessions_done ADD COLUMN feeling INTEGER');
   if (!columns('sessions_done').includes('comment')) db.exec('ALTER TABLE sessions_done ADD COLUMN comment TEXT');
+  if (!columns('sessions_done').includes('answers')) db.exec('ALTER TABLE sessions_done ADD COLUMN answers TEXT');
   if (!columns('sessions_done').includes('client_key')) db.exec('ALTER TABLE sessions_done ADD COLUMN client_key TEXT');
   // Повтор отправки того же итога находит прежнюю строку по ключу; у старых строк ключа нет
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS sessions_done_key ON sessions_done(user_id, client_key) WHERE client_key IS NOT NULL');
@@ -326,6 +327,7 @@ function migrate(db: Db) {
   db.exec('CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at); CREATE INDEX IF NOT EXISTS comments_session ON comments(session_id)');
   if (!columns('workouts').includes('warmup_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN warmup_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
   if (!columns('workouts').includes('cooldown_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN cooldown_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
+  if (!columns('workouts').includes('notes')) db.exec('ALTER TABLE workouts ADD COLUMN notes TEXT');
   migrateSharedExercises(db);
   migrateMeasurementKinds(db);
 }

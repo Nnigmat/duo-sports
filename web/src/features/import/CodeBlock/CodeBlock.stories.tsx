@@ -18,7 +18,7 @@ export const Example: Story = {
     const c = within(canvasElement);
     await expect(c.getByLabelText('Пример YAML')).toHaveAttribute('tabindex', '0');
     await userEvent.click(c.getByRole('button', { name: 'Скопировать пример' }));
-    await expect(args.onCopy).toHaveBeenCalledWith(expect.stringMatching(/^version: 1\n[\s\S]+\n$/));
+    await expect(args.onCopy).toHaveBeenCalledWith(expect.stringMatching(/^version: 2\n[\s\S]+\n$/));
     await expect(c.getByRole('button', { name: 'Скопировано' })).toBeVisible();
   },
 };

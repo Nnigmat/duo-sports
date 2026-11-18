@@ -9,13 +9,13 @@ const now: Clock = () => new Date();
 
 /** Тренировка для экрана выполнения. Без структуры (импортирована старой версией) запустить нельзя — null. */
 export function workoutOf(db: Db, userId: number, id: number): Workout | null {
-  const row = db.prepare('SELECT id, title, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ? AND user_id = ?').get(id, userId) as
-    | (RoutineLinks & { id: number; title: string; structure: string | null })
+  const row = db.prepare('SELECT id, title, notes, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ? AND user_id = ?').get(id, userId) as
+    | (RoutineLinks & { id: number; title: string; notes: string | null; structure: string | null })
     | undefined;
   const blocks = row ? composeStructure(db, row) : null;
   if (!row || !blocks) return null;
   const routines = linkedRoutines(db, row);
-  return { id: String(row.id), title: row.title, blocks, ...(routines ? { routines } : {}) };
+  return { id: String(row.id), title: row.title, ...(row.notes ? { notes: row.notes } : {}), blocks, ...(routines ? { routines } : {}) };
 }
 
 /** Тренировка с комментариями тренера и техникой из библиотеки. Показанные комментарии помечаются прочитанными. */
@@ -42,6 +42,10 @@ export const MAX_STEPS = 2000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const MAX_DURATION_SEC = 86_400;
 export const MAX_COMMENT = 1000;
+const MAX_ANSWERS = 100;
+
+const isAnswer = (v: unknown): boolean =>
+  isObj(v) && Number.isInteger(v.blockIndex) && (v.blockIndex as number) >= 0 && typeof v.title === 'string' && v.title.length <= 200 && typeof v.text === 'string' && v.text.length <= MAX_COMMENT;
 
 /** Факт подхода: число, необязательный вес и отметка «был доп. вес» (только true). Нет поля — старый клиент или пропуск. */
 const isActual = (v: unknown): boolean =>
@@ -55,6 +59,7 @@ export function validateSession(body: unknown): ValidSession {
   if (body.durationSec !== undefined && !(Number.isInteger(body.durationSec) && (body.durationSec as number) >= 0 && (body.durationSec as number) <= MAX_DURATION_SEC)) return { ok: false, error: 'durationSec: секунды от 0 до 86400' };
   if ('feeling' in body && !(Number.isInteger(body.feeling) && (body.feeling as number) >= 1 && (body.feeling as number) <= 5)) return { ok: false, error: 'feeling: оценка от 1 до 5' };
   if ('comment' in body && !(typeof body.comment === 'string' && body.comment.length <= MAX_COMMENT)) return { ok: false, error: `comment: до ${MAX_COMMENT} знаков` };
+  if ('answers' in body && !(Array.isArray(body.answers) && body.answers.length <= MAX_ANSWERS && body.answers.every(isAnswer))) return { ok: false, error: `answers: до ${MAX_ANSWERS} ответов, текст до ${MAX_COMMENT} знаков` };
   if ('key' in body && !(typeof body.key === 'string' && UUID.test(body.key))) return { ok: false, error: 'key: uuid' };
   if (!Array.isArray(body.steps) || body.steps.length === 0 || body.steps.length > MAX_STEPS) return { ok: false, error: 'steps: список от 1 до 2000' };
   for (const [i, s] of body.steps.entries()) {
@@ -87,12 +92,13 @@ export function saveSession(db: Db, userId: number, workoutId: number, result: S
     const prior = db.prepare('SELECT id FROM sessions_done WHERE user_id = ? AND client_key = ?').get(userId, result.key) as { id: number } | undefined;
     if (prior) return { ok: true, id: prior.id, duplicate: true };
   }
+  const answers = (result.answers ?? []).flatMap((a) => (a.text.trim() ? [{ blockIndex: a.blockIndex, title: a.title, text: a.text.trim() }] : []));
   const claim = db.prepare('UPDATE videos SET session_id = ?, step_index = ? WHERE id = ? AND athlete_id = ? AND session_id IS NULL');
   // Одна транзакция: если видео чужое или уже занято, тренировка не записывается
   const run = db.transaction((): SaveResult => {
     const info = db
-      .prepare('INSERT INTO sessions_done (user_id, workout_id, title, date, finished_at, steps, videos, duration_sec, feeling, comment, client_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(userId, workoutId, w.title, result.date, clock().toISOString(), JSON.stringify(result.steps), result.videos, result.durationSec ?? null, result.feeling ?? null, result.comment?.trim() || null, result.key ?? null);
+      .prepare('INSERT INTO sessions_done (user_id, workout_id, title, date, finished_at, steps, videos, duration_sec, feeling, comment, answers, client_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(userId, workoutId, w.title, result.date, clock().toISOString(), JSON.stringify(result.steps), result.videos, result.durationSec ?? null, result.feeling ?? null, result.comment?.trim() || null, answers.length ? JSON.stringify(answers) : null, result.key ?? null);
     const id = Number(info.lastInsertRowid);
     for (const [i, s] of result.steps.entries()) {
       if (s.videoId && claim.run(id, i, s.videoId, userId).changes !== 1) throw new BadVideo();

@@ -21,13 +21,17 @@ export interface Load {
   setList?: PerSet[];
 }
 
-export type BlockType = 'sets' | 'circuit' | 'superset' | 'warmup' | 'cooldown' | 'timed';
+export type BlockType = 'sets' | 'circuit' | 'superset' | 'warmup' | 'cooldown' | 'timed' | 'note';
 
 export interface RawExercise {
   name: string;
   load: Load;
   /** Подписи двух сторон: есть — упражнение набора идёт два раза, время на одну сторону */
   sides?: [string, string];
+  /** Подсказка к упражнению в этой тренировке */
+  note?: string;
+  /** Отдых после каждого подхода этого упражнения (sets), секунды */
+  restSec?: number;
 }
 
 export interface RawBlock {
@@ -36,9 +40,13 @@ export interface RawBlock {
   rounds?: number;
   /** Отдых между подходами или после круга, секунды */
   rest?: number;
+  /** 'round' — отдых только после круга */
+  restAfter?: 'round';
   /** Длительность разминки или заминки, секунды */
   time?: Range;
   text?: string;
+  /** Своё название блока; нет — по типу */
+  title?: string;
   exercises: RawExercise[];
 }
 
@@ -53,6 +61,7 @@ const TITLES: Record<BlockType, string> = {
   warmup: 'Разминка',
   cooldown: 'Заминка',
   timed: 'По таймеру',
+  note: 'Заметка',
 };
 
 /** фунты → кг с точностью до половины килограмма */
@@ -81,6 +90,8 @@ function exerciseOf(id: string, e: RawExercise): Exercise {
   const out: Exercise = { id, name: e.name, kind, target: targetOf(e.load) };
   const w = e.load.weight;
   if (kind === 'weight' && w) out.weight = toKg(w).max;
+  if (e.sides) out.sides = e.sides;
+  if (e.note) out.note = e.note;
   return out;
 }
 
@@ -108,13 +119,14 @@ function setsExercises(blockId: string, exs: RawExercise[]): SetsExercise[] {
         sets: count,
       }));
     }
-    return [{ ...exerciseOf(base, e), sets: e.load.sets ?? 1 }];
+    return [{ ...exerciseOf(base, e), sets: e.load.sets ?? 1, ...(e.restSec !== undefined ? { restSec: e.restSec } : {}) }];
   });
 }
 
 /** Собирает блок экрана тренировки. blockId уникален в тренировке. */
 export function buildBlock(raw: RawBlock, blockId: string): Block {
-  const title = TITLES[raw.type];
+  const title = raw.title ?? TITLES[raw.type];
+  if (raw.type === 'note') return { id: blockId, mode: 'note', title, text: raw.text ?? '' };
   // Упражнения на время в основной части (планка): те же шаги по таймеру, но без kind, это не разминка
   if (raw.type === 'timed') {
     return {
@@ -172,6 +184,7 @@ export function buildBlock(raw: RawBlock, blockId: string): Block {
     exercises: raw.exercises.map((e, i) => exerciseOf(`${blockId}-e${i}`, e)),
     rounds: raw.rounds ?? 1,
     restSec: raw.rest ?? DEFAULT_REST[raw.type],
+    ...(raw.restAfter ? { restAfter: raw.restAfter } : {}),
     videoRounds: [],
   };
 }

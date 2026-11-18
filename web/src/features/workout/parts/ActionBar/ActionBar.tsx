@@ -23,6 +23,14 @@ type Props =
       onPauseToggle: () => void;
     })
   | (Common & {
+      /** Время на максимум: секундомер вверх, кольцо ставит на паузу, «Стоп» открывает результат */
+      mode: 'stopwatch';
+      label: string;
+      paused?: boolean;
+      onPauseToggle: () => void;
+      onStop: () => void;
+    })
+  | (Common & {
       mode: 'rest';
       /** Сколько отдыхаете, секунд */
       elapsed: number;
@@ -64,6 +72,12 @@ function left(p: Props) {
         <IconButton size="md" icon="pause" aria-label="Пауза" caption="Пауза" disabled={over} onClick={p.onPauseToggle} />
       );
     }
+    case 'stopwatch':
+      return (
+        <IconButton size="md" aria-label="Стоп" caption="Стоп" onClick={p.onStop}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+        </IconButton>
+      );
     case 'rest':
       return (
         <IconButton size="md" aria-label="Добавить 15 секунд" caption="+15 с" onClick={p.onAddTime}>
@@ -81,6 +95,9 @@ function center(p: Props) {
       return <IconButton size="lg" icon="play" aria-label="Старт" caption="Старт" onClick={p.onStart} />;
     case 'timer':
       return <TimerRing seconds={p.seconds} total={p.total} paused={p.paused} alert={p.alert} caption={p.caption} onDone={p.onDone} onToggle={p.onPauseToggle} />;
+    case 'stopwatch':
+      // total равен времени: кольцо полное, пока идёт; на паузе серое. Подпись говорит, что время растёт
+      return <TimerRing seconds={1} total={1} timeLabel={p.label} paused={p.paused} caption="прошло" onToggle={p.onPauseToggle} />;
     case 'rest':
       return <RestRing elapsed={p.elapsed} goalSec={p.goalSec} reached={p.reached} progress={p.progress} onStart={p.onStart} />;
   }

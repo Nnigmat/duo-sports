@@ -45,6 +45,7 @@ function isStep(v: unknown): boolean {
     isObject(plan) &&
     isRange(plan.target) &&
     (plan.weight === undefined || isNum(plan.weight)) &&
+    (v.noteStep === undefined || (isObject(v.noteStep) && typeof v.noteStep.title === 'string' && typeof v.noteStep.text === 'string')) &&
     (v.replaced === undefined || (isObject(v.replaced) && typeof v.replaced.id === 'string' && typeof v.replaced.name === 'string'))
   );
 }
@@ -69,7 +70,12 @@ function hasValidFeedback(v: Record<string, unknown>): boolean {
   return (v.feeling === undefined || v.feeling === null || (Number.isInteger(v.feeling) && (v.feeling as number) >= 1 && (v.feeling as number) <= 5)) && (v.comment === undefined || typeof v.comment === 'string');
 }
 
-type StoredSession = Omit<Session, 'actuals' | 'times' | 'feeling' | 'comment'> & Partial<Pick<Session, 'actuals' | 'times' | 'feeling' | 'comment'>>;
+/** Ответы на заметки: у черновика, сохранённого до шага-заметки, поля нет — это допустимо */
+function hasValidAnswers(v: Record<string, unknown>): boolean {
+  return v.answers === undefined || (isObject(v.answers) && !Array.isArray(v.answers) && Object.values(v.answers).every((a) => typeof a === 'string'));
+}
+
+type StoredSession = Omit<Session, 'actuals' | 'times' | 'feeling' | 'comment' | 'answers'> & Partial<Pick<Session, 'actuals' | 'times' | 'feeling' | 'comment' | 'answers'>>;
 
 function isSession(v: unknown): v is StoredSession {
   if (!isObject(v) || !Array.isArray(v.steps) || v.steps.length === 0) return false;
@@ -88,6 +94,7 @@ function isSession(v: unknown): v is StoredSession {
     hasValidActuals(v, n) &&
     (v.times === undefined || (Array.isArray(v.times) && v.times.length === n && v.times.every((t) => t === null || (isObject(t) && isNum(t.startedAt) && isNum(t.endedAt))))) &&
     hasValidFeedback(v) &&
+    hasValidAnswers(v) &&
     Array.isArray(v.videoIds) &&
     v.videoIds.length === n &&
     v.videoIds.every((id) => id === null || typeof id === 'string') &&
@@ -120,6 +127,7 @@ export function parseDraft(raw: string | null, now: number): Draft | null {
     times: data.session.times ?? data.session.steps.map(() => null),
     feeling: data.session.feeling ?? null,
     comment: data.session.comment ?? '',
+    answers: data.session.answers ?? {},
   };
   return {
     session,

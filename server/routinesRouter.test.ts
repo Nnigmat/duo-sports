@@ -87,11 +87,10 @@ describe('/api/routines', () => {
     expect(await nf.json()).toEqual({ error: 'Разминка не найдена' });
   });
 
-  it('POST: не time → 400 с текстом, неизвестное → 400, пустое → 400, дубль → 409', async () => {
+  it('POST: упражнение не на время принимается, неизвестное → 400, пустое → 400, дубль → 409', async () => {
     const w = ex('Жим', 'weight');
-    const r = await call('POST', 'trainer', '', body({ items: [{ exercise: w, sec: { min: 10, max: 10 } }] }));
-    expect(r.status).toBe(400);
-    expect((await r.json()).error).toMatch(/time/);
+    const r = await call('POST', 'trainer', '', body({ title: 'С жимом', items: [{ exercise: w, sec: { min: 10, max: 10 } }] }));
+    expect(r.status).toBe(201);
     expect((await call('POST', 'trainer', '', body({ items: [{ exercise: 'nope', sec: { min: 10, max: 10 } }] }))).status).toBe(400);
     expect((await call('POST', 'trainer', '', body({ items: [] }))).status).toBe(400);
     await call('POST', 'trainer', '', body());

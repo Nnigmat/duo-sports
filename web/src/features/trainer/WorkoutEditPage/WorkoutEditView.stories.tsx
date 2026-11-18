@@ -99,3 +99,47 @@ export const CreateFromSearch: Story = {
     await expect(args.onCreateExercise).toHaveBeenCalledWith('b1', 'Отжимания с хлопком');
   },
 };
+
+const v2Blocks: Block[] = [
+  {
+    id: 'b1',
+    mode: 'sets',
+    title: 'Подходами',
+    restSec: 90,
+    videoRounds: [],
+    exercises: [
+      { id: 'x1', name: 'Подтягивания', kind: 'reps', target: { min: 0, max: 0 }, sets: 3, restSec: 180, note: 'Без раскачки' },
+      { id: 'x2', name: 'Планка', kind: 'time', target: { min: 0, max: 0 }, sets: 2 },
+      { id: 'x3', name: 'Наклоны', kind: 'time', target: { min: 30, max: 30 }, sets: 2, sides: ['влево', 'вправо'] },
+    ],
+  },
+  { id: 'b2', mode: 'circuit', title: 'По кругу', rounds: 3, restSec: 60, restAfter: 'round', videoRounds: [], exercises: [{ id: 'x4', name: 'Отжимания', kind: 'reps', target: { min: 10, max: 10 } }] },
+];
+
+export const WithNotesAndRest: Story = {
+  args: { blocks: v2Blocks, notes: 'Рабочих отжиманий сегодня нет', onNotes: fn() },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByLabelText('Заметка к тренировке')).toHaveValue('Рабочих отжиманий сегодня нет');
+    await expect(c.getAllByLabelText('Заметка')[0]).toHaveValue('Без раскачки');
+    await expect(c.getAllByRole('checkbox', { name: /На максимум/ })).toHaveLength(4);
+    await expect(c.getAllByRole('checkbox', { name: /На максимум/ })[0]).toBeChecked();
+    await expect(c.getAllByRole('checkbox', { name: /На максимум/ })[2]).not.toBeChecked();
+    await expect(c.getByText('На сторону: влево, вправо')).toBeVisible();
+    await expect(c.getByText('Отдых после круга')).toBeVisible();
+    await userEvent.click(c.getByRole('button', { name: 'Наклоны: убрать стороны' }));
+    const next = (args.onBlocks as ReturnType<typeof fn>).mock.calls.at(-1)?.[0] as Block[];
+    await expect(next[0]).not.toHaveProperty('exercises.2.sides');
+  },
+};
+
+export const NoteBlock: Story = {
+  args: { blocks: [...blocks, { id: 'b2', mode: 'note', title: 'Замер', text: 'Сделайте контрольный замер талии' }] },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByLabelText('Название блока 2')).toHaveValue('Замер');
+    await expect(c.getByLabelText('Текст заметки 2')).toHaveValue('Сделайте контрольный замер талии');
+    await userEvent.click(c.getAllByRole('button', { name: 'Блок выше' })[1]!);
+    await expect(args.onBlocks).toHaveBeenCalled();
+  },
+};

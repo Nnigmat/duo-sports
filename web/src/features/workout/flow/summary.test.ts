@@ -52,6 +52,17 @@ describe('restLabel', () => {
   it('sets: между подходами', () => {
     expect(restLabel(setsBlock)).toBe('Отдых 90 с между подходами');
   });
+  it('circuit restAfter: после круга', () => {
+    expect(restLabel({ ...(circuit as CircuitBlock), restSec: 90, restAfter: 'round' })).toBe('Отдых 90 с после круга');
+  });
+  it('sets с разным отдыхом у упражнений', () => {
+    const [a, b] = (setsBlock as SetsBlock).exercises;
+    expect(restLabel({ ...setsBlock, exercises: [{ ...a, restSec: 180 }, b] })).toBe('Отдых у упражнений');
+  });
+  it('sets с одинаковым отдыхом у упражнений', () => {
+    const [a, b] = (setsBlock as SetsBlock).exercises;
+    expect(restLabel({ ...setsBlock, exercises: [{ ...a, restSec: 90 }, { ...b, restSec: 90 }] })).toBe('Отдых 90 с между подходами');
+  });
   it('без отдыха: undefined', () => {
     expect(restLabel({ ...(circuit as CircuitBlock), restSec: 0 })).toBeUndefined();
   });

@@ -160,3 +160,56 @@ export const RebuildConfirm: Story = {
     await expect(args.onRebuild).toHaveBeenCalled();
   },
 };
+
+const marked: typeof reviewDraft = {
+  ...reviewDraft,
+  advice: [],
+  marks: {
+    x1: { blockIndex: 0, exerciseIndex: 0, field: 'weight_kg', wrote: '60 кг по 8', message: 'Не понимаю weight_kg: 60 кг по 8' },
+    x2: { blockIndex: 0, exerciseIndex: 1, field: 'reps', wrote: 'до отказа', message: 'Не понимаю reps: до отказа' },
+  },
+};
+
+export const WithMarks: Story = {
+  args: { draft: marked },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getAllByText('Проверьте нагрузку')).toHaveLength(2);
+    await expect(c.getByText('Агент написал: до отказа')).toBeVisible();
+    await expect(c.getByText('Осталось проверить: 2')).toBeVisible();
+    const save = c.getByRole('button', { name: 'Сохранить' });
+    await expect(save).toBeDisabled();
+    // Заметка не нагрузка: пометки остаются
+    await userEvent.type(c.getAllByLabelText('Заметка')[0]!, 'a');
+    await expect(c.getByText('Осталось проверить: 2')).toBeVisible();
+    // Тренер поменял нагрузку первого упражнения: пометка снята
+    await userEvent.click(within(c.getAllByRole('listitem').find((li) => within(li).queryByText('Жим лёжа'))!).getByRole('button', { name: 'Вес: больше' }));
+    await expect(c.getByText('Осталось проверить: 1')).toBeVisible();
+    await expect(args.onDraft).toHaveBeenCalled();
+    // Убрали второе помеченное: можно сохранять
+    await userEvent.click(c.getByRole('button', { name: 'Убрать «Отжимания с хлопком»' }));
+    await expect(c.queryByText(/Осталось проверить/)).toBeNull();
+    await expect(c.getByRole('button', { name: 'Сохранить' })).toBeEnabled();
+  },
+};
+
+export const WithUnparsed: Story = {
+  args: {
+    draft: {
+      ...reviewDraft,
+      advice: [{ id: 'a1', text: 'Отдых добавлен по правилам' }],
+      unparsed: [
+        { what: 'bench-pres', message: 'Неизвестный exercise_id: bench-pres' },
+        { what: 'Заметка к «Вращение руками»: Медленно, без рывков', message: 'Незнакомое поле: notes' },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('heading', { name: 'Не разобрал' })).toBeVisible();
+    await expect(c.getByText('bench-pres')).toBeVisible();
+    await expect(c.getByText('Заметка к «Вращение руками»: Медленно, без рывков')).toBeVisible();
+    await expect(c.queryByText(/Осталось проверить/)).toBeNull();
+    await expect(c.getByRole('button', { name: 'Сохранить' })).toBeEnabled();
+  },
+};

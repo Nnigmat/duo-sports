@@ -16,3 +16,27 @@ describe('displayBlocks', () => {
     ]);
   });
 });
+
+describe('displayBlocks: блок-заметка', () => {
+  it('в список блоков не попадает', () => {
+    expect(displayBlocks([{ id: 'n', mode: 'note', title: 'Важно', text: 'Текст' }])).toEqual([]);
+  });
+});
+
+describe('displayBlocks: макс. и стороны', () => {
+  it('время на максимум — «макс.», а не 00:00', () => {
+    const [b] = displayBlocks([{ id: 's', mode: 'sets', title: 'С', restSec: 60, videoRounds: [], exercises: [{ id: 'a', name: 'Планка', kind: 'time', target: { min: 0, max: 0 }, sets: 3 }] }]);
+    expect(b!.items[0]!.value).toBe('3 × макс.');
+  });
+  it('упражнение со сторонами в подходах и круге — «на сторону»', () => {
+    const out = displayBlocks([
+      { id: 's', mode: 'sets', title: 'С', restSec: 60, videoRounds: [], exercises: [{ id: 'a', name: 'Выпады', kind: 'reps', target: { min: 10, max: 10 }, sets: 3, sides: ['л', 'п'] }] },
+      { id: 'c', mode: 'circuit', title: 'К', rounds: 2, restSec: 60, videoRounds: [], exercises: [{ id: 'b', name: 'Планка', kind: 'time', target: { min: 30, max: 30 }, sides: ['л', 'п'] }] },
+    ]);
+    expect(out.map((b) => b.items[0]!.value)).toEqual(['3 × 10 повт на сторону', '00:30 на сторону']);
+  });
+  it('в разминке сторон нет, как на экране тренировки', () => {
+    const [b] = displayBlocks([{ id: 'w', mode: 'timed', kind: 'warmup', title: 'Р', exercises: [{ id: 'a', name: 'Круги', kind: 'time', target: { min: 30, max: 30 }, sides: ['л', 'п'] }] }]);
+    expect(b!.items[0]!.value).toBe('00:30');
+  });
+});

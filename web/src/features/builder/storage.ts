@@ -1,8 +1,11 @@
 import type { BuilderDraft, BuilderInput, RoutineChoice, RoutinePick } from './types';
 
+/** Версия записи: форма BuilderDraft изменилась — старая запись сбрасывается, как битый JSON */
+export const BUILDER_VERSION = 2;
+
 /** Ввод и собранный черновик живут в браузере до «Сохранить»: перезагрузка, закрытая вкладка или вебвью их не теряют. */
 export interface StoredBuilder {
-  v: 1;
+  v: typeof BUILDER_VERSION;
   savedAt: number;
   step: 'input' | 'review';
   input: BuilderInput;
@@ -36,7 +39,9 @@ const isBlock = (b: unknown) => isObj(b) && isStr(b.id) && isStr(b.mode) && Arra
 const isDraft = (d: unknown): d is BuilderDraft =>
   isObj(d) && isStr(d.date) && isStr(d.title) && Array.isArray(d.blocks) && d.blocks.every(isBlock) &&
   Array.isArray(d.newExercises) && d.newExercises.every((e) => isObj(e) && isStr(e.name) && isStr(e.slug) && isStrs(e.muscles) && isStr(e.kind)) &&
-  isPick(d.warmup) && isPick(d.cooldown) && Array.isArray(d.advice) && d.advice.every((a) => isObj(a) && isStr(a.id) && isStr(a.text));
+  isPick(d.warmup) && isPick(d.cooldown) && Array.isArray(d.advice) && d.advice.every((a) => isObj(a) && isStr(a.id) && isStr(a.text)) &&
+  isObj(d.marks) && Object.values(d.marks).every((m) => isObj(m) && isStr(m.field) && isStr(m.wrote) && isStr(m.message)) &&
+  Array.isArray(d.unparsed) && d.unparsed.every((u) => isObj(u) && isStr(u.what) && isStr(u.message));
 
 /** Чистая функция: чужая версия, просрочка, битый JSON или не та форма — null */
 export function parseBuilder(raw: string | null, now: number): StoredBuilder | null {
@@ -47,12 +52,12 @@ export function parseBuilder(raw: string | null, now: number): StoredBuilder | n
   } catch {
     return null;
   }
-  if (!isObj(v) || v.v !== 1 || typeof v.savedAt !== 'number' || now - v.savedAt > BUILDER_TTL_MS) return null;
+  if (!isObj(v) || v.v !== BUILDER_VERSION || typeof v.savedAt !== 'number' || now - v.savedAt > BUILDER_TTL_MS) return null;
   if (v.step !== 'input' && v.step !== 'review') return null;
   if (!isInput(v.input)) return null;
   if (v.draft !== null && !isDraft(v.draft)) return null;
   if (v.step === 'review' && v.draft === null) return null;
-  return { v: 1, savedAt: v.savedAt, step: v.step, input: v.input, draft: v.draft as BuilderDraft | null };
+  return { v: BUILDER_VERSION, savedAt: v.savedAt, step: v.step, input: v.input, draft: v.draft as BuilderDraft | null };
 }
 
 export const serializeBuilder = (s: StoredBuilder): string => JSON.stringify(s);

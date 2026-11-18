@@ -22,7 +22,7 @@ export const Default: Story = {
     for (const s of SECTIONS) await expect(canvasElement.querySelector(`#${s.id}`)).not.toBeNull();
     await expect(c.getByRole('link', { name: 'К импорту' })).toHaveAttribute('href', '/import');
     await userEvent.click(c.getByRole('button', { name: 'Скопировать пример' }));
-    await expect(args.onCopyExample).toHaveBeenCalledWith(expect.stringMatching(/^version: 1\n/));
+    await expect(args.onCopyExample).toHaveBeenCalledWith(expect.stringMatching(/^version: 2\n/));
   },
 };
 
@@ -31,7 +31,8 @@ export const Blocks: Story = {
     const c = within(canvasElement);
     await expect(c.getByText('type: circuit')).toBeVisible();
     await expect(c.getByText('type: warmup | cooldown')).toBeVisible();
-    await expect(c.getByText('Ошибки и ограничения')).toBeVisible();
+    await expect(c.getByText('Частые ошибки и ограничения')).toBeVisible();
+    await expect(c.getByText('Файлы с version: 1 тоже читаются.')).toBeVisible();
   },
 };
 

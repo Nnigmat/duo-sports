@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { libraryFixture } from './fixtures';
 import type { LibraryEntry } from '../../../../shared/types';
-import { exerciseYaml, referenceHeader, referenceList, referenceYamlFile, sourceStatus, SAMPLE_YAML } from './import';
+import { exerciseYaml, newWorkoutYaml, referenceHeader, referenceList, referenceYamlFile, sourceStatus, SAMPLE_YAML } from './import';
+import { parseImport } from './parse';
 
 const squat = { ...libraryFixture[0], id: 'barbell-squat', name: 'Приседания со штангой', aliases: ['присед'], group: 'legs', kind: 'weight', muscles: ['Квадрицепс', 'Ягодицы'] } as LibraryEntry;
 const pullUp = { ...libraryFixture[0], id: 'pull-up', name: 'Подтягивания', group: 'back', kind: 'reps', muscles: ['Широчайшие'] } as LibraryEntry;
@@ -18,8 +19,21 @@ describe('sourceStatus', () => {
     expect(sourceStatus('1\n2\n3\n4\n5')).toBe('Вставлено 5 строк');
   });
   it('пример непустой и начинается с version', () => {
-    expect(SAMPLE_YAML.startsWith('version: 1')).toBe(true);
+    expect(SAMPLE_YAML.startsWith('version: 2')).toBe(true);
     expect(sourceStatus(SAMPLE_YAML)).toMatch(/^Вставлено \d+ /);
+  });
+});
+
+describe('шаблоны v2', () => {
+  const ctx = { library: libraryFixture, routines: [], today: '2026-11-02', mine: {} };
+  it.each([
+    ['пример', SAMPLE_YAML],
+    ['новая тренировка', newWorkoutYaml('2026-11-10')],
+  ])('%s — version: 2 без ошибок и с подсказкой про разминку', (_name, text) => {
+    expect(text.startsWith('version: 2')).toBe(true);
+    expect(text).toContain('# - { type: warmup, routine: <id набора из библиотеки> }');
+    const r = parseImport(text, ctx);
+    expect(r.ok ? [] : r.errors.map((e) => e.message)).toEqual([]);
   });
 });
 

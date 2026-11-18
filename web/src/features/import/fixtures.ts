@@ -149,3 +149,29 @@ export const libraryFixture: LibraryEntry[] = exercisesFixture.map((e) => ({
   muscles: e.muscles,
   equipment: e.equipment,
 }));
+
+/** Пример формата version: 1: проверяет, что v1 читается как раньше */
+export const V1_EXAMPLE = [
+  'version: 1',
+  'exercises:                      # новые упражнения, необязательно',
+  '  - id: reverse-pushup',
+  '    name: Обратные отжимания от лавочки',
+  '    muscles: [трицепс]',
+  '    measure: reps',
+  'workouts:',
+  '  - id: w02-tue                 # ключ для повторного импорта',
+  '    date: 2026-11-03',
+  '    title: Трицепс, пресс, ноги',
+  '    blocks:',
+  '      - type: warmup',
+  '        time: 5-7m',
+  '        text: Разогреться любым способом',
+  '      - type: circuit',
+  '        rounds: 3',
+  '        exercises:',
+  '          - { exercise_id: reverse-pushup, reps: 20-24 }',
+  '          - { name: Подтягивание колен в висе, reps: max }',
+  '          - { name: Боковая планка, time: 30s, per_side: true }',
+  '      - type: cooldown',
+  '        text: Растяжка, расслабление спины',
+];

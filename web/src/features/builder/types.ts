@@ -1,5 +1,6 @@
 import { DRAFT_TEXT_MAX, type DraftRequest, type RoutineAsk } from '../../../../shared/aiDraft';
 import type { Block, ExerciseKind } from '../../../../shared/types';
+import type { DraftMark, Unparsed } from './repair';
 
 /** Разминка или заминка на шаге ввода: готовая из библиотеки, описанная словами или никакой */
 export type RoutineChoice = { kind: 'library'; slug: string } | { kind: 'text'; text: string } | { kind: 'none' };
@@ -44,11 +45,17 @@ export interface Advice {
 export interface BuilderDraft {
   date: string;
   title: string;
+  /** Заметка к тренировке целиком; нет — без заметки */
+  notes?: string;
   blocks: Block[];
   newExercises: NewExerciseDraft[];
   warmup: RoutinePick;
   cooldown: RoutinePick;
   advice: Advice[];
+  /** Пометки ремонта по id упражнения структуры (b0-e1): нагрузку поставила программа, тренер проверяет */
+  marks: Record<string, DraftMark>;
+  /** «Не разобрал»: что из ответа агента убрано при ремонте */
+  unparsed: Unparsed[];
 }
 
 export const EMPTY_INPUT: BuilderInput = { title: '', warmup: { kind: 'none' }, main: { text: '', picked: [] }, cooldown: { kind: 'none' } };
