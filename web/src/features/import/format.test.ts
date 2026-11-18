@@ -54,8 +54,10 @@ const errorsOf = (text: string) => {
 /** Фрагмент-блок (строки с «- type: …») → документ version: 2 с одной тренировкой */
 const MAIN = ['- type: sets', '  exercises:', '    - { exercise_id: pullup, reps: 5 }'];
 /** Разминке и заминке нужна основная часть: к ним дописывается блок sets */
+/** Разминке, заминке и заметке нужен блок с упражнениями рядом: без него нет основной части */
 const asDocument = (block: string[]): string => {
-  const blocks = block.every((l) => !l.startsWith('- type: warmup') && !l.startsWith('- type: cooldown')) ? block : [...block, ...MAIN];
+  const alone = ['- type: warmup', '- type: cooldown', '- type: note'];
+  const blocks = block.every((l) => !alone.some((a) => l.startsWith(a))) ? block : [...block, ...MAIN];
   return `version: 2\nworkouts:\n  - title: Т\n    date: 2026-11-03\n    blocks:\n${blocks.map((l) => `      ${l}`).join('\n')}\n`;
 };
 const failure = (text: string): string => {

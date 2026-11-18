@@ -190,8 +190,12 @@ describe('v2: заметка, отдых, максимум, стороны', () 
     expect(setNoteText(blocks, 'b1', 'Сделать замер')[0]).toMatchObject({ text: 'Сделать замер' });
   });
   it('note block without text is a problem', () => {
-    expect(problems('Верх', addBlock([], 'note'))).toEqual(['Заметка без текста']);
-    expect(problems('Верх', setNoteText(addBlock([], 'note'), 'b1', 'Замер'))).toEqual([]);
+    expect(problems('Верх', addBlock(sets(), 'note'))).toEqual(['Заметка без текста']);
+    expect(problems('Верх', setNoteText(addBlock(sets(), 'note'), 'b2', 'Замер'))).toEqual([]);
+  });
+  it('only note blocks is a problem', () => {
+    expect(problems('Верх', setNoteText(addBlock([], 'note'), 'b1', 'Замер'))).toEqual(['Нужен хотя бы один блок с упражнениями']);
+    expect(problems('Верх', [])).toEqual(['Добавьте хотя бы один блок']);
   });
   it('блок-заметка двигается наравне с остальными', () => {
     const blocks = addBlock(sets(), 'note');

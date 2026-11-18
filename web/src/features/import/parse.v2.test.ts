@@ -196,3 +196,11 @@ describe('id набора вместо упражнения внутри наб�
     expect(errors[0]!.hint).toContain('это id разминки');
   });
 });
+
+describe('проверки v2 сверх v1', () => {
+  it('main part of only note blocks is an error', () => {
+    const errors = fails(v2('      - { type: warmup, routine: warmup-common }\n      - type: note\n        title: Тест\n        text: Есть ли боль\n'));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatchObject({ path: ['workouts', 0, 'blocks'], message: 'В «Т» нет основной части' });
+  });
+});

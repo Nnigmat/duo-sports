@@ -673,8 +673,10 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
           raws.splice(i, 1);
         }
       }
-      if (!raws.some((r) => r)) {
-        fail([...p, 'blocks'], `В «${title ?? ''}» нет основной части`, 'Кроме разминки и заминки по ссылке нужен хотя бы один блок.');
+      // v2: одних заметок мало — сохранить такую тренировку не даст сервер
+      if (!raws.some((r) => r && (!v2 || r.type !== 'note'))) {
+        const hint = v2 ? 'Кроме разминки, заминки и заметок нужен хотя бы один блок с упражнениями.' : 'Кроме разминки и заминки по ссылке нужен хотя бы один блок.';
+        fail([...p, 'blocks'], `В «${title ?? ''}» нет основной части`, hint);
         return;
       }
       built.push({ id, title: title ?? '', date, ...(notes ? { notes } : {}), blocks, structure: buildBlocks(raws.filter((r): r is RawBlock => r !== null)), ...(links.warmup ? { warmupRoutine: links.warmup } : {}), ...(links.cooldown ? { cooldownRoutine: links.cooldown } : {}) });

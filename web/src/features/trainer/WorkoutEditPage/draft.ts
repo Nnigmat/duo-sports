@@ -170,6 +170,7 @@ export function problems(title: string, blocks: Block[]): string[] {
   const out: string[] = [];
   if (!title.trim()) out.push('Введите название тренировки');
   if (blocks.length === 0) out.push('Добавьте хотя бы один блок');
+  else if (blocks.every((b) => b.mode === 'note')) out.push('Нужен хотя бы один блок с упражнениями');
   for (const b of blocks) {
     if (!b.title.trim()) out.push('У блока нет названия');
     if (b.mode === 'note') {
