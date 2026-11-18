@@ -28,3 +28,24 @@ export const Default: Story = {
     await expect(onSelect).toHaveBeenCalled();
   },
 };
+
+export const Danger: Story = {
+  args: {
+    items: [
+      { id: 'copy', icon: 'copy', title: 'Сделать копию', onSelect },
+      { id: 'delete', icon: 'trash', title: 'Удалить', danger: true, onSelect },
+    ],
+  },
+};
+
+export const Disabled: Story = {
+  args: {
+    items: [
+      { id: 'copy', icon: 'copy', title: 'Сделать копию', onSelect },
+      { id: 'delete', icon: 'trash', title: 'Удалить', description: 'Нельзя: используется в 3 тренировках', danger: true, disabled: true, onSelect },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button', { name: /Удалить/ })).toBeDisabled();
+  },
+};

@@ -76,6 +76,7 @@ export function RoutinesPage() {
             onCreate={canManage ? () => navigate(`${BASE}/new`) : undefined}
             onCopy={canManage ? async (id) => { await copyRoutine(id); await load(); } : undefined}
             onRename={canManage ? async (id, title) => { await renameRoutine(id, title); await load(); } : undefined}
+            onDelete={canManage ? async (id) => { await deleteRoutine(id); await load(); } : undefined}
           />
         }
       />
