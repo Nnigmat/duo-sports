@@ -53,6 +53,7 @@ describe('agent instructions', () => {
     const timed = 'в timed time_sec только число; «на максимум» — упражнение в блоке sets';
     expect(AGENT_INSTRUCTIONS).toContain(timed);
     expect(AGENT_FORMAT).toContain('в timed time_sec только число');
+    expect(AGENT_FORMAT).toContain('идут сами, например планка 45 с (time_sec 45);');
     expect(AGENT_INSTRUCTIONS).toContain('«Без отдыха» нельзя выразить нулём — 0 значит «по умолчанию»; если тренер явно сказал «без отдыха», напиши это в advice');
   });
 
