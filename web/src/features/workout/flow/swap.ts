@@ -54,7 +54,8 @@ export function swapSteps(steps: Step[], index: number, to: SwapOption): Step[] 
   const from = steps[index];
   return steps.map((s, i) => {
     if (i < index || s.blockIndex !== from.blockIndex || s.exerciseId !== from.exerciseId) return s;
-    const { replaced: _, pose: __, ...rest } = s;
+    // Заметка и стороны принадлежат исходному упражнению: замене они не подходят
+    const { replaced: _, pose: __, note: ___, sides: ____, ...rest } = s;
     const original = s.replaced ?? { id: s.exerciseId, name: s.exerciseName };
     return {
       ...rest,

@@ -275,9 +275,30 @@ export const LongNoteUnderExercise: Story = {
     await expect(more.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
     const text = c.getByText(LONG_EXERCISE_NOTE);
     await expect(text.scrollHeight).toBeGreaterThan(text.clientHeight);
+    const done = c.getByRole('button', { name: 'Готово' });
+    // Облачко (корень блока заметки -> облачко), хвостик и сцена не вылезают за окно и не наезжают на нижний ряд
+    const bubble = text.parentElement?.parentElement as HTMLElement;
+    let stage = c.getByRole('button', { name: 'Запись' }).parentElement as HTMLElement;
+    while (getComputedStyle(stage).overflowY !== 'auto') stage = stage.parentElement as HTMLElement;
+    const inside = () => {
+      const b = bubble.getBoundingClientRect();
+      const st = stage.getBoundingClientRect();
+      const bar = done.getBoundingClientRect();
+      expect(b.left).toBeGreaterThanOrEqual(0);
+      expect(b.right).toBeLessThanOrEqual(window.innerWidth);
+      expect(b.top).toBeGreaterThanOrEqual(0);
+      // Хвостик выступает из облачка на 7 px вниз: его конец не уходит глубже сцены на эту величину
+      expect(b.bottom + 7).toBeLessThanOrEqual(st.top + 8);
+      expect(st.height).toBeGreaterThan(150);
+      expect(st.bottom).toBeLessThanOrEqual(bar.top + 1);
+      expect(bar.bottom).toBeLessThanOrEqual(window.innerHeight + 1);
+    };
+    inside();
     await userEvent.click(more);
     await expect(text.scrollHeight).toBeLessThanOrEqual(text.clientHeight + 1);
+    inside();
     await userEvent.click(c.getByRole('button', { name: 'Свернуть' }));
     await expect(c.getByRole('button', { name: 'Ещё' })).toBeVisible();
+    inside();
   },
 };

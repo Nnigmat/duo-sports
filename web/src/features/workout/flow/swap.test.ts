@@ -27,6 +27,15 @@ describe('swapSteps', () => {
     expect(out[3]).toBe(sets[3]);
   });
 
+  it('замена не переносит заметку и стороны исходного упражнения', () => {
+    const withExtras = sets.map((s) => ({ ...s, note: 'Локти назад', sides: ['левая', 'правая'] as [string, string] }));
+    const out = swapSteps(withExtras, 1, pushUp);
+    expect(out[1].note).toBeUndefined();
+    expect(out[1].sides).toBeUndefined();
+    expect(out[2].note).toBeUndefined();
+    expect(out[0].note).toBe('Локти назад');
+  });
+
   it('в круге меняет упражнение только в оставшихся кругах', () => {
     const steps = buildSteps([circuit]);
     // круг 2, первое упражнение (dips): индексы 3, 6 — dips; 4, 7 — scissors
