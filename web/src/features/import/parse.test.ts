@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { libraryFixture } from './fixtures';
-import { EXAMPLE } from './format';
+import { libraryFixture, V1_EXAMPLE as EXAMPLE } from './fixtures';
 import { SAMPLE_YAML, newWorkoutYaml, sampleYaml } from './import';
 import { buildPlan, DEFAULT_OPTIONS } from './importPlan';
 import { importSlug } from '../../../../shared/importSlug';

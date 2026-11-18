@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { libraryFixture } from './fixtures';
-import { parseImport } from './parse';
-import { ALTERNATING, BLOCK_TYPES, ERRORS, EXAMPLE, EXERCISE_FIELDS, joinCode, NEW_EXERCISE_FIELDS, PLAN_FIELDS, PYRAMID, ROUTINE_EXAMPLE, ROUTINE_FIELDS, SECTIONS, SHORT_FORMS, splitCode, TOP_FIELDS, WORKOUT_FIELDS } from './format';
-import { SAMPLE_YAML } from './import';
+import type { LibraryEntry } from '../../../../shared/types';
+import { ALTERNATING, BLOCK_TYPES, ERRORS, EXAMPLE, EXERCISE_FIELDS, joinCode, NEW_EXERCISE_FIELDS, PLAN_FIELDS, PYRAMID, ROUTINE_EXAMPLE, ROUTINE_FIELDS, SECTIONS, splitCode, TOP_FIELDS, V1_NOTE, WORKOUT_FIELDS } from './format';
+import { parseImport, type ParseContext } from './parse';
+import { V1_FIELD_HINTS } from './v2';
 
 describe('splitCode', () => {
   it('отделяет комментарий в конце строки и убирает пробелы перед ним', () => {
@@ -23,6 +23,85 @@ describe('splitCode', () => {
   });
 });
 
+const entry = (id: string, name: string, kind: LibraryEntry['kind']): LibraryEntry => ({ id, name, aliases: [], kind, group: 'back', muscles: [], equipment: [] });
+/** Упражнения и наборы, на которые ссылаются примеры страницы */
+const ctx: ParseContext = {
+  library: [
+    entry('pullup', 'Подтягивания', 'reps'),
+    entry('pushup-handles', 'Отжимания на упорах', 'reps'),
+    entry('dead-hang', 'Вис', 'time'),
+    entry('hanging-knee-raise', 'Подъём коленей в висе', 'reps'),
+    entry('db-curl-seated', 'Сгибание руки с гантелью сидя', 'weight'),
+    entry('lunge', 'Выпады', 'reps'),
+    entry('wrist-mobilization', 'Мобилизация запястья', 'reps'),
+    entry('open-book', 'Открытая книга', 'reps'),
+    entry('plank', 'Планка', 'time'),
+    entry('bench-press', 'Жим лёжа', 'weight'),
+  ],
+  routines: [
+    { id: 'warmup-common', kind: 'warmup', title: 'Общая разминка' },
+    { id: 'cooldown-common', kind: 'cooldown', title: 'Общая заминка' },
+  ],
+  today: '2026-11-02',
+  mine: {},
+};
+
+const parse = (text: string) => parseImport(text, ctx);
+const errorsOf = (text: string) => {
+  const r = parse(text);
+  return r.ok ? [] : r.errors;
+};
+/** Фрагмент-блок (строки с «- type: …») → документ version: 2 с одной тренировкой */
+const MAIN = ['- type: sets', '  exercises:', '    - { exercise_id: pullup, reps: 5 }'];
+/** Разминке и заминке нужна основная часть: к ним дописывается блок sets */
+const asDocument = (block: string[]): string => {
+  const blocks = block.every((l) => !l.startsWith('- type: warmup') && !l.startsWith('- type: cooldown')) ? block : [...block, ...MAIN];
+  return `version: 2\nworkouts:\n  - title: Т\n    date: 2026-11-03\n    blocks:\n${blocks.map((l) => `      ${l}`).join('\n')}\n`;
+};
+const failure = (text: string): string => {
+  const r = parse(text);
+  return r.ok ? '' : r.errors.map((e) => `${e.path?.join('.') ?? e.line}: ${e.message} ${e.hint ?? ''}`).join('; ');
+};
+
+describe('every format example parses', () => {
+  const documents: Array<[string, string]> = [
+    ['пример страницы', joinCode(EXAMPLE)],
+    ['пример наборов', joinCode(ROUTINE_EXAMPLE)],
+    ['пирамида', asDocument(PYRAMID)],
+    ...BLOCK_TYPES.map((b): [string, string] => [`блок ${b.type}`, asDocument(b.code)]),
+    [
+      'чередование недель',
+      `version: 2\nworkouts:\n${['upper-a', 'upper-b', 'legs-a', 'legs-b'].map((id) => `  - { id: ${id}, title: ${id}, blocks: [{ type: sets, exercises: [{ exercise_id: pullup, reps: 5 }] }] }\n`).join('')}${joinCode(ALTERNATING)}`,
+    ],
+  ];
+  it.each(documents)('%s', (_name, text) => {
+    expect(failure(text)).toBe('');
+  });
+});
+
+describe('частые ошибки', () => {
+  const wrong = ERRORS.filter((e) => e.wrong);
+  it('каждая ошибочная запись не разбирается', () => {
+    for (const e of wrong) expect(errorsOf(asDocument(e.wrong!)).length, e.message).toBeGreaterThan(0);
+  });
+  it('на каждое поле v1 из разбора есть запись, и разбор называет то же поле v2', () => {
+    for (const [field, hint] of Object.entries(V1_FIELD_HINTS)) {
+      const e = ERRORS.find((x) => x.message === `Поле ${field} из version: 1`);
+      expect(e, field).toBeDefined();
+      expect(e!.fix).toContain(hint);
+      expect(failure(asDocument(e!.wrong!)), field).toContain(hint);
+    }
+  });
+});
+
+describe('mentions v1 still read', () => {
+  it('в содержимом есть строка про version: 1, описания v1 нет', () => {
+    expect(V1_NOTE).toBe('Файлы с version: 1 тоже читаются');
+    expect(EXAMPLE[0]).toBe('version: 2');
+    expect(ROUTINE_EXAMPLE[0]).toBe('version: 2');
+  });
+});
+
 describe('содержимое страницы', () => {
   it('в таблицах нет повторов полей и всё заполнено', () => {
     for (const table of [TOP_FIELDS, WORKOUT_FIELDS, EXERCISE_FIELDS, NEW_EXERCISE_FIELDS, PLAN_FIELDS, ROUTINE_FIELDS]) {
@@ -31,11 +110,12 @@ describe('содержимое страницы', () => {
       for (const r of table) expect([r.field, r.value, r.description].every((x) => x.length > 0)).toBe(true);
     }
   });
-  it('на верхнем уровне обязательны ровно два поля', () => {
+  it('на верхнем уровне обязательны ровно два поля, units нет', () => {
     expect(TOP_FIELDS.filter((r) => r.flag?.kind === 'required').map((r) => r.field)).toEqual(['version', 'workouts']);
+    expect(TOP_FIELDS.some((r) => r.field === 'units')).toBe(false);
   });
-  it('у каждого блока есть код и описание; типы не повторяются', () => {
-    expect(BLOCK_TYPES.map((b) => b.type)).toEqual(['sets', 'circuit', 'superset', 'timed', 'warmup | cooldown', 'warmup | cooldown + exercises', 'warmup | cooldown + routine']);
+  it('типы блоков v2 описаны, у каждого есть код', () => {
+    expect(BLOCK_TYPES.map((b) => b.type)).toEqual(['sets', 'circuit', 'timed', 'warmup | cooldown', 'note']);
     for (const b of BLOCK_TYPES) expect(b.code[0]).toMatch(/^- type: /);
   });
   it('якоря содержания уникальны', () => {
@@ -43,33 +123,7 @@ describe('содержимое страницы', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toHaveLength(11);
   });
-  it('примеры начинаются с правильных ключей', () => {
-    expect(EXAMPLE[0]).toBe('version: 1');
-    expect(SHORT_FORMS.map((s) => s.code)).toContain('4x8 @ 75');
-    expect(PYRAMID.some((l) => l.includes('warmup: true'))).toBe(true);
-    expect(ALTERNATING[0]).toBe('schedule:');
-    expect(ERRORS.length).toBeGreaterThan(0);
-  });
-  it('пример на странице и пример для вставки начинаются одинаково', () => {
-    expect(SAMPLE_YAML.startsWith(EXAMPLE[0]!)).toBe(true);
-  });
-});
-
-describe('наборы разминки в справке', () => {
-  it('пример набора разбирается без ошибок: два набора со сторонами, подключены ссылками', () => {
-    const r = parseImport(ROUTINE_EXAMPLE.join('\n'), { library: libraryFixture, routines: [], today: '2026-11-02', mine: {} });
-    if (!r.ok) throw new Error(r.errors.map((e) => `${e.line}: ${e.message}`).join('; '));
-    expect(r.routines.map((x) => [x.id, x.kind])).toEqual([['neck-shoulders', 'warmup'], ['back-stretch', 'cooldown']]);
-    expect(r.routines[0]!.items.some((i) => i.sides)).toBe(true);
-    expect(r.workouts[0]!.warmupRoutine).toBe('neck-shoulders');
-    expect(r.workouts[0]!.cooldownRoutine).toBe('back-stretch');
-    expect(r.workouts[0]!.structure.map((b) => b.mode)).toEqual(['circuit']);
-  });
-  it('routines описан в верхнем уровне и упоминает библиотеку разминок', () => {
-    const top = TOP_FIELDS.find((r) => r.field === 'routines')!;
-    expect(top).toBeDefined();
-    expect(JSON.stringify(top)).toContain('библиот');
-    const block = BLOCK_TYPES.find((b) => b.type === 'warmup | cooldown + routine')!;
-    expect(block.description).toContain('библиот');
+  it('поля упражнения — поля v2, без do и per_side', () => {
+    expect(EXERCISE_FIELDS.map((r) => r.field)).toEqual(['exercise_id', 'sets', 'reps', 'time_sec', 'weight_kg', 'rest_sec', 'sides', 'notes']);
   });
 });

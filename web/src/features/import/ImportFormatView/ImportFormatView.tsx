@@ -3,7 +3,7 @@ import { CodeBlock } from '../CodeBlock/CodeBlock';
 import { FieldTable } from '../FieldTable/FieldTable';
 import {
   ALTERNATING, BLOCK_TYPES, ERRORS, EXAMPLE, EXERCISE_FIELDS, LIMITS, NEW_EXERCISE_FIELDS, PLAN_FIELDS, PYRAMID, REIMPORT, ROUTINE_EXAMPLE, ROUTINE_FIELDS, SECTIONS,
-  SHORT_FORMS, TOP_FIELDS, UNITS, WORKOUT_FIELDS,
+  TOP_FIELDS, UNITS, V1_NOTE, WORKOUT_FIELDS,
 } from '../format';
 import styles from './ImportFormatView.module.css';
 
@@ -28,7 +28,10 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
           Формат импорта
         </Text>
         <Text variant="body" color="slate">
-          Тренировки и план описываются в YAML. Один текст — сколько угодно тренировок. Здесь все поля, единицы и правила.
+          Тренировки и план описываются в YAML, version: 2. Один текст — сколько угодно тренировок. Здесь все поля, блоки и частые ошибки.
+        </Text>
+        <Text variant="body-sm" color="slate">
+          {V1_NOTE}.
         </Text>
       </header>
 
@@ -50,7 +53,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Пример
             </Text>
             <Text variant="body-sm" color="slate">
-              Одно новое упражнение и одна тренировка с датой: разминка, круг из 3 упражнений и заминка. Его можно вставить в импорт как есть.
+              Одно новое упражнение, один набор и одна тренировка с датой: разминка, подходы, заметка, круг и заминка. Упражнения разминки, подходов и круга взяты из библиотеки.
             </Text>
             <CodeBlock lines={EXAMPLE} label="Пример YAML" numbered onCopy={onCopyExample} />
           </section>
@@ -60,7 +63,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Структура
             </Text>
             <Text variant="body-sm" color="slate">
-              Четыре поля верхнего уровня. Обязательных два.
+              Пять полей верхнего уровня. Обязательных два. Вес всегда в кг, поля units нет.
             </Text>
             <FieldTable rows={TOP_FIELDS} caption="Поля верхнего уровня" valueHeader="Значение" />
           </section>
@@ -70,7 +73,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Тренировка
             </Text>
             <Text variant="body-sm" color="slate">
-              Каждый элемент списка <code>workouts</code> — один шаблон.
+              Каждый элемент списка <code>workouts</code> — одна тренировка.
             </Text>
             <FieldTable rows={WORKOUT_FIELDS} caption="Поля тренировки" />
           </section>
@@ -80,7 +83,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Блоки
             </Text>
             <Text variant="body-sm" color="slate">
-              Тренировка состоит из блоков. Тип блока определяет порядок выполнения.
+              Тренировка состоит из блоков; нужен хотя бы один, кроме разминки и заминки. Тип блока определяет порядок выполнения.
             </Text>
             <ul className={styles.blocks}>
               {BLOCK_TYPES.map((b) => (
@@ -103,26 +106,15 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Упражнение
             </Text>
             <Text variant="body-sm" color="slate">
-              Нужно <code>name</code> или <code>exercise_id</code> и нагрузка. Нагрузку проще всего задать короткой записью <code>do</code>. Названия и id — в{' '}
+              На упражнение ссылается только <code>exercise_id</code>: поиска по названию нет. Нужно ровно одно из <code>reps</code> и <code>time_sec</code>. Id — в{' '}
               <a href={`${importHref}#exercises`}>списке упражнений на странице импорта</a>.
             </Text>
-            <Text variant="eyebrow" tag="h3">
-              Короткая запись · подходы × повторы @ вес
-            </Text>
-            <ul className={styles.shorts}>
-              {SHORT_FORMS.map((s) => (
-                <li key={s.code}>
-                  <code>do: "{s.code}"</code>
-                  <span>{s.description}</span>
-                </li>
-              ))}
-            </ul>
             <FieldTable rows={EXERCISE_FIELDS} caption="Поля упражнения в тренировке" />
             <Text variant="h5" tag="h3">
               Разные подходы
             </Text>
             <Text variant="body-sm" color="slate">
-              Пирамида, разминка или дроп-сет — списком в <code>sets</code>. Подход с <code>warmup: true</code> не идёт в объём и рекорды.
+              Пирамида, дроп-сет или разминочный подход — несколько строк одного упражнения, у каждой свои <code>reps</code> и <code>weight_kg</code>. Списка подходов внутри одного упражнения в version: 2 нет.
             </Text>
             <CodeBlock lines={PYRAMID} label="Пирамида подходов" />
           </section>
@@ -132,11 +124,10 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Новые упражнения
             </Text>
             <Text variant="body-sm" color="slate">
-              Если упражнения нет во вкладке «Упражнения», опишите его в <code>exercises</code> и ссылайтесь на него через <code>exercise_id</code>. Можно и просто написать{' '}
-              <code>name</code> в тренировке — тогда группу мышц спросим на проверке.
+              Если упражнения нет во вкладке «Упражнения», опишите его в <code>exercises</code> и ссылайтесь на него через <code>exercise_id</code>. Поля описания упражнения не изменились, включая <code>video</code>.
             </Text>
             <Notice tone="info">
-              Упражнения не создаются сами. На шаге «Проверка» новые упражнения создаются, а если в названии опечатка, можно выбрать похожее из библиотеки.
+              Упражнения не создаются сами: на шаге «Проверка» вы отмечаете те, что нужно создать.
             </Notice>
             <FieldTable rows={NEW_EXERCISE_FIELDS} caption="Поля нового упражнения" />
           </section>
@@ -146,8 +137,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Наборы разминки и заминки
             </Text>
             <Text variant="body-sm" color="slate">
-              Один раз упражнения можно написать прямо в блоке <code>warmup</code> или <code>cooldown</code>, списком <code>exercises</code>. Если набор нужен в нескольких тренировках, опишите его один раз в <code>routines</code> и подключите в любом блоке <code>warmup</code> или <code>cooldown</code> через <code>routine</code>. В тренировку набор копируется
-              при импорте: правка набора не меняет уже импортированные тренировки. Подойдёт любое упражнение, время задаёт time на сторону; незнакомые предложим создать на проверке.
+              Блок <code>warmup</code> или <code>cooldown</code> — только <code>routine</code>: id набора. Набор описывается один раз в <code>routines</code> файла или берётся из библиотеки разминок. В тренировку набор копируется при импорте: правка набора не меняет уже импортированные тренировки. В набор подойдёт любое упражнение библиотеки или файла, время задаёт <code>time_sec</code> на сторону.
             </Text>
             <CodeBlock lines={ROUTINE_EXAMPLE} label="Пример набора" />
             <FieldTable rows={ROUTINE_FIELDS} caption="Поля набора и его упражнений" />
@@ -158,7 +148,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
               Единицы
             </Text>
             <Text variant="body-sm" color="slate">
-              Число без единицы — вес в <code>units</code> или секунды для времени.
+              Единица записана в имени поля: время в секундах, вес в килограммах.
             </Text>
             <dl className={styles.units}>
               {UNITS.map((u) => (
@@ -211,7 +201,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
 
           <section id="errors" aria-labelledby="h-errors" className={styles.section}>
             <Text variant="h3" tag="h2" id="h-errors">
-              Ошибки и ограничения
+              Частые ошибки и ограничения
             </Text>
             <Text variant="body-sm" color="slate">
               {LIMITS}
@@ -221,6 +211,7 @@ export function ImportFormatView({ onCopyExample, importHref }: Props) {
                 <li key={e.message}>
                   <strong>{e.message}</strong>
                   <span>{e.fix}</span>
+                  {e.wrong && <CodeBlock lines={e.wrong} label={`Ошибка: ${e.message}`} />}
                 </li>
               ))}
             </ul>
