@@ -16,6 +16,14 @@ export type YamlResult = { ok: true; title: string; blocks: Block[]; links: Rout
 const rangeText = (r: Range, unit = ''): string | number => (r.min === r.max ? r.min : `${r.min}-${r.max}${unit}`);
 const isOpen = (r: Range) => r.min === 0 && r.max === 0;
 
+/** Блок по таймеру без kind из старых данных: разминка или заминка, если у упражнений есть поза (её ставил импорт) или так назван блок */
+const isLegacyRoutine = (b: Block): boolean => exercisesOf(b).some((e) => e.pose !== undefined) || /разминк|заминк/i.test(b.title);
+
+const isCooldown = (b: Block): boolean => b.mode === 'timed' && (b.kind ? b.kind === 'cooldown' : exercisesOf(b).some((e) => e.pose === 'stretch') || /заминк/i.test(b.title));
+
+/** Встроенная (не по ссылке) разминка или заминка: в v2 их нет, поэтому в тексте их нет, а форма правит их сама */
+export const isEmbeddedRoutine = (b: Block): boolean => b.mode === 'timed' && (!!b.kind || isLegacyRoutine(b));
+
 /** Как разбор ищет упражнение по названию и алиасам; от него зависит, какой id писать в exercise_id */
 const norm = (s: string) => s.trim().toLowerCase().replace(/ё/g, 'е');
 
@@ -49,10 +57,10 @@ export function legacyCircuitWarnings(blocks: Block[]): string[] {
 /** Состав тренировки как YAML (version: 2) для редактирования; подключённые наборы пишутся блоками routine: разминка первой, заминка последней */
 export function workoutToYaml(title: string, blocks: Block[], links: RoutineLinks = {}, library: LibraryExercise[] = [], notes?: string): string {
   const idOf = libraryIds(library);
-  const out = blocks.map((b) => {
+  const embedded = blocks.filter(isEmbeddedRoutine);
+  const out = blocks.filter((b) => !isEmbeddedRoutine(b)).map((b) => {
     if (b.mode === 'note') return { type: 'note', title: b.title, text: b.text };
     const head = { title: b.title, ...(b.mode !== 'timed' && b.videoRounds.length ? { video_rounds: b.videoRounds } : {}) };
-    // Встроенных разминки и заминки в v2 нет: упражнения пишутся блоком timed, kind возвращает keepIds
     if (b.mode === 'timed') {
       return { type: 'timed', ...head, ...(b.note ? { text: b.note } : {}), exercises: b.exercises.map((e) => ({ exercise_id: idOf(e.name), time_sec: e.target.max, ...(e.sides ? { sides: e.sides } : {}) })) };
     }
@@ -61,7 +69,15 @@ export function workoutToYaml(title: string, blocks: Block[], links: RoutineLink
   });
   const all = [...(links.warmup ? [{ type: 'warmup', routine: links.warmup }] : []), ...out, ...(links.cooldown ? [{ type: 'cooldown', routine: links.cooldown }] : [])];
   const doc = { version: 2, workouts: [{ title, ...(notes ? { notes } : {}), blocks: all }] };
-  return stringify(doc, { lineWidth: 0, flowCollectionPadding: false });
+  const text = stringify(doc, { lineWidth: 0, flowCollectionPadding: false });
+  if (embedded.length === 0) return text;
+  // Встроенные разминка и заминка остаются за текстом: комментарий на их месте, разминки первыми, заминки последними
+  const note = (b: Block) => `      # ${isCooldown(b) ? 'Заминка' : 'Разминка'} «${b.title.replace(/[\r\n]+/g, ' ')}» — правится в форме\n`;
+  const head = embedded.filter((b) => !isCooldown(b)).map(note).join('');
+  const tail = embedded.filter(isCooldown).map(note).join('');
+  const list = text.replace('    blocks: []\n', '    blocks:\n');
+  const at = list.indexOf('    blocks:\n') + '    blocks:\n'.length;
+  return list.slice(0, at) + head + list.slice(at) + tail;
 }
 
 const toEntry = (l: LibraryExercise): LibraryEntry => ({ id: l.id, name: l.name, aliases: l.aliases ?? [], kind: l.kind, group: l.group, muscles: l.muscles, equipment: l.equipment });
@@ -74,9 +90,9 @@ function unique(id: string, taken: Set<string>): string {
   return out;
 }
 
-/** Блоки и упражнения на тех же местах оставляют прежние id: на них держатся подсказки и видео */
-function keepIds(blocks: Block[], previous: Block[]): Block[] {
-  const taken = new Set<string>();
+/** Блоки и упражнения на тех же местах оставляют прежние id: на них держатся подсказки и видео; reserved — id, которые заняты за текстом */
+function keepIds(blocks: Block[], previous: Block[], reserved: Set<string>): Block[] {
+  const taken = new Set(reserved);
   return blocks.map((b, i) => {
     const before = previous[i];
     const id = unique(before?.id ?? b.id, taken);
@@ -88,10 +104,8 @@ function keepIds(blocks: Block[], previous: Block[]): Block[] {
       const keepRange = same && e.kind === 'time' && old.kind === 'time' && e.target.min === e.target.max && e.target.max === old.target.max;
       return { ...e, ...(keepRange ? { target: old.target } : {}), id: unique(same ? old.id : e.id.replace(b.id, id), taken) };
     });
-    // v2 не умеет встроенную разминку и заминку: блок пришёл как timed без kind; если на этом месте они были, возвращаем kind и позу
-    if (b.mode === 'timed' && !b.kind && before?.mode === 'timed' && before.kind && before.exercises.length === exercises.length && before.exercises.every((o, j) => o.name === exercises[j]!.name)) {
-      return { ...b, id, kind: before.kind, exercises: exercises.map((e, j) => ({ ...e, ...(before.exercises[j]!.pose ? { pose: before.exercises[j]!.pose } : {}) })) } as Block;
-    }
+    // Отдых блока подходов в v2 не пишется (только у упражнений): остаётся прежним
+    if (b.mode === 'sets' && before?.mode === 'sets') return { ...b, id, exercises, restSec: before.restSec } as Block;
     return { ...b, id, exercises } as Block;
   });
 }
@@ -137,5 +151,22 @@ export function workoutFromYaml(text: string, library: LibraryExercise[], previo
     return { ...b, title: own, videoRounds: [...new Set(rounds as number[])].sort((x, y) => x - y) };
   });
   if (issues.length > 0) return { ok: false, issues };
-  return { ok: true, title, blocks: keepIds(blocks, previous), links, ...(only.notes ? { notes: only.notes } : {}) };
+  // Встроенные разминка и заминка в тексте не бывают: возвращаем их как были, разминки первыми, заминки последними.
+  // Если автор сам написал такой блок (v1), его блок главнее прежнего.
+  const kept = previous.filter(isEmbeddedRoutine);
+  const wrote = (cool: boolean) => blocks.some((b) => b.mode === 'timed' && b.kind === (cool ? 'cooldown' : 'warmup'));
+  const front = wrote(false) ? [] : kept.filter((b) => !isCooldown(b));
+  const back = wrote(true) ? [] : kept.filter(isCooldown);
+  const reserved = new Set(kept.flatMap((b) => [b.id, ...exercisesOf(b).map((e) => e.id)]));
+  const main = keepIds(blocks, previous.filter((b) => !isEmbeddedRoutine(b)), reserved);
+  return { ok: true, title, blocks: [...front, ...main, ...back], links, ...(only.notes ? { notes: only.notes } : {}) };
+}
+
+/** Текущее состояние редактора: то, что показано в форме */
+export type EditorState = { title: string; blocks: Block[]; links: RoutineLinks; notes: string };
+
+/** Читает текст YAML; если его не трогали после создания, разбор не нужен: возвращается состояние как есть (иначе встроенную разминку не сохранить) */
+export function readEditorYaml(text: string, generated: string, current: EditorState, library: LibraryExercise[], today: string, routines: KnownRoutine[] = []): YamlResult {
+  if (text === generated) return { ok: true, title: current.title, blocks: current.blocks, links: current.links, ...(current.notes ? { notes: current.notes } : {}) };
+  return workoutFromYaml(text, library, current.blocks, today, routines);
 }

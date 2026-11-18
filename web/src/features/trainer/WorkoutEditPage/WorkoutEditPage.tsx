@@ -12,7 +12,7 @@ import { toIso } from '../../plan/plan';
 import type { ParseIssue } from '../../import/parse';
 import { editableBlocks, problems } from './draft';
 import { WorkoutEditView, type EditView } from './WorkoutEditView';
-import { type KnownRoutine, legacyCircuitWarnings, workoutFromYaml, workoutToYaml } from './workoutYaml';
+import { type KnownRoutine, legacyCircuitWarnings, readEditorYaml, workoutToYaml } from './workoutYaml';
 
 /** Откуда брать тренировку и куда её сохранять: у тренера — ученика, у спортсмена — свою */
 type Source = {
@@ -114,6 +114,8 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
   const [tried, setTried] = useState(false);
   const [view, setView] = useState<EditView>('form');
   const [text, setText] = useState('');
+  /** Текст, как он был создан: пока он не изменён, разбирать его не нужно */
+  const [generated, setGenerated] = useState('');
   const [yamlIssues, setYamlIssues] = useState<ParseIssue[]>([]);
   const [yamlWarnings, setYamlWarnings] = useState<string[]>([]);
   const back = () => navigate(search.get('back') ?? source.back);
@@ -121,7 +123,7 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
 
   /** Читает YAML; при ошибках показывает их и ничего не меняет */
   const readYaml = () => {
-    const r = workoutFromYaml(text, library, blocks, toIso(new Date()), known);
+    const r = readEditorYaml(text, generated, { title, blocks, links, notes }, library, toIso(new Date()), known);
     if (!r.ok) {
       setYamlIssues(r.issues);
       return null;
@@ -133,7 +135,9 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
   const switchView = (next: EditView) => {
     if (next === view) return;
     if (next === 'yaml') {
-      setText(workoutToYaml(title, blocks, links, library, notes));
+      const made = workoutToYaml(title, blocks, links, library, notes);
+      setText(made);
+      setGenerated(made);
       setYamlWarnings(legacyCircuitWarnings(blocks));
       setYamlIssues([]);
       setView('yaml');

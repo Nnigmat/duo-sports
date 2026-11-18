@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '../../../../../shared/types';
 import type { LibraryExercise } from '../../exercises/types';
-import { legacyCircuitWarnings, workoutFromYaml, workoutToYaml } from './workoutYaml';
+import { legacyCircuitWarnings, readEditorYaml, workoutFromYaml, workoutToYaml } from './workoutYaml';
 import { exercisesOf } from '../../../../../shared/blocks';
 
 const lib = (name: string, kind: LibraryExercise['kind']): LibraryExercise =>
@@ -46,12 +46,15 @@ const blocks: Block[] = [
 ];
 
 describe('workoutToYaml', () => {
-  it('пишет version: 2: exercise_id, time_sec, rest_sec; встроенные разминка и заминка идут блоками timed', () => {
+  it('пишет version: 2: exercise_id, time_sec, rest_sec; встроенные разминка и заминка остаются комментариями', () => {
     const text = workoutToYaml('Ноги', blocks, {}, library);
     expect(text).toContain('version: 2');
     expect(text).not.toContain('routine');
-    expect(text).toMatch(/type: timed[\s\S]*exercises:\n\s+- exercise_id: Вращения плечами/);
-    expect(text).toContain('time_sec: 300');
+    expect(text).not.toContain('Вращения плечами');
+    expect(text).toContain('# Разминка «Разминка» — правится в форме');
+    expect(text).toContain('# Заминка «Заминка» — правится в форме');
+    expect(text.indexOf('# Разминка')).toBeLessThan(text.indexOf('type: sets'));
+    expect(text.indexOf('type: circuit')).toBeLessThan(text.indexOf('# Заминка'));
     expect(text).toContain('rest_sec: 120');
     expect(text).not.toMatch(/\bname:|\bdo:/);
     expect(text).toMatch(/video_rounds:\n\s+- 3/);
@@ -66,11 +69,61 @@ describe('блок по таймеру в основной части', () => {
     expect(text).not.toMatch(/warmup|cooldown/);
     expect(workoutFromYaml(text, library, plank, TODAY)).toEqual({ ok: true, title: 'Кор', blocks: plank, links: {} });
   });
-  it('встроенная разминка пишется как timed, а kind и поза возвращаются из прежних блоков', () => {
-    const old: Block[] = [{ id: 'b0', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] }];
+  it('kind-less legacy warmup keeps pose', () => {
+    const old: Block[] = [
+      { id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] },
+      { id: 'b1', mode: 'timed', title: 'Растяжка', exercises: [{ id: 'b1-e0', name: 'Выпад', kind: 'time', pose: 'stretch', target: { min: 30, max: 30 } }] },
+      { id: 'b2', mode: 'timed', title: 'Планка', exercises: [{ id: 'b2-e0', name: 'Планка', kind: 'time', target: { min: 45, max: 45 } }] },
+    ];
     const text = workoutToYaml('Ноги', old, {}, library);
-    expect(text).toContain('type: timed');
-    expect(workoutFromYaml(text, library, old, TODAY)).toEqual({ ok: true, title: 'Ноги', blocks: old, links: {} });
+    expect(text).not.toContain('Выпад');
+    expect(text.indexOf('# Разминка')).toBeLessThan(text.indexOf('type: timed'));
+    expect(text).toContain('# Заминка «Растяжка»');
+    const back = workoutFromYaml(text, library, old, TODAY);
+    expect(back).toMatchObject({ ok: true });
+    expect(back.ok && back.blocks.map((b) => b.id)).toEqual(['b0', 'b2', 'b1']);
+    expect(back.ok && back.blocks[0]).toEqual(old[0]);
+    expect(back.ok && back.blocks[2]).toEqual(old[1]);
+  });
+});
+
+describe('встроенная разминка и заминка', () => {
+  const main: Block = { id: 'b1', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [], exercises: [{ id: 'b1-e0', name: 'Присед', kind: 'reps', target: { min: 5, max: 5 }, sets: 1 }] };
+  const plainWarm: Block = { id: 'b0', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Разминка', kind: 'time', pose: 'stand', target: { min: 300, max: 300 } }] };
+  const plainCool: Block = { id: 'b2', mode: 'timed', kind: 'cooldown', title: 'Заминка', exercises: [{ id: 'b2-e0', name: 'Заминка', kind: 'time', pose: 'stretch', target: { min: 240, max: 360 } }] };
+  const all = [plainWarm, main, plainCool];
+
+  it('v1 plain warmup/cooldown round-trips through editor', () => {
+    const text = workoutToYaml('Т', all, {}, []);
+    expect(text).not.toContain('exercise_id: Разминка');
+    expect(workoutFromYaml(text, library, all, TODAY)).toMatchObject({ ok: true, blocks: all });
+  });
+  it('embedded warmup kept out of yaml and restored unchanged', () => {
+    const rich: Block = { ...plainWarm, exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 45 }, sides: ['вправо', 'влево'] }] };
+    const text = workoutToYaml('Т', [rich, main], {}, library);
+    expect(text).not.toContain('Выпад');
+    const edited = text.replace('reps: 5', 'reps: 6');
+    const r = workoutFromYaml(edited, library, [rich, main], TODAY);
+    expect(r.ok && r.blocks[0]).toEqual(rich);
+    expect(r.ok && exercisesOf(r.blocks[1]!)[0]!.target).toEqual({ min: 6, max: 6 });
+    expect(r.ok && r.blocks.map((b) => b.id)).toEqual(['b0', 'b1']);
+  });
+  it('a warmup written by hand in the text wins over the kept one', () => {
+    const text = `version: 1\nworkouts:\n  - title: Т\n    blocks:\n      - type: warmup\n        exercises:\n          - { name: Планка, time: 30s }\n      - type: sets\n        exercises:\n          - { name: Присед, do: 3x8 }\n`;
+    const r = workoutFromYaml(text, library, [plainWarm, main], TODAY);
+    expect(r.ok && r.blocks.filter((b) => b.mode === 'timed')).toHaveLength(1);
+  });
+  it('unedited yaml switches back without parsing', () => {
+    const generated = workoutToYaml('Т', all, {}, []);
+    const state = { title: 'Т', blocks: all, links: {}, notes: '' };
+    // В библиотеке нет Приседа: разбор текста дал бы ошибку, а без правок его нет
+    expect(workoutFromYaml(generated, [], all, TODAY)).toMatchObject({ ok: false });
+    expect(readEditorYaml(generated, generated, state, [], TODAY)).toEqual({ ok: true, title: 'Т', blocks: all, links: {} });
+    expect(readEditorYaml(`${generated} `, generated, state, [], TODAY)).toMatchObject({ ok: false });
+  });
+  it('sets block restSec kept on round trip', () => {
+    const r = workoutFromYaml(workoutToYaml('Т', [main], {}, library), library, [main], TODAY);
+    expect(r.ok && r.blocks[0]).toMatchObject({ mode: 'sets', restSec: 60 });
   });
 });
 
