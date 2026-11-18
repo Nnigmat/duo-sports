@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DRAFT_TEXT_MAX, type AgentWorkout, type DraftRequest, type DraftResponse } from '../../../../shared/aiDraft';
+import type { SetsExercise } from '../../../../shared/types';
+import { DRAFT_TEXT_MAX, type AgentBlock, type AgentExercise, type AgentWorkout, type DraftRequest, type DraftResponse } from '../../../../shared/aiDraft';
 import { buildWorkout } from './build';
 import { agent, ctx } from './testkit';
 import { canBuild, EMPTY_INPUT, toRequest, type BuilderInput } from './types';
@@ -75,6 +76,92 @@ describe('buildWorkout', () => {
       throw new Error('Сборка недоступна');
     };
     await expect(buildWorkout(req, ctx, [], send)).rejects.toThrow('Сборка недоступна');
+  });
+});
+
+describe('ошибки повтора — в терминах ответа агента', () => {
+  const errorsSent = async (answer: AgentWorkout, ask: Partial<DraftRequest> = {}) => {
+    const f = fakeSend(answer, agent());
+    await buildWorkout({ ...req, ...ask }, ctx, [], f.send);
+    return f.calls[1]!.errors!;
+  };
+
+  it('exercise path counts blocks without the warmup link', async () => {
+    expect(await errorsSent(bad, { warmup: { routine: 'neck-shoulders' } })).toEqual([
+      'blocks[0].exercises[0].exercise_id: Неизвестный exercise_id: bench-pres (Ближайшие id: bench-press, dips, arm-circles. Исправьте опечатку или опишите упражнение в exercises.)',
+    ]);
+  });
+
+  it('block field, own warmup and new exercise paths', async () => {
+    const neck = { id: 'neck-roll', name: 'Наклоны головы', muscles: [], measure: 'yoga' as never, equipment: [], aliases: [] };
+    const answer = agent({
+      new_exercises: [neck],
+      warmup: { new_routine: { id: 'my-warm', title: 'Своя', exercises: [{ exercise_id: 'arm-circles', time_sec: -5 }] } },
+      blocks: [{ type: 'sets', rounds: 3, exercises: [{ exercise_id: 'dips', sets: 3, reps: '10' }] }],
+    });
+    const sent = await errorsSent(answer, { warmup: { text: 'своя' } });
+    expect(sent.map((e) => e.split(':')[0])).toEqual(['new_exercises[0].measure', 'warmup.new_routine.exercises[0].time_sec', 'blocks', 'blocks[0].rounds']);
+  });
+
+  it('error without a mapped path keeps the line', async () => {
+    const sent = await errorsSent(agent({ title: '' }));
+    expect(sent).toEqual([expect.stringMatching(/^Строка \d+: У тренировки нет title/)]);
+  });
+});
+
+/** Полный ответ, как его шлёт агент по строгой схеме: пустые поля — 0, "" и [] */
+const full = (e: Partial<AgentExercise> & { exercise_id: string }): AgentExercise => ({ sets: 0, reps: '', time_sec: 0, weight_kg: 0, rest_sec: 0, sides: [], notes: '', ...e });
+const blk = (b: Partial<AgentBlock> & { type: AgentBlock['type'] }): AgentBlock => ({ title: '', rounds: 0, rest_sec: 0, text: '', ...b, exercises: (b.exercises ?? []).map(full) });
+
+describe('сборка без отказа: ответ агента дважды с той же ошибкой', () => {
+  const twice = async (answer: AgentWorkout, ask: Partial<DraftRequest> = {}) => {
+    const f = fakeSend(answer, answer);
+    const r = await buildWorkout({ ...req, ...ask }, ctx, [], f.send);
+    expect(f.calls).toHaveLength(2);
+    return r;
+  };
+  const draftOf = async (answer: AgentWorkout, ask: Partial<DraftRequest> = {}) => {
+    const r = await twice(answer, ask);
+    if (!r.ok) throw new Error(JSON.stringify(r.errors));
+    return r.draft;
+  };
+  const dips = { exercise_id: 'dips', sets: 3, reps: '10' };
+
+  it('stray exercises in a note: note kept, names in unparsed', async () => {
+    const d = await draftOf(agent({ blocks: [blk({ type: 'sets', exercises: [dips] }), blk({ type: 'note', title: 'Тест', text: 'Есть ли боль', exercises: [{ exercise_id: 'dips', reps: '1' }] })] }));
+    expect(d.blocks[1]).toEqual({ id: 'b1', mode: 'note', title: 'Тест', text: 'Есть ли боль' });
+    expect(d.unparsed).toEqual([{ what: 'Отжимания на брусьях', message: 'Незнакомое поле: exercises' }]);
+    expect(d.marks).toEqual({});
+  });
+
+  it('unknown id and a note only: nothing to save, errors out', async () => {
+    const r = await twice(agent({ blocks: [blk({ type: 'sets', exercises: [{ exercise_id: 'dipz', sets: 3, reps: '10' }] }), blk({ type: 'note', title: 'Тест', text: 'Есть ли боль' })] }));
+    if (r.ok) throw new Error('ожидали ошибку');
+    // Наружу — ошибки второго ответа; ремонт убрал блок и упёрся в «нет основной части»
+    expect(r.errors.map((e) => e.message)).toEqual(['Неизвестный exercise_id: dipz']);
+  });
+
+  it('rest_sec on a sets block reaches every exercise, nothing unparsed', async () => {
+    const d = await draftOf(agent({ blocks: [blk({ type: 'sets', rest_sec: 120, exercises: [dips, { exercise_id: 'bench-press', sets: 4, reps: '8', weight_kg: 60 }] })] }));
+    const b = d.blocks[0]!;
+    expect(b.mode !== 'note' && b.exercises.map((e) => (e as SetsExercise).restSec)).toEqual([120, 120]);
+    expect(d.unparsed).toEqual([]);
+    expect(d.marks).toEqual({});
+  });
+
+  it('empty title: requested title, else «Тренировка»', async () => {
+    const answer = agent({ title: '', blocks: [blk({ type: 'sets', exercises: [dips] })] });
+    const asked = await draftOf(answer, { title: 'Верх' });
+    expect(asked.title).toBe('Верх');
+    expect(asked.unparsed).toEqual([{ what: 'Название: Верх', message: 'Агент не дал название тренировки — поставлено из запроса' }]);
+    expect((await draftOf(answer)).title).toBe('Тренировка');
+  });
+
+  it('time_sec max in timed: default 30 s with a mark', async () => {
+    const d = await draftOf(agent({ blocks: [blk({ type: 'timed', exercises: [{ exercise_id: 'arm-circles', time_sec: 'max' }] })] }));
+    expect(d.marks).toEqual({ 'b0-e0': { blockIndex: 0, exerciseIndex: 0, field: 'time_sec', wrote: 'max', message: 'Не понимаю time_sec: max' } });
+    const b = d.blocks[0]!;
+    expect(b.mode !== 'note' && b.exercises[0]!.target).toEqual({ min: 30, max: 30 });
   });
 });
 
