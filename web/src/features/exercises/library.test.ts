@@ -4,7 +4,7 @@ import {
   formatReps, formatTime, groupExercises, groupForMuscles, groupHint, groupTabs, hiddenSessions, lastSessionRows,
   latestMedia, mediaCountText, paramFields, recordText, recordTiles, searchExercises, sessionSummary, sessionTimeText, setTimeText, sortSessions, typicalSetText,
   planShort, toggleItem, totalText, trendInfo, canManageExercises, noteSteps,
-  toExerciseInput, toExercisePatch, exerciseHrefFor,
+  toExerciseInput, toExercisePatch, exerciseHrefFor, quickDraft,
 } from './library';
 import { exerciseLibrary } from './mock';
 import type { LibraryExercise } from './types';
@@ -237,5 +237,14 @@ describe('exerciseHrefFor', () => {
   it('для названия вне библиотеки и без библиотеки даёт undefined', () => {
     expect(href('Выпады')).toBeUndefined();
     expect(exerciseHrefFor(undefined)('Планка')).toBeUndefined();
+  });
+});
+
+describe('quickDraft', () => {
+  it('обрезает название и ставит тип, остальное как у пустого черновика', () => {
+    expect(quickDraft('  Выпады назад ', 'reps')).toEqual({ ...emptyDraft(), name: 'Выпады назад', kind: 'reps' });
+  });
+  it('без мышц уходит на сервер как «Всё тело»', () => {
+    expect(toExerciseInput(quickDraft('Планка', 'time')).muscles).toEqual(['Всё тело']);
   });
 });

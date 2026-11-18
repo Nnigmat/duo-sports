@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
-import type { RoutineDetail, RoutineKind, RoutineSummary } from '../../../../../shared/types';
+import type { ExerciseKind, RoutineDetail, RoutineKind, RoutineSummary } from '../../../../../shared/types';
 import { useAuth } from '../../../app/auth/AuthProvider';
 import { useExercises } from '../../../data/hooks';
 import { Notice, Button } from '../../../ui';
 import { Skeleton, useMediaQuery } from '../../../shared';
 import { copyRoutine, createRoutine, deleteRoutine, fetchRoutine, fetchRoutines, renameRoutine, updateRoutine } from '../api';
 import { RoutineDetailView } from '../RoutineDetailView/RoutineDetailView';
-import { RoutineForm } from '../RoutineForm/RoutineForm';
+import { createExercise } from '../../exercises/api';
+import { canManageExercises, quickDraft } from '../../exercises/library';
+import { RoutineForm, type PickerExercise } from '../RoutineForm/RoutineForm';
 import { RoutineListView } from '../RoutineListView/RoutineListView';
 import { canManageRoutines } from '../routines';
 
@@ -20,6 +22,14 @@ export function RoutinesPage() {
   const desktop = useMediaQuery('(min-width: 1024px)');
   const auth = useAuth();
   const canManage = auth.status === 'in' && canManageRoutines(auth.user.role);
+  const user = auth.status === 'in' ? auth.user : undefined;
+  /** Создаёт упражнение из окна выбора; только у тех, кому можно менять библиотеку */
+  const quickCreate = canManageExercises(user?.role)
+    ? async (name: string, kind: ExerciseKind): Promise<PickerExercise> => {
+        const e = await createExercise(quickDraft(name, kind));
+        return { id: e.id, name: e.name, kind: e.kind, demo: e.demo };
+      }
+    : undefined;
   const [list, setList] = useState<RoutineSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Вид и поиск живут здесь, чтобы после возврата из карточки список остался как был
@@ -74,7 +84,7 @@ export function RoutinesPage() {
         path="new"
         element={
           canManage ? (
-            <WithExercises render={(exercises) => <RoutineForm mode="create" kind={kind} exercises={exercises} onCancel={() => navigate(BASE)} onSubmit={(input) => save(null, input)} />} />
+            <WithExercises render={(exercises) => <RoutineForm mode="create" kind={kind} exercises={exercises} gender={user?.gender} onQuickCreate={quickCreate} onCancel={() => navigate(BASE)} onSubmit={(input) => save(null, input)} />} />
           ) : (
             <Navigate to={BASE} replace />
           )
@@ -108,6 +118,8 @@ export function RoutinesPage() {
                       mode="edit"
                       routine={r}
                       exercises={exercises}
+                      gender={user?.gender}
+                      onQuickCreate={quickCreate}
                       onCancel={() => navigate(`${BASE}/${r.id}`)}
                       onSubmit={(input) => save(r.id, input)}
                       onDelete={() => remove(r.id)}
@@ -155,9 +167,9 @@ function Loaded({ render }: { render: (r: RoutineDetail) => ReactElement }) {
 }
 
 /** Библиотека упражнений для выбора состава; грузится только на экранах формы */
-function WithExercises({ render }: { render: (exercises: Array<{ id: string; name: string; kind: 'reps' | 'weight' | 'time' }>) => ReactElement }) {
+function WithExercises({ render }: { render: (exercises: PickerExercise[]) => ReactElement }) {
   const { data, error } = useExercises();
   if (error) return <Notice tone="error">{error}</Notice>;
   if (!data) return <Skeleton height={320} />;
-  return render(data.map((e) => ({ id: e.id, name: e.name, kind: e.kind })));
+  return render(data.map((e) => ({ id: e.id, name: e.name, kind: e.kind, demo: e.demo })));
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { Gender } from '../../../../../shared/types';
 import { formatDateTime } from '../../../shared/format';
 import { Button, Card, Notice, Text } from '../../../ui';
 import type { LibraryExercise } from '../../exercises/types';
@@ -28,10 +29,12 @@ type Props = {
   /** Когда сохранён восстановленный черновик; null — черновик не восстанавливали */
   restoredAt: number | null;
   onReset: () => void;
+  /** Пол пользователя: по нему выбирается ролик в превью */
+  gender?: Gender;
 };
 
 /** Проверка собранной тренировки: форма редактора с новыми упражнениями, новой разминкой и заметками агента. */
-export function BuilderReviewView({ draft, library, routines, saving, problems, failure, onDraft, onSave, onRebuild, restoredAt, onReset }: Props) {
+export function BuilderReviewView({ draft, library, routines, saving, problems, failure, onDraft, onSave, onRebuild, restoredAt, onReset, gender }: Props) {
   // Любая правка черновика сперва снимает пометки у упражнений, чья нагрузка изменилась или которых больше нет
   const update = (next: BuilderDraft) => onDraft(clearMarkOnChange(next, draft.blocks, next.blocks));
   const left = Object.keys(draft.marks).length;
@@ -107,6 +110,7 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
     <>
       <WorkoutEditView
         mode="create"
+        gender={gender}
         title={draft.title}
         blocks={draft.blocks}
         library={library}

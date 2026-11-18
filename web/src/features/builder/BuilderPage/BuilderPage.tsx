@@ -72,6 +72,7 @@ type BuilderProps = {
 
 /** Ввод → сборка агентом → проверка в форме → «Сохранить» через импорт. Всё до сохранения живёт в черновике браузера. */
 function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref, importHref }: BuilderProps) {
+  const auth = useAuth();
   const navigate = useNavigate();
   const [restored] = useState(() => loadBuilder(storageKey));
   const [restoredAt, setRestoredAt] = useState<number | null>(restored?.savedAt ?? null);
@@ -165,6 +166,7 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
     return (
       <BuilderReviewView
         draft={draft}
+        gender={auth.status === 'in' ? auth.user.gender : undefined}
         library={library}
         routines={ctx.routines}
         saving={saving}
