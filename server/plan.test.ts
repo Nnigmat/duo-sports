@@ -138,6 +138,14 @@ describe('copyWorkoutToAthlete', () => {
     expect(copy.exercises).toEqual(src.exercises);
     expect(planOf(db, me).templates).toHaveLength(2);
   });
+  it('копия сохраняет заметку тренировки', () => {
+    importTwo(me);
+    const src = planOf(db, me).templates[0]!;
+    db.prepare('UPDATE workouts SET notes = ? WHERE id = ?').run('Рабочих подходов сегодня нет', Number(src.id));
+    copyWorkoutToAthlete(db, me, Number(src.id), other, '2026-11-10');
+    const rows = db.prepare('SELECT notes FROM workouts WHERE user_id = ?').all(other) as Array<{ notes: string | null }>;
+    expect(rows.map((r) => r.notes)).toEqual(['Рабочих подходов сегодня нет']);
+  });
   it('чужую тренировку не копирует', () => {
     importTwo(other);
     const foreign = Number(planOf(db, other).templates[0]!.id);

@@ -133,9 +133,9 @@ export function setDay(db: Db, userId: number, date: string, workoutId: number):
 /** Копия тренировки другому ученику: ему создаётся своя тренировка с тем же составом и ставится в день, заменяя стоявшую */
 export function copyWorkoutToAthlete(db: Db, fromUserId: number, workoutId: number, toUserId: number, date: string): DayResult {
   return db.transaction((): DayResult => {
-    const src = db.prepare('SELECT title, blocks, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, fromUserId) as (RoutineLinks & { title: string; blocks: string; structure: string | null }) | undefined;
+    const src = db.prepare('SELECT title, blocks, structure, notes, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ? AND user_id = ?').get(workoutId, fromUserId) as (RoutineLinks & { title: string; blocks: string; structure: string | null; notes: string | null }) | undefined;
     if (!src) return { ok: false, error: 'not_found' };
-    const id = Number(db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, warmup_routine_id, cooldown_routine_id, import_id, created_at) VALUES (?, NULL, ?, ?, ?, ?, ?, NULL, ?)').run(toUserId, src.title, src.blocks, src.structure, src.warmup_routine_id, src.cooldown_routine_id, new Date().toISOString()).lastInsertRowid);
+    const id = Number(db.prepare('INSERT INTO workouts (user_id, slug, title, blocks, structure, notes, warmup_routine_id, cooldown_routine_id, import_id, created_at) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, NULL, ?)').run(toUserId, src.title, src.blocks, src.structure, src.notes, src.warmup_routine_id, src.cooldown_routine_id, new Date().toISOString()).lastInsertRowid);
     return setDay(db, toUserId, date, id);
   })();
 }
