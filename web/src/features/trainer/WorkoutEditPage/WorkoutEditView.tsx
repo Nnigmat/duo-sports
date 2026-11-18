@@ -282,7 +282,7 @@ type RowProps = {
 
 function ExerciseRow({ mode, exercise: e, first, last, isNew, onOpen, onPatch, onTarget, onNote, onRest, restDefault, onOpenEnded, onClearSides, onMove, onRemove }: RowProps) {
   const time = e.kind === 'time';
-  const canOpen = e.kind !== 'weight';
+  const canOpen = e.kind !== 'weight' && mode !== 'timed';
   const open = canOpen && e.target.min === 0 && e.target.max === 0;
   const unit = time ? 'с' : 'повт';
   return (

@@ -166,6 +166,15 @@ describe('v2: заметка, отдых, максимум, стороны', () 
     const back = first(changeMode(changeMode(rich, 'b1', 'circuit'), 'b1', 'sets'));
     expect(back).toMatchObject({ note: 'медленно', sides: ['влево', 'вправо'], sets: 3 });
   });
+  it('смена режима на круг даёт отдых после круга', () => {
+    expect(changeMode(sets(), 'b1', 'circuit')[0]).toMatchObject({ mode: 'circuit', restAfter: 'round' });
+    expect(changeMode(changeMode(sets(), 'b1', 'timed'), 'b1', 'circuit')[0]).toMatchObject({ restAfter: 'round' });
+  });
+  it('в таймерный блок «на максимум» не попадает: цель по умолчанию', () => {
+    const [b] = addExercise(addBlock([], 'sets'), 'b1', plank);
+    const open = setOpen([b], 'b1', 'x1', true);
+    expect(exercisesOf(changeMode(open, 'b1', 'timed')[0])[0].target).toEqual({ min: 60, max: 60 });
+  });
   it('режим не сбрасывает «на максимум» у упражнения на время', () => {
     const [b] = addExercise(addBlock([], 'timed'), 'b1', plank);
     const open = setOpen([b], 'b1', 'x1', true);

@@ -87,13 +87,13 @@ export function changeMode(blocks: Block[], blockId: string, mode: ExerciseMode)
     };
     const common = { id: b.id, title: b.title };
     if (mode === 'timed') {
-      const timed = plain.map(({ weight: _weight, ...e }): Exercise => ({ ...e, kind: 'time', target: e.kind === 'time' ? e.target : { min: DEFAULT_TIMED_SEC, max: DEFAULT_TIMED_SEC } }));
+      const timed = plain.map(({ weight: _weight, ...e }): Exercise => ({ ...e, kind: 'time', target: e.kind === 'time' && e.target.max > 0 ? e.target : defaultTarget('time', undefined) }));
       return { ...common, mode, exercises: timed };
     }
     const rest = b.mode === 'timed' ? DEFAULT_REST : b.restSec;
     const videoRounds = b.mode === 'timed' ? [] : b.videoRounds;
     if (mode === 'sets') return { ...common, mode, exercises: plain.map(keepSets), restSec: rest, videoRounds };
-    return { ...common, mode, exercises: plain, rounds: DEFAULT_ROUNDS, restSec: rest, videoRounds: videoRounds.filter((n) => n <= DEFAULT_ROUNDS) };
+    return { ...common, mode, exercises: plain, rounds: DEFAULT_ROUNDS, restSec: rest, restAfter: 'round', videoRounds: videoRounds.filter((n) => n <= DEFAULT_ROUNDS) };
   });
 }
 
