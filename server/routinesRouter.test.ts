@@ -107,6 +107,28 @@ describe('/api/routines', () => {
     expect((await call('PUT', 'trainer', '/nogi-legkaya', body({ title: 'Вторая' }))).status).toBe(409);
   });
 
+  it('PATCH переименовывает: 200, 400, 404, 409; athlete — 403', async () => {
+    await call('POST', 'trainer', '', body());
+    await call('POST', 'trainer', '', body({ title: 'Вторая' }));
+    expect((await call('PATCH', 'athlete', '/nogi-legkaya', { title: 'X' })).status).toBe(403);
+    const u = await call('PATCH', 'trainer', '/nogi-legkaya', { title: '  Новое ' });
+    expect(u.status).toBe(200);
+    expect(await u.json()).toMatchObject({ id: 'nogi-legkaya', title: 'Новое' });
+    expect((await call('PATCH', 'trainer', '/nogi-legkaya', { title: ' ' })).status).toBe(400);
+    expect((await call('PATCH', 'trainer', '/nogi-legkaya', { title: 'я'.repeat(81) })).status).toBe(400);
+    expect((await call('PATCH', 'trainer', '/net', { title: 'X' })).status).toBe(404);
+    expect((await call('PATCH', 'trainer', '/nogi-legkaya', { title: 'Вторая' })).status).toBe(409);
+  });
+
+  it('POST /:id/copy: 201 с номером, 404; athlete — 403', async () => {
+    await call('POST', 'trainer', '', body());
+    expect((await call('POST', 'athlete', '/nogi-legkaya/copy')).status).toBe(403);
+    const c = await call('POST', 'trainer', '/nogi-legkaya/copy');
+    expect(c.status).toBe(201);
+    expect(await c.json()).toMatchObject({ kind: 'warmup', title: 'Ноги лёгкая копия (1)' });
+    expect((await call('POST', 'trainer', '/net/copy')).status).toBe(404);
+  });
+
   it('DELETE: 204, 404, 409 со списком тренировок', async () => {
     await call('POST', 'trainer', '', body());
     await call('POST', 'trainer', '', body({ title: 'Занятая' }));

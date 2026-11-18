@@ -5,7 +5,7 @@ import { createExercise, deleteExercise, updateExercise } from './exercises';
 import { libraryOf } from './imports';
 import type { Block } from '../shared/types';
 import {
-  composeDisplay, composeStructure, createRoutine, deleteRoutine, getRoutine, linksOf, listRoutines, routineById, updateRoutine, validateRoutine,
+  composeDisplay, composeStructure, copyRoutine, createRoutine, deleteRoutine, getRoutine, linksOf, listRoutines, renameRoutine, routineById, updateRoutine, validateRoutine,
 } from './routines';
 
 let db: Db;
@@ -115,6 +115,48 @@ describe('updateRoutine', () => {
     db.prepare("INSERT INTO workouts (user_id, title, blocks, structure, warmup_routine_id, created_at) VALUES (?, 'T', '[]', '[]', ?, 'z')").run(uid, routineDbId('nogi-legkaya'));
     expect(updateRoutine(db, 'nogi-legkaya', input({ kind: 'cooldown' }))).toEqual({ ok: false, error: 'in_use' });
     expect(updateRoutine(db, 'nogi-legkaya', input({ title: 'Новое' })).ok).toBe(true);
+  });
+});
+
+describe('copyRoutine', () => {
+  it('copies items, sides and note under a numbered title', () => {
+    createRoutine(db, input({ note: 'Медленно' }));
+    const a = copyRoutine(db, 'nogi-legkaya');
+    expect(a.ok).toBe(true);
+    if (!a.ok) return;
+    expect(a.routine.id).not.toBe('nogi-legkaya');
+    expect(a.routine).toMatchObject({ kind: 'warmup', title: 'Ноги лёгкая копия (1)', note: 'Медленно', totalSec: 90 });
+    expect(a.routine.items.map((it) => [it.exercise, it.sec, it.sides])).toEqual([
+      [neck, { min: 30, max: 30 }, undefined],
+      [hip, { min: 20, max: 30 }, ['вправо', 'влево']],
+    ]);
+    const b = copyRoutine(db, 'nogi-legkaya');
+    expect(b.ok && b.routine.title).toBe('Ноги лёгкая копия (2)');
+  });
+  it('ignores titles of the other kind; not_found for an unknown slug', () => {
+    createRoutine(db, input());
+    createRoutine(db, input({ kind: 'cooldown', title: 'Ноги лёгкая копия (1)' }));
+    const r = copyRoutine(db, 'nogi-legkaya');
+    expect(r.ok && r.routine.title).toBe('Ноги лёгкая копия (1)');
+    expect(copyRoutine(db, 'zzz')).toEqual({ ok: false, error: 'not_found' });
+  });
+});
+
+describe('renameRoutine', () => {
+  it('changes only the title, keeps slug and items', () => {
+    createRoutine(db, input());
+    const r = renameRoutine(db, 'nogi-legkaya', 'Новое');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.routine).toMatchObject({ id: 'nogi-legkaya', title: 'Новое' });
+    expect(r.routine.items).toHaveLength(2);
+  });
+  it('returns not_found and duplicate; own title is allowed', () => {
+    expect(renameRoutine(db, 'zzz', 'X')).toEqual({ ok: false, error: 'not_found' });
+    createRoutine(db, input());
+    createRoutine(db, input({ title: 'Вторая' }));
+    expect(renameRoutine(db, 'vtoraya', 'Ноги лёгкая')).toEqual({ ok: false, error: 'duplicate' });
+    expect(renameRoutine(db, 'nogi-legkaya', 'Ноги лёгкая').ok).toBe(true);
   });
 });
 

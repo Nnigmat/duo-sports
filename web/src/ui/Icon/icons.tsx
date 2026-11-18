@@ -190,6 +190,7 @@ export const icons = {
     </>
   ),
   logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />,
+  more: <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth={3} />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof icons;

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { RoutineKind, RoutineSummary } from '../../../../../shared/types';
 import { Button, EmptyState, IconButton, ListRow, Notice, SearchField, SegmentedControl, Text } from '../../../ui';
 import { Skeleton } from '../../../shared';
+import { RoutineActionsSheet } from '../RoutineActionsSheet/RoutineActionsSheet';
 import { KIND_LABEL, metaText, searchRoutines, usedText } from '../routines';
 import styles from './RoutineListView.module.css';
 
@@ -17,10 +19,14 @@ type Props = {
   onOpen: (id: string) => void;
   /** Нет — кнопок создания нет (только чтение) */
   onCreate?: () => void;
+  /** Нет — у строк нет кнопки действий (только чтение). Ошибка — Error с текстом для пользователя */
+  onCopy?: (id: string) => Promise<void>;
+  onRename?: (id: string, title: string) => Promise<void>;
 };
 
 /** Вкладка «Разминки»: переключатель вида, поиск и список. */
-export function RoutineListView({ routines, error, onRetry, kind, onKindChange, query, onQueryChange, onOpen, onCreate }: Props) {
+export function RoutineListView({ routines, error, onRetry, kind, onKindChange, query, onQueryChange, onOpen, onCreate, onCopy, onRename }: Props) {
+  const [actionsFor, setActionsFor] = useState<RoutineSummary | null>(null);
   const count = (k: RoutineKind) => routines?.filter((r) => r.kind === k).length ?? 0;
   const ofKind = routines?.filter((r) => r.kind === kind) ?? [];
   const shown = searchRoutines(ofKind, query);
@@ -70,17 +76,25 @@ export function RoutineListView({ routines, error, onRetry, kind, onKindChange, 
       ) : (
         <ul className={styles.list}>
           {shown.map((r) => (
-            <li key={r.id}>
+            <li key={r.id} className={styles.item}>
               <ListRow
+                className={styles.row}
                 icon={kind === 'warmup' ? 'flame' : 'timer'}
                 title={r.title}
                 subtitle={metaText(r)}
                 meta={<span>{usedText(r.usedIn)}</span>}
                 onClick={() => onOpen(r.id)}
               />
+              {onCopy && onRename && (
+                <IconButton bare icon="more" aria-label={`Действия: ${r.title}`} className={styles.more} onClick={() => setActionsFor(r)} />
+              )}
             </li>
           ))}
         </ul>
+      )}
+
+      {onCopy && onRename && (
+        <RoutineActionsSheet routine={actionsFor} taken={ofKind.map((r) => r.title)} onClose={() => setActionsFor(null)} onCopy={onCopy} onRename={onRename} />
       )}
     </div>
   );

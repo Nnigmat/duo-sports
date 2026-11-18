@@ -1,7 +1,7 @@
 import type {
   Block, CommitBlock, Range, Routine, RoutineDetail, RoutineInput, RoutineItem, RoutineKind, RoutineSummary, Workout,
 } from '../shared/types';
-import { composeBlocks, routineBlock } from '../shared/routines';
+import { composeBlocks, copyTitle, routineBlock } from '../shared/routines';
 import type { Db } from './db';
 import { type Checked, slugify, uniqueSlug } from './exercises';
 import { displayBlocks } from '../shared/displayBlocks';
@@ -185,6 +185,41 @@ export function updateRoutine(db: Db, slug: string, input: RoutineInput, clock: 
     if (!resolved.ok) return resolved;
     db.prepare('UPDATE routines SET kind = ?, title = ?, note = ?, updated_at = ? WHERE id = ?').run(input.kind, input.title, input.note ?? null, clock().toISOString(), cur.id);
     writeItems(db, cur.id, input, resolved.rows);
+    return { ok: true, routine: routineById(db, cur.id)! };
+  })();
+}
+
+export type RoutineCopy = { ok: true; routine: Routine } | { ok: false; error: WriteError | 'not_found' };
+
+/** Копия с тем же составом и пояснением; название «Имя копия (n)» подбирается внутри транзакции */
+export function copyRoutine(db: Db, slug: string, clock: Clock = now): RoutineCopy {
+  return db.transaction((): RoutineCopy => {
+    const cur = bySlug(db, slug);
+    if (!cur) return { ok: false, error: 'not_found' };
+    const taken = (db.prepare('SELECT title FROM routines WHERE kind = ?').all(cur.kind) as Array<{ title: string }>).map((r) => r.title);
+    const items = itemsOf(db, cur.id).map(({ exercise, sec, sides }) => ({ exercise, sec, ...(sides ? { sides } : {}) }));
+    const title = copyTitle(cur.title, taken, ROUTINE_LIMITS.title);
+    return createRoutine(db, { kind: cur.kind, title, ...(cur.note ? { note: cur.note } : {}), items }, null, clock);
+  })();
+}
+
+export function validateTitle(body: unknown): Checked<string> {
+  const t = (body as { title?: unknown } | null)?.title;
+  if (typeof t !== 'string' || !t.trim()) return bad('Нужно название');
+  const title = t.trim();
+  if (title.length > ROUTINE_LIMITS.title) return bad(`Название длиннее ${ROUTINE_LIMITS.title} символов`);
+  return { ok: true, value: title };
+}
+
+export type RoutineRename = { ok: true; routine: Routine } | { ok: false; error: 'not_found' | 'duplicate' };
+
+/** Меняет только название; slug и состав остаются */
+export function renameRoutine(db: Db, slug: string, title: string, clock: Clock = now): RoutineRename {
+  return db.transaction((): RoutineRename => {
+    const cur = bySlug(db, slug);
+    if (!cur) return { ok: false, error: 'not_found' };
+    if (titleTaken(db, cur.kind, title, cur.id)) return { ok: false, error: 'duplicate' };
+    db.prepare('UPDATE routines SET title = ?, updated_at = ? WHERE id = ?').run(title, clock().toISOString(), cur.id);
     return { ok: true, routine: routineById(db, cur.id)! };
   })();
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { composeBlocks, routineBlock } from './routines';
+import { composeBlocks, copyTitle, routineBlock } from './routines';
 import type { Routine, SetsBlock, TimedBlock } from './types';
 
 const sets = (id: string): SetsBlock => ({
@@ -70,3 +70,20 @@ describe('routineBlock', () => {
   });
 });
 
+
+describe('copyTitle', () => {
+  it('first copy gets (1), next free number after that', () => {
+    expect(copyTitle('Ноги', ['Ноги'])).toBe('Ноги копия (1)');
+    expect(copyTitle('Ноги', ['Ноги', 'Ноги копия (1)'])).toBe('Ноги копия (2)');
+    expect(copyTitle('Ноги', ['Ноги', 'ноги КОПИЯ (2)'])).toBe('Ноги копия (1)');
+  });
+  it('copy of a copy continues the numbering of the original', () => {
+    expect(copyTitle('Ноги копия (1)', ['Ноги', 'Ноги копия (1)'])).toBe('Ноги копия (2)');
+  });
+  it('shortens the base to fit the limit', () => {
+    const long = 'а'.repeat(79);
+    const t = copyTitle(long, [long], 80);
+    expect(t.length).toBeLessThanOrEqual(80);
+    expect(t.endsWith(' копия (1)')).toBe(true);
+  });
+});

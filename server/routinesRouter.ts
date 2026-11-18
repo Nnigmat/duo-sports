@@ -4,8 +4,8 @@ import { requireUser } from './authRouter';
 import type { Db } from './db';
 import { canAddExercises } from './imports';
 import {
-  createRoutine, deleteRoutine, getRoutine, listRoutines, ROUTINE_DUPLICATE, ROUTINE_IN_USE, ROUTINE_KIND_IN_USE,
-  ROUTINE_NOT_FOUND, ROUTINE_UNKNOWN_EXERCISE, ROUTINES_WRITE_FORBIDDEN, updateRoutine, validateRoutine,
+  copyRoutine, createRoutine, deleteRoutine, getRoutine, listRoutines, ROUTINE_DUPLICATE, ROUTINE_IN_USE, ROUTINE_KIND_IN_USE,
+  ROUTINE_NOT_FOUND, ROUTINE_UNKNOWN_EXERCISE, ROUTINES_WRITE_FORBIDDEN, renameRoutine, updateRoutine, validateRoutine, validateTitle,
 } from './routines';
 
 const FAIL = {
@@ -55,6 +55,28 @@ export function routinesRouter(db: Db) {
       return void res.status(status).json({ error });
     }
     res.json(result.routine);
+  });
+
+  r.patch('/routines/:id', auth, (req, res) => {
+    if (!canAddExercises(req.user!.role)) return void res.status(403).json({ error: ROUTINES_WRITE_FORBIDDEN });
+    const v = validateTitle(req.body);
+    if (!v.ok) return void res.status(400).json({ error: v.error });
+    const result = renameRoutine(db, String(req.params.id), v.value);
+    if (!result.ok) {
+      const [status, error] = FAIL[result.error];
+      return void res.status(status).json({ error });
+    }
+    res.json(result.routine);
+  });
+
+  r.post('/routines/:id/copy', auth, (req, res) => {
+    if (!canAddExercises(req.user!.role)) return void res.status(403).json({ error: ROUTINES_WRITE_FORBIDDEN });
+    const result = copyRoutine(db, String(req.params.id));
+    if (!result.ok) {
+      const [status, error] = FAIL[result.error];
+      return void res.status(status).json({ error });
+    }
+    res.status(201).json(result.routine);
   });
 
   r.delete('/routines/:id', auth, (req, res) => {

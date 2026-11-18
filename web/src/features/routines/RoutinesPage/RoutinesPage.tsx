@@ -5,7 +5,7 @@ import { useAuth } from '../../../app/auth/AuthProvider';
 import { useExercises } from '../../../data/hooks';
 import { Notice, Button } from '../../../ui';
 import { Skeleton, useMediaQuery } from '../../../shared';
-import { createRoutine, deleteRoutine, fetchRoutine, fetchRoutines, updateRoutine } from '../api';
+import { copyRoutine, createRoutine, deleteRoutine, fetchRoutine, fetchRoutines, renameRoutine, updateRoutine } from '../api';
 import { RoutineDetailView } from '../RoutineDetailView/RoutineDetailView';
 import { RoutineForm } from '../RoutineForm/RoutineForm';
 import { RoutineListView } from '../RoutineListView/RoutineListView';
@@ -64,6 +64,8 @@ export function RoutinesPage() {
             onQueryChange={setQuery}
             onOpen={(id) => navigate(`${BASE}/${id}`)}
             onCreate={canManage ? () => navigate(`${BASE}/new`) : undefined}
+            onCopy={canManage ? async (id) => { await copyRoutine(id); await load(); } : undefined}
+            onRename={canManage ? async (id, title) => { await renameRoutine(id, title); await load(); } : undefined}
           />
         }
       />
