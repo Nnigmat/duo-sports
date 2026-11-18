@@ -12,12 +12,12 @@ import { toIso } from '../../plan/plan';
 import type { ParseIssue } from '../../import/parse';
 import { editableBlocks, problems } from './draft';
 import { WorkoutEditView, type EditView } from './WorkoutEditView';
-import { type KnownRoutine, workoutFromYaml, workoutToYaml } from './workoutYaml';
+import { type KnownRoutine, legacyCircuitWarnings, workoutFromYaml, workoutToYaml } from './workoutYaml';
 
 /** Откуда брать тренировку и куда её сохранять: у тренера — ученика, у спортсмена — свою */
 type Source = {
   load: () => Promise<Workout>;
-  save: (title: string, blocks: Block[], links: RoutineSlugs) => Promise<unknown>;
+  save: (title: string, blocks: Block[], links: RoutineSlugs, notes: string) => Promise<unknown>;
   back: string;
 };
 
@@ -40,7 +40,7 @@ export function OwnWorkoutEditPage() {
 function useWorkoutSource(athleteId: number | undefined, workoutId: number): Source {
   return {
     load: useCallback(() => (athleteId === undefined ? fetchOwnWorkout(workoutId) : fetchPlannedWorkout(athleteId, workoutId)), [athleteId, workoutId]),
-    save: (title, blocks, links) => (athleteId === undefined ? putOwnWorkout(workoutId, title, blocks, links) : putWorkout(athleteId, workoutId, title, blocks, links)),
+    save: (title, blocks, links, notes) => (athleteId === undefined ? putOwnWorkout(workoutId, title, blocks, links, notes) : putWorkout(athleteId, workoutId, title, blocks, links, notes)),
     back: athleteId === undefined ? '/plan' : `/trainer/athletes/${athleteId}/plan`,
   };
 }
@@ -107,12 +107,15 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
     ...(links.warmup ? { warmup: { id: links.warmup, title: known.find((r) => r.id === links.warmup)?.title ?? links.warmup } } : {}),
     ...(links.cooldown ? { cooldown: { id: links.cooldown, title: known.find((r) => r.id === links.cooldown)?.title ?? links.cooldown } } : {}),
   };
+  // Заметка тренировки пока правится только в YAML; в форме она хранится как есть
+  const [notes, setNotes] = useState(workout.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
   const [view, setView] = useState<EditView>('form');
   const [text, setText] = useState('');
   const [yamlIssues, setYamlIssues] = useState<ParseIssue[]>([]);
+  const [yamlWarnings, setYamlWarnings] = useState<string[]>([]);
   const back = () => navigate(search.get('back') ?? source.back);
   const issues = problems(title, blocks);
 
@@ -130,7 +133,8 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
   const switchView = (next: EditView) => {
     if (next === view) return;
     if (next === 'yaml') {
-      setText(workoutToYaml(title, blocks, links));
+      setText(workoutToYaml(title, blocks, links, library, notes));
+      setYamlWarnings(legacyCircuitWarnings(blocks));
       setYamlIssues([]);
       setView('yaml');
       return;
@@ -140,6 +144,7 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
     setTitle(r.title);
     setBlocks(r.blocks);
     setLinks(r.links);
+    setNotes(r.notes ?? '');
     setView('form');
   };
 
@@ -148,15 +153,18 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
     let name = title;
     let list = blocks;
     let chosen = links;
+    let note = notes;
     if (view === 'yaml') {
       const r = readYaml();
       if (!r) return;
       name = r.title;
       list = r.blocks;
       chosen = r.links;
+      note = r.notes ?? '';
       setTitle(name);
       setBlocks(list);
       setLinks(chosen);
+      setNotes(note);
     }
     if (problems(name, list).length > 0) {
       if (view === 'yaml') setYamlIssues(problems(name, list).map((message) => ({ message })));
@@ -164,7 +172,7 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
     }
     setSaving(true);
     setFailure(null);
-    source.save(name.trim(), list, chosen).then(back, (e: unknown) => {
+    source.save(name.trim(), list, chosen, note).then(back, (e: unknown) => {
       setSaving(false);
       setFailure(e instanceof Error ? e.message : 'Не получилось сохранить');
     });
@@ -173,7 +181,7 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
   return (
     <WorkoutEditView
       view={view}
-      yaml={{ text, issues: yamlIssues, onText: setText }}
+      yaml={{ text, issues: yamlIssues, warnings: yamlWarnings, onText: setText }}
       onView={switchView}
       title={title}
       blocks={blocks}

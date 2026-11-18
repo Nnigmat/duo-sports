@@ -18,7 +18,7 @@ const VIEWS: Array<{ value: EditView; label: string }> = [
 ];
 
 /** Текст режима YAML и то, что в нём не разобралось */
-export type YamlState = { text: string; issues: ParseIssue[]; onText: (text: string) => void };
+export type YamlState = { text: string; issues: ParseIssue[]; /** Что изменится после сохранения; показывается над текстом */ warnings?: string[]; onText: (text: string) => void };
 
 type Props = {
   view?: EditView;
@@ -94,6 +94,15 @@ export function WorkoutEditView({
 
       {view === 'yaml' && yaml ? (
         <>
+          {yaml.warnings && yaml.warnings.length > 0 && (
+            <Notice tone="warn">
+              <ul className={styles.issues}>
+                {yaml.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </Notice>
+          )}
           {yaml.issues.length > 0 && (
             <Notice tone="error">
               <ul className={styles.issues}>

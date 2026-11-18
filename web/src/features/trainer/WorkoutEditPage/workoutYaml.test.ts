@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '../../../../../shared/types';
 import type { LibraryExercise } from '../../exercises/types';
-import { workoutFromYaml, workoutToYaml } from './workoutYaml';
+import { legacyCircuitWarnings, workoutFromYaml, workoutToYaml } from './workoutYaml';
 import { exercisesOf } from '../../../../../shared/blocks';
 
 const lib = (name: string, kind: LibraryExercise['kind']): LibraryExercise =>
   ({ id: name, name, kind, group: 'legs', muscles: [], equipment: [], defaults: { reps: 8, weight: 0, seconds: 30 }, sessionsTotal: 0, sessions: [], trend: [] }) as LibraryExercise;
 
-const library = [lib('Присед', 'weight'), lib('Жим лёжа', 'weight'), lib('Планка', 'time'), lib('Отжимания', 'reps'), lib('Вращения плечами', 'time'), lib('Выпад', 'time')];
+const library = [lib('Присед', 'weight'), lib('Жим лёжа', 'weight'), lib('Планка', 'time'), lib('Отжимания', 'reps'), lib('Вращения плечами', 'time'), lib('Выпад', 'time'), lib('Заминка', 'time')];
 const TODAY = '2026-11-09';
 
 const blocks: Block[] = [
@@ -28,8 +28,8 @@ const blocks: Block[] = [
     restSec: 90,
     videoRounds: [3],
     exercises: [
-      { id: 'b1-e0', name: 'Присед', kind: 'weight', target: { min: 8, max: 12 }, weight: 75, sets: 4 },
-      { id: 'b1-e1', name: 'Планка', kind: 'time', target: { min: 30, max: 45 }, sets: 3 },
+      { id: 'b1-e0', name: 'Присед', kind: 'weight', target: { min: 8, max: 12 }, weight: 75, sets: 4, restSec: 120 },
+      { id: 'b1-e1', name: 'Планка', kind: 'time', target: { min: 30, max: 45 }, sets: 3, restSec: 90 },
     ],
   },
   {
@@ -38,6 +38,7 @@ const blocks: Block[] = [
     title: 'Финишер',
     restSec: 60,
     rounds: 3,
+    restAfter: 'round',
     videoRounds: [2],
     exercises: [{ id: 'b2-e0', name: 'Отжимания', kind: 'reps', target: { min: 0, max: 0 } }],
   },
@@ -45,13 +46,14 @@ const blocks: Block[] = [
 ];
 
 describe('workoutToYaml', () => {
-  it('пишет формат импорта: упражнения разминки прямо в блоке', () => {
-    const text = workoutToYaml('Ноги', blocks);
-    expect(text).toContain('version: 1');
+  it('пишет version: 2: exercise_id, time_sec, rest_sec; встроенные разминка и заминка идут блоками timed', () => {
+    const text = workoutToYaml('Ноги', blocks, {}, library);
+    expect(text).toContain('version: 2');
     expect(text).not.toContain('routine');
-    expect(text).toMatch(/type: warmup[\s\S]*exercises:\n\s+- name: Вращения плечами/);
-    expect(text).toContain('type: cooldown');
-    expect(text).toContain('time: 300');
+    expect(text).toMatch(/type: timed[\s\S]*exercises:\n\s+- exercise_id: Вращения плечами/);
+    expect(text).toContain('time_sec: 300');
+    expect(text).toContain('rest_sec: 120');
+    expect(text).not.toMatch(/\bname:|\bdo:/);
     expect(text).toMatch(/video_rounds:\n\s+- 3/);
   });
 });
@@ -59,20 +61,22 @@ describe('workoutToYaml', () => {
 describe('блок по таймеру в основной части', () => {
   const plank: Block[] = [{ id: 'b0', mode: 'timed', title: 'По таймеру', exercises: [{ id: 'b0-e0', name: 'Планка', kind: 'time', target: { min: 45, max: 45 } }] }];
   it('пишется как type: timed и читается обратно без kind', () => {
-    const text = workoutToYaml('Кор', plank);
+    const text = workoutToYaml('Кор', plank, {}, library);
     expect(text).toContain('type: timed');
     expect(text).not.toMatch(/warmup|cooldown/);
     expect(workoutFromYaml(text, library, plank, TODAY)).toEqual({ ok: true, title: 'Кор', blocks: plank, links: {} });
   });
-  it('старая разминка без kind остаётся разминкой', () => {
-    const old: Block[] = [{ id: 'b0', mode: 'timed', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] }];
-    expect(workoutToYaml('Ноги', old)).toContain('type: warmup');
+  it('встроенная разминка пишется как timed, а kind и поза возвращаются из прежних блоков', () => {
+    const old: Block[] = [{ id: 'b0', mode: 'timed', kind: 'warmup', title: 'Разминка', exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'time', pose: 'stand', target: { min: 30, max: 30 } }] }];
+    const text = workoutToYaml('Ноги', old, {}, library);
+    expect(text).toContain('type: timed');
+    expect(workoutFromYaml(text, library, old, TODAY)).toEqual({ ok: true, title: 'Ноги', blocks: old, links: {} });
   });
 });
 
 describe('круг блоки → YAML → блоки', () => {
   it('ничего не теряет', () => {
-    const back = workoutFromYaml(workoutToYaml('Ноги', blocks), library, blocks, TODAY);
+    const back = workoutFromYaml(workoutToYaml('Ноги', blocks, {}, library), library, blocks, TODAY);
     expect(back).toEqual({ ok: true, title: 'Ноги', blocks, links: {} });
   });
   it('разминка и заминка из упражнений, дописанные текстом, читаются', () => {
@@ -96,7 +100,7 @@ workouts:
 });
 
 describe('правки', () => {
-  const base = workoutToYaml('Ноги', blocks);
+  const base = workoutToYaml('Ноги', blocks, {}, library);
   it('название блока и число подходов меняются', () => {
     const text = base.replace('title: Финишер', 'title: Конец').replace('sets: 4', 'sets: 5');
     const r = workoutFromYaml(text, library, blocks, TODAY);
@@ -105,7 +109,7 @@ describe('правки', () => {
   });
   it('прежние id остаются на своих местах, новые не совпадают с ними', () => {
     const previous: Block[] = [{ ...blocks[0]!, id: 'b3', exercises: exercisesOf(blocks[0]!).map((e, j) => ({ ...e, id: `b3-e${j}` })) } as Block];
-    const r = workoutFromYaml(workoutToYaml('Ноги', blocks), library, previous, TODAY);
+    const r = workoutFromYaml(workoutToYaml('Ноги', blocks, {}, library), library, previous, TODAY);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const ids = r.blocks.flatMap((b) => [b.id, ...exercisesOf(b).map((e) => e.id)]);
@@ -115,10 +119,10 @@ describe('правки', () => {
 });
 
 describe('ошибки', () => {
-  const base = workoutToYaml('Ноги', blocks);
+  const base = workoutToYaml('Ноги', blocks, {}, library);
   it('упражнения нет в библиотеке', () => {
-    const r = workoutFromYaml(base.replace('name: Присед', 'name: Тяга'), library, blocks, TODAY);
-    expect(r).toMatchObject({ ok: false, issues: [{ message: 'Упражнения «Тяга» нет в библиотеке' }] });
+    const r = workoutFromYaml(base.replace('exercise_id: Присед', 'exercise_id: Тяга'), library, blocks, TODAY);
+    expect(r).toMatchObject({ ok: false, issues: [{ message: 'Неизвестный exercise_id: Тяга' }] });
   });
   it('две тренировки', () => {
     const r = workoutFromYaml(`${base}  - title: Ещё\n    blocks:\n      - type: warmup\n`, library, blocks, TODAY);
@@ -140,7 +144,7 @@ describe('разминка и заминка по ссылке', () => {
     { id: 'obschaya-razminka', kind: 'warmup' as const, title: 'Общая разминка' },
     { id: 'obschaya-zaminka', kind: 'cooldown' as const, title: 'Общая заминка' },
   ];
-  const main: Block[] = [{ id: 'm', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [2], exercises: [{ id: 'm-e0', name: 'Присед', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3 }] }];
+  const main: Block[] = [{ id: 'm', mode: 'sets', title: 'Силовая', restSec: 90, videoRounds: [2], exercises: [{ id: 'm-e0', name: 'Присед', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3, restSec: 60 }] }];
   const text = `version: 1
 workouts:
   - title: Т
@@ -155,7 +159,7 @@ workouts:
 `;
 
   it('пишет блоки routine: разминка первой, заминка последней', () => {
-    const out = workoutToYaml('Т', main, { warmup: 'obschaya-razminka', cooldown: 'obschaya-zaminka' });
+    const out = workoutToYaml('Т', main, { warmup: 'obschaya-razminka', cooldown: 'obschaya-zaminka' }, library);
     expect(out.indexOf('routine: obschaya-razminka')).toBeLessThan(out.indexOf('type: sets'));
     expect(out.indexOf('type: sets')).toBeLessThan(out.indexOf('routine: obschaya-zaminka'));
   });
@@ -169,11 +173,11 @@ workouts:
   });
   it('круг: текст → ссылки → текст', () => {
     const links = { warmup: 'obschaya-razminka', cooldown: 'obschaya-zaminka' };
-    const r = workoutFromYaml(workoutToYaml('Т', main, links), library, main, TODAY, routines);
+    const r = workoutFromYaml(workoutToYaml('Т', main, links, library), library, main, TODAY, routines);
     expect(r).toMatchObject({ ok: true, links, blocks: main });
   });
   it('без блоков routine ссылок нет', () => {
-    const r = workoutFromYaml(workoutToYaml('Т', main), library, main, TODAY, routines);
+    const r = workoutFromYaml(workoutToYaml('Т', main, {}, library), library, main, TODAY, routines);
     expect(r).toMatchObject({ ok: true, links: {} });
   });
   it('набора нет в библиотеке: ошибка', () => {
@@ -202,5 +206,81 @@ workouts:
   it('заминку нельзя поставить как разминку', () => {
     const r = workoutFromYaml(text.replace('routine: obschaya-razminka', 'routine: obschaya-zaminka'), library, main, TODAY, routines);
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('version: 2', () => {
+  const full: Block[] = [
+    { id: 'b0', mode: 'note', title: 'Тест пальца', text: 'Есть ли боль у основания' },
+    {
+      id: 'b1',
+      mode: 'sets',
+      title: 'Подтягивания',
+      restSec: 90,
+      videoRounds: [],
+      exercises: [
+        { id: 'b1-e0', name: 'Присед', kind: 'weight', target: { min: 4, max: 4 }, weight: 35, sets: 3, restSec: 180, note: 'Оба колена в петле' },
+        { id: 'b1-e1', name: 'Планка', kind: 'time', target: { min: 0, max: 0 }, sets: 1, restSec: 180 },
+        { id: 'b1-e2', name: 'Отжимания', kind: 'reps', target: { min: 0, max: 0 }, sets: 1, restSec: 90 },
+      ],
+    },
+    { id: 'b2', mode: 'note', title: 'Вторая заметка', text: 'Запишите ощущения' },
+    {
+      id: 'b3',
+      mode: 'circuit',
+      title: 'Круг',
+      rounds: 2,
+      restSec: 90,
+      restAfter: 'round',
+      videoRounds: [],
+      exercises: [
+        { id: 'b3-e0', name: 'Выпад', kind: 'reps', target: { min: 10, max: 10 }, sides: ['левая нога', 'правая нога'], note: 'Колено над стопой' },
+        { id: 'b3-e1', name: 'Жим лёжа', kind: 'weight', target: { min: 10, max: 12 }, weight: 8 },
+      ],
+    },
+    { id: 'b4', mode: 'timed', title: 'Таймер', note: 'Без пауз', exercises: [{ id: 'b4-e0', name: 'Выпад', kind: 'time', target: { min: 45, max: 45 }, sides: ['вправо', 'влево'] }] },
+  ];
+
+  it('round trip v2 keeps notes, restSec, restAfter, sides, note block, time max', () => {
+    const text = workoutToYaml('Ноги', full, {}, library, 'Рабочих подходов сегодня нет');
+    expect(text).toContain('version: 2');
+    expect(text).toContain('time_sec: max');
+    const back = workoutFromYaml(text, library, full, TODAY);
+    expect(back).toEqual({ ok: true, title: 'Ноги', blocks: full, links: {}, notes: 'Рабочих подходов сегодня нет' });
+  });
+  it('ids of blocks and exercises stay stable, note blocks included', () => {
+    const previous = full.map((b, i) => ({ ...b, id: `x${i}`, ...(b.mode === 'note' ? {} : { exercises: b.exercises.map((e, j) => ({ ...e, id: `x${i}-e${j}` })) }) }) as Block);
+    const back = workoutFromYaml(workoutToYaml('Ноги', full, {}, library), library, previous, TODAY);
+    expect(back.ok).toBe(true);
+    if (!back.ok) return;
+    expect(back.blocks.map((b) => b.id)).toEqual(['x0', 'x1', 'x2', 'x3', 'x4']);
+    expect(back.blocks.map((b) => exercisesOf(b).map((e) => e.id))).toEqual([[], ['x1-e0', 'x1-e1', 'x1-e2'], [], ['x3-e0', 'x3-e1'], ['x4-e0']]);
+  });
+  it('notes are omitted when empty and absent on read', () => {
+    const text = workoutToYaml('Ноги', full, {}, library);
+    expect(text).not.toMatch(/^ {4}notes:/m);
+    const back = workoutFromYaml(text, library, full, TODAY);
+    expect(back.ok && back.notes).toBeUndefined();
+  });
+  it('exercise_id by library alias', () => {
+    const aliased = [{ ...lib('Присед', 'weight'), id: 'squat', aliases: ['Приседания'] } as LibraryExercise, ...library.slice(1)];
+    const one: Block[] = [{ id: 'b0', mode: 'sets', title: 'Т', restSec: 90, videoRounds: [], exercises: [{ id: 'b0-e0', name: 'приседания', kind: 'reps', target: { min: 5, max: 5 }, sets: 1, restSec: 90 }] }];
+    expect(workoutToYaml('Т', one, {}, aliased)).toContain('exercise_id: squat');
+  });
+  it('unknown name written as exercise_id gives unknown exercise_id', () => {
+    const one: Block[] = [{ id: 'b0', mode: 'sets', title: 'Т', restSec: 90, videoRounds: [], exercises: [{ id: 'b0-e0', name: 'Неведомое', kind: 'reps', target: { min: 5, max: 5 }, sets: 1 }] }];
+    const text = workoutToYaml('Т', one, {}, library);
+    expect(text).toContain('exercise_id: Неведомое');
+    expect(workoutFromYaml(text, library, one, TODAY)).toMatchObject({ ok: false, issues: [{ message: 'Неизвестный exercise_id: Неведомое' }] });
+  });
+  it('legacy circuit warning text', () => {
+    const old: Block[] = [{ id: 'b0', mode: 'circuit', title: 'Круг', rounds: 2, restSec: 30, videoRounds: [], exercises: [] }];
+    expect(legacyCircuitWarnings(old)).toEqual(['Отдых в круге «Круг» после сохранения будет после круга, а не после каждого упражнения']);
+    expect(legacyCircuitWarnings(full)).toEqual([]);
+    expect(workoutToYaml('Т', old, {}, library)).toContain('rest_sec: 30');
+  });
+  it('reads v1 as before', () => {
+    const r = workoutFromYaml('version: 1\nworkouts:\n  - title: Т\n    blocks:\n      - type: sets\n        exercises:\n          - { name: Присед, do: 3x8 @ 60 }\n', library, [], TODAY);
+    expect(r.ok && exercisesOf(r.blocks[0]!)[0]).toMatchObject({ name: 'Присед', weight: 60 });
   });
 });

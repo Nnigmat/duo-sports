@@ -11,48 +11,56 @@ export type RoutineLinks = RoutineSlugs;
 /** Набор из библиотеки: по нему проверяются ссылки routine */
 export type KnownRoutine = { id: string; kind: 'warmup' | 'cooldown'; title: string };
 
-export type YamlResult = { ok: true; title: string; blocks: Block[]; links: RoutineLinks } | { ok: false; issues: ParseIssue[] };
+export type YamlResult = { ok: true; title: string; blocks: Block[]; links: RoutineLinks; notes?: string } | { ok: false; issues: ParseIssue[] };
 
 const rangeText = (r: Range, unit = ''): string | number => (r.min === r.max ? r.min : `${r.min}-${r.max}${unit}`);
 const isOpen = (r: Range) => r.min === 0 && r.max === 0;
 
-/** Таймерный блок из одного шага с названием блока — то, что импорт делает из `time: 5m` без набора */
-const isPlainTimed = (b: Block): boolean => b.mode === 'timed' && b.exercises.length === 1 && /^(разминка|заминка)$/i.test(b.exercises[0]!.name);
+/** Как разбор ищет упражнение по названию и алиасам; от него зависит, какой id писать в exercise_id */
+const norm = (s: string) => s.trim().toLowerCase().replace(/ё/g, 'е');
 
-/** Блок по таймеру без kind из старых данных: разминка или заминка, если у упражнений есть поза (её ставил импорт) или так назван блок */
-const isLegacyRoutine = (b: Block): boolean => exercisesOf(b).some((e) => e.pose !== undefined) || /разминк|заминк/i.test(b.title);
+function libraryIds(library: LibraryExercise[]): (name: string) => string {
+  const byName = new Map<string, string>();
+  for (const l of library) for (const n of [l.name, ...(l.aliases ?? [])]) byName.set(norm(n), l.id);
+  // Не нашли: пишем название, разбор ответит «Неизвестный exercise_id»
+  return (name) => byName.get(norm(name)) ?? name;
+}
 
-const isCooldown = (b: Block): boolean => exercisesOf(b).some((e) => e.pose === 'stretch') || /заминк/i.test(b.title);
+type IdOf = (name: string) => string;
 
-function exerciseYaml(e: Exercise, withSets: boolean): Record<string, unknown> {
+function exerciseYaml(e: Exercise, inSets: boolean, b: Block, idOf: IdOf): Record<string, unknown> {
+  const sets = inSets ? (e as SetsExercise) : undefined;
   return {
-    name: e.name,
-    ...(withSets ? { sets: (e as SetsExercise).sets } : {}),
-    ...(e.kind === 'time' ? { time: rangeText(e.target, 's') } : { reps: isOpen(e.target) ? 'max' : rangeText(e.target) }),
-    ...(e.kind === 'weight' ? { weight: e.weight ?? 0 } : {}),
+    exercise_id: idOf(e.name),
+    ...(sets ? { sets: sets.sets } : {}),
+    ...(e.kind === 'time' ? { time_sec: isOpen(e.target) ? 'max' : e.target.max } : { reps: isOpen(e.target) ? 'max' : rangeText(e.target) }),
+    ...(e.kind === 'weight' ? { weight_kg: e.weight ?? 0 } : {}),
+    ...(sets ? { rest_sec: sets.restSec ?? (b.mode === 'sets' ? b.restSec : 0) } : {}),
+    ...(e.sides ? { sides: e.sides } : {}),
+    ...(e.note ? { notes: e.note } : {}),
   };
 }
 
-/** Состав тренировки как YAML для редактирования; подключённые наборы пишутся блоками routine: разминка первой, заминка последней */
-export function workoutToYaml(title: string, blocks: Block[], links: RoutineLinks = {}): string {
-  const out = blocks.flatMap((b) => (b.mode === 'note' ? [] : [b])).map((b) => {
+/** Старые круги (отдых после каждого упражнения): в v2 такого нет, после сохранения отдых будет после круга */
+export function legacyCircuitWarnings(blocks: Block[]): string[] {
+  return blocks.flatMap((b) => (b.mode === 'circuit' && b.restAfter !== 'round' ? [`Отдых в круге «${b.title}» после сохранения будет после круга, а не после каждого упражнения`] : []));
+}
+
+/** Состав тренировки как YAML (version: 2) для редактирования; подключённые наборы пишутся блоками routine: разминка первой, заминка последней */
+export function workoutToYaml(title: string, blocks: Block[], links: RoutineLinks = {}, library: LibraryExercise[] = [], notes?: string): string {
+  const idOf = libraryIds(library);
+  const out = blocks.map((b) => {
+    if (b.mode === 'note') return { type: 'note', title: b.title, text: b.text };
     const head = { title: b.title, ...(b.mode !== 'timed' && b.videoRounds.length ? { video_rounds: b.videoRounds } : {}) };
-    if (b.mode === 'timed' && !b.kind && !isLegacyRoutine(b)) {
-      return { type: 'timed', ...head, ...(b.note ? { text: b.note } : {}), exercises: b.exercises.map((e) => ({ name: e.name, time: rangeText(e.target, 's'), ...(e.sides ? { sides: e.sides } : {}) })) };
-    }
+    // Встроенных разминки и заминки в v2 нет: упражнения пишутся блоком timed, kind возвращает keepIds
     if (b.mode === 'timed') {
-      // В формате импорта у блока по таймеру два типа; без kind (старые данные) берём по позе и названию
-      const type = b.kind ?? (isCooldown(b) ? 'cooldown' : 'warmup');
-      const note = b.note ? { text: b.note } : {};
-      if (isPlainTimed(b)) return { type, ...head, time: rangeText(b.exercises[0]!.target, 's'), ...note };
-      if (b.exercises.length === 0) return { type, ...head, ...note };
-      return { type, ...head, ...note, exercises: b.exercises.map((e) => ({ name: e.name, time: rangeText(e.target, 's'), ...(e.sides ? { sides: e.sides } : {}) })) };
+      return { type: 'timed', ...head, ...(b.note ? { text: b.note } : {}), exercises: b.exercises.map((e) => ({ exercise_id: idOf(e.name), time_sec: e.target.max, ...(e.sides ? { sides: e.sides } : {}) })) };
     }
-    if (b.mode === 'sets') return { type: 'sets', ...head, rest: b.restSec, exercises: b.exercises.map((e) => exerciseYaml(e, true)) };
-    return { type: 'circuit', ...head, rounds: b.rounds, rest: b.restSec, exercises: b.exercises.map((e) => exerciseYaml(e, false)) };
+    if (b.mode === 'sets') return { type: 'sets', ...head, exercises: b.exercises.map((e) => exerciseYaml(e, true, b, idOf)) };
+    return { type: 'circuit', ...head, rounds: b.rounds, rest_sec: b.restSec, exercises: b.exercises.map((e) => exerciseYaml(e, false, b, idOf)) };
   });
   const all = [...(links.warmup ? [{ type: 'warmup', routine: links.warmup }] : []), ...out, ...(links.cooldown ? [{ type: 'cooldown', routine: links.cooldown }] : [])];
-  const doc = { version: 1, workouts: [{ title, blocks: all }] };
+  const doc = { version: 2, workouts: [{ title, ...(notes ? { notes } : {}), blocks: all }] };
   return stringify(doc, { lineWidth: 0, flowCollectionPadding: false });
 }
 
@@ -75,8 +83,15 @@ function keepIds(blocks: Block[], previous: Block[]): Block[] {
     if (b.mode === 'note') return { ...b, id };
     const exercises = b.exercises.map((e, j) => {
       const old = before ? exercisesOf(before)[j] : undefined;
-      return { ...e, id: unique(old && old.name === e.name ? old.id : e.id.replace(b.id, id), taken) };
+      const same = old?.name === e.name;
+      // В v2 время — одно число (берётся большее); диапазон из прежней тренировки возвращаем, пока это число не тронули
+      const keepRange = same && e.kind === 'time' && old.kind === 'time' && e.target.min === e.target.max && e.target.max === old.target.max;
+      return { ...e, ...(keepRange ? { target: old.target } : {}), id: unique(same ? old.id : e.id.replace(b.id, id), taken) };
     });
+    // v2 не умеет встроенную разминку и заминку: блок пришёл как timed без kind; если на этом месте они были, возвращаем kind и позу
+    if (b.mode === 'timed' && !b.kind && before?.mode === 'timed' && before.kind && before.exercises.length === exercises.length && before.exercises.every((o, j) => o.name === exercises[j]!.name)) {
+      return { ...b, id, kind: before.kind, exercises: exercises.map((e, j) => ({ ...e, ...(before.exercises[j]!.pose ? { pose: before.exercises[j]!.pose } : {}) })) } as Block;
+    }
     return { ...b, id, exercises } as Block;
   });
 }
@@ -122,5 +137,5 @@ export function workoutFromYaml(text: string, library: LibraryExercise[], previo
     return { ...b, title: own, videoRounds: [...new Set(rounds as number[])].sort((x, y) => x - y) };
   });
   if (issues.length > 0) return { ok: false, issues };
-  return { ok: true, title, blocks: keepIds(blocks, previous), links };
+  return { ok: true, title, blocks: keepIds(blocks, previous), links, ...(only.notes ? { notes: only.notes } : {}) };
 }
