@@ -72,11 +72,25 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
   }
 }
 
+/** Отдых после шага по правилам блока; последний шаг блока обрабатывает вызывающий. */
+function restOf(block: Block, draft: Draft, index: number, count: number): number {
+  switch (block.mode) {
+    case 'sets':
+      return block.exercises.find((e) => e.id === draft.exerciseId)?.restSec ?? block.restSec;
+    case 'circuit': {
+      // «после круга»: отдыхаем только после последнего упражнения круга
+      const perRound = count / block.rounds;
+      return block.restAfter === 'round' && (index + 1) % perRound !== 0 ? 0 : block.restSec;
+    }
+    default:
+      return 0;
+  }
+}
+
 /** Плоский список шагов тренировки из блоков. Отдых — свойство шага, не отдельный шаг. */
 export function buildSteps(blocks: Block[]): Step[] {
   return blocks.flatMap((block, blockIndex) => {
     const drafts = draftsOf(block, blockIndex);
-    const rest = block.mode === 'timed' || block.mode === 'note' ? 0 : block.restSec;
     // Перед заминкой отдых есть и после последнего шага: человек сам нажимает «Начать»
     const following = blocks[blockIndex + 1];
     const beforeCooldown = following?.mode === 'timed' && following.kind === 'cooldown';
@@ -84,7 +98,7 @@ export function buildSteps(blocks: Block[]): Step[] {
       ...d,
       indexInBlock: i + 1,
       blockSize: drafts.length,
-      restAfterSec: i < drafts.length - 1 || beforeCooldown ? rest : 0,
+      restAfterSec: i < drafts.length - 1 || beforeCooldown ? restOf(block, d, i, drafts.length) : 0,
     }));
   });
 }

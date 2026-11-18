@@ -45,8 +45,15 @@ export function blockItems(block: Block): BlockItem[] {
 }
 
 export function restLabel(block: Block): string | undefined {
-  if (block.mode === 'timed' || block.mode === 'note' || block.restSec <= 0) return undefined;
-  return `Отдых ${block.restSec} с ${block.mode === 'circuit' ? 'после каждого подхода' : 'между подходами'}`;
+  if (block.mode === 'timed' || block.mode === 'note') return undefined;
+  if (block.mode === 'circuit') {
+    if (block.restSec <= 0) return undefined;
+    return `Отдых ${block.restSec} с ${block.restAfter === 'round' ? 'после круга' : 'после каждого подхода'}`;
+  }
+  const rests = new Set(block.exercises.map((e) => e.restSec ?? block.restSec));
+  if (rests.size > 1) return 'Отдых у упражнений';
+  const rest = rests.size === 1 ? [...rests][0] : block.restSec;
+  return rest > 0 ? `Отдых ${rest} с между подходами` : undefined;
 }
 
 /** «Круг 2 записываем на видео» */

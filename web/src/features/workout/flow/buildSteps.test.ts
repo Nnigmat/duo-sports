@@ -105,6 +105,33 @@ describe('buildSteps', () => {
   });
 });
 
+describe('buildSteps: отдых v2', () => {
+  const rests = (b: CircuitBlock | SetsBlock) => buildSteps([b]).map((s) => s.restAfterSec);
+
+  it('sets exercise restSec overrides block', () => {
+    const [a, b] = setsBlock.exercises;
+    const block: SetsBlock = {
+      ...setsBlock,
+      restSec: 90,
+      exercises: [
+        { ...a, sets: 2, restSec: 180 },
+        { ...b, sets: 2 },
+      ],
+    };
+    expect(rests(block)).toEqual([180, 180, 90, 0]);
+  });
+
+  it('circuit restAfter round rests only after last exercise', () => {
+    const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90, restAfter: 'round' };
+    expect(rests(block)).toEqual([0, 0, 90, 0, 0, 0]);
+  });
+
+  it('circuit without restAfter rests after every exercise', () => {
+    const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90 };
+    expect(rests(block)).toEqual([90, 90, 90, 90, 90, 0]);
+  });
+});
+
 describe('buildSteps: блок-заметка', () => {
   it('не даёт шагов и не мешает соседям', () => {
     const note = { id: 'n', mode: 'note' as const, title: 'Важно', text: 'Сегодня без отжиманий' };
