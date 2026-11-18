@@ -98,7 +98,7 @@ export function draftToCommit(d: BuilderDraft, ctx: ParseContext): CommitCheck {
 
   if (out.length) return { ok: false, problems: out };
 
-  const structure = d.blocks.map((b) => ({ ...b, exercises: b.exercises.map((e) => (rename.has(e.name) ? { ...e, name: rename.get(e.name)! } : e)) }) as Block);
+  const structure = d.blocks.map((b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.map((e) => (rename.has(e.name) ? { ...e, name: rename.get(e.name)! } : e)) } as Block)));
   return {
     ok: true,
     commit: {

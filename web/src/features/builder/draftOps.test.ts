@@ -6,6 +6,7 @@ import {
 } from './draftOps';
 import { library as entries } from './testkit';
 import type { BuilderDraft, NewExerciseDraft } from './types';
+import { exercisesOf } from '../../../../shared/blocks';
 
 const library = entries.map(toLibraryExercise);
 const dips = library.find((l) => l.id === 'dips')!;
@@ -27,7 +28,7 @@ const base = (): BuilderDraft => ({
     { id: 'a1', text: 'Отдых добавлен по правилам' },
   ],
 });
-const names = (d: BuilderDraft, block: number) => d.blocks[block]!.exercises.map((e) => e.name);
+const names = (d: BuilderDraft, block: number) => exercisesOf(d.blocks[block]!).map((e) => e.name);
 
 describe('правка черновика', () => {
   it('createExercise adds row and new entry', () => {
@@ -48,12 +49,12 @@ describe('правка черновика', () => {
 
   it('changing kind of new exercise updates its rows', () => {
     const d = patchNewExercise(base(), 'Отжимания с хлопком', { kind: 'weight' });
-    expect(d.blocks[0]!.exercises[0]).toMatchObject({ kind: 'weight', weight: expect.any(Number) });
+    expect(exercisesOf(d.blocks[0]!)[0]).toMatchObject({ kind: 'weight', weight: expect.any(Number) });
   });
 
   it('replaceExercise swaps name and kind and drops unused new', () => {
     const d = replaceExercise(base(), 'Отжимания с хлопком', dips);
-    expect(d.blocks[0]!.exercises[0]).toMatchObject({ id: 'x1', name: 'Отжимания на брусьях', kind: 'reps', sets: 3 });
+    expect(exercisesOf(d.blocks[0]!)[0]).toMatchObject({ id: 'x1', name: 'Отжимания на брусьях', kind: 'reps', sets: 3 });
     expect(d.newExercises.map((e) => e.name)).toEqual(['Наклон к ногам']);
     expect(d.advice.map((a) => a.id)).toEqual(['a1']);
   });
@@ -77,7 +78,7 @@ describe('правка черновика', () => {
   it('replaceExercise to time kind resets target to seconds', () => {
     const arm = library.find((l) => l.id === 'arm-circles')!;
     const d = replaceExercise(base(), 'Жим лёжа', arm);
-    const e = d.blocks[1]!.exercises[0]!;
+    const e = exercisesOf(d.blocks[1]!)[0]!;
     expect(e).toMatchObject({ name: 'Вращение руками', kind: 'time', target: { min: 30, max: 30 } });
     expect(e).not.toHaveProperty('weight');
   });
@@ -151,7 +152,7 @@ describe('правка черновика', () => {
 
   it('keeps sets of a sets exercise after replace', () => {
     const d = replaceExercise(base(), 'Отжимания с хлопком', dips);
-    expect((d.blocks[0]!.exercises[0] as SetsExercise).sets).toBe(3);
+    expect((exercisesOf(d.blocks[0]!)[0] as SetsExercise).sets).toBe(3);
   });
   it('removeNew drops rows, routine items, advice and the entry', () => {
     let d = createExercise(base(), 'b2', 'Наклон к ногам');
@@ -162,6 +163,6 @@ describe('правка черновика', () => {
     const r = removeNew(base(), 'Отжимания с хлопком');
     expect(r.advice.map((a) => a.id)).toEqual(['a1']);
     // Блок без упражнений остаётся: его покажет проверка перед сохранением
-    expect(r.blocks[0]!.exercises).toEqual([]);
+    expect(exercisesOf(r.blocks[0]!)).toEqual([]);
   });
 });

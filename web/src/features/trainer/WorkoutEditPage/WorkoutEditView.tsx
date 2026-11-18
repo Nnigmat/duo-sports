@@ -125,7 +125,7 @@ export function WorkoutEditView({
 
       {warmupSlot ?? (routines?.warmup && <RoutineLink label="Разминка" routine={routines.warmup} />)}
 
-      {blocks.map((b, i) => (
+      {blocks.map((b, i) => b.mode === 'note' ? null : (
         <Card key={b.id} tone="surface" className={styles.block} aria-label={`Блок ${i + 1}`}>
           <div className={styles.blockHead}>
             <TextInput label={`Название блока ${i + 1}`} value={b.title} maxLength={200} onChange={(e) => change((x) => renameBlock(x, b.id, e.target.value))} />

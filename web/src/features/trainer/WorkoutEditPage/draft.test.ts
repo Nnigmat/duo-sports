@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Block, SetsBlock } from '../../../../../shared/types';
+import { exercisesOf } from '../../../../../shared/blocks';
 import {
   addBlock, addExercise, changeMode, editableBlocks, moveBlock, moveExercise, patchExercise, problems, removeBlock, removeExercise, roundsOf, setRounds, setTarget, toggleVideoRound,
 } from './draft';
@@ -16,18 +17,18 @@ describe('добавление', () => {
   });
   it('упражнение подставляет значения библиотеки; в «подходами» есть число подходов', () => {
     const [b] = sets() as SetsBlock[];
-    expect(b.exercises[0]).toEqual({ id: 'x1', name: 'Присед', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3 });
+    expect(exercisesOf(b)[0]).toEqual({ id: 'x1', name: 'Присед', kind: 'weight', target: { min: 8, max: 8 }, weight: 60, sets: 3 });
   });
   it('в таймерном блоке любое упражнение становится временным', () => {
     const [b] = addExercise(addBlock([], 'timed'), 'b1', squat);
-    expect(b.exercises[0]).toMatchObject({ kind: 'time', target: { min: 30, max: 30 } });
-    expect(b.exercises[0]).not.toHaveProperty('weight');
+    expect(exercisesOf(b)[0]).toMatchObject({ kind: 'time', target: { min: 30, max: 30 } });
+    expect(exercisesOf(b)[0]).not.toHaveProperty('weight');
   });
   it('id не повторяются после удаления', () => {
     let blocks = addExercise(sets(), 'b1', plank);
     blocks = removeExercise(blocks, 'b1', 'x1');
     blocks = addExercise(blocks, 'b1', plank);
-    expect(blocks[0].exercises.map((e) => e.id)).toEqual(['x2', 'x1']);
+    expect(exercisesOf(blocks[0]).map((e) => e.id)).toEqual(['x2', 'x1']);
   });
 });
 
@@ -37,7 +38,7 @@ describe('порядок и удаление', () => {
     expect(moveBlock(blocks, 'b2', -1).map((b) => b.id)).toEqual(['b2', 'b1']);
     expect(moveBlock(blocks, 'b1', -1)).toEqual(blocks);
     const two = addExercise(sets(), 'b1', plank);
-    expect(moveExercise(two, 'b1', 'x2', -1)[0].exercises.map((e) => e.id)).toEqual(['x2', 'x1']);
+    expect(exercisesOf(moveExercise(two, 'b1', 'x2', -1)[0]).map((e) => e.id)).toEqual(['x2', 'x1']);
     expect(moveExercise(two, 'b1', 'x2', 1)).toEqual(two);
   });
   it('удаляет блок', () => {
@@ -55,8 +56,8 @@ describe('режимы', () => {
   it('подходами → по кругу: упражнения остаются без числа подходов', () => {
     const [b] = changeMode(sets(), 'b1', 'circuit');
     expect(b).toMatchObject({ mode: 'circuit', rounds: 3 });
-    expect(b.exercises[0]).not.toHaveProperty('sets');
-    expect(b.exercises[0].id).toBe('x1');
+    expect(exercisesOf(b)[0]).not.toHaveProperty('sets');
+    expect(exercisesOf(b)[0].id).toBe('x1');
   });
   it('по кругу → подходами: подходов по умолчанию 3', () => {
     const [b] = changeMode(changeMode(sets(), 'b1', 'circuit'), 'b1', 'sets') as SetsBlock[];
@@ -65,8 +66,8 @@ describe('режимы', () => {
   it('→ по таймеру: остаётся время, веса нет', () => {
     const [b] = changeMode(sets(), 'b1', 'timed');
     expect(b).toMatchObject({ mode: 'timed' });
-    expect(b.exercises[0]).toMatchObject({ kind: 'time', target: { min: 60, max: 60 } });
-    expect(b.exercises[0]).not.toHaveProperty('weight');
+    expect(exercisesOf(b)[0]).toMatchObject({ kind: 'time', target: { min: 60, max: 60 } });
+    expect(exercisesOf(b)[0]).not.toHaveProperty('weight');
     expect(b).not.toHaveProperty('restSec');
   });
 });
@@ -100,9 +101,9 @@ describe('problems', () => {
 describe('setTarget', () => {
   it('«от» выше «до» поднимает «до», «до» ниже «от» опускает «от»', () => {
     const up = setTarget(sets(), 'b1', 'x1', 'min', 12);
-    expect(up[0].exercises[0].target).toEqual({ min: 12, max: 12 });
+    expect(exercisesOf(up[0])[0].target).toEqual({ min: 12, max: 12 });
     const down = setTarget(setTarget(sets(), 'b1', 'x1', 'max', 10), 'b1', 'x1', 'max', 6);
-    expect(down[0].exercises[0].target).toEqual({ min: 6, max: 6 });
+    expect(exercisesOf(down[0])[0].target).toEqual({ min: 6, max: 6 });
   });
 });
 

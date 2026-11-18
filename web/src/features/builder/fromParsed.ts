@@ -1,3 +1,4 @@
+import { exercisesOf } from '../../../../shared/blocks';
 import type { AgentRoutine, AgentWorkout } from '../../../../shared/aiDraft';
 import type { ExerciseKind } from '../../../../shared/types';
 import type { ParseContext, ParsedImport } from '../import/parse';
@@ -8,7 +9,7 @@ const kindOf = (m: Measure | undefined): ExerciseKind => (m === 'distance' ? 'ti
 const norm = (s: string) => s.trim().toLowerCase().replace(/ё/g, 'е');
 
 /** Имена всех упражнений блоков основной части */
-const namesIn = (blocks: BuilderDraft['blocks']): Set<string> => new Set(blocks.flatMap((b) => (b.exercises as Array<{ name: string }>).map((e) => norm(e.name))));
+const namesIn = (blocks: BuilderDraft['blocks']): Set<string> => new Set(blocks.flatMap((b) => (exercisesOf(b) as Array<{ name: string }>).map((e) => norm(e.name))));
 
 /**
  * Удачный разбор ответа агента → черновик формы. Блоки — из structure разбора; новые упражнения — из разбора,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Block } from '../../../../../shared/types';
 import type { LibraryExercise } from '../../exercises/types';
 import { workoutFromYaml, workoutToYaml } from './workoutYaml';
+import { exercisesOf } from '../../../../../shared/blocks';
 
 const lib = (name: string, kind: LibraryExercise['kind']): LibraryExercise =>
   ({ id: name, name, kind, group: 'legs', muscles: [], equipment: [], defaults: { reps: 8, weight: 0, seconds: 30 }, sessionsTotal: 0, sessions: [], trend: [] }) as LibraryExercise;
@@ -90,7 +91,7 @@ workouts:
             per_side: true
 `;
     const r = workoutFromYaml(text, library, [], TODAY);
-    expect(r.ok && r.blocks.map((b) => [b.mode, b.exercises.length])).toEqual([['timed', 1], ['timed', 1]]);
+    expect(r.ok && r.blocks.map((b) => [b.mode, exercisesOf(b).length])).toEqual([['timed', 1], ['timed', 1]]);
   });
 });
 
@@ -100,14 +101,14 @@ describe('правки', () => {
     const text = base.replace('title: Финишер', 'title: Конец').replace('sets: 4', 'sets: 5');
     const r = workoutFromYaml(text, library, blocks, TODAY);
     expect(r.ok && r.blocks[2]!.title).toBe('Конец');
-    expect(r.ok && (r.blocks[1]!.exercises[0] as { sets: number }).sets).toBe(5);
+    expect(r.ok && (exercisesOf(r.blocks[1]!)[0] as unknown as { sets: number }).sets).toBe(5);
   });
   it('прежние id остаются на своих местах, новые не совпадают с ними', () => {
-    const previous: Block[] = [{ ...blocks[0]!, id: 'b3', exercises: blocks[0]!.exercises.map((e, j) => ({ ...e, id: `b3-e${j}` })) } as Block];
+    const previous: Block[] = [{ ...blocks[0]!, id: 'b3', exercises: exercisesOf(blocks[0]!).map((e, j) => ({ ...e, id: `b3-e${j}` })) } as Block];
     const r = workoutFromYaml(workoutToYaml('Ноги', blocks), library, previous, TODAY);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    const ids = r.blocks.flatMap((b) => [b.id, ...b.exercises.map((e) => e.id)]);
+    const ids = r.blocks.flatMap((b) => [b.id, ...exercisesOf(b).map((e) => e.id)]);
     expect(new Set(ids).size).toBe(ids.length);
     expect(r.blocks[0]!.id).toBe('b3');
   });

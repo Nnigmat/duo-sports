@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { ARTIFACT } from '../../../ui/storyKit';
 import { StartScreen } from './StartScreen';
 import { CIRCUIT, COOLDOWN, STRENGTH, WARMUP } from './storyData';
+import { exercisesOf } from '../../../../../shared/blocks';
 
 const onBack = fn();
 const onStart = fn();
@@ -66,7 +67,7 @@ export const SetsBlock: Story = {
 
 /** Список «Инвентарь»: инвентарь упражнений с весом там, где он нужен */
 export const WithGear: Story = {
-  args: { title: 'Силовая', blocks: [STRENGTH], equipment: { [STRENGTH.exercises[0]!.id]: ['2 гантели', 'Скамья'] } },
+  args: { title: 'Силовая', blocks: [STRENGTH], equipment: { [exercisesOf(STRENGTH)[0]!.id]: ['2 гантели', 'Скамья'] } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole('list', { name: 'Инвентарь' })).toBeVisible();

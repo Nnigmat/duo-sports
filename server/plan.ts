@@ -46,6 +46,7 @@ export function estimateMinutes(blocks: CommitBlock[], structure: Block[] | null
   if (real !== null) return roundMinutes(real);
   if (!structure) return estimateWorkoutMinutes(blocks);
   const sec = structure.reduce((total, b) => {
+    if (b.mode === 'note') return total;
     if (b.mode === 'timed') return total + b.exercises.reduce((n, e) => n + workSec(e, realWork), 0);
     if (b.mode === 'sets') return total + b.exercises.reduce((n, e) => n + e.sets * (workSec(e, realWork) + b.restSec) + SETUP_SEC, 0);
     return total + b.rounds * (b.exercises.reduce((n, e) => n + workSec(e, realWork), 0) + b.exercises.length * b.restSec) + SETUP_SEC;

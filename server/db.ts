@@ -326,6 +326,7 @@ function migrate(db: Db) {
   db.exec('CREATE INDEX IF NOT EXISTS comments_athlete ON comments(athlete_id, created_at); CREATE INDEX IF NOT EXISTS comments_session ON comments(session_id)');
   if (!columns('workouts').includes('warmup_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN warmup_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
   if (!columns('workouts').includes('cooldown_routine_id')) db.exec('ALTER TABLE workouts ADD COLUMN cooldown_routine_id INTEGER REFERENCES routines(id) ON DELETE RESTRICT');
+  if (!columns('workouts').includes('notes')) db.exec('ALTER TABLE workouts ADD COLUMN notes TEXT');
   migrateSharedExercises(db);
   migrateMeasurementKinds(db);
 }

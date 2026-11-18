@@ -3,6 +3,7 @@ import { libraryIndex, libraryOf } from './comments';
 import type { Db } from './db';
 import { nextWorkoutHints } from './hints';
 import { composeStructure, type RoutineLinks } from './routines';
+import { exercisesOf } from '../shared/blocks';
 import { factLabel } from '../shared/fact';
 import { feelingLabel } from '../shared/feeling';
 import { sessionVolume, addDays } from './today';
@@ -127,7 +128,7 @@ export function sessionReviewOf(db: Db, viewer: Viewer, sessionId: number, today
     // Структуру могли править после тренировки: блок по индексу годится, только если в нём есть это упражнение (или то, что заменили: у замены другой id)
     const candidate = structure?.[g.blockIndex];
     const exerciseId = g.id.slice(g.id.indexOf(':') + 1);
-    const block = candidate?.exercises.some((e) => e.id === exerciseId || (g.replacedFrom !== undefined && key(e.name) === key(g.replacedFrom))) ? candidate : undefined;
+    const block = (candidate ? exercisesOf(candidate) : []).some((e) => e.id === exerciseId || (g.replacedFrom !== undefined && key(e.name) === key(g.replacedFrom))) ? candidate : undefined;
     const secKey = block ? `b${g.blockIndex}` : 'all';
     let sec = sections.find((x) => x.key === secKey);
     if (!sec) {

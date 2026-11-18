@@ -5,7 +5,8 @@ export interface Step {
   blockIndex: number;
   blockId: string;
   blockTitle: string;
-  mode: Block['mode'];
+  /** Блок-заметка шагов не даёт, пока Task 5 не сделает из неё шаг */
+  mode: Exclude<Block['mode'], 'note'>;
   exerciseId: string;
   exerciseName: string;
   kind: Exercise['kind'];
@@ -40,7 +41,7 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
     blockIndex,
     blockId: block.id,
     blockTitle: block.title,
-    mode: block.mode,
+    mode: block.mode as Draft['mode'],
     exerciseId: e.id,
     exerciseName: e.name,
     kind: e.kind,
@@ -66,6 +67,8 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
       return Array.from({ length: block.rounds }, (_, r) =>
         block.exercises.map((e) => make(e, r + 1, block.rounds)),
       ).flat();
+    case 'note':
+      return [];
   }
 }
 
@@ -73,7 +76,7 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
 export function buildSteps(blocks: Block[]): Step[] {
   return blocks.flatMap((block, blockIndex) => {
     const drafts = draftsOf(block, blockIndex);
-    const rest = block.mode === 'timed' ? 0 : block.restSec;
+    const rest = block.mode === 'timed' || block.mode === 'note' ? 0 : block.restSec;
     // Перед заминкой отдых есть и после последнего шага: человек сам нажимает «Начать»
     const following = blocks[blockIndex + 1];
     const beforeCooldown = following?.mode === 'timed' && following.kind === 'cooldown';

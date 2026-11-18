@@ -26,6 +26,13 @@ describe('updateWorkout', () => {
     expect(r.ok).toBe(true);
     expect(db.prepare('SELECT title FROM workouts WHERE id = ?').get(wid)).toEqual({ title: 'Стало' });
   });
+  it('updateWorkout clears notes with empty string', () => {
+    db.prepare('UPDATE workouts SET notes = ? WHERE id = ?').run('Старая', wid);
+    updateWorkout(db, { id: me, role: 'athlete' }, me, wid, { title: 'Стало', blocks, notes: 'Новая' });
+    expect(workoutOf(db, me, wid)!.notes).toBe('Новая');
+    updateWorkout(db, { id: me, role: 'athlete' }, me, wid, { title: 'Стало', blocks, notes: '' });
+    expect(workoutOf(db, me, wid)).not.toHaveProperty('notes');
+  });
   it('после правки разминка и заминка остаются ими, а блок по таймеру без kind (планка) — основная часть', () => {
     const ex = (id: string) => ({ id, name: id === 'p' ? 'Планка' : id, kind: 'time', target: { min: 30, max: 30 } });
     const edited = [

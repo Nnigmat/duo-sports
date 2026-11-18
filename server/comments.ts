@@ -1,3 +1,4 @@
+import { exercisesOf as blockExercises } from '../shared/blocks';
 import { pickDemo } from '../shared/demo';
 import type { Block, CoachComment, ExerciseDemo, Gender, Role, Technique } from '../shared/types';
 import type { Db } from './db';
@@ -43,7 +44,7 @@ export function libraryIndex(library: LibraryRow[]): Map<string, LibraryRow> {
 }
 
 export function exercisesOf(blocks: Block[]): Array<{ id: string; name: string }> {
-  return blocks.flatMap((b) => b.exercises.map((e) => ({ id: e.id, name: e.name })));
+  return blocks.flatMap((b) => blockExercises(b).map((e) => ({ id: e.id, name: e.name })));
 }
 
 /** Описание из библиотеки: строки заметки — шаги, нумерацию и маркеры убираем. Нет текста и ролика — техники нет. */

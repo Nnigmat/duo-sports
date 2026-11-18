@@ -1,3 +1,4 @@
+import { exercisesOf } from '../../../../shared/blocks';
 import { importSlug } from '../../../../shared/importSlug';
 import type { Block, Exercise, ExerciseKind } from '../../../../shared/types';
 import { DEFAULT_PARAMS } from '../exercises/library';
@@ -15,7 +16,7 @@ const same = (a: string, b: string) => norm(a) === norm(b);
 /** Имена из блоков и новых разминки и заминки */
 export function usedNames(d: BuilderDraft): Set<string> {
   const out = new Set<string>();
-  for (const b of d.blocks) for (const e of b.exercises) out.add(e.name);
+  for (const b of d.blocks) for (const e of exercisesOf(b)) out.add(e.name);
   for (const pick of [d.warmup, d.cooldown]) if (pick.kind === 'new') for (const i of pick.items) out.add(i.name);
   return out;
 }
@@ -37,7 +38,7 @@ function retype(e: Exercise, kind: ExerciseKind, name: string): Exercise {
 
 /** В блоке по таймеру упражнение всегда на время */
 const mapRows = (blocks: Block[], fn: (e: Exercise, b: Block) => Exercise): Block[] =>
-  blocks.map((b) => ({ ...b, exercises: b.exercises.map((e) => fn(e, b)) }) as Block);
+  blocks.map((b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.map((e) => fn(e, b)) } as Block)));
 
 const mapItems = (pick: RoutinePick, fn: (i: NewRoutineItem) => NewRoutineItem): RoutinePick => (pick.kind === 'new' ? { ...pick, items: pick.items.map(fn) } : pick);
 
@@ -114,7 +115,7 @@ export const renameRoutine = (d: BuilderDraft, which: Which, title: string): Bui
 
 /** «Убрать» в панели нового упражнения: строки в блоках и наборах, советы про него и сама запись */
 export function removeNew(d: BuilderDraft, name: string): BuilderDraft {
-  const blocks = d.blocks.map((b) => ({ ...b, exercises: b.exercises.filter((e) => e.name !== name) }) as Block);
+  const blocks = d.blocks.map((b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.filter((e) => e.name !== name) } as Block)));
   const drop = (p: RoutinePick): RoutinePick => (p.kind === 'new' ? { ...p, items: p.items.filter((i) => i.name !== name) } : p);
   return {
     ...d,

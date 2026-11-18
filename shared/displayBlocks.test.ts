@@ -16,3 +16,9 @@ describe('displayBlocks', () => {
     ]);
   });
 });
+
+describe('displayBlocks: блок-заметка', () => {
+  it('в список блоков не попадает', () => {
+    expect(displayBlocks([{ id: 'n', mode: 'note', title: 'Важно', text: 'Текст' }])).toEqual([]);
+  });
+});

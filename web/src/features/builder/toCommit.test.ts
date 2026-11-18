@@ -3,6 +3,7 @@ import type { ImportCommit } from '../../../../shared/types';
 import { ctx } from './testkit';
 import { draftToCommit } from './toCommit';
 import type { BuilderDraft, NewExerciseDraft } from './types';
+import { exercisesOf } from '../../../../shared/blocks';
 
 const clap: NewExerciseDraft = { name: 'Отжимания с хлопком', slug: 'clap-pushup', muscles: ['грудь'], kind: 'reps', equipment: ['Коврик'], notes: 'Корпус прямой', aliases: ['хлопки'] };
 const bend: NewExerciseDraft = { name: 'Наклон к ногам', slug: 'bend', muscles: ['спина'], kind: 'time', equipment: [], notes: '', aliases: [] };
@@ -54,10 +55,10 @@ describe('draftToCommit', () => {
 
   it('new exercise renamed to library name is not created', () => {
     const renamed = { ...clap, name: 'брусья' };
-    const blocks = base().blocks.map((b) => ({ ...b, exercises: b.exercises.map((e) => (e.name === clap.name ? { ...e, name: 'брусья' } : e)) })) as BuilderDraft['blocks'];
+    const blocks = base().blocks.map((b) => ({ ...b, exercises: exercisesOf(b).map((e) => (e.name === clap.name ? { ...e, name: 'брусья' } : e)) })) as BuilderDraft['blocks'];
     const c = commitOf(base({ newExercises: [renamed], blocks }));
     expect(c.exercises).toEqual([]);
-    expect(c.workouts[0]!.structure![0]!.exercises.map((e) => e.name)).toEqual(['Отжимания на брусьях', 'Жим лёжа']);
+    expect(exercisesOf(c.workouts[0]!.structure![0]!).map((e) => e.name)).toEqual(['Отжимания на брусьях', 'Жим лёжа']);
     expect(c.workouts[0]!.blocks[0]!.items[0]!.name).toBe('Отжимания на брусьях');
   });
 

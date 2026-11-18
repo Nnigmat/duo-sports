@@ -1,4 +1,5 @@
 import { parse, stringify } from 'yaml';
+import { exercisesOf } from '../../../../../shared/blocks';
 import type { Block, Exercise, LibraryEntry, Range, RoutineSlugs, SetsExercise } from '../../../../../shared/types';
 import { parseImport, type ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
@@ -19,9 +20,9 @@ const isOpen = (r: Range) => r.min === 0 && r.max === 0;
 const isPlainTimed = (b: Block): boolean => b.mode === 'timed' && b.exercises.length === 1 && /^(разминка|заминка)$/i.test(b.exercises[0]!.name);
 
 /** Блок по таймеру без kind из старых данных: разминка или заминка, если у упражнений есть поза (её ставил импорт) или так назван блок */
-const isLegacyRoutine = (b: Block): boolean => b.exercises.some((e) => e.pose !== undefined) || /разминк|заминк/i.test(b.title);
+const isLegacyRoutine = (b: Block): boolean => exercisesOf(b).some((e) => e.pose !== undefined) || /разминк|заминк/i.test(b.title);
 
-const isCooldown = (b: Block): boolean => b.exercises.some((e) => e.pose === 'stretch') || /заминк/i.test(b.title);
+const isCooldown = (b: Block): boolean => exercisesOf(b).some((e) => e.pose === 'stretch') || /заминк/i.test(b.title);
 
 function exerciseYaml(e: Exercise, withSets: boolean): Record<string, unknown> {
   return {
@@ -34,7 +35,7 @@ function exerciseYaml(e: Exercise, withSets: boolean): Record<string, unknown> {
 
 /** Состав тренировки как YAML для редактирования; подключённые наборы пишутся блоками routine: разминка первой, заминка последней */
 export function workoutToYaml(title: string, blocks: Block[], links: RoutineLinks = {}): string {
-  const out = blocks.map((b) => {
+  const out = blocks.flatMap((b) => (b.mode === 'note' ? [] : [b])).map((b) => {
     const head = { title: b.title, ...(b.mode !== 'timed' && b.videoRounds.length ? { video_rounds: b.videoRounds } : {}) };
     if (b.mode === 'timed' && !b.kind && !isLegacyRoutine(b)) {
       return { type: 'timed', ...head, ...(b.note ? { text: b.note } : {}), exercises: b.exercises.map((e) => ({ name: e.name, time: rangeText(e.target, 's'), ...(e.sides ? { sides: e.sides } : {}) })) };
@@ -71,8 +72,9 @@ function keepIds(blocks: Block[], previous: Block[]): Block[] {
   return blocks.map((b, i) => {
     const before = previous[i];
     const id = unique(before?.id ?? b.id, taken);
+    if (b.mode === 'note') return { ...b, id };
     const exercises = b.exercises.map((e, j) => {
-      const old = before?.exercises[j];
+      const old = before ? exercisesOf(before)[j] : undefined;
       return { ...e, id: unique(old && old.name === e.name ? old.id : e.id.replace(b.id, id), taken) };
     });
     return { ...b, id, exercises } as Block;
@@ -110,7 +112,7 @@ export function workoutFromYaml(text: string, library: LibraryExercise[], previo
   const blocks = structure.map((b, i): Block => {
     const extra = raw[i];
     const own = typeof extra?.title === 'string' && extra.title.trim() ? extra.title.trim() : b.title;
-    if (b.mode === 'timed' || extra?.video_rounds === undefined) return { ...b, title: own };
+    if (b.mode === 'timed' || b.mode === 'note' || extra?.video_rounds === undefined) return { ...b, title: own };
     const rounds = extra.video_rounds;
     const limit = roundsOf(b);
     if (!Array.isArray(rounds) || !rounds.every((n) => Number.isInteger(n) && n >= 1 && n <= limit)) {

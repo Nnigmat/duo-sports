@@ -104,3 +104,11 @@ describe('buildSteps', () => {
     });
   });
 });
+
+describe('buildSteps: блок-заметка', () => {
+  it('не даёт шагов и не мешает соседям', () => {
+    const note = { id: 'n', mode: 'note' as const, title: 'Важно', text: 'Сегодня без отжиманий' };
+    expect(buildSteps([note])).toEqual([]);
+    expect(buildSteps([note, circuit]).length).toBe(buildSteps([circuit]).length);
+  });
+});

@@ -33,13 +33,17 @@ export interface Exercise {
   target: Range;
   /** кг, только для kind === 'weight' */
   weight?: number;
-  /** Подписи двух сторон по порядку («вправо», «влево»); есть — упражнение в таймерном блоке идёт два раза, по target на сторону */
+  /** Подписи двух сторон по порядку («вправо», «влево»); есть — упражнение идёт два раза, по target на сторону */
   sides?: [string, string];
+  /** Подсказка к упражнению */
+  note?: string;
 }
 
 export interface SetsExercise extends Exercise {
   /** число подходов этого упражнения */
   sets: number;
+  /** Отдых после подхода этого упражнения, секунды; нет — отдых блока */
+  restSec?: number;
 }
 
 /** Упражнения по таймеру подряд: разминка, заминка или обычный блок (например, планка в основной части) */
@@ -134,11 +138,21 @@ export interface CircuitBlock {
   exercises: Exercise[];
   rounds: number;
   restSec: number;
+  /** 'round' — отдых только после круга, не после каждого упражнения */
+  restAfter?: 'round';
   /** номера кругов (с 1), которые пишем на видео */
   videoRounds: number[];
 }
 
-export type Block = TimedBlock | SetsBlock | CircuitBlock;
+/** Текст на экране тренировки без упражнений */
+export interface NoteBlock {
+  id: string;
+  mode: 'note';
+  title: string;
+  text: string;
+}
+
+export type Block = TimedBlock | SetsBlock | CircuitBlock | NoteBlock;
 
 /** План подхода: из него считается строка в облачке и значения в «Изменить» */
 export interface SetPlan {
@@ -175,6 +189,8 @@ export interface Technique {
 export interface Workout {
   id: string;
   title: string;
+  /** Заметка к тренировке целиком */
+  notes?: string;
   /** Для экрана: разминка и заминка по ссылке уже стоят в начале и в конце */
   blocks: Block[];
   /** Подключённые разминка и заминка (slug и название); редактор показывает их строками-ссылками */
@@ -395,6 +411,8 @@ export interface CommitWorkout {
   blocks: CommitBlock[];
   /** Те же блоки для экрана тренировки; без них тренировку нельзя запустить */
   structure?: Block[];
+  /** Заметка к тренировке целиком */
+  notes?: string;
   /** slug подключённой разминки и заминки; в blocks и structure их блоков нет */
   warmupRoutine?: string;
   cooldownRoutine?: string;

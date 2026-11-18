@@ -1,3 +1,4 @@
+import { exercisesOf } from '../../../../../shared/blocks';
 import type { Block, Exercise, ExerciseKind, SetsExercise, Workout } from '../../../../../shared/types';
 
 /** Правка тренировки без побочных эффектов: каждая функция возвращает новые блоки. Id упражнений не меняем: на них держатся подсказки. */
@@ -7,7 +8,8 @@ export function editableBlocks(blocks: Block[], routines: Workout['routines']): 
   return blocks.filter((b) => b.mode !== 'timed' || !((b.kind === 'warmup' && routines?.warmup) || (b.kind === 'cooldown' && routines?.cooldown)));
 }
 
-export type BlockMode = Block['mode'];
+/** Режимы, которые можно выбрать в редакторе; блок-заметка в нём пока не правится */
+export type BlockMode = Exclude<Block['mode'], 'note'>;
 
 export const MODE_LABELS: Record<BlockMode, string> = { timed: 'По таймеру', sets: 'Подходами', circuit: 'По кругу' };
 export const DEFAULT_REST = 90;
@@ -19,7 +21,7 @@ const DEFAULT_TIMED_SEC = 60;
 /** Минимум данных об упражнении библиотеки для добавления в блок */
 export type PickedExercise = { name: string; kind: ExerciseKind; defaults: { reps: number; weight: number; seconds: number } };
 
-const idsOf = (blocks: Block[]): Set<string> => new Set(blocks.flatMap((b) => [b.id, ...b.exercises.map((e) => e.id)]));
+const idsOf = (blocks: Block[]): Set<string> => new Set(blocks.flatMap((b) => [b.id, ...exercisesOf(b).map((e) => e.id)]));
 
 function freshId(blocks: Block[], prefix: string): string {
   const taken = idsOf(blocks);
@@ -67,7 +69,7 @@ export const renameBlock = (blocks: Block[], blockId: string, title: string): Bl
 /** Меняет режим, сохраняя упражнения: для «подходами» добавляется число подходов, для «по таймеру» остаётся только время */
 export function changeMode(blocks: Block[], blockId: string, mode: BlockMode): Block[] {
   return mapBlock(blocks, blockId, (b) => {
-    if (b.mode === mode) return b;
+    if (b.mode === mode || b.mode === 'note') return b;
     const plain = b.exercises.map(({ id, name, kind, pose, target, weight }) => ({ id, name, kind, ...(pose ? { pose } : {}), target, ...(weight !== undefined ? { weight } : {}) }));
     const keepSets = (e: Exercise): SetsExercise => ({ ...e, sets: (b.exercises.find((x) => x.id === e.id) as SetsExercise | undefined)?.sets ?? 3 });
     const common = { id: b.id, title: b.title };
@@ -82,32 +84,34 @@ export function changeMode(blocks: Block[], blockId: string, mode: BlockMode): B
 export function addExercise(blocks: Block[], blockId: string, pick: PickedExercise): Block[] {
   const id = freshId(blocks, 'x');
   return mapBlock(blocks, blockId, (b) => {
+    if (b.mode === 'note') return b;
     const ex = exerciseFrom(id, b.mode === 'timed' ? { ...pick, kind: 'time' } : pick, b.mode === 'sets');
     return { ...b, exercises: [...b.exercises, ex] } as Block;
   });
 }
 
 export const removeExercise = (blocks: Block[], blockId: string, exerciseId: string): Block[] =>
-  mapBlock(blocks, blockId, (b) => ({ ...b, exercises: b.exercises.filter((e) => e.id !== exerciseId) }) as Block);
+  mapBlock(blocks, blockId, (b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.filter((e) => e.id !== exerciseId) } as Block)));
 
 export const moveExercise = (blocks: Block[], blockId: string, exerciseId: string, delta: -1 | 1): Block[] =>
   mapBlock(blocks, blockId, (b) => {
+    if (b.mode === 'note') return b;
     const i = b.exercises.findIndex((e) => e.id === exerciseId);
     return i < 0 ? b : ({ ...b, exercises: swap(b.exercises as Exercise[], i, i + delta) } as Block);
   });
 
 export const patchExercise = (blocks: Block[], blockId: string, exerciseId: string, patch: Partial<SetsExercise>): Block[] =>
-  mapBlock(blocks, blockId, (b) => ({ ...b, exercises: b.exercises.map((e) => (e.id === exerciseId ? { ...e, ...patch } : e)) }) as Block);
+  mapBlock(blocks, blockId, (b) => (b.mode === 'note' ? b : ({ ...b, exercises: b.exercises.map((e) => (e.id === exerciseId ? { ...e, ...patch } : e)) } as Block)));
 
 /** Меняет одну границу цели и подтягивает вторую, чтобы «от» не стало больше «до» */
 export function setTarget(blocks: Block[], blockId: string, exerciseId: string, edge: 'min' | 'max', value: number): Block[] {
-  const ex = blocks.find((b) => b.id === blockId)?.exercises.find((e) => e.id === exerciseId);
+  const ex = exercisesOf(blocks.find((b) => b.id === blockId) ?? { id: '', mode: 'note', title: '', text: '' }).find((e) => e.id === exerciseId);
   if (!ex) return blocks;
   const target = edge === 'min' ? { min: value, max: Math.max(ex.target.max, value) } : { min: Math.min(ex.target.min, value), max: value };
   return patchExercise(blocks, blockId, exerciseId, { target });
 }
 
-export const setRest = (blocks: Block[], blockId: string, restSec: number): Block[] => mapBlock(blocks, blockId, (b) => (b.mode === 'timed' ? b : { ...b, restSec }));
+export const setRest = (blocks: Block[], blockId: string, restSec: number): Block[] => mapBlock(blocks, blockId, (b) => (b.mode === 'timed' || b.mode === 'note' ? b : { ...b, restSec }));
 
 /** Круги убавили — номера кругов для видео больше нового числа пропадают */
 export const setRounds = (blocks: Block[], blockId: string, rounds: number): Block[] =>
@@ -118,7 +122,7 @@ export const roundsOf = (b: Block): number => (b.mode === 'circuit' ? b.rounds :
 
 export const toggleVideoRound = (blocks: Block[], blockId: string, n: number): Block[] =>
   mapBlock(blocks, blockId, (b) => {
-    if (b.mode === 'timed') return b;
+    if (b.mode === 'timed' || b.mode === 'note') return b;
     const has = b.videoRounds.includes(n);
     const videoRounds = (has ? b.videoRounds.filter((x) => x !== n) : [...b.videoRounds, n]).sort((a, c) => a - c);
     return { ...b, videoRounds };
@@ -131,7 +135,7 @@ export function problems(title: string, blocks: Block[]): string[] {
   if (blocks.length === 0) out.push('Добавьте хотя бы один блок');
   for (const b of blocks) {
     if (!b.title.trim()) out.push('У блока нет названия');
-    if (b.exercises.length === 0) out.push(`В блоке «${b.title || 'без названия'}» нет упражнений`);
+    if (b.mode !== 'note' && b.exercises.length === 0) out.push(`В блоке «${b.title || 'без названия'}» нет упражнений`);
   }
   return out;
 }

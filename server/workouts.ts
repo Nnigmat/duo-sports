@@ -9,13 +9,13 @@ const now: Clock = () => new Date();
 
 /** Тренировка для экрана выполнения. Без структуры (импортирована старой версией) запустить нельзя — null. */
 export function workoutOf(db: Db, userId: number, id: number): Workout | null {
-  const row = db.prepare('SELECT id, title, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ? AND user_id = ?').get(id, userId) as
-    | (RoutineLinks & { id: number; title: string; structure: string | null })
+  const row = db.prepare('SELECT id, title, notes, structure, warmup_routine_id, cooldown_routine_id FROM workouts WHERE id = ? AND user_id = ?').get(id, userId) as
+    | (RoutineLinks & { id: number; title: string; notes: string | null; structure: string | null })
     | undefined;
   const blocks = row ? composeStructure(db, row) : null;
   if (!row || !blocks) return null;
   const routines = linkedRoutines(db, row);
-  return { id: String(row.id), title: row.title, blocks, ...(routines ? { routines } : {}) };
+  return { id: String(row.id), title: row.title, ...(row.notes ? { notes: row.notes } : {}), blocks, ...(routines ? { routines } : {}) };
 }
 
 /** Тренировка с комментариями тренера и техникой из библиотеки. Показанные комментарии помечаются прочитанными. */

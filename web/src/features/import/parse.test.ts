@@ -5,6 +5,7 @@ import { SAMPLE_YAML, newWorkoutYaml, sampleYaml } from './import';
 import { buildPlan, DEFAULT_OPTIONS } from './importPlan';
 import { importSlug } from '../../../../shared/importSlug';
 import { candidatesFor, parseImport, similarTo, type ParseContext, type ParseResult } from './parse';
+import { exercisesOf } from '../../../../shared/blocks';
 
 const ctx: ParseContext = { library: libraryFixture, routines: [], today: '2026-11-02', mine: { '2026-11-05': 'Всё тело' } };
 const ok = (r: ParseResult) => {
@@ -414,8 +415,8 @@ describe('упражнения прямо в блоке разминки и за
     const r = ok(parseImport(wrap(block()), ctx));
     const b = r.workouts[0]!.structure[0]!;
     expect(b).toMatchObject({ mode: 'timed', title: 'Разминка' });
-    expect(b.exercises.map((e) => e.name)).toEqual(['Вращение головой', 'Планка']);
-    expect(b.exercises[1]).toMatchObject({ sides: ['вправо', 'влево'] });
+    expect(exercisesOf(b).map((e) => e.name)).toEqual(['Вращение головой', 'Планка']);
+    expect(exercisesOf(b)[1]).toMatchObject({ sides: ['вправо', 'влево'] });
     expect(r.workouts[0]!.blocks[0]!.heading).toBe('Разминка · 2 мин');
   });
   it('type: timed — блок по таймеру без kind, в составе дня остаётся', () => {
