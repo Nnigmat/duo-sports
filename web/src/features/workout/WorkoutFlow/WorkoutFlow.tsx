@@ -141,8 +141,9 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
     workStart.current = Date.now();
     workEnd.current = null;
   }, [index, phase, session.timerStarted]);
+  // Побеждает последняя отметка: после «Стоп» → закрыли шторку → продолжили → «Стоп» подход кончился во второй раз
   const markWorkEnd = () => {
-    workEnd.current ??= Date.now();
+    workEnd.current = Date.now();
   };
   const timeNow = () => ({ startedAt: workStart.current, endedAt: workEnd.current ?? Date.now() });
 
