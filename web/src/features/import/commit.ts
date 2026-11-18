@@ -119,6 +119,7 @@ export function buildCommit(parsed: ParsedImport, choices: ExerciseChoices, opti
       return [{ kind: b.kind, heading: trimmed ? b.heading.split(' · ')[0]! : b.heading, ...(b.text ? { text: b.text } : {}), items }];
     }),
     ...structureOf(w.structure, rename),
+    ...(w.notes ? { notes: w.notes } : {}),
     ...(w.warmupRoutine && !dropped.has(w.warmupRoutine) ? { warmupRoutine: w.warmupRoutine } : {}),
     ...(w.cooldownRoutine && !dropped.has(w.cooldownRoutine) ? { cooldownRoutine: w.cooldownRoutine } : {}),
   }));

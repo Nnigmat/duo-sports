@@ -165,7 +165,7 @@ describe('ошибки со страницы «Формат»', () => {
     expect(fails(text)[0]).toMatchObject({ message: 'В schedule неизвестная тренировка: upper-c', hint: 'В плане можно ссылаться только на id из workouts.' });
   });
   it('нет version, workouts, title, blocks; неверная дата и тип блока', () => {
-    expect(fails('workouts: []\n').map((e) => e.message)).toEqual(['Нужно version: 1', 'Нужна хотя бы одна тренировка в workouts']);
+    expect(fails('workouts: []\n').map((e) => e.message)).toEqual(['Нужно version: 1 или 2', 'Нужна хотя бы одна тренировка в workouts']);
     expect(fails('version: 1\nworkouts:\n  - date: вчера\n    blocks: []\n').map((e) => e.message)).toEqual(['У тренировки нет title', 'Неверная дата: вчера', 'У тренировки нет blocks']);
     expect(fails(wrap('      - type: yoga\n'))[0]!.message).toBe('Неизвестный type: yoga');
   });
