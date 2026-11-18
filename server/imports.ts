@@ -112,6 +112,8 @@ function checkExercise(e: unknown, withSets: boolean): boolean {
 /** Блоки экрана тренировки: форма и пределы, чтобы в базу не попало то, на чём экран упадёт */
 export function checkStructure(blocks: unknown): boolean {
   if (!Array.isArray(blocks) || blocks.length === 0 || blocks.length > LIMITS.blocks) return false;
+  // Одни заметки без шагов: спортсмену нечего выполнять и нечем завершить тренировку
+  if (!blocks.some((b) => isObj(b) && b.mode !== 'note')) return false;
   return blocks.every((b) => {
     if (!isObj(b) || !MODES.includes(String(b.mode)) || !isStr(b.id, 100) || !isStr(b.title, LIMITS.name)) return false;
     if (b.mode === 'note') return isStr(b.text, LIMITS.text);

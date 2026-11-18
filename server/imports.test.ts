@@ -295,12 +295,17 @@ describe('checkStructure: формат v2', () => {
   it('rejects restAfter other', () => {
     expect(checkStructure(circuit({ restAfter: 'set' }))).toBe(false);
   });
-  it('accepts note block without exercises', () => {
-    expect(checkStructure([{ id: 'n0', mode: 'note', title: 'Важно', text: 'Рабочих подходов сегодня нет' }])).toBe(true);
+  const note = (extra: Record<string, unknown> = {}) => ({ id: 'n0', mode: 'note', title: 'Важно', text: 'Рабочих подходов сегодня нет', ...extra });
+  it('accepts note block without exercises next to a working block', () => {
+    expect(checkStructure([note(), ...sets()])).toBe(true);
+  });
+  it('rejects structure with only note blocks', () => {
+    expect(checkStructure([note()])).toBe(false);
+    expect(checkStructure([note(), note({ id: 'n1' })])).toBe(false);
   });
   it('rejects note block with text over 1000', () => {
-    expect(checkStructure([{ id: 'n0', mode: 'note', title: 'Важно', text: 'я'.repeat(1001) }])).toBe(false);
-    expect(checkStructure([{ id: 'n0', mode: 'note', title: 'Важно' }])).toBe(false);
+    expect(checkStructure([note({ text: 'я'.repeat(1001) }), ...sets()])).toBe(false);
+    expect(checkStructure([{ id: 'n0', mode: 'note', title: 'Важно' }, ...sets()])).toBe(false);
   });
 });
 
