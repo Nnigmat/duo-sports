@@ -309,6 +309,11 @@ export function emptyDraft(): ExerciseDraft {
   return { name: '', kind: 'weight', muscles: [], equipment: [], notes: '', params: { ...DEFAULT_PARAMS } };
 }
 
+/** Черновик из окна выбора: только название и тип, остальное по умолчанию */
+export function quickDraft(name: string, kind: ExerciseKind): ExerciseDraft {
+  return { ...emptyDraft(), name: name.trim(), kind };
+}
+
 export function draftFromExercise(ex: LibraryExercise): ExerciseDraft {
   return { name: ex.name, kind: ex.kind, muscles: [...ex.muscles], equipment: [...ex.equipment], notes: ex.notes ?? '', params: { ...ex.defaults } };
 }

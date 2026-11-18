@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import type { Block } from '../../../../../shared/types';
 import { toLibraryExercise } from '../../exercises/api';
 import { WorkoutEditView } from './WorkoutEditView';
@@ -9,6 +9,8 @@ const library = [
   { id: 'bench-press', name: 'Жим лёжа', aliases: [], kind: 'weight' as const, group: 'chest' as const, muscles: ['грудь'], equipment: ['Штанга'] },
   { id: 'dips', name: 'Отжимания на брусьях', aliases: ['брусья'], kind: 'reps' as const, group: 'arms' as const, muscles: ['трицепс'], equipment: [] },
 ].map(toLibraryExercise);
+// В Storybook нет /api/demo: путь выходит на ролик чибика из web/assets
+library[0] = { ...library[0]!, demo: { female: '../../web/assets/characters/idle-girl.mp4' } };
 
 const blocks: Block[] = [
   {
@@ -97,6 +99,73 @@ export const CreateFromSearch: Story = {
     await userEvent.type(await sheet.findByLabelText('Поиск упражнения'), 'Отжимания с хлопком');
     await userEvent.click(sheet.getByRole('button', { name: 'Создать „Отжимания с хлопком“' }));
     await expect(args.onCreateExercise).toHaveBeenCalledWith('b1', 'Отжимания с хлопком');
+  },
+};
+
+export const Thumbs: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const bench = c.getByRole('button', { name: /^Видео техники: Жим лёжа/ });
+    await waitFor(() => expect(bench.querySelector('video')).not.toBeNull());
+    await expect(c.getByRole('button', { name: /^Видео техники: Жим узкий/ })).toHaveTextContent('Нет видео');
+  },
+};
+
+export const PickerThumbs: Story = {
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Добавить упражнение' }));
+    const body = within(document.body);
+    const sheet = await body.findByRole('dialog', { name: 'Упражнение' });
+    const s = within(sheet);
+    await expect(s.getByRole('button', { name: /^Видео техники: Жим лёжа/ })).toBeVisible();
+    await userEvent.click(s.getByRole('button', { name: /^Видео техники: Отжимания на брусьях/ }));
+    await body.findByRole('dialog', { name: 'Отжимания на брусьях' });
+    await expect(args.onBlocks).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Отжимания на брусьях' })).toBeNull());
+    await userEvent.click(await s.findByRole('button', { name: 'Отжимания на брусьях' }));
+    await expect(args.onBlocks).toHaveBeenCalled();
+  },
+};
+
+export const QuickCreate: Story = {
+  args: { onQuickCreate: fn(async () => {}) },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Добавить упражнение' }));
+    const body = within(document.body);
+    await userEvent.type(await body.findByLabelText('Поиск упражнения'), 'Выпады назад');
+    await expect(body.getByLabelText('Название')).toHaveValue('Выпады назад');
+    await userEvent.click(body.getByRole('button', { name: 'Добавить' }));
+    await expect(args.onQuickCreate).toHaveBeenCalledWith('b1', 'Выпады назад', 'reps');
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Упражнение' })).toBeNull());
+  },
+};
+
+export const QuickCreateFails: Story = {
+  args: { onQuickCreate: fn(async () => Promise.reject(new Error('Упражнение с таким названием уже есть'))) },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Добавить упражнение' }));
+    const body = within(document.body);
+    await userEvent.type(await body.findByLabelText('Поиск упражнения'), 'Жим');
+    await userEvent.clear(body.getByLabelText('Поиск упражнения'));
+    await userEvent.type(body.getByLabelText('Поиск упражнения'), 'Выпады назад');
+    await userEvent.click(body.getByRole('button', { name: 'Добавить' }));
+    await expect(await body.findByText('Упражнение с таким названием уже есть')).toBeVisible();
+    await expect(body.getByRole('dialog', { name: 'Упражнение' })).toBeVisible();
+  },
+};
+
+export const NoQuickCreate: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Добавить упражнение' }));
+    const body = within(document.body);
+    await userEvent.type(await body.findByLabelText('Поиск упражнения'), 'Выпады назад');
+    await expect(body.getByText(/Ничего не нашлось/)).toBeVisible();
+    await expect(body.queryByRole('button', { name: 'Добавить' })).toBeNull();
   },
 };
 

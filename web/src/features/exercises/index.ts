@@ -4,3 +4,4 @@ export { ExerciseHistoryView } from './ExerciseHistoryView/ExerciseHistoryView';
 export { ExerciseListView } from './ExerciseListView/ExerciseListView';
 export { ExercisesPage } from './ExercisesPage/ExercisesPage';
 export { ExercisesFlow } from './ExercisesFlow/ExercisesFlow';
+export { QuickExerciseForm } from './QuickExerciseForm/QuickExerciseForm';
