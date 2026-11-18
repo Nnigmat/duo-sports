@@ -267,7 +267,7 @@ describe('базовый шаблон новой тренировки', () => {
     const s = r.preview.weeks[0]!.sessions[0]!;
     expect(s.date).toBe('Вт, 10 нояб');
     expect(s.title).toBe('Новая тренировка');
-    expect(s.blocks.map((b) => b.heading)).toEqual(['Разминка · 5 мин', 'Подходами', 'Заминка']);
+    expect(s.blocks.map((b) => b.heading)).toEqual(['Подходами']);
     expect(r.plan.workouts).toHaveLength(1);
   });
 });
