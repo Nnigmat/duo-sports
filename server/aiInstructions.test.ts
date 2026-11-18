@@ -40,6 +40,20 @@ describe('agent instructions', () => {
     for (const rule of ['только в блоке sets', 'только в circuit', 'только у блоков timed и note', '0 для чисел, "" для строк, [] для списков', 'после круга', '180']) {
       expect(AGENT_INSTRUCTIONS).toContain(rule);
     }
-    for (const text of ['≈', 'В разминке упражнения только на время:', 'Взял за основу']) expect(AGENT_INSTRUCTIONS.replace('примерно', '≈')).toContain(text);
+  });
+
+  it('cover routines, sides, max and rest wording', () => {
+    for (const text of ['примерно 3 с на повтор', 'В разминке упражнения только на время:', 'Взял за основу', '«Описать свою»', 'ничего не копируй', 'скажи об этом в advice', 'time_sec "max"', 'reps "max"', 'правила админа его не задают']) {
+      expect(AGENT_INSTRUCTIONS).toContain(text);
+    }
+    expect(AGENT_INSTRUCTIONS).toContain('[вперёд, назад]');
+  });
+
+  it('cover missing load rules', () => {
+    for (const text of ['sets 1', 'reps "10"', 'time_sec 30', 'принятым значением', '"10-12"']) expect(AGENT_INSTRUCTIONS).toContain(text);
+  });
+
+  it('allow notes only in sets and circuit', () => {
+    expect(AGENT_FORMAT).toContain('только в блоках sets и circuit; в timed ""');
   });
 });
