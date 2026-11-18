@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AI_EFFORT, AI_MODEL, anthropicClient } from './aiClient';
+import { AI_MODEL, anthropicClient } from './aiClient';
 import type { Prompt } from './aiPrompt';
 
 const prompt: Prompt = {
@@ -33,13 +33,13 @@ const message = (text: string, stop = 'end_turn') => ({
 });
 
 describe('anthropicClient', () => {
-  it('sends model, structured output schema, effort, adaptive thinking and cached system', async () => {
+  it('sends model, structured output schema, low effort, thinking off and cached system', async () => {
     const f = fakeFetch({ body: message('{"title":"x"}') });
     await anthropicClient('test-key', { fetch: f.fetch, maxRetries: 0 }).draft(prompt, schema);
     const body = f.sent[0]!;
     expect(body.model).toBe('claude-haiku-5-5');
-    expect(body.output_config).toEqual({ effort: AI_EFFORT, format: { type: 'json_schema', schema } });
-    expect(body.thinking).toMatchObject({ type: 'adaptive' });
+    expect(body.output_config).toEqual({ effort: 'low', format: { type: 'json_schema', schema } });
+    expect(body.thinking).toEqual({ type: 'disabled' });
     expect(body.system).toEqual(prompt.system);
     expect(body.messages).toEqual([{ role: 'user', content: 'ввод тренера' }]);
     expect(body).not.toHaveProperty('stream', true);
@@ -56,6 +56,13 @@ describe('anthropicClient', () => {
       const f = fakeFetch({ body: message('{"tit', stop) });
       await expect(anthropicClient('test-key', { fetch: f.fetch, maxRetries: 0 }).draft(prompt, schema)).rejects.toThrow(stop);
     }
+  });
+
+  // Обрыв по таймауту оплачивается: повтор SDK удваивал бы и ожидание, и счёт; повторяет тренер
+  it('does not retry by itself', async () => {
+    const f = fakeFetch({ status: 529, body: { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } } });
+    await expect(anthropicClient('test-key', { fetch: f.fetch }).draft(prompt, schema)).rejects.toMatchObject({ status: 529 });
+    expect(f.sent).toHaveLength(1);
   });
 
   it('wraps API errors with status only', async () => {
