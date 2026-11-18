@@ -114,7 +114,8 @@ export function readBlockExercise(ex: Obj, path: Path, inSets: boolean, fail: Fa
   else if (ex.reps === undefined && ex.time_sec === undefined) err(path, 'У упражнения нет нагрузки', 'Добавьте reps или time_sec.');
   else if (ex.reps !== undefined) {
     const reps = parseReps(ex.reps);
-    if (reps) load.reps = reps;
+    // Ноль повторов в v2 — ошибка, а не «макс.»: max пишется словом
+    if (reps && (reps === 'max' || reps.max > 0)) load.reps = reps;
     else err([...path, 'reps'], `Не понимаю reps: ${String(ex.reps)}`, 'Пишите 10, "8-12" или max.');
   } else {
     const time = readTimeSec(ex.time_sec, [...path, 'time_sec'], err, true);

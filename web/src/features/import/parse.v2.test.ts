@@ -198,6 +198,16 @@ describe('id набора вместо упражнения внутри наб�
 });
 
 describe('проверки v2 сверх v1', () => {
+  it('reps "0" is an error in v2', () => {
+    expect(fails(sets('exercise_id: pullup, reps: "0"'))[0]).toMatchObject({ path: [...EX, 'reps'], message: 'Не понимаю reps: 0' });
+    expect(fails(sets('exercise_id: pullup, reps: 0'))[0]).toMatchObject({ path: [...EX, 'reps'] });
+    expect(fails(sets('exercise_id: pullup, reps: "0-0"'))[0]).toMatchObject({ path: [...EX, 'reps'] });
+  });
+
+  it('reps "0-5" is still a range', () => {
+    expect(setsEx(sets('exercise_id: pullup, reps: "0-5"'))).toMatchObject({ target: { min: 0, max: 5 } });
+  });
+
   it('main part of only note blocks is an error', () => {
     const errors = fails(v2('      - { type: warmup, routine: warmup-common }\n      - type: note\n        title: Тест\n        text: Есть ли боль\n'));
     expect(errors).toHaveLength(1);
