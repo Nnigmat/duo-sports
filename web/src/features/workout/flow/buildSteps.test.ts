@@ -146,6 +146,14 @@ describe('buildSteps: отдых v2', () => {
     const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90 };
     expect(rests(block)).toEqual([90, 90, 90, 90, 90, 0]);
   });
+
+  it('circuit restAfter round перед заминкой: последний шаг получает отдых', () => {
+    const block: CircuitBlock = { ...circuit, rounds: 2, restSec: 90, restAfter: 'round' };
+    const cooldown: TimedBlock = { ...warmup, id: 'cd', kind: 'cooldown' };
+    const steps = buildSteps([block, cooldown]);
+    expect(steps.slice(0, 6).map((s) => s.restAfterSec)).toEqual([0, 0, 90, 0, 0, 90]);
+    expect(steps.slice(6).every((s) => s.restAfterSec === 0)).toBe(true);
+  });
 });
 
 describe('шаг-заметка', () => {
