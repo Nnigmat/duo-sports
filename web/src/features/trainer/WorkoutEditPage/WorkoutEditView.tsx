@@ -1,9 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { Block, Exercise, SetsExercise, Workout } from '../../../../../shared/types';
-import { Badge, Button, Card, Checkbox, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
+import { pickDemo } from '../../../../../shared/demo';
+import type { Block, Exercise, ExerciseKind, Gender, SetsExercise, Workout } from '../../../../../shared/types';
+import { Badge, Button, Card, Checkbox, Chip, ExerciseThumb, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
 import { cx } from '../../../ui/cx';
 import type { ParseIssue } from '../../import/parse';
+import { QuickExerciseForm } from '../../exercises/QuickExerciseForm/QuickExerciseForm';
 import type { LibraryExercise } from '../../exercises/types';
 import {
   MODE_LABELS, addBlock, addExercise, changeMode, clearSides, moveBlock, moveExercise, patchExercise, removeBlock, removeExercise, renameBlock, roundsOf, setExerciseNote, setExerciseRest, setNoteText,
@@ -51,6 +53,10 @@ type Props = {
   onOpenNew?: (name: string) => void;
   /** Есть — в выборе упражнения, когда поиск ничего не нашёл, кнопка «Создать „…“» */
   onCreateExercise?: (blockId: string, name: string) => void;
+  /** Есть — когда поиск ничего не нашёл, форма «Добавить упражнение»: создаёт его в библиотеке. Важнее onCreateExercise */
+  onQuickCreate?: (blockId: string, name: string, kind: ExerciseKind) => Promise<void>;
+  /** Пол пользователя: по нему выбирается ролик в превью */
+  gender?: Gender;
   /** Заменяют строку подключённой разминки/заминки */
   warmupSlot?: ReactNode;
   cooldownSlot?: ReactNode;
@@ -72,7 +78,7 @@ const EXERCISE_MODES = MODES.filter((m): m is { value: ExerciseMode; label: stri
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
 export function WorkoutEditView({
   view = 'form', yaml, onView, title, blocks, routines, library, saving, issues, failure, notes, onNotes, onTitle, onBlocks, onSave, onCancel,
-  mode = 'edit', newNames, onOpenNew, onCreateExercise, warmupSlot, cooldownSlot, topSlot, marks, saveBlocked, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
+  mode = 'edit', newNames, onOpenNew, onCreateExercise, onQuickCreate, gender, warmupSlot, cooldownSlot, topSlot, marks, saveBlocked, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
 }: Props) {
   const create = mode === 'create';
   const [pickFor, setPickFor] = useState<string | null>(null);
@@ -193,6 +199,7 @@ export function WorkoutEditView({
                 first={j === 0}
                 last={j === b.exercises.length - 1}
                 isNew={newNames?.has(e.name) ?? false}
+                demoFile={pickDemo(gender, library.find((l) => l.name === e.name)?.demo)}
                 mark={marks?.[e.id]}
                 onOpen={onOpenNew ? () => onOpenNew(e.name) : undefined}
                 onPatch={(patch) => change((x) => patchExercise(x, b.id, e.id, patch))}
@@ -245,7 +252,17 @@ export function WorkoutEditView({
       <PickerSheet
         open={pickFor !== null}
         library={library}
+        gender={gender}
         onClose={() => setPickFor(null)}
+        onQuickCreate={
+          onQuickCreate
+            ? async (name, kind) => {
+                if (!pickFor) return;
+                await onQuickCreate(pickFor, name, kind);
+                setPickFor(null);
+              }
+            : undefined
+        }
         onCreate={
           onCreateExercise
             ? (name) => {
@@ -282,6 +299,8 @@ type RowProps = {
   last: boolean;
   /** Новое упражнение: пометка текстом и кнопка «Открыть» его поля */
   isNew: boolean;
+  /** Ролик из библиотеки; нет — заглушка в превью */
+  demoFile?: string;
   mark?: ExerciseMark;
   onOpen?: () => void;
   onPatch: (patch: Partial<SetsExercise>) => void;
@@ -297,7 +316,7 @@ type RowProps = {
   onRemove: () => void;
 };
 
-function ExerciseRow({ mode, exercise: e, first, last, isNew, mark, onOpen, onPatch, onTarget, onNote, onRest, restDefault, onOpenEnded, onClearSides, onMove, onRemove }: RowProps) {
+function ExerciseRow({ mode, exercise: e, first, last, isNew, demoFile, mark, onOpen, onPatch, onTarget, onNote, onRest, restDefault, onOpenEnded, onClearSides, onMove, onRemove }: RowProps) {
   const time = e.kind === 'time';
   const canOpen = e.kind !== 'weight' && mode !== 'timed';
   const open = canOpen && e.target.min === 0 && e.target.max === 0;
@@ -312,6 +331,7 @@ function ExerciseRow({ mode, exercise: e, first, last, isNew, mark, onOpen, onPa
         </div>
       )}
       <div className={styles.exerciseHead}>
+        <ExerciseThumb name={e.name} file={demoFile} />
         <Text variant="body" className={styles.name}>
           {e.name}
         </Text>
@@ -351,13 +371,16 @@ function ExerciseRow({ mode, exercise: e, first, last, isNew, mark, onOpen, onPa
 type PickerProps = {
   open: boolean;
   library: LibraryExercise[];
+  gender?: Gender;
   onClose: () => void;
   onPick: (ex: LibraryExercise) => void;
+  /** Есть — когда поиск ничего не нашёл, форма создания упражнения; важнее onCreate */
+  onQuickCreate?: (name: string, kind: ExerciseKind) => Promise<void>;
   /** Есть — когда поиск ничего не нашёл, можно создать новое упражнение с этим названием */
   onCreate?: (name: string) => void;
 };
 
-function PickerSheet({ open, library, onClose, onPick, onCreate }: PickerProps) {
+function PickerSheet({ open, library, gender, onClose, onPick, onCreate, onQuickCreate }: PickerProps) {
   const [q, setQ] = useState('');
   const found = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -367,7 +390,16 @@ function PickerSheet({ open, library, onClose, onPick, onCreate }: PickerProps) 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Упражнение" tall>
       <SearchField label="Поиск упражнения" placeholder="Название" value={q} onValueChange={setQ} />
-      {found.length === 0 && onCreate && q.trim() ? (
+      {found.length === 0 && onQuickCreate && q.trim() ? (
+        <QuickExerciseForm
+          key={q.trim()}
+          initialName={q.trim()}
+          onCreate={async (name, kind) => {
+            await onQuickCreate(name, kind);
+            setQ('');
+          }}
+        />
+      ) : found.length === 0 && onCreate && q.trim() ? (
         <div className={styles.create}>
           <p className={styles.empty}>В библиотеке такого нет.</p>
           <Button
@@ -386,7 +418,8 @@ function PickerSheet({ open, library, onClose, onPick, onCreate }: PickerProps) 
       ) : (
         <ul className={styles.picker}>
           {found.map((x) => (
-            <li key={x.id}>
+            <li key={x.id} className={styles.pickRow}>
+              <ExerciseThumb name={x.name} file={pickDemo(gender, x.demo)} />
               <button type="button" className={styles.pick} onClick={() => onPick(x)}>
                 {x.name}
               </button>
