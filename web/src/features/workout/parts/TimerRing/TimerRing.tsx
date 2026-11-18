@@ -16,13 +16,15 @@ type Props = {
   caption?: string;
   /** Время вышло: кольцо превращается в залитую кнопку «Готово» */
   onDone?: () => void;
+  /** Время вместо мм:сс от seconds: у секундомера «1:15» */
+  timeLabel?: string;
   /** Если задано, кольцо становится кнопкой: нажатие ставит на паузу и возобновляет */
   onToggle?: () => void;
 };
 
 /** Кольцо таймера 168 px: время мм:сс и подпись в центре. */
-export function TimerRing({ seconds, total, paused, alert, caption, onDone, onToggle }: Props) {
-  const time = formatTime(Math.max(0, seconds));
+export function TimerRing({ seconds, total, paused, alert, caption, timeLabel, onDone, onToggle }: Props) {
+  const time = timeLabel ?? formatTime(Math.max(0, seconds));
   const label = paused ? 'пауза' : (caption ?? 'осталось');
 
   if (onDone && seconds <= 0) {

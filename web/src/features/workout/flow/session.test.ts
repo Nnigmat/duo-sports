@@ -335,6 +335,12 @@ describe('afterReload', () => {
     expect(afterReload(running(3)).timerStarted).toBe(false);
   });
 
+  it('время на максимум после перезагрузки снова ждёт «Старт»: секундомер не продолжается', () => {
+    const maxSteps = buildSteps([{ id: 'max', mode: 'sets', title: 'Планка', restSec: 30, videoRounds: [], exercises: [{ id: 'plank', name: 'Планка', kind: 'time', target: { min: 0, max: 0 }, sets: 1 }] }]);
+    const s: Session = { ...at(initSession(maxSteps), 0), timerStarted: true };
+    expect(afterReload(s).timerStarted).toBe(false);
+  });
+
   it('разминка и заминка продолжают идти сами', () => {
     const s = { ...at(fresh(), 0), timerStarted: true };
     expect(afterReload(s)).toBe(s);

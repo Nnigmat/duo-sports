@@ -5,5 +5,6 @@ export { RestRing } from './RestRing/RestRing';
 export { useRest } from './RestRing/useRest';
 export { ThoughtBubble } from './ThoughtBubble/ThoughtBubble';
 export { TimerRing } from './TimerRing/TimerRing';
+export { useStopwatch } from './TimerRing/useStopwatch';
 export { useCountdown } from './TimerRing/useCountdown';
 export { ElapsedSince } from './ElapsedTime/ElapsedTime';

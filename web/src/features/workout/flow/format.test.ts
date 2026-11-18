@@ -109,8 +109,8 @@ describe('повторы без числа', () => {
     expect(formatPlan('reps', { target: { min: 0, max: 0 } })).toBe('макс. повт');
     expect(formatPlan('weight', { target: { min: 0, max: 0 }, weight: 60 })).toBe('60 кг × макс.');
   });
-  it('время 0 остаётся временем', () => {
-    expect(formatTarget('time', { min: 0, max: 0 })).toBe('00:00');
+  it('время 0–0 теперь «макс.» (время на максимум), а не 00:00', () => {
+    expect(formatTarget('time', { min: 0, max: 0 })).toBe('макс.');
   });
 });
 
@@ -128,5 +128,17 @@ describe('stepTitle', () => {
   });
   it('stepLine для timed возвращает stepTitle', () => {
     expect(stepLine(sided[1])).toBe(stepTitle(sided[1]));
+  });
+});
+
+describe('время на максимум', () => {
+  it('цель 0–0 у времени называется «макс.»', () => {
+    expect(formatTarget('time', { min: 0, max: 0 })).toBe('макс.');
+    expect(formatPlan('time', { target: { min: 0, max: 0 } })).toBe('макс.');
+  });
+
+  it('обычное время не меняется', () => {
+    expect(formatTarget('time', { min: 45, max: 60 })).toBe('00:45–01:00');
+    expect(formatPlan('time', { target: { min: 45, max: 45 } })).toBe('00:45');
   });
 });

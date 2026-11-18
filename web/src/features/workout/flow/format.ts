@@ -1,5 +1,6 @@
 import type { ExerciseKind, Range, SetPlan } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
+import { isOpenTime } from './stopwatch';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -11,14 +12,14 @@ export function formatTime(totalSec: number): string {
 const range = (min: number, max: number, fmt: (n: number) => string = String) =>
   min === max ? fmt(min) : `${fmt(min)}–${fmt(max)}`;
 
-/** Повторы без числа («сколько получится») хранятся как 0–0 */
+/** Повторы и время без числа («сколько получится») хранятся как 0–0 */
 const open = (min: number, max: number) => min === 0 && max === 0;
 
 const decimal = (n: number) => String(n).replace('.', ',');
 
 /** Цель без единицы: «18–20», «00:45–01:00». Для подсказки «План: …». */
 export function formatTarget(kind: ExerciseKind, target: Range): string {
-  if (kind !== 'time' && open(target.min, target.max)) return 'макс.';
+  if (open(target.min, target.max)) return 'макс.';
   return kind === 'time' ? range(target.min, target.max, formatTime) : range(target.min, target.max);
 }
 
@@ -33,7 +34,7 @@ export function formatPlan(kind: ExerciseKind, plan: SetPlan): string {
       if (plan.weight === undefined) return open(min, max) ? 'макс. повт' : `${range(min, max)} повт`;
       return `${decimal(plan.weight ?? 0)} кг × ${open(min, max) ? 'макс.' : range(min, max)}`;
     case 'time':
-      return range(min, max, formatTime);
+      return isOpenTime(plan) ? 'макс.' : range(min, max, formatTime);
   }
 }
 

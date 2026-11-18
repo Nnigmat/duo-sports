@@ -17,6 +17,7 @@ import {
   sessionSteps,
   hasNewComments,
   initSession,
+  isOpenTime,
   LEAD_SEC,
   latestComment,
   markRead,
@@ -30,6 +31,7 @@ import {
   signalAt,
   stepLine,
   stepTitle,
+  stopwatchView,
   timedView,
   timerSeconds,
   totalSec,
@@ -43,6 +45,7 @@ import { FeedbackScreen } from '../FeedbackScreen/FeedbackScreen';
 import { FinishScreen } from '../FinishScreen/FinishScreen';
 import { useRest } from '../parts/RestRing/useRest';
 import { useCountdown } from '../parts/TimerRing/useCountdown';
+import { useStopwatch } from '../parts/TimerRing/useStopwatch';
 import { createBeeper, type Beeper } from '../sound/beeper';
 import { createSpeaker, type Speaker } from '../sound/speaker';
 import { DEFAULT_SOUND, type SoundSettings } from '../sound/styles';
@@ -119,6 +122,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
   const [recording, setRecording] = useState(false);
   // Видео записано и загружено, ждём факт подхода; шаг засчитывается после шторки
   const [recorded, setRecorded] = useState<{ videoId?: string } | null>(null);
+  // Секунды секундомера на момент «Стоп»: подставляются в окно результата, пока оно открыто
+  const [stoppedSec, setStoppedSec] = useState<number | null>(null);
   const [exiting, setExiting] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -247,6 +252,11 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
           if (step.mode === 'timed') dispatch({ type: 'done', time: timeNow() });
           else setSheet('result');
         }}
+        onStop={(sec) => {
+          markWorkEnd();
+          setStoppedSec(sec);
+          setSheet('result');
+        }}
         onTech={() => setSheet('tech')}
         onSwap={library && library.length > 0 && canSwap(session) ? () => setSheet('swap') : undefined}
         onOpenNotes={() => {
@@ -262,6 +272,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         onOpenChange={(open) => {
           if (open) return;
           setSheet(null);
+          setStoppedSec(null);
           // Шторку после записи закрыли без факта: видео уже на сервере, подход засчитываем по плану
           if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), time: timeNow() });
           setRecorded(null);
@@ -270,10 +281,12 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         kind={step.kind}
         plan={step.plan}
         actual={session.actuals[index]}
+        initialSec={stoppedSec ?? undefined}
         onSave={(actual) => {
           if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), actual, time: timeNow() });
           else dispatch({ type: 'done', actual, time: timeNow() });
           setRecorded(null);
+          setStoppedSec(null);
         }}
       />
 
@@ -350,6 +363,8 @@ type StageProps = {
   startedAt?: number | null;
   /** «Готово» на подходе: у упражнения откроет шторку факта, у разминки завершит шаг */
   onDone: () => void;
+  /** «Стоп» у времени на максимум: секунды секундомера уходят в окно результата */
+  onStop: (sec: number) => void;
   onTech: () => void;
   /** Нет — кнопки «Заменить» нет */
   onSwap?: () => void;
@@ -363,7 +378,8 @@ function Stage(props: StageProps) {
   const { session } = props;
   const step = session.steps[session.index];
   if (session.phase === 'rest') return <RestStage {...props} />;
-  return step.kind === 'time' && session.timerStarted ? <TimedStage {...props} /> : <SetStage {...props} />;
+  if (step.kind !== 'time' || !session.timerStarted) return <SetStage {...props} />;
+  return isOpenTime(step.plan) ? <StopwatchStage {...props} /> : <TimedStage {...props} />;
 }
 
 /** Подход на повторы или упражнение на время до «Старт» */
@@ -442,6 +458,26 @@ function TimedStage(props: StageProps) {
         caption: view.caption,
         onDone: routine ? undefined : onDone,
         onPauseToggle: t.toggle,
+        onSkip: () => dispatch({ type: 'skip' }),
+      }}
+    />
+  );
+}
+
+/** Время на максимум: секундомер вверх от «Старт», без отсчёта и сигналов; «Стоп» ставит на паузу и спрашивает результат */
+function StopwatchStage(props: StageProps) {
+  const { dispatch, onStop } = props;
+  const w = useStopwatch();
+  return (
+    <StageView
+      {...props}
+      onBack={() => dispatch({ type: 'back' })}
+      bar={{
+        mode: 'stopwatch',
+        label: stopwatchView(w.elapsed).label,
+        paused: w.paused,
+        onPauseToggle: w.toggle,
+        onStop: () => onStop(w.stop()),
         onSkip: () => dispatch({ type: 'skip' }),
       }}
     />

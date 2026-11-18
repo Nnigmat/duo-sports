@@ -569,3 +569,50 @@ export const RoutinePauseStopsCount: Story = {
     await expect(body().getByRole('button', { name: /Продолжить, \d\d:\d\d/ }).textContent).toBe(before);
   },
 };
+
+const STOPWATCH_WORKOUT = {
+  ...WORKOUT,
+  blocks: [
+    {
+      id: 'max',
+      mode: 'sets' as const,
+      title: 'Планка на максимум',
+      restSec: 5,
+      videoRounds: [],
+      exercises: [{ id: 'plank', name: 'Планка', kind: 'time' as const, pose: 'plank' as const, target: { min: 0, max: 0 }, sets: 1 }],
+    },
+  ],
+};
+
+/** Время на максимум: «Старт» запускает секундомер вверх, «Стоп» открывает результат с прошедшим временем */
+export const StopwatchMax: Story = {
+  name: 'Время на максимум: секундомер',
+  tags: hidden,
+  args: { workout: STOPWATCH_WORKOUT },
+  play: async () => {
+    await click('Начать тренировку');
+    // до «Старт» вместо времени «макс.»
+    await expect(await body().findByText('Планка · макс.')).toBeVisible();
+    await click('Старт');
+    // без отсчёта перед стартом: сразу идёт вверх с 0:00
+    const ring = await body().findByRole('button', { name: /Пауза, 0:0\d \s*прошло/ });
+    await expect(ring).toBeVisible();
+    await waitFor(() => expect(body().getByRole('button', { name: /Пауза, 0:0[2-9] \s*прошло/ })).toBeVisible(), { timeout: 5000 });
+    // пауза замораживает время
+    await click(/Пауза, /);
+    const paused = await body().findByRole('button', { name: /Продолжить, 0:0\d/ });
+    const before = paused.textContent;
+    await new Promise((r) => setTimeout(r, 1200));
+    await expect(body().getByRole('button', { name: /Продолжить, 0:0\d/ }).textContent).toBe(before);
+    await click(/Продолжить, /);
+    await body().findByRole('button', { name: /Пауза, 0:0\d/ });
+    // «Стоп»: окно результата с прошедшим временем вместо плана
+    await click('Стоп');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько продержались?' }));
+    await expect(dialog.getByText('План: макс.')).toBeVisible();
+    await expect(dialog.getByText(/^00:0[2-9]$/)).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(await body().findByText('Дальше')).toBeVisible();
+  },
+};
