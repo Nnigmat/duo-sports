@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import type { ExerciseKind, RoutineDetail, RoutineInput, RoutineKind } from '../../../../../shared/types';
-import { Button, Checkbox, Dialog, IconButton, Notice, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput, TopBar } from '../../../ui';
+import { pickDemo } from '../../../../../shared/demo';
+import type { ExerciseDemo, ExerciseKind, Gender, RoutineDetail, RoutineInput, RoutineKind } from '../../../../../shared/types';
+import { Button, Checkbox, Dialog, ExerciseThumb, IconButton, Notice, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput, TopBar } from '../../../ui';
+import { QuickExerciseForm } from '../../exercises/QuickExerciseForm/QuickExerciseForm';
 import { RoutineError } from '../api';
 import { draftFromYaml, draftToYaml, type YamlIssue } from '../routineYaml';
 import {
@@ -22,13 +24,17 @@ import {
 import styles from './RoutineForm.module.css';
 
 /** Упражнение библиотеки для выбора; в состав идёт любое */
-export type PickerExercise = { id: string; name: string; kind: ExerciseKind };
+export type PickerExercise = { id: string; name: string; kind: ExerciseKind; /** Ролики техники для превью */ demo?: ExerciseDemo };
 
 type Common = {
   exercises: PickerExercise[];
   onCancel: () => void;
   /** Может быть асинхронным: пока выполняется, кнопка занята, отказ показывается на экране */
   onSubmit: (input: RoutineInput) => void | Promise<void>;
+  /** Пол пользователя: по нему выбирается ролик в превью */
+  gender?: Gender;
+  /** Есть — когда поиск ничего не нашёл, форма «Добавить упражнение»: создаёт его в библиотеке и возвращает */
+  onQuickCreate?: (name: string, kind: ExerciseKind) => Promise<PickerExercise>;
 };
 type Props =
   | (Common & { mode: 'create'; kind: RoutineKind; routine?: undefined; onDelete?: undefined })
@@ -36,7 +42,10 @@ type Props =
 
 /** Форма разминки или заминки: название, пояснение, состав по порядку, удаление. */
 export function RoutineForm(props: Props) {
-  const { mode, exercises, onCancel, onSubmit } = props;
+  const { mode, onCancel, onSubmit, gender, onQuickCreate } = props;
+  // Созданные из окна выбора: в props.exercises их нет до следующей загрузки страницы
+  const [created, setCreated] = useState<PickerExercise[]>([]);
+  const exercises = created.length ? [...props.exercises, ...created] : props.exercises;
   const create = mode === 'create';
   const [draft, setDraft] = useState<RoutineDraft>(() => (props.routine ? draftFromRoutine(props.routine) : emptyDraft(props.kind ?? 'warmup')));
   const [busy, setBusy] = useState(false);
@@ -308,14 +317,28 @@ export function RoutineForm(props: Props) {
 
       <Sheet open={picker} onOpenChange={setPicker} title="Добавить из библиотеки" eyebrow="Время на сторону" tall>
         <SearchField label="Поиск по названию" placeholder="Название" value={pickerQuery} onValueChange={setPickerQuery} />
-        {pickable.length === 0 ? (
+        {pickable.length === 0 && onQuickCreate && q ? (
+          <QuickExerciseForm
+            key={q}
+            initialName={pickerQuery.trim()}
+            onCreate={async (name, kind) => {
+              const ex = await onQuickCreate(name, kind);
+              setCreated((list) => [...list, ex]);
+              patch({ items: [...draft.items, newItem(ex.id, ex.name)] });
+              setPicker(false);
+              setPickerQuery('');
+            }}
+          />
+        ) : pickable.length === 0 ? (
           <Text variant="body-sm" color="slate">{exercises.length === 0 ? 'В библиотеке нет упражнений.' : 'Ничего не нашлось.'}</Text>
         ) : (
           <ul className={styles.pick}>
             {pickable.map((e) => (
-              <li key={e.id}>
+              <li key={e.id} className={styles.pickRow}>
+                <ExerciseThumb name={e.name} file={pickDemo(gender, e.demo)} />
                 <button
                   type="button"
+                  className={styles.choose}
                   onClick={() => {
                     patch({ items: [...draft.items, newItem(e.id, e.name)] });
                     setPicker(false);

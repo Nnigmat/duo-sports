@@ -133,7 +133,15 @@
 .pick li + li {
   border-top: 1px solid var(--hairline-soft);
 }
-.pick button {
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xxs) 0;
+}
+.choose {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   min-height: 48px;
   padding: 0 var(--spacing-xs);
