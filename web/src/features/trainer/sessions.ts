@@ -130,7 +130,7 @@ export type PlanStep = { key: string; name: string; sets: string[] };
 function blockSteps(b: Block): PlanStep[] {
   return exercisesOf(b).map((e) => {
     const count = b.mode === 'sets' ? (e as unknown as { sets: number }).sets : b.mode === 'circuit' ? b.rounds : 1;
-    return { key: e.id, name: e.name, sets: Array.from({ length: count }, () => formatPlan(e.kind, { target: e.target, weight: e.weight })) };
+    return { key: e.id, name: e.name, sets: Array.from({ length: count }, () => formatPlan(e.kind, { target: e.target, weight: e.weight }, b.mode === 'timed' ? undefined : e.sides)) };
   });
 }
 
