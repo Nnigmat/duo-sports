@@ -6,7 +6,7 @@ import { RoutineListView } from './RoutineListView';
 const meta = {
   title: 'Features/Routines/RoutineListView',
   component: RoutineListView,
-  args: { routines: routineSummaries, kind: 'warmup', query: '', onKindChange: fn(), onQueryChange: fn(), onOpen: fn(), onCreate: fn(), onCopy: fn(async () => {}), onRename: fn(async () => {}) },
+  args: { routines: routineSummaries, kind: 'warmup', query: '', onKindChange: fn(), onQueryChange: fn(), onOpen: fn(), onCreate: fn(), onCopy: fn(async () => {}), onRename: fn(async () => {}), onDelete: fn(async () => {}) },
   globals: { viewport: { value: 'a15', isRotated: false } },
 } satisfies Meta<typeof RoutineListView>;
 export default meta;
@@ -23,7 +23,7 @@ export const Default: Story = {
 };
 export const Cooldowns: Story = { args: { kind: 'cooldown' } };
 export const ReadOnly: Story = {
-  args: { onCreate: undefined, onCopy: undefined, onRename: undefined },
+  args: { onCreate: undefined, onCopy: undefined, onRename: undefined, onDelete: undefined },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('button', { name: /^Действия/ })).toBeNull();
   },
@@ -68,6 +68,54 @@ export const RenameTaken: Story = {
     await expect(await sheet.findByText('Разминка с таким названием уже есть')).toBeVisible();
   },
 };
+export const Delete: Story = {
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Действия: Кардио-разогрев' }));
+    const sheet = within(await within(document.body).findByRole('dialog'));
+    await userEvent.click(sheet.getByRole('button', { name: /^Удалить/ }));
+    await expect(sheet.getByRole('heading', { name: 'Удалить «Кардио-разогрев»?' })).toBeVisible();
+    await expect(args.onDelete).not.toHaveBeenCalled();
+    await userEvent.click(sheet.getByRole('button', { name: 'Удалить' }));
+    await expect(args.onDelete).toHaveBeenCalledWith('cardio');
+    await waitFor(() => expect(within(document.body).queryByRole('dialog')).toBeNull());
+  },
+};
+
+export const DeleteCancel: Story = {
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Действия: Кардио-разогрев' }));
+    const sheet = within(await within(document.body).findByRole('dialog'));
+    await userEvent.click(sheet.getByRole('button', { name: /^Удалить/ }));
+    await userEvent.click(sheet.getByRole('button', { name: 'Отмена' }));
+    await expect(sheet.getByRole('button', { name: /Сделать копию/ })).toBeVisible();
+    await expect(args.onDelete).not.toHaveBeenCalled();
+  },
+};
+
+export const DeleteInUse: Story = {
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Действия: Ноги, лёгкая' }));
+    const sheet = within(await within(document.body).findByRole('dialog'));
+    await expect(sheet.getByRole('button', { name: /^Удалить/ })).toBeDisabled();
+    await expect(sheet.getByText('Нельзя: используется в 3 тренировках')).toBeVisible();
+  },
+};
+
+export const DeleteFailed: Story = {
+  args: { onDelete: fn(async () => { throw new Error('Разминка стоит в тренировках'); }) },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await userEvent.click(c.getByRole('button', { name: 'Действия: Кардио-разогрев' }));
+    const sheet = within(await within(document.body).findByRole('dialog'));
+    await userEvent.click(sheet.getByRole('button', { name: /^Удалить/ }));
+    await userEvent.click(sheet.getByRole('button', { name: 'Удалить' }));
+    await expect(await sheet.findByText('Разминка стоит в тренировках')).toBeVisible();
+  },
+};
+
 export const Loading: Story = { args: { routines: null } };
 export const Failed: Story = { args: { routines: null, error: 'Нет связи с сервером', onRetry: fn() } };
 export const Empty: Story = { args: { routines: [] } };
