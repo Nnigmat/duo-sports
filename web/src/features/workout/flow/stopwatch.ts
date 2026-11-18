@@ -1,7 +1,12 @@
 import type { SetPlan } from '../../../../../shared/types';
+import type { Step } from './buildSteps';
+import { formatTime } from './format';
 
 /** Время на максимум: упражнение на время с целью 0–0, как «макс.» у повторов. Секундомер вместо отсчёта. */
 export const isOpenTime = (plan: SetPlan): boolean => plan.target.min === 0 && plan.target.max === 0;
+
+/** Секундомер ведёт только упражнение подходов или круга; в разминке и заминке время 0–0 идёт старым таймером без окна результата */
+export const usesStopwatch = (step: Step): boolean => step.kind === 'time' && step.mode !== 'timed' && isOpenTime(step.plan);
 
 /** Предел секундомера, секунд (сутки): столько принимает окно результата */
 export const MAX_STOPWATCH_SEC = 86_400;
@@ -34,8 +39,8 @@ export function resumeStopwatch(w: Stopwatch, now: number): Stopwatch {
   return isStopwatchPaused(w) ? { ...w, startedAt: now } : w;
 }
 
-/** Что показать на кольце: «1:15», часы не выделяем, минуты растут («61:40») */
+/** Что показать на кольце: мм:сс, как везде («01:15»); минуты растут («61:40») */
 export function stopwatchView(elapsedSec: number): { label: string } {
   const sec = Math.max(0, Math.floor(elapsedSec));
-  return { label: `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` };
+  return { label: formatTime(sec) };
 }

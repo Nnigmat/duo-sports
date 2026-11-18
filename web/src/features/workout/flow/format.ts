@@ -1,6 +1,5 @@
 import type { ExerciseKind, Range, SetPlan } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
-import { isOpenTime } from './stopwatch';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -34,7 +33,7 @@ export function formatPlan(kind: ExerciseKind, plan: SetPlan): string {
       if (plan.weight === undefined) return open(min, max) ? 'макс. повт' : `${range(min, max)} повт`;
       return `${decimal(plan.weight ?? 0)} кг × ${open(min, max) ? 'макс.' : range(min, max)}`;
     case 'time':
-      return isOpenTime(plan) ? 'макс.' : range(min, max, formatTime);
+      return open(min, max) ? 'макс.' : range(min, max, formatTime);
   }
 }
 

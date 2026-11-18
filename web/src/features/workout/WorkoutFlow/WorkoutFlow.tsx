@@ -17,7 +17,6 @@ import {
   sessionSteps,
   hasNewComments,
   initSession,
-  isOpenTime,
   LEAD_SEC,
   latestComment,
   markRead,
@@ -35,6 +34,7 @@ import {
   timedView,
   timerSeconds,
   totalSec,
+  usesStopwatch,
   type Action,
   type FinishStats,
   type Session,
@@ -379,7 +379,7 @@ function Stage(props: StageProps) {
   const step = session.steps[session.index];
   if (session.phase === 'rest') return <RestStage {...props} />;
   if (step.kind !== 'time' || !session.timerStarted) return <SetStage {...props} />;
-  return isOpenTime(step.plan) ? <StopwatchStage {...props} /> : <TimedStage {...props} />;
+  return usesStopwatch(step) ? <StopwatchStage {...props} /> : <TimedStage {...props} />;
 }
 
 /** Подход на повторы или упражнение на время до «Старт» */

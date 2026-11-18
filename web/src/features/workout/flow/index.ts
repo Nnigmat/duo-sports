@@ -31,4 +31,4 @@ export { LONG_BEEP_MS, POLL_MARGIN_MS, recordStartView, startSignalAt, type Reco
 export { COMMENT_MAX, RATINGS, canSend, faceFor, feedbackOf, newSubmitKey, type Face, type Rating } from './feedback';
 export { pendingFeedbackPath } from './pending';
 export { swapCandidates, swapSteps, type SwapOption } from './swap';
-export { MAX_STOPWATCH_SEC, isOpenTime, isStopwatchPaused, pauseStopwatch, resumeStopwatch, startStopwatch, stopwatchElapsedSec, stopwatchView, type Stopwatch } from './stopwatch';
+export { MAX_STOPWATCH_SEC, isOpenTime, isStopwatchPaused, usesStopwatch, pauseStopwatch, resumeStopwatch, startStopwatch, stopwatchElapsedSec, stopwatchView, type Stopwatch } from './stopwatch';

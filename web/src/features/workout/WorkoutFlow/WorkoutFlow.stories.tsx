@@ -595,17 +595,17 @@ export const StopwatchMax: Story = {
     await expect(await body().findByText('Планка · макс.')).toBeVisible();
     await click('Старт');
     // без отсчёта перед стартом: сразу идёт вверх с 0:00
-    const ring = await body().findByRole('button', { name: /Пауза, 0:0\d \s*прошло/ });
+    const ring = await body().findByRole('button', { name: /Пауза, 00:0\d\s*прошло/ });
     await expect(ring).toBeVisible();
-    await waitFor(() => expect(body().getByRole('button', { name: /Пауза, 0:0[2-9] \s*прошло/ })).toBeVisible(), { timeout: 5000 });
+    await waitFor(() => expect(body().getByRole('button', { name: /Пауза, 00:0[2-9]\s*прошло/ })).toBeVisible(), { timeout: 5000 });
     // пауза замораживает время
     await click(/Пауза, /);
-    const paused = await body().findByRole('button', { name: /Продолжить, 0:0\d/ });
+    const paused = await body().findByRole('button', { name: /Продолжить, 00:0\d/ });
     const before = paused.textContent;
     await new Promise((r) => setTimeout(r, 1200));
-    await expect(body().getByRole('button', { name: /Продолжить, 0:0\d/ }).textContent).toBe(before);
+    await expect(body().getByRole('button', { name: /Продолжить, 00:0\d/ }).textContent).toBe(before);
     await click(/Продолжить, /);
-    await body().findByRole('button', { name: /Пауза, 0:0\d/ });
+    await body().findByRole('button', { name: /Пауза, 00:0\d/ });
     // «Стоп»: окно результата с прошедшим временем вместо плана
     await click('Стоп');
     const dialog = within(await screen.findByRole('dialog', { name: 'Сколько продержались?' }));
