@@ -46,26 +46,26 @@ describe('agentToImportYaml', () => {
   });
 
   it('agentToImportYaml writes version 2 and parses', () => {
-    // Строгая схема требует все поля у каждого блока: лишние для типа блока поля не попадают в YAML
+    // Строгая схема требует все поля у каждого блока: не нужные блоку поля агент заполняет пустыми, их убирает compact
     const w = agent({
       notes: 'Отдых по самочувствию',
       warmup: { new_routine: { id: 'my-warm', title: 'Своя разминка', exercises: [{ exercise_id: 'arm-circles', time_sec: 30, sides: ['вперёд', 'назад'] }, { exercise_id: 'dips', time_sec: 20, sides: [] }] } },
       cooldown: { routine: 'back-stretch' },
       blocks: [
-        { type: 'sets', title: '', rounds: 1, rest_sec: 0, text: '', exercises: [{ exercise_id: 'bench-press', sets: 3, reps: '8-12', time_sec: 0, weight_kg: 60, rest_sec: 180, sides: [], notes: 'Пауза внизу' }] },
+        { type: 'sets', title: '', rounds: 0, rest_sec: 0, text: '', exercises: [{ exercise_id: 'bench-press', sets: 3, reps: '8-12', time_sec: 0, weight_kg: 60, rest_sec: 180, sides: [], notes: 'Пауза внизу' }] },
         { type: 'note', title: 'Тест большого пальца', rounds: 0, rest_sec: 0, text: 'Есть ли боль у основания пальца', exercises: [] },
         {
           type: 'circuit',
           title: 'Круг',
           rounds: 2,
           rest_sec: 90,
-          text: 'лишнее',
+          text: '',
           exercises: [
-            { exercise_id: 'dips', sets: 1, reps: 'max', time_sec: 0, weight_kg: 0, rest_sec: 60, sides: [], notes: '' },
-            { exercise_id: 'arm-circles', sets: 0, reps: '', time_sec: 'max', weight_kg: 0, rest_sec: 0, sides: ['влево', 'вправо'], notes: '' },
+            { exercise_id: 'dips', sets: 0, reps: 'max', time_sec: 0, weight_kg: 0, rest_sec: 0, sides: [], notes: '' },
+            { exercise_id: 'arm-circles', sets: 0, reps: '', time_sec: 'max', weight_kg: 0, rest_sec: 0, sides: ['влево', 'вправо'], notes: 'Плавно' },
           ],
         },
-        { type: 'timed', title: '', rounds: 3, rest_sec: 0, text: 'Без пауз', exercises: [{ exercise_id: 'arm-circles', sets: 1, reps: '', time_sec: 45, weight_kg: 0, rest_sec: 0, sides: [], notes: 'Плавно' }] },
+        { type: 'timed', title: '', rounds: 0, rest_sec: 0, text: 'Без пауз', exercises: [{ exercise_id: 'arm-circles', sets: 0, reps: '', time_sec: 45, weight_kg: 0, rest_sec: 0, sides: [], notes: '' }] },
       ],
     });
     const yaml = agentToImportYaml(w, '2026-11-18');
@@ -79,9 +79,28 @@ describe('agentToImportYaml', () => {
       { type: 'warmup', routine: 'my-warm' },
       { type: 'sets', exercises: [{ exercise_id: 'bench-press', sets: 3, reps: '8-12', weight_kg: 60, rest_sec: 180, notes: 'Пауза внизу' }] },
       { type: 'note', title: 'Тест большого пальца', text: 'Есть ли боль у основания пальца' },
-      { type: 'circuit', title: 'Круг', rounds: 2, rest_sec: 90, exercises: [{ exercise_id: 'dips', reps: 'max' }, { exercise_id: 'arm-circles', time_sec: 'max', sides: ['влево', 'вправо'] }] },
+      { type: 'circuit', title: 'Круг', rounds: 2, rest_sec: 90, exercises: [{ exercise_id: 'dips', reps: 'max' }, { exercise_id: 'arm-circles', time_sec: 'max', sides: ['влево', 'вправо'], notes: 'Плавно' }] },
       { type: 'timed', text: 'Без пауз', exercises: [{ exercise_id: 'arm-circles', time_sec: 45 }] },
       { type: 'cooldown', routine: 'back-stretch' },
     ]);
+  });
+
+  // Анти-цель: значение не на своём месте не пропадает молча — разбор называет его, агент или тренер видит ошибку
+  it('keeps non-empty misplaced fields for parse to reject at their path', () => {
+    const w = agent({
+      warmup: null,
+      blocks: [
+        { type: 'circuit', rounds: 2, exercises: [{ exercise_id: 'dips', reps: '10', rest_sec: 60 }] },
+        { type: 'timed', exercises: [{ exercise_id: 'arm-circles', time_sec: 30, notes: 'Плавно' }] },
+        { type: 'note', title: 'Замер', exercises: [{ exercise_id: 'dips', reps: 'max' }] },
+      ],
+    });
+    const r = parseImport(agentToImportYaml(w, '2026-11-18'), ctx);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    const paths = r.errors.map((e) => e.path);
+    expect(paths).toContainEqual(['workouts', 0, 'blocks', 0, 'exercises', 0, 'rest_sec']);
+    expect(paths).toContainEqual(['workouts', 0, 'blocks', 1, 'exercises', 0, 'notes']);
+    expect(paths).toContainEqual(['workouts', 0, 'blocks', 2, 'exercises']);
   });
 });

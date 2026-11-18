@@ -1,6 +1,5 @@
 import { stringify } from 'yaml';
-import { compactAgentWorkout, type AgentBlock, type AgentExercise, type AgentRoutine, type AgentWorkout } from '../../../../shared/aiDraft';
-import { BLOCK_FIELDS, EXERCISE_FIELDS, TIMED_FIELDS } from '../import/v2';
+import { compactAgentWorkout, type AgentBlock, type AgentRoutine, type AgentWorkout } from '../../../../shared/aiDraft';
 
 /** Убирает null и undefined на любой глубине: в документе импорта их не бывает */
 function clean<T>(v: T): T {
@@ -13,23 +12,11 @@ function clean<T>(v: T): T {
   return v;
 }
 
-const pick = (o: object, keys: readonly string[]) => Object.fromEntries(Object.entries(o).filter(([k]) => keys.includes(k)));
-
-/** Поля упражнения по типу блока: в circuit подходы задаёт rounds, отдых — у блока; в timed — только время */
-const EXERCISE_FIELDS_OF: Record<AgentBlock['type'], readonly string[]> = {
-  sets: EXERCISE_FIELDS,
-  circuit: EXERCISE_FIELDS.filter((k) => k !== 'sets' && k !== 'rest_sec'),
-  timed: TIMED_FIELDS,
-  note: [],
-};
-
-/**
- * Блок агента → блок v2: строгая схема требует все поля у каждого блока, в YAML идут только поля его типа.
- * Порядок блоков и упражнений не меняется: путь ошибки разбора указывает на то же место в ответе агента.
- */
+/** У блока note список упражнений пуст: схема требует поле, в YAML пустого списка нет. Непустой список остаётся — его отклонит разбор */
 const blockOf = (b: AgentBlock) => {
-  const out = pick(b, BLOCK_FIELDS[b.type]);
-  return 'exercises' in out ? { ...out, exercises: b.exercises.map((e: AgentExercise) => pick(e, EXERCISE_FIELDS_OF[b.type])) } : out;
+  if (b.type !== 'note' || b.exercises.length) return b;
+  const { exercises: _empty, ...rest } = b;
+  return rest;
 };
 
 const linkOf = (type: 'warmup' | 'cooldown', r: AgentRoutine) => {
@@ -39,7 +26,9 @@ const linkOf = (type: 'warmup' | 'cooldown', r: AgentRoutine) => {
 
 /**
  * Ответ агента → текст импорта version: 2: одна тренировка на дату, новые упражнения и наборы — в своих разделах.
- * Пустые значения строгой схемы сначала убирает compactAgentWorkout.
+ * Пустые значения строгой схемы ("", 0, []) убирает compactAgentWorkout; непустые идут как есть, даже не на своём
+ * месте: их ошибку разбора видит агент или тренер, а не теряет преобразование.
+ * Порядок блоков и упражнений не меняется: путь ошибки разбора указывает на то же место в ответе агента.
  * Через yaml.stringify, чтобы parseImport давал осмысленные номера строк и спецсимволы не ломали разбор.
  */
 export function agentToImportYaml(agent: AgentWorkout, date: string): string {
