@@ -35,12 +35,23 @@ describe('buildWorkout', () => {
     expect(f.calls[1]!.errors!.join('\n')).toContain('bench-pres');
   });
 
-  it('gives up after second failure', async () => {
+  it('gives up when repair cannot save the answer', async () => {
     const f = fakeSend(bad, bad);
     const r = await buildWorkout(req, ctx, [], f.send);
     expect(f.calls).toHaveLength(2);
     if (r.ok) throw new Error('ожидали ошибку');
     expect(r.errors.length).toBeGreaterThan(0);
+  });
+
+  it('build returns draft after second failure', async () => {
+    const badLoad = agent({ blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', sets: 4, reps: 'до отказа', weight_kg: 60 }] }] });
+    const f = fakeSend(badLoad, badLoad);
+    const r = await buildWorkout(req, ctx, [], f.send);
+    expect(f.calls).toHaveLength(2);
+    if (!r.ok) throw new Error(JSON.stringify(r.errors));
+    expect(r.draft.marks).toEqual({ 'b0-e0': { blockIndex: 0, exerciseIndex: 0, field: 'reps', wrote: 'до отказа', message: 'Не понимаю reps: до отказа' } });
+    const b = r.draft.blocks[0]!;
+    expect(b.mode !== 'note' && b.exercises[0]).toMatchObject({ target: { min: 10, max: 10 }, weight: 60 });
   });
 
   it('sends at most 50 errors of at most 2000 chars on retry', async () => {

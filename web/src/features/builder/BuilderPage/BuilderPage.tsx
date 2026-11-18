@@ -14,7 +14,7 @@ import { DraftError, requestDraft } from '../api';
 import { buildWorkout } from '../build';
 import { BuilderInputView } from '../BuilderInputView/BuilderInputView';
 import { BuilderReviewView } from '../BuilderReviewView/BuilderReviewView';
-import { builderKey, clearBuilder, loadBuilder, saveBuilder } from '../storage';
+import { BUILDER_VERSION, builderKey, clearBuilder, loadBuilder, saveBuilder } from '../storage';
 import { draftToCommit } from '../toCommit';
 import { EMPTY_INPUT, toRequest, type BuilderDraft, type BuilderInput } from '../types';
 
@@ -93,7 +93,7 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
   const pristine = step === 'input' && draft === null && JSON.stringify(input) === JSON.stringify(EMPTY_INPUT);
   useEffect(() => {
     if (pristine) return;
-    const t = window.setTimeout(() => saveBuilder(storageKey, { v: 1, savedAt: Date.now(), step, input, draft }), SAVE_DELAY_MS);
+    const t = window.setTimeout(() => saveBuilder(storageKey, { v: BUILDER_VERSION, savedAt: Date.now(), step, input, draft }), SAVE_DELAY_MS);
     return () => window.clearTimeout(t);
   }, [storageKey, step, input, draft, pristine]);
 

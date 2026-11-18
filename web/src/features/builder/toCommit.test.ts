@@ -18,6 +18,8 @@ const base = (over: Partial<BuilderDraft> = {}): BuilderDraft => ({
   warmup: { kind: 'library', slug: 'neck-shoulders' },
   cooldown: { kind: 'none' },
   advice: [],
+  marks: {},
+  unparsed: [],
   ...over,
 });
 

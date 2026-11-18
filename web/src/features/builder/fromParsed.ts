@@ -3,6 +3,7 @@ import type { AgentRoutine, AgentWorkout } from '../../../../shared/aiDraft';
 import type { ExerciseKind } from '../../../../shared/types';
 import type { ParseContext, ParsedImport } from '../import/parse';
 import type { Measure } from '../import/types';
+import type { DraftMark, Unparsed } from './repair';
 import type { Advice, BuilderDraft, NewExerciseDraft, RoutinePick } from './types';
 
 const kindOf = (m: Measure | undefined): ExerciseKind => (m === 'distance' ? 'time' : (m ?? 'reps'));
@@ -14,8 +15,16 @@ const namesIn = (blocks: BuilderDraft['blocks']): Set<string> => new Set(blocks.
 /**
  * Удачный разбор ответа агента → черновик формы. Блоки — из structure разбора; новые упражнения — из разбора,
  * поля (мышцы, инвентарь, техника) — из ответа агента; slug набора → имена по библиотеке и новым.
+ * repair — итог ремонта этого ответа: индексы пометок указывают на его блоки, они же блоки structure (b{i}).
  */
-export function draftFromParsed(parsed: ParsedImport, agent: AgentWorkout, ctx: ParseContext, date: string, picked: string[]): BuilderDraft {
+export function draftFromParsed(
+  parsed: ParsedImport,
+  agent: AgentWorkout,
+  ctx: ParseContext,
+  date: string,
+  picked: string[],
+  repair: { marks: DraftMark[]; unparsed: Unparsed[] } = { marks: [], unparsed: [] },
+): BuilderDraft {
   const workout = parsed.workouts[0]!;
   const agentById = new Map(agent.new_exercises.map((e) => [e.id, e]));
   const agentByName = new Map(agent.new_exercises.map((e) => [norm(e.name), e]));
@@ -56,6 +65,14 @@ export function draftFromParsed(parsed: ParsedImport, agent: AgentWorkout, ctx: 
     if (name && !present.has(norm(name))) advice.push({ id: `missing-${slug}`, text: `Нет выбранного упражнения: ${name}` });
   }
 
+  // Ключ — id упражнения из разбора уже отремонтированного ответа: id не собираем заново
+  const marks: Record<string, DraftMark> = {};
+  for (const m of repair.marks) {
+    const block = workout.structure[m.blockIndex];
+    const ex = block && block.mode !== 'note' ? block.exercises[m.exerciseIndex] : undefined;
+    if (ex) marks[ex.id] = m;
+  }
+
   return {
     date,
     title: workout.title,
@@ -65,5 +82,7 @@ export function draftFromParsed(parsed: ParsedImport, agent: AgentWorkout, ctx: 
     warmup: pickOf(agent.warmup),
     cooldown: pickOf(agent.cooldown),
     advice,
+    marks,
+    unparsed: repair.unparsed,
   };
 }

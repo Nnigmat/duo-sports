@@ -31,6 +31,16 @@ describe('draftFromParsed', () => {
     expect(draftFromParsed(p, w, ctx, '2026-11-18', [])).not.toHaveProperty('notes');
   });
 
+  it('draft carries workout and exercise notes', () => {
+    const d = draftOf(agent({ notes: 'Замер в конце', blocks: [{ type: 'sets', exercises: [{ exercise_id: 'bench-press', sets: 4, reps: '8', notes: 'Лопатки сведены' }] }] }));
+    expect(d.notes).toBe('Замер в конце');
+    expect(d.blocks[0]!.mode === 'sets' && d.blocks[0]!.exercises[0]!.note).toBe('Лопатки сведены');
+  });
+
+  it('draft without repair has no marks and nothing unparsed', () => {
+    expect(draftOf(agent())).toMatchObject({ marks: {}, unparsed: [] });
+  });
+
   it('new exercise takes agent fields', () => {
     const d = draftOf(agent({ new_exercises: [clap], blocks: [{ type: 'circuit', rounds: 3, exercises: [{ exercise_id: 'clap-pushup', time_sec: 30 }] }] }));
     expect(d.newExercises).toEqual([

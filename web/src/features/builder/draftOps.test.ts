@@ -27,6 +27,8 @@ const base = (): BuilderDraft => ({
     { id: 'a0', text: 'В библиотеке есть похожее — Отжимания на брусьях', exercise: 'Отжимания с хлопком', suggest: 'Отжимания на брусьях' },
     { id: 'a1', text: 'Отдых добавлен по правилам' },
   ],
+  marks: {},
+  unparsed: [],
 });
 const names = (d: BuilderDraft, block: number) => exercisesOf(d.blocks[block]!).map((e) => e.name);
 

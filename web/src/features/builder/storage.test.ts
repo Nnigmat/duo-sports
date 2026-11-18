@@ -11,9 +11,11 @@ const draft: BuilderDraft = {
   warmup: { kind: 'library', slug: 'neck-shoulders' },
   cooldown: { kind: 'new', title: 'Растяжка', items: [{ name: 'Вращение руками', sec: 30, sides: ['вправо', 'влево'] }] },
   advice: [{ id: 'a0', text: 'Есть похожее', exercise: 'Отжимания с хлопком', suggest: 'Отжимания на брусьях' }],
+  marks: { 'b1-e1': { blockIndex: 0, exerciseIndex: 0, field: 'reps', wrote: 'до отказа', message: 'Не понимаю reps: до отказа' } },
+  unparsed: [{ what: 'bench-pres', message: 'Неизвестный exercise_id: bench-pres' }],
 };
 const stored: StoredBuilder = {
-  v: 1,
+  v: 2,
   savedAt: NOW - 1000,
   step: 'review',
   input: { title: '', warmup: { kind: 'library', slug: 'neck-shoulders' }, main: { text: 'жим', picked: ['bench-press'] }, cooldown: { kind: 'text', text: 'растяжка' } },
@@ -38,7 +40,14 @@ describe('разбор сохранённого черновика', () => {
   });
 
   it('rejects other version', () => {
-    expect(parseBuilder(JSON.stringify({ ...stored, v: 2 }), NOW)).toBeNull();
+    expect(parseBuilder(JSON.stringify({ ...stored, v: 3 }), NOW)).toBeNull();
+  });
+
+  it('old draft version is discarded', () => {
+    // Черновик до пометок: та же форма без marks и unparsed
+    const { marks: _m, unparsed: _u, ...old } = draft;
+    expect(parseBuilder(JSON.stringify({ ...stored, v: 1, draft: old }), NOW)).toBeNull();
+    expect(parseBuilder(JSON.stringify({ ...stored, draft: { ...draft, marks: [] } }), NOW)).toBeNull();
   });
 
   it('rejects older than 7 days', () => {
@@ -79,6 +88,12 @@ describe('хранилище', () => {
     saveBuilder('k', stored);
     expect(loadBuilder('k', NOW)).toEqual(stored);
     clearBuilder('k');
+    expect(storage.data.has('k')).toBe(false);
+  });
+
+  it('old version record is removed on load', () => {
+    storage.data.set('k', JSON.stringify({ ...stored, v: 1 }));
+    expect(loadBuilder('k', NOW)).toBeNull();
     expect(storage.data.has('k')).toBe(false);
   });
 
