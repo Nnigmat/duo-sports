@@ -15,8 +15,9 @@ export function UnparsedList({ items }: Props) {
         Не разобрал
       </Text>
       <ul className={styles.list}>
-        {items.map((u) => (
-          <li key={`${u.what}|${u.message}`} className={styles.item}>
+        {/* Одинаковые строки бывают, а список не переставляется: номер в ключе */}
+        {items.map((u, i) => (
+          <li key={`${i}|${u.what}|${u.message}`} className={styles.item}>
             <Text variant="body-sm" className={styles.what}>
               {u.what}
             </Text>
