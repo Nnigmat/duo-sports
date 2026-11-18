@@ -56,6 +56,17 @@ export async function updateRoutine(id: string, input: RoutineInput): Promise<Ro
   return (await res.json()) as Routine;
 }
 
+/** Копия с названием «Имя копия (n)»: номер подбирает сервер */
+export async function copyRoutine(id: string): Promise<Routine> {
+  const res = await send(`/api/routines/${encodeURIComponent(id)}/copy`, 'POST');
+  return (await res.json()) as Routine;
+}
+
+export async function renameRoutine(id: string, title: string): Promise<Routine> {
+  const res = await send(`/api/routines/${encodeURIComponent(id)}`, 'PATCH', { title });
+  return (await res.json()) as Routine;
+}
+
 export async function deleteRoutine(id: string): Promise<void> {
   await send(`/api/routines/${encodeURIComponent(id)}`, 'DELETE');
 }

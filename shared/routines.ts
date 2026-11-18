@@ -32,3 +32,17 @@ export function composeBlocks(
   if (cooldown && cooldown.exercises.length > 0) out.push(cooldown);
   return out;
 }
+
+const COPY_SUFFIX = /\s+копия \(\d+\)$/i;
+
+/** Название копии: «Имя копия (n)», n — наименьший свободный среди taken (без учёта регистра).
+ * Копия копии нумеруется от исходного имени. Основа укорачивается, чтобы влезть в limit. */
+export function copyTitle(title: string, taken: string[], limit = 80): string {
+  const base = title.replace(COPY_SUFFIX, '').trim() || title.trim();
+  const used = new Set(taken.map((t) => t.toLowerCase()));
+  for (let n = 1; ; n++) {
+    const suffix = ` копия (${n})`;
+    const candidate = `${base.slice(0, limit - suffix.length).trimEnd()}${suffix}`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+}
