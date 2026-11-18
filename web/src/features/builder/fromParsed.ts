@@ -59,6 +59,7 @@ export function draftFromParsed(parsed: ParsedImport, agent: AgentWorkout, ctx: 
   return {
     date,
     title: workout.title,
+    ...(workout.notes ? { notes: workout.notes } : {}),
     blocks: workout.structure,
     newExercises,
     warmup: pickOf(agent.warmup),

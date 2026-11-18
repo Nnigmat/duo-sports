@@ -108,6 +108,8 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
         saving={saving}
         issues={problems}
         failure={failure}
+        notes={draft.notes ?? ''}
+        onNotes={(notes) => onDraft({ ...draft, notes })}
         onTitle={(title) => onDraft({ ...draft, title })}
         onBlocks={(blocks) => onDraft(pruneNew({ ...draft, blocks }))}
         onSave={onSave}

@@ -107,7 +107,7 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
     ...(links.warmup ? { warmup: { id: links.warmup, title: known.find((r) => r.id === links.warmup)?.title ?? links.warmup } } : {}),
     ...(links.cooldown ? { cooldown: { id: links.cooldown, title: known.find((r) => r.id === links.cooldown)?.title ?? links.cooldown } } : {}),
   };
-  // Заметка тренировки пока правится только в YAML; в форме она хранится как есть
+  // Заметка тренировки: поле в форме и ключ notes в YAML работают с одним состоянием
   const [notes, setNotes] = useState(workout.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -194,6 +194,8 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
       saving={saving}
       issues={tried && view === 'form' ? issues : []}
       failure={failure}
+      notes={notes}
+      onNotes={setNotes}
       onTitle={setTitle}
       onBlocks={setBlocks}
       onSave={save}

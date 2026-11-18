@@ -23,6 +23,14 @@ describe('draftFromParsed', () => {
     expect(d).toMatchObject({ date: '2026-11-18', title: 'Верх тела' });
   });
 
+  it('workout notes reach the draft', () => {
+    const w = agent();
+    const p = parsed(w);
+    const withNotes = { ...p, workouts: [{ ...p.workouts[0]!, notes: 'Замер в конце' }] } as ParsedImport;
+    expect(draftFromParsed(withNotes, w, ctx, '2026-11-18', []).notes).toBe('Замер в конце');
+    expect(draftFromParsed(p, w, ctx, '2026-11-18', [])).not.toHaveProperty('notes');
+  });
+
   it('new exercise takes agent fields', () => {
     const d = draftOf(agent({ new_exercises: [clap], blocks: [{ type: 'circuit', rounds: 3, exercises: [{ exercise_id: 'clap-pushup', time: '30s' }] }] }));
     expect(d.newExercises).toEqual([

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Block, SetsBlock } from '../../../../../shared/types';
+import type { Block, SetsBlock, SetsExercise } from '../../../../../shared/types';
 import { exercisesOf } from '../../../../../shared/blocks';
 import {
-  addBlock, addExercise, changeMode, editableBlocks, moveBlock, moveExercise, patchExercise, problems, removeBlock, removeExercise, roundsOf, setRounds, setTarget, toggleVideoRound,
+  addBlock, addExercise, changeMode, clearSides, editableBlocks, moveBlock, moveExercise, newBlock, patchExercise, problems, removeBlock, removeExercise, roundsOf, setExerciseNote, setExerciseRest, setNoteText, setOpen,
+  setRounds, setTarget, toggleVideoRound,
 } from './draft';
 
 const squat = { name: 'Присед', kind: 'weight' as const, defaults: { reps: 8, weight: 60, seconds: 30 } };
@@ -117,5 +118,74 @@ describe('editableBlocks', () => {
   });
   it('без ссылок ничего не трогает', () => {
     expect(editableBlocks(all, undefined)).toHaveLength(3);
+  });
+});
+
+describe('v2: заметка, отдых, максимум, стороны', () => {
+  const first = (blocks: Block[]) => exercisesOf(blocks[0])[0] as SetsExercise;
+  const withSides = (blocks: Block[]) => patchExercise(blocks, 'b1', 'x1', { sides: ['влево', 'вправо'] });
+
+  it('setExerciseRest пишет отдых упражнения в «подходами»', () => {
+    expect(first(setExerciseRest(sets(), 'b1', 'x1', 120)).restSec).toBe(120);
+  });
+  it('setExerciseRest не трогает круг и таймер', () => {
+    const circuit = changeMode(sets(), 'b1', 'circuit');
+    expect(setExerciseRest(circuit, 'b1', 'x1', 120)).toEqual(circuit);
+    const timed = changeMode(sets(), 'b1', 'timed');
+    expect(setExerciseRest(timed, 'b1', 'x1', 120)).toEqual(timed);
+  });
+  it('setExerciseNote пишет заметку, пустая строка убирает поле', () => {
+    const noted = setExerciseNote(sets(), 'b1', 'x1', 'пауза внизу');
+    expect(first(noted).note).toBe('пауза внизу');
+    expect(first(setExerciseNote(noted, 'b1', 'x1', ''))).not.toHaveProperty('note');
+  });
+  it('setOpen(true) ставит {0, 0}, setOpen(false) возвращает значение библиотеки', () => {
+    const open = setOpen(sets(), 'b1', 'x1', true);
+    expect(first(open).target).toEqual({ min: 0, max: 0 });
+    expect(first(setOpen(open, 'b1', 'x1', false, squat.defaults)).target).toEqual({ min: 8, max: 8 });
+  });
+  it('setOpen(false) для времени берёт секунды, без библиотеки — 60 с', () => {
+    const [b] = addExercise(addBlock([], 'timed'), 'b1', plank);
+    const open = setOpen([b], 'b1', 'x1', true);
+    expect(exercisesOf(setOpen(open, 'b1', 'x1', false, plank.defaults)[0])[0].target).toEqual({ min: 45, max: 45 });
+    expect(exercisesOf(setOpen(open, 'b1', 'x1', false)[0])[0].target).toEqual({ min: 60, max: 60 });
+  });
+  it('clearSides убирает стороны, остальное остаётся', () => {
+    const cleared = clearSides(withSides(sets()), 'b1', 'x1');
+    expect(first(cleared)).not.toHaveProperty('sides');
+    expect(first(cleared)).toMatchObject({ name: 'Присед', sets: 3 });
+  });
+  it('смена режима сохраняет заметку и стороны; отдых упражнения остаётся только в «подходами»', () => {
+    const rich = setExerciseRest(setExerciseNote(withSides(sets()), 'b1', 'x1', 'медленно'), 'b1', 'x1', 120);
+    const circuit = exercisesOf(changeMode(rich, 'b1', 'circuit')[0])[0];
+    expect(circuit).toMatchObject({ note: 'медленно', sides: ['влево', 'вправо'] });
+    expect(circuit).not.toHaveProperty('restSec');
+    const timed = exercisesOf(changeMode(rich, 'b1', 'timed')[0])[0];
+    expect(timed).toMatchObject({ note: 'медленно', sides: ['влево', 'вправо'] });
+    expect(timed).not.toHaveProperty('restSec');
+    const back = first(changeMode(changeMode(rich, 'b1', 'circuit'), 'b1', 'sets'));
+    expect(back).toMatchObject({ note: 'медленно', sides: ['влево', 'вправо'], sets: 3 });
+  });
+  it('режим не сбрасывает «на максимум» у упражнения на время', () => {
+    const [b] = addExercise(addBlock([], 'timed'), 'b1', plank);
+    const open = setOpen([b], 'b1', 'x1', true);
+    expect(exercisesOf(changeMode(open, 'b1', 'circuit')[0])[0].target).toEqual({ min: 0, max: 0 });
+  });
+  it('new circuit rests after round', () => {
+    expect(newBlock([], 'circuit')).toMatchObject({ mode: 'circuit', restAfter: 'round' });
+    expect(newBlock([], 'sets')).not.toHaveProperty('restAfter');
+  });
+  it('блок-заметка: добавление и текст', () => {
+    const blocks = addBlock([], 'note');
+    expect(blocks[0]).toEqual({ id: 'b1', mode: 'note', title: 'Заметка', text: '' });
+    expect(setNoteText(blocks, 'b1', 'Сделать замер')[0]).toMatchObject({ text: 'Сделать замер' });
+  });
+  it('note block without text is a problem', () => {
+    expect(problems('Верх', addBlock([], 'note'))).toEqual(['Заметка без текста']);
+    expect(problems('Верх', setNoteText(addBlock([], 'note'), 'b1', 'Замер'))).toEqual([]);
+  });
+  it('блок-заметка двигается наравне с остальными', () => {
+    const blocks = addBlock(sets(), 'note');
+    expect(moveBlock(blocks, 'b2', -1).map((b) => b.id)).toEqual(['b2', 'b1']);
   });
 });

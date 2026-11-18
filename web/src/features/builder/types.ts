@@ -44,6 +44,8 @@ export interface Advice {
 export interface BuilderDraft {
   date: string;
   title: string;
+  /** Заметка к тренировке целиком; нет — без заметки */
+  notes?: string;
   blocks: Block[];
   newExercises: NewExerciseDraft[];
   warmup: RoutinePick;

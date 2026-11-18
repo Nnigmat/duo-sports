@@ -104,6 +104,7 @@ export function draftToCommit(d: BuilderDraft, ctx: ParseContext): CommitCheck {
           title: d.title.trim(),
           blocks: displayBlocks(structure),
           structure,
+          ...(d.notes?.trim() ? { notes: d.notes.trim() } : {}),
           ...(warmupRoutine ? { warmupRoutine } : {}),
           ...(cooldownRoutine ? { cooldownRoutine } : {}),
         },

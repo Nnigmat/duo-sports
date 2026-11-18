@@ -150,3 +150,12 @@
   flex-direction: column;
   gap: var(--spacing-sm);
 }
+
+.sides {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  color: var(--slate);
+  font-size: var(--body-sm-size);
+}

@@ -32,6 +32,12 @@ const problemsOf = (d: BuilderDraft): string[] => {
 };
 
 describe('draftToCommit', () => {
+  it('workout notes go to the commit, blank ones do not', () => {
+    expect(commitOf(base({ notes: '  Замер в конце ' })).workouts[0]!.notes).toBe('Замер в конце');
+    expect(commitOf(base({ notes: '  ' })).workouts[0]).not.toHaveProperty('notes');
+    expect(commitOf(base()).workouts[0]).not.toHaveProperty('notes');
+  });
+
   it('builds one workout on the date', () => {
     const c = commitOf(base());
     expect(c.workouts).toHaveLength(1);
