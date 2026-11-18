@@ -125,7 +125,7 @@ function SavedWorkout({ id }: { id: string }) {
 type FlowProps = {
   data: WorkoutData;
   dateLabel: string;
-  onFinish: (steps: import('../../../../../shared/types').SessionStepResult[], videos: number, feedback: { feeling: number; comment?: string }) => Promise<void>;
+  onFinish: (steps: import('../../../../../shared/types').SessionStepResult[], videos: number, feedback: { feeling: number; comment?: string; answers?: import('../../../../../shared/types').NoteAnswer[] }) => Promise<void>;
   onExit: () => void;
   initialSession?: Session;
   startedAt: number | null;

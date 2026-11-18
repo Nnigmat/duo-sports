@@ -19,6 +19,8 @@ export interface Session {
   completed: boolean[];
   /** Факт подхода i: что реально сделано; null — факта нет (пропуск, разминка, ещё не делали). План не трогает. */
   actuals: Array<SetActual | null>;
+  /** Ответы на шаги-заметки: индекс шага → текст */
+  answers: Record<number, string>;
   /** Сколько видео записано */
   videos: number;
   /** id видео подхода i с сервера; null — видео нет или сервер id не вернул */
@@ -55,7 +57,9 @@ export type Action =
   /** Стрелка на обратной связи: назад к итогам */
   | { type: 'toSummary' }
   | { type: 'rate'; value: number }
-  | { type: 'comment'; text: string };
+  | { type: 'comment'; text: string }
+  /** Ответ на шаг-заметку; пишется по индексу текущего шага */
+  | { type: 'answer'; text: string };
 
 /** Разминка и заминка идут сами; упражнение на время в блоке подходами ждёт «Старт». */
 const autoStart = (step: Step) => step.mode === 'timed';
@@ -67,6 +71,7 @@ export function initSession(steps: Step[]): Session {
     phase: 'start',
     completed: steps.map(() => false),
     actuals: steps.map(() => null),
+    answers: {},
     videos: 0,
     videoIds: steps.map(() => null),
     restSec: steps.map(() => null),
@@ -114,14 +119,19 @@ function uncomplete(s: Session, index: number): Session {
   };
 }
 
+function without(answers: Record<number, string>, index: number): Record<number, string> {
+  const { [index]: _, ...rest } = answers;
+  return rest;
+}
+
 /** Есть ли у экрана подхода кнопка «Назад»: с первого шага, на отдыхе и на финише её нет */
 export function canGoBack(s: Session): boolean {
   return s.phase === 'work' && s.index > 0;
 }
 
-/** Заменить упражнение можно на подходе упражнения; у разминки и заминки, на отдыхе и на финише кнопки нет */
+/** Заменить упражнение можно на подходе упражнения; у разминки, заминки и заметки, на отдыхе и на финише кнопки нет */
 export function canSwap(s: Session): boolean {
-  return s.phase === 'work' && s.steps[s.index].mode !== 'timed';
+  return s.phase === 'work' && s.steps[s.index].mode !== 'timed' && s.steps[s.index].mode !== 'note';
 }
 
 export function reduce(s: Session, a: Action): Session {
@@ -143,7 +153,7 @@ export function reduce(s: Session, a: Action): Session {
     case 'skip':
       if (s.phase === 'rest') return next(withRest(s, a.restSec));
       // Пропуск подхода стирает факт, оставшийся после «Назад»; пропуск отдыха подход не трогает
-      if (s.phase === 'work') return next({ ...s, actuals: s.actuals.map((x, i) => (i === s.index ? null : x)) });
+      if (s.phase === 'work') return next({ ...s, actuals: s.actuals.map((x, i) => (i === s.index ? null : x)), answers: without(s.answers, s.index) });
       return s;
 
     case 'restOver':
@@ -173,6 +183,9 @@ export function reduce(s: Session, a: Action): Session {
 
     case 'comment':
       return s.phase === 'feedback' ? { ...s, comment: a.text } : s;
+
+    case 'answer':
+      return s.phase === 'work' && s.steps[s.index].mode === 'note' ? { ...s, answers: { ...s.answers, [s.index]: a.text } } : s;
   }
 }
 

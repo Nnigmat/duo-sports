@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSteps } from './buildSteps';
-import type { CircuitBlock, SetsBlock, TimedBlock } from '../../../../../shared/types';
+import type { CircuitBlock, NoteBlock, SetsBlock, TimedBlock } from '../../../../../shared/types';
 import { circuit, setsBlock, warmup } from './fixtures';
 
 describe('buildSteps', () => {
@@ -148,10 +148,32 @@ describe('buildSteps: отдых v2', () => {
   });
 });
 
-describe('buildSteps: блок-заметка', () => {
-  it('не даёт шагов и не мешает соседям', () => {
-    const note = { id: 'n', mode: 'note' as const, title: 'Важно', text: 'Сегодня без отжиманий' };
-    expect(buildSteps([note])).toEqual([]);
-    expect(buildSteps([note, circuit]).length).toBe(buildSteps([circuit]).length);
+describe('шаг-заметка', () => {
+  const noteBlock: NoteBlock = { id: 'n1', mode: 'note', title: 'Тест большого пальца', text: 'Согни палец, есть ли боль?' };
+
+  it('note block becomes one step', () => {
+    const steps = buildSteps([warmup, noteBlock, setsBlock]);
+    const step = steps.find((s) => s.mode === 'note');
+    expect(steps.filter((s) => s.mode === 'note')).toHaveLength(1);
+    expect(step).toMatchObject({
+      blockIndex: 1,
+      blockTitle: 'Тест большого пальца',
+      noteStep: { title: 'Тест большого пальца', text: 'Согни палец, есть ли боль?' },
+      record: false,
+      restAfterSec: 0,
+      indexInBlock: 1,
+      blockSize: 1,
+    });
+  });
+
+  it('заметка не меняет шаги соседей', () => {
+    const note: NoteBlock = { id: 'n', mode: 'note', title: 'Важно', text: 'Сегодня без отжиманий' };
+    expect(buildSteps([note, circuit])).toHaveLength(buildSteps([circuit]).length + 1);
+    expect(buildSteps([note, circuit]).slice(1).map((s) => s.restAfterSec)).toEqual(buildSteps([circuit]).map((s) => s.restAfterSec));
+  });
+
+  it('перед заминкой у шага-заметки отдыха нет', () => {
+    const cooldown: TimedBlock = { ...warmup, id: 'cd', kind: 'cooldown' };
+    expect(buildSteps([noteBlock, cooldown])[0].restAfterSec).toBe(0);
   });
 });

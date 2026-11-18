@@ -307,6 +307,7 @@ function migrate(db: Db) {
   if (!columns('sessions_done').includes('duration_sec')) db.exec('ALTER TABLE sessions_done ADD COLUMN duration_sec INTEGER');
   if (!columns('sessions_done').includes('feeling')) db.exec('ALTER TABLE sessions_done ADD COLUMN feeling INTEGER');
   if (!columns('sessions_done').includes('comment')) db.exec('ALTER TABLE sessions_done ADD COLUMN comment TEXT');
+  if (!columns('sessions_done').includes('answers')) db.exec('ALTER TABLE sessions_done ADD COLUMN answers TEXT');
   if (!columns('sessions_done').includes('client_key')) db.exec('ALTER TABLE sessions_done ADD COLUMN client_key TEXT');
   // Повтор отправки того же итога находит прежнюю строку по ключу; у старых строк ключа нет
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS sessions_done_key ON sessions_done(user_id, client_key) WHERE client_key IS NOT NULL');

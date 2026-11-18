@@ -84,6 +84,7 @@ export function blockLabel(step: Step): string {
     case 'sets':
       return 'Подходами';
     case 'timed':
+    case 'note':
       return step.blockTitle;
   }
 }

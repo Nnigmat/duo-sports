@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState, type Dispatch } from 'react';
-import type { CoachComment, Gender, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
+import type { CoachComment, Gender, NoteAnswer, SessionStepResult, Technique, Workout } from '../../../../../shared/types';
 import { Dialog } from '../../../ui/Dialog/Dialog';
 import { cameraUrl, idleUrl, restUrl, successUrl } from '../chibi/idle';
 import { poseFor } from '../chibi/poseFor';
@@ -14,6 +14,7 @@ import {
   eyebrow,
   feedbackOf,
   finishStats,
+  sessionAnswers,
   sessionSteps,
   hasNewComments,
   initSession,
@@ -54,6 +55,7 @@ import { CommentsSheet } from '../sheets/CommentsSheet/CommentsSheet';
 import { ResultSheet } from '../sheets/ResultSheet/ResultSheet';
 import { SwapSheet } from '../sheets/SwapSheet/SwapSheet';
 import { TechSheet } from '../sheets/TechSheet/TechSheet';
+import { NoteStage } from '../NoteStage/NoteStage';
 import { StartScreen } from '../StartScreen/StartScreen';
 import { TrainingScreen } from '../TrainingScreen/TrainingScreen';
 
@@ -75,7 +77,7 @@ type Props = {
    * «Отправить тренеру» на обратной связи: итоги, каждый подход с планом и отметкой «выполнен» и самочувствие.
    * Reject оставляет экран как есть с текстом ошибки: можно отправить ещё раз, итог не задвоится (ключ тот же).
    */
-  onFinish: (stats: FinishStats, steps: SessionStepResult[], feedback: { feeling: number; comment?: string }) => Promise<void>;
+  onFinish: (stats: FinishStats, steps: SessionStepResult[], feedback: { feeling: number; comment?: string; answers?: NoteAnswer[] }) => Promise<void>;
   /** Выход с экрана старта и ✕ на финише */
   onExit: () => void;
   /** Сохранённое прохождение: тренировка продолжается с него, а не с экрана старта */
@@ -167,9 +169,11 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
 
   if (phase === 'feedback') {
     const send = async () => {
-      const feedback = feedbackOf(session);
+      const rated = feedbackOf(session);
       // Без оценки итог не уходит, даже если кнопку как-то нажали
-      if (!feedback || sending) return;
+      if (!rated || sending) return;
+      const answers = sessionAnswers(steps, session.completed, session.answers);
+      const feedback = answers.length > 0 ? { ...rated, answers } : rated;
       setSending(true);
       setSendError(null);
       try {
@@ -198,6 +202,40 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
     // Время на финише то же, что в шапке, и дальше не растёт
     const total = startedAt == null ? 0 : totalSec(startedAt, finishedAt, Date.now());
     return <FinishScreen stats={stats} totalSec={total} successUrl={successUrl(gender)} onNext={() => dispatch({ type: 'toFeedback' })} onClose={onExit} />;
+  }
+
+  const exitDialog = (
+    <Dialog
+      open={exiting}
+      onOpenChange={setExiting}
+      title="Закончить тренировку?"
+      description="Выполненные подходы сохранятся"
+      confirmLabel="Закончить"
+      onConfirm={() => {
+        setExiting(false);
+        dispatch({ type: 'finishNow' });
+      }}
+    />
+  );
+
+  // Шаг-заметка: свой экран без камеры, таймеров и шторок
+  if (phase === 'work' && step.noteStep) {
+    return (
+      <>
+        <NoteStage
+          key={index}
+          title={step.noteStep.title}
+          text={step.noteStep.text}
+          answer={session.answers[index] ?? ''}
+          onAnswer={(text) => dispatch({ type: 'answer', text })}
+          onDone={() => dispatch({ type: 'done' })}
+          onBack={canGoBack(session) ? () => dispatch({ type: 'back' }) : undefined}
+          onSkip={() => dispatch({ type: 'skip' })}
+          onExit={() => setExiting(true)}
+        />
+        {exitDialog}
+      </>
+    );
   }
 
   if (recording) {
@@ -331,17 +369,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         now={now}
       />
 
-      <Dialog
-        open={exiting}
-        onOpenChange={setExiting}
-        title="Закончить тренировку?"
-        description="Выполненные подходы сохранятся"
-        confirmLabel="Закончить"
-        onConfirm={() => {
-          setExiting(false);
-          dispatch({ type: 'finishNow' });
-        }}
-      />
+      {exitDialog}
     </>
   );
 }

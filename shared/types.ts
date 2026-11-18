@@ -540,6 +540,16 @@ export interface SessionStepResult {
   endedAt?: number;
 }
 
+/** Ответ спортсмена на шаг-заметку */
+export interface NoteAnswer {
+  /** Индекс блока-заметки в структуре тренировки */
+  blockIndex: number;
+  /** Заголовок заметки на момент тренировки */
+  title: string;
+  /** Ответ спортсмена, до 1000 знаков */
+  text: string;
+}
+
 /** Итог выполненной тренировки: POST /api/workouts/:id/sessions */
 export interface SessionResult {
   /** День плана, «2026-11-03» */
@@ -552,6 +562,8 @@ export interface SessionResult {
   feeling?: number;
   /** Комментарий ко всей тренировке, необязательный */
   comment?: string;
+  /** Ответы спортсмена на шаги-заметки; пустые не пишутся. Нет — ответов нет или старый клиент. */
+  answers?: NoteAnswer[];
   /** Ключ против дубликата (uuid): повторная отправка того же итога возвращает уже созданный */
   key?: string;
 }
@@ -702,6 +714,8 @@ export interface SessionReviewResponse {
   feelingLabel: string | null;
   /** Комментарий спортсмена ко всей тренировке из «Обратной связи» */
   feedbackComment: string | null;
+  /** Ответы спортсмена на шаги-заметки; пусто, если заметок не было */
+  answers: NoteAnswer[];
   volumeKg: number;
   /** ISO-время разбора; null — ждёт разбора */
   reviewedAt: string | null;

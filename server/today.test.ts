@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { CommitBlock, SessionStepResult } from '../shared/types';
+import type { Block, CommitBlock, SessionStepResult } from '../shared/types';
 import { createUser } from './auth';
 import { openDb, type Db } from './db';
 import { createExercise } from './exercises';
@@ -7,7 +7,7 @@ import { applyImport } from './imports';
 import { createRoutine } from './routines';
 import { pausePlan, skipEntry } from './schedule';
 import { planOf } from './plan';
-import { addDays, streakWeeks, todayOf, userNameOf, weekStart } from './today';
+import { addDays, modeLabel, streakWeeks, todayOf, userNameOf, weekStart } from './today';
 import { saveSession } from './workouts';
 
 let db: Db;
@@ -272,5 +272,17 @@ describe('todayOf: разминка по ссылке', () => {
     db.prepare('UPDATE workouts SET warmup_routine_id = (SELECT id FROM routines)').run();
     const after = todayOf(db, me, TODAY);
     expect(JSON.stringify(after)).toContain('"minutes":25');
+  });
+});
+
+describe('modeLabel', () => {
+  const note: Block = { id: 'n', mode: 'note', title: 'Тест', text: 'Есть боль?' };
+  const sets: Block = { id: 's', mode: 'sets', title: 'Силовая', restSec: 60, videoRounds: [], exercises: [] };
+  it('блок-заметка подпись не меняет', () => {
+    expect(modeLabel([note, sets])).toBe('Подходами');
+    expect(modeLabel([sets, note])).toBe('Подходами');
+  });
+  it('одни заметки: подписи нет', () => {
+    expect(modeLabel([note])).toBe('');
   });
 });

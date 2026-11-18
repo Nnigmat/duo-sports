@@ -182,6 +182,39 @@ describe('база, созданная до структуры', () => {
   });
 });
 
+describe('ответы на шаги-заметки', () => {
+  const answers = [{ blockIndex: 2, title: 'Тест большого пальца', text: 'Боли нет' }];
+  it('validateSession: ответы принимаются, нет поля — тоже', () => {
+    expect(validateSession(result({ answers })).ok).toBe(true);
+    expect(validateSession(result()).ok).toBe(true);
+    expect(validateSession(result({ answers: [] })).ok).toBe(true);
+  });
+  it('server: rejects answer over 1000', () => {
+    expect(validateSession(result({ answers: [{ ...answers[0]!, text: 'я'.repeat(1000) }] })).ok).toBe(true);
+    expect(validateSession(result({ answers: [{ ...answers[0]!, text: 'я'.repeat(1001) }] })).ok).toBe(false);
+  });
+  it('validateSession: неверная форма ответа отклоняется', () => {
+    const bad = (a: unknown) => validateSession(result({ answers: a as never })).ok;
+    expect(bad('x')).toBe(false);
+    expect(bad([{ blockIndex: 'a', title: 't', text: 'x' }])).toBe(false);
+    expect(bad([{ blockIndex: 1.5, title: 't', text: 'x' }])).toBe(false);
+    expect(bad([{ blockIndex: 1, title: 5, text: 'x' }])).toBe(false);
+    expect(bad([{ blockIndex: 1, title: 't' }])).toBe(false);
+    expect(bad(Array.from({ length: 101 }, () => answers[0]))).toBe(false);
+  });
+  it('ответы записываются в итог; пустые не пишутся', () => {
+    applyImport(db, me, commit(), clock);
+    saveSession(db, me, workoutId(), result({ answers: [...answers, { blockIndex: 3, title: 'Пусто', text: '   ' }] }), clock);
+    const row = db.prepare('SELECT answers FROM sessions_done').get() as { answers: string };
+    expect(JSON.parse(row.answers)).toEqual(answers);
+  });
+  it('без ответов колонка пуста', () => {
+    applyImport(db, me, commit(), clock);
+    saveSession(db, me, workoutId(), result(), clock);
+    expect(db.prepare('SELECT answers FROM sessions_done').get()).toEqual({ answers: null });
+  });
+});
+
 describe('durationSec', () => {
   const base = { date: '2026-11-03', videos: 0, steps: [{ exerciseId: 'a', exerciseName: 'A', blockIndex: 0, round: 1, rounds: 1, kind: 'reps', plan: { target: { min: 1, max: 1 } }, completed: true }] };
   it('необязательное число секунд от 0 до суток', () => {

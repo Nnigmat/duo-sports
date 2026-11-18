@@ -5,8 +5,7 @@ export interface Step {
   blockIndex: number;
   blockId: string;
   blockTitle: string;
-  /** Блок-заметка шагов не даёт, пока Task 5 не сделает из неё шаг */
-  mode: Exclude<Block['mode'], 'note'>;
+  mode: Block['mode'];
   exerciseId: string;
   exerciseName: string;
   kind: Exercise['kind'];
@@ -28,6 +27,8 @@ export interface Step {
   sides?: [string, string];
   /** Заметка к упражнению: показывается под названием */
   note?: string;
+  /** Шаг-заметка (mode 'note'): заголовок и текст блока. Не путать с `note` — заметкой упражнения. */
+  noteStep?: { title: string; text: string };
   /** Что стояло в плане, если упражнение заменили по ходу тренировки */
   replaced?: { id: string; name: string };
 }
@@ -45,7 +46,7 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
     blockIndex,
     blockId: block.id,
     blockTitle: block.title,
-    mode: block.mode as Draft['mode'],
+    mode: block.mode,
     exerciseId: e.id,
     exerciseName: e.name,
     kind: e.kind,
@@ -74,7 +75,23 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
         block.exercises.map((e) => make(e, r + 1, block.rounds)),
       ).flat();
     case 'note':
-      return [];
+      // Шаг-заметка не подход: упражнения нет, записи и отдыха нет; в exerciseName заголовок, чтобы любой список шагов был читаем
+      return [
+        {
+          blockIndex,
+          blockId: block.id,
+          blockTitle: block.title,
+          mode: 'note',
+          exerciseId: block.id,
+          exerciseName: block.title,
+          kind: 'reps',
+          plan: { target: { min: 0, max: 0 } },
+          round: 1,
+          rounds: 1,
+          record: false,
+          noteStep: { title: block.title, text: block.text },
+        },
+      ];
   }
 }
 
@@ -89,6 +106,7 @@ function restOf(block: Block, draft: Draft, index: number, count: number): numbe
       return block.restAfter === 'round' && (index + 1) % perRound !== 0 ? 0 : block.restSec;
     }
     default:
+      // timed и note: отдыха нет
       return 0;
   }
 }
@@ -99,7 +117,7 @@ export function buildSteps(blocks: Block[]): Step[] {
     const drafts = draftsOf(block, blockIndex);
     // Перед заминкой отдых есть и после последнего шага: человек сам нажимает «Начать»
     const following = blocks[blockIndex + 1];
-    const beforeCooldown = following?.mode === 'timed' && following.kind === 'cooldown';
+    const beforeCooldown = block.mode !== 'note' && following?.mode === 'timed' && following.kind === 'cooldown';
     return drafts.map((d, i) => ({
       ...d,
       indexInBlock: i + 1,

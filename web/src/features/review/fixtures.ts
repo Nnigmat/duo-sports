@@ -53,6 +53,7 @@ export const reviewFixture: SessionReviewResponse = {
   feeling: 4,
   feelingLabel: 'Хорошо',
   feedbackComment: 'Колено после третьего подхода ныло, но терпимо.',
+  answers: [],
   volumeKg: 5840,
   reviewedAt: '2026-11-01T19:40:00',
   trainerCommentCount: 4,
@@ -65,6 +66,15 @@ export const reviewFixture: SessionReviewResponse = {
     title: 'Ноги и ягодицы',
     hints: [{ exerciseName: 'Приседания со штангой', detail: `82,5${NB}кг`, text: 'Разминочные подходы — с паузой внизу. Колени над стопами.' }],
   },
+};
+
+/** Разбор с ответами спортсмена на шаги-заметки */
+export const reviewAnswersFixture: SessionReviewResponse = {
+  ...reviewFixture,
+  answers: [
+    { blockIndex: 0, title: 'Тест большого пальца', text: 'Боли нет, сгибается до конца.' },
+    { blockIndex: 3, title: 'Как колено после приседаний', text: 'Тянет с внутренней стороны,\nна третьем подходе стало заметнее.' },
+  ],
 };
 
 export const reviewPendingFixture: SessionReviewResponse = {

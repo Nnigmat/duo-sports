@@ -1,4 +1,4 @@
-import type { SessionStepResult, SetActual } from '../../../../../shared/types';
+import type { NoteAnswer, SessionStepResult, SetActual } from '../../../../../shared/types';
 import type { Step } from './buildSteps';
 import { formatElapsed } from './elapsed';
 import type { StepTime } from './session';
@@ -11,7 +11,7 @@ export interface FinishStats {
 
 /** Итоги тренировки. `completed[i]` — выполнен ли шаг i; разминка и заминка в подходы не входят. */
 export function finishStats(steps: Step[], completed: boolean[], videos: number): FinishStats {
-  const sets = steps.map((s, i) => ({ s, done: completed[i] })).filter(({ s }) => s.mode !== 'timed');
+  const sets = steps.map((s, i) => ({ s, done: completed[i] })).filter(({ s }) => s.mode !== 'timed' && s.mode !== 'note');
   return {
     setsDone: sets.filter((x) => x.done).length,
     setsTotal: sets.length,
@@ -28,7 +28,8 @@ export function sessionSteps(
   actuals: Array<SetActual | null> = [],
   times: Array<StepTime | null> = [],
 ): SessionStepResult[] {
-  return steps.map((s, i) => ({
+  // Шаг-заметка не подход: в итог не идёт, а индексы массивов считаются по полному списку шагов
+  return steps.flatMap((s, i): SessionStepResult[] => s.mode === 'note' ? [] : [{
     exerciseId: s.exerciseId,
     exerciseName: s.exerciseName,
     blockIndex: s.blockIndex,
@@ -42,7 +43,15 @@ export function sessionSteps(
     ...(videoIds[i] ? { videoId: videoIds[i]! } : {}),
     ...(restSec[i] != null ? { restSec: restSec[i]! } : {}),
     ...(completed[i] && times[i] ? { startedAt: times[i]!.startedAt, endedAt: times[i]!.endedAt } : {}),
-  }));
+  }]);
+}
+
+/** Ответы на заметки: только выполненные шаги и непустой текст; пропущенную заметку ответом не считаем */
+export function sessionAnswers(steps: Step[], completed: boolean[], answers: Record<number, string>): NoteAnswer[] {
+  return steps.flatMap((s, i): NoteAnswer[] => {
+    const text = answers[i]?.trim();
+    return s.noteStep && completed[i] && text ? [{ blockIndex: s.blockIndex, title: s.noteStep.title, text }] : [];
+  });
 }
 
 export interface FinishStat {

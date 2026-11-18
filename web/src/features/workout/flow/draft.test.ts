@@ -28,6 +28,18 @@ describe('draft', () => {
     expect(parseDraft(serializeDraft(withRest), NOW)?.session.restSec[2]).toBe(72);
   });
 
+  it('ответы на заметки переживают перезагрузку; в старом черновике их нет — это допустимо', () => {
+    const withAnswers = { ...draft, session: { ...draft.session, answers: { 3: 'Боли нет' } } };
+    expect(parseDraft(serializeDraft(withAnswers), NOW)?.session.answers).toEqual({ 3: 'Боли нет' });
+    const { answers: _omit, ...old } = draft.session;
+    expect(parseDraft(serializeDraft({ ...draft, session: old as typeof draft.session }), NOW)?.session.answers).toEqual({});
+  });
+
+  it('ответ не строка — черновик негоден', () => {
+    const bad = { ...draft, session: { ...draft.session, answers: { 3: 5 } } };
+    expect(parseDraft(JSON.stringify(bad), NOW)).toBeNull();
+  });
+
   it('возвращает то, что сохранили', () => {
     expect(parseDraft(serializeDraft(draft), NOW)).toEqual(draft);
   });

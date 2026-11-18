@@ -70,6 +70,22 @@ export function ReviewDetail({ today, athleteName, review, movedFrom, past, vide
         </section>
       )}
 
+      {review.answers.length > 0 && (
+        <section className={styles.feedback} aria-labelledby="answers-title">
+          <Text variant="eyebrow" tag="h3" id="answers-title">
+            Ответы
+          </Text>
+          <ul className={styles.answers}>
+            {review.answers.map((a) => (
+              <li key={`${a.blockIndex}:${a.title}`} className={styles.field}>
+                <span className={styles.noteHead}>{a.title}</span>
+                <span className={styles.answerText}>{a.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {review.general.length > 0 && (
         <ul className={styles.thread} aria-label="Комментарии ко всей тренировке">
           {review.general.map((c) => (
