@@ -106,7 +106,7 @@ export const Thumbs: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     const bench = c.getByRole('button', { name: /^Видео техники: Жим лёжа/ });
-    await expect(bench.querySelector('video')).not.toBeNull();
+    await waitFor(() => expect(bench.querySelector('video')).not.toBeNull());
     await expect(c.getByRole('button', { name: /^Видео техники: Жим узкий/ })).toHaveTextContent('Нет видео');
   },
 };

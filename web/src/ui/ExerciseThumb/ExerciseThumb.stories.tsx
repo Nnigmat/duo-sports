@@ -20,7 +20,7 @@ export const WithVideo: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     const thumb = c.getByRole('button', { name: /^Видео техники: Жим лёжа/ });
-    expect(thumb.querySelector('video')).not.toBeNull();
+    await waitFor(() => expect(thumb.querySelector('video')).not.toBeNull());
     await userEvent.click(thumb);
     const sheet = await screen.findByRole('dialog', { name: 'Жим лёжа' });
     expect(sheet.querySelector('video')).not.toBeNull();
@@ -45,5 +45,24 @@ export const BrokenFile: Story = {
     const video = c.getByRole('button', { name: /^Видео техники: Жим лёжа/ }).querySelector('video');
     if (video) fireEvent.error(video);
     await waitFor(() => expect(c.getByText('Нет видео')).toBeVisible());
+  },
+};
+
+// В окне выбора вся библиотека: ролики грузятся только у строк рядом с экраном
+export const LazyInList: Story = {
+  render: () => (
+    <div data-testid="list" style={{ height: 200, overflow: 'auto' }}>
+      {Array.from({ length: 40 }, (_, i) => (
+        <div key={i} style={{ height: 56 }}>
+          <ExerciseThumb name={`Упражнение ${i + 1}`} file={REAL} />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const list = within(canvasElement).getByTestId('list');
+    await waitFor(() => expect(list.querySelectorAll('video').length).toBeGreaterThan(0));
+    expect(list.querySelectorAll('video').length).toBeLessThan(20);
+    expect(within(list).queryAllByText('Нет видео')).toHaveLength(0);
   },
 };

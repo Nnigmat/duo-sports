@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from '../../shared/useMediaQuery';
 import { Icon } from '../Icon/Icon';
 import { Sheet } from '../Sheet/Sheet';
@@ -17,9 +17,21 @@ export function ExerciseThumb({ name, file }: Props) {
   const [open, setOpen] = useState(false);
   const [broken, setBroken] = useState<string | null>(null);
   const src = file && broken !== file ? `/api/demo/${file}` : undefined;
+  // В окне выбора вся библиотека: кадр грузим, только когда строка рядом с экраном
+  const ref = useRef<HTMLButtonElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near || !src) return;
+    if (typeof IntersectionObserver === 'undefined') return setNear(true);
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setNear(true), { rootMargin: '200px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near, src]);
   return (
     <>
       <button
+        ref={ref}
         type="button"
         className={styles.thumb}
         onClick={(e) => {
@@ -28,7 +40,9 @@ export function ExerciseThumb({ name, file }: Props) {
         }}
       >
         <span className={styles.srOnly}>{`Видео техники: ${name}`}</span>
-        {src ? (
+        {src && !near ? (
+          <Icon name="video" size={20} />
+        ) : src ? (
           <video className={styles.frame} src={`${src}#t=0.1`} muted playsInline preload="metadata" aria-hidden onError={() => setBroken(file ?? null)} />
         ) : (
           <span className={styles.empty}>
