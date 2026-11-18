@@ -60,21 +60,34 @@ type Field = (typeof EXERCISE_FIELDS)[number];
 const isField = (f: string | undefined): f is Field => (EXERCISE_FIELDS as readonly string[]).includes(f ?? '');
 
 const show = (v: unknown) => (Array.isArray(v) ? v.join(', ') : String(v));
-const loadText = (e: AgentExercise) => (['reps', 'time_sec', 'weight_kg'] as const).filter((f) => e[f] !== undefined).map((f) => `${f}: ${show(e[f])}`).join(', ');
+/** Что написал агент для пометки: пустого текста и «undefined» тренер не видит */
+const NO_LOAD = 'нагрузки нет';
+const shown = (v: unknown) => (v === undefined || show(v) === '' ? NO_LOAD : show(v));
+const loadText = (e: AgentExercise) => (['reps', 'time_sec', 'weight_kg'] as const).filter((f) => e[f] !== undefined).map((f) => `${f}: ${show(e[f])}`).join(', ') || NO_LOAD;
+const isRest = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+/** Путь ошибки тренировки целиком: так разбор отвечает на тренировку без title */
+const isWorkoutPath = (p: ParseIssue['path']) => p?.length === 2 && p[0] === 'workouts' && p[1] === 0;
 
 /**
  * Ответ агента и ошибки его разбора → исправленный ответ, пометки и «Не разобрал».
  * library — тип упражнения для нагрузки по умолчанию (как при ручном добавлении: reps 10 или 30 секунд).
  * prior — пометки прошлого круга по индексам w: они остаются у своих упражнений, у упражнения одна пометка.
+ * askedTitle — название из запроса тренера: им заменяется пустое название ответа.
  */
 export function repairAgentWorkout(
   raw: AgentWorkout,
   issues: ParseIssue[],
   library: LibraryEntry[],
   prior: DraftMark[] = [],
+  askedTitle = '',
 ): { workout: AgentWorkout; marks: DraftMark[]; unparsed: Unparsed[] } {
   const w = structuredClone(compactAgentWorkout(raw)) as AgentWorkout;
   const unparsed: Unparsed[] = [];
+  if (!w.title?.trim() && issues.some((i) => isWorkoutPath(i.path))) {
+    const asked = askedTitle.trim();
+    w.title = asked || 'Тренировка';
+    unparsed.push({ what: `Название: ${w.title}`, message: `Агент не дал название тренировки — поставлено ${asked ? 'из запроса' : 'по умолчанию'}` });
+  }
   const marks: Array<Array<DraftMark | undefined>> = w.blocks.map((b) => b.exercises.map(() => undefined));
   for (const m of prior) {
     const row = marks[m.blockIndex];
@@ -118,6 +131,19 @@ export function repairAgentWorkout(
     } else if (at.at === 'block') {
       const b = w.blocks[at.block] as unknown as Record<string, unknown> | undefined;
       if (!b || dropBlock.has(at.block)) continue;
+      const block = w.blocks[at.block]!;
+      if (at.field === 'exercises' && block.type === 'note' && block.exercises.length) {
+        // Упражнения в заметке лишние: заметка остаётся, их имена — в «Не разобрал»
+        unparsed.push({ what: block.exercises.map((e) => nameOf(e.exercise_id)).join(', '), message: issue.message });
+        block.exercises = [];
+        continue;
+      }
+      if (at.field === 'rest_sec' && block.type === 'sets' && isRest(block.rest_sec)) {
+        // Привычка v1: отдых у блока sets — значение тренера переезжает к упражнениям без своего отдыха
+        for (const e of block.exercises) e.rest_sec ??= block.rest_sec;
+        delete block.rest_sec;
+        continue;
+      }
       if (at.field && BLOCK_SOFT.includes(at.field) && b[at.field] !== undefined) {
         const key = `${at.block}:${at.field}`;
         if (removedFields.has(key)) continue;
@@ -127,7 +153,6 @@ export function repairAgentWorkout(
         continue;
       }
       dropBlock.add(at.block);
-      const block = w.blocks[at.block]!;
       const names = block.exercises.map((e) => nameOf(e.exercise_id));
       unparsed.push({ what: names.length ? names.join(', ') : (block.title ?? block.type), message: issue.message });
     }
@@ -151,7 +176,7 @@ export function repairAgentWorkout(
       delete e.notes;
       continue;
     }
-    const wrote = at.field ? show(e[at.field]) : loadText(e);
+    const wrote = at.field ? shown(e[at.field]) : loadText(e);
     const field = at.field ?? 'load';
     const seen = touched.get(e);
     if (!seen) touched.set(e, { block: at.block, exercise: at.exercise, field, wrote, message: issue.message, ...(field === 'weight_kg' ? { weight: wrote } : {}) });
@@ -225,13 +250,14 @@ export function repairAndParse(
   issues: ParseIssue[],
   ctx: ParseContext,
   date: string,
+  askedTitle = '',
 ): { ok: true; parsed: ParsedImport; workout: AgentWorkout; marks: DraftMark[]; unparsed: Unparsed[] } | { ok: false } {
   let w = start;
   let left = issues;
   let marks: DraftMark[] = [];
   const unparsed: Unparsed[] = [];
   for (let round = 0; round < REPAIR_ROUNDS; round++) {
-    const r = repairAgentWorkout(w, left, ctx.library, marks);
+    const r = repairAgentWorkout(w, left, ctx.library, marks, askedTitle);
     if (JSON.stringify(r.workout) === JSON.stringify(compactAgentWorkout(w))) break;
     w = r.workout;
     marks = r.marks;

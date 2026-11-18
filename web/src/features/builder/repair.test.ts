@@ -244,3 +244,45 @@ describe('repairAgentWorkout', () => {
     expect(repairAndParse(w, issuesOf(w), ctx, DATE)).toEqual({ ok: false });
   });
 });
+
+describe('ремонт: заметка, отдых блока, название, пустая нагрузка', () => {
+  const note = { type: 'note' as const, title: 'Тест', text: 'Есть ли боль' };
+
+  it('note block with stray exercises keeps title and text, names go to unparsed', () => {
+    const r = repaired(agent({ blocks: [{ type: 'sets', exercises: [dips] }, { ...note, exercises: [{ exercise_id: 'dips', reps: '1' }, { exercise_id: 'bench-press', reps: '1' }] }] }));
+    expect(r.workout.blocks).toEqual([{ type: 'sets', exercises: [dips] }, { ...note, exercises: [] }]);
+    expect(r.unparsed).toEqual([{ what: 'Отжимания на брусьях, Жим лёжа', message: 'Незнакомое поле: exercises' }]);
+    expect(r.marks).toEqual([]);
+  });
+
+  it('rest_sec on a sets block moves to its exercises without own rest', () => {
+    const r = repaired(agent({ blocks: [{ type: 'sets', rest_sec: 120, exercises: [dips, { ...dips, rest_sec: 60 }] }] }));
+    expect(r.workout.blocks).toEqual([{ type: 'sets', exercises: [{ ...dips, rest_sec: 120 }, { ...dips, rest_sec: 60 }] }]);
+    expect(r.unparsed).toEqual([]);
+    expect(r.marks).toEqual([]);
+  });
+
+  it('empty title gets the requested one, else «Тренировка», and says so', () => {
+    const w = agent({ title: '', blocks: [{ type: 'sets', exercises: [dips] }] });
+    const asked = repairAndParse(w, issuesOf(w), ctx, DATE, 'Верх');
+    if (!asked.ok) throw new Error('ремонт не сошёлся');
+    expect(asked.workout.title).toBe('Верх');
+    expect(asked.unparsed).toEqual([{ what: 'Название: Верх', message: 'Агент не дал название тренировки — поставлено из запроса' }]);
+    const none = repaired(w);
+    expect(none.workout.title).toBe('Тренировка');
+    expect(none.unparsed).toEqual([{ what: 'Название: Тренировка', message: 'Агент не дал название тренировки — поставлено по умолчанию' }]);
+    expect(none.parsed.workouts[0]!.title).toBe('Тренировка');
+  });
+
+  it('mark of an exercise without any load says «нагрузки нет»', () => {
+    const r = repair(agent({ blocks: [{ type: 'sets', exercises: [{ exercise_id: 'dips', sets: 3 }] }] }));
+    expect(r.marks).toEqual([{ blockIndex: 0, exerciseIndex: 0, field: 'load', wrote: 'нагрузки нет', message: 'У упражнения нет нагрузки' }]);
+    expect(r.workout.blocks[0]!.exercises[0]).toEqual({ exercise_id: 'dips', sets: 3, reps: '10' });
+  });
+
+  it('mark never says undefined when the field is missing', () => {
+    const issue: ParseIssue = { message: 'Не понимаю reps', path: ['workouts', 0, 'blocks', 1, 'exercises', 0, 'reps'] };
+    const r = repairAgentWorkout(agent({ blocks: [{ type: 'sets', exercises: [{ exercise_id: 'dips', sets: 3, time_sec: 40 }] }] }), [issue], library);
+    expect(r.marks[0]!.wrote).toBe('нагрузки нет');
+  });
+});
