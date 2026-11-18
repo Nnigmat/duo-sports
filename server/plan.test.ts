@@ -209,7 +209,7 @@ describe('estimateMinutes по структуре', () => {
     expect(timedMax).toBe(repsMax);
   });
   it('у упражнения подходов свой отдых вместо отдыха блока', () => {
-    const mk = (extra: Partial<Exercise>): Block[] => [{ id: 'a', mode: 'sets', title: 'С', restSec: 60, videoRounds: [], exercises: [{ ...ex('x', 15), sets: 10, ...extra }] }];
+    const mk = (extra: { restSec?: number }): Block[] => [{ id: 'a', mode: 'sets', title: 'С', restSec: 60, videoRounds: [], exercises: [{ ...ex('x', 15), sets: 10, ...extra }] }];
     // 10 × (60 + 60) + 20 = 1220 с → 20 мин; 10 × (60 + 180) + 20 = 2420 с → 40 мин
     expect(estimateMinutes([], mk({}))).toBe(20);
     expect(estimateMinutes([], mk({ restSec: 180 }))).toBe(40);
