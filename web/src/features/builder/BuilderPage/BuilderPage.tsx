@@ -15,6 +15,7 @@ import { buildWorkout } from '../build';
 import { BuilderInputView } from '../BuilderInputView/BuilderInputView';
 import { BuilderReviewView } from '../BuilderReviewView/BuilderReviewView';
 import { BUILDER_VERSION, builderKey, clearBuilder, loadBuilder, saveBuilder } from '../storage';
+import { canSave } from '../draftOps';
 import { draftToCommit } from '../toCommit';
 import { EMPTY_INPUT, toRequest, type BuilderDraft, type BuilderInput } from '../types';
 
@@ -143,7 +144,7 @@ function Builder({ storageKey, athleteId, date, ctx, library, apiBase, planHref,
   }
 
   async function save() {
-    if (!draft) return;
+    if (!draft || !canSave(draft)) return;
     const check = draftToCommit(draft, ctx);
     if (!check.ok) return setProblems(check.problems);
     setProblems([]);

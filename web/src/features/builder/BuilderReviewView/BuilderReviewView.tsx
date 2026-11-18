@@ -6,8 +6,9 @@ import type { ParseContext } from '../../import/parse';
 import { WorkoutEditView } from '../../trainer/WorkoutEditPage/WorkoutEditView';
 import { AdviceList } from '../AdviceList/AdviceList';
 import {
-  applyAdvice, createExercise, dismissAdvice, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine,
+  applyAdvice, canSave, clearMarkOnChange, createExercise, dismissAdvice, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine,
 } from '../draftOps';
+import { UnparsedList } from '../UnparsedList/UnparsedList';
 import { NewExerciseSheet } from '../NewExerciseSheet/NewExerciseSheet';
 import { NewRoutineCard } from '../NewRoutineCard/NewRoutineCard';
 import type { BuilderDraft, RoutinePick } from '../types';
@@ -31,6 +32,9 @@ type Props = {
 
 /** Проверка собранной тренировки: форма редактора с новыми упражнениями, новой разминкой и заметками агента. */
 export function BuilderReviewView({ draft, library, routines, saving, problems, failure, onDraft, onSave, onRebuild, restoredAt, onReset }: Props) {
+  // Любая правка черновика сперва снимает пометки у упражнений, чья нагрузка изменилась или которых больше нет
+  const update = (next: BuilderDraft) => onDraft(clearMarkOnChange(next, draft.blocks, next.blocks));
+  const left = Object.keys(draft.marks).length;
   const [open, setOpen] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const newNames = useMemo(() => new Set(draft.newExercises.map((e) => e.name)), [draft.newExercises]);
@@ -43,11 +47,11 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
         <NewRoutineCard
           label={label}
           pick={pick}
-          onRename={(t) => onDraft(renameRoutine(draft, which, t))}
-          onSec={(i, sec) => onDraft(patchRoutineItem(draft, which, i, sec))}
-          onMove={(i, d) => onDraft(moveRoutineItem(draft, which, i, d))}
-          onRemove={(i) => onDraft(removeRoutineItem(draft, which, i))}
-          onDrop={() => onDraft(pruneNew(setRoutine(draft, which, { kind: 'none' })))}
+          onRename={(t) => update(renameRoutine(draft, which, t))}
+          onSec={(i, sec) => update(patchRoutineItem(draft, which, i, sec))}
+          onMove={(i, d) => update(moveRoutineItem(draft, which, i, d))}
+          onRemove={(i) => update(removeRoutineItem(draft, which, i))}
+          onDrop={() => update(pruneNew(setRoutine(draft, which, { kind: 'none' })))}
           newNames={newNames}
           onOpenNew={setOpen}
         />
@@ -94,7 +98,8 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
           </div>
         </Card>
       )}
-      <AdviceList advice={draft.advice} onApply={(id) => onDraft(applyAdvice(draft, id, library))} onDismiss={(id) => onDraft(dismissAdvice(draft, id))} />
+      <UnparsedList items={draft.unparsed} />
+      <AdviceList advice={draft.advice} onApply={(id) => update(applyAdvice(draft, id, library))} onDismiss={(id) => update(dismissAdvice(draft, id))} />
     </>
   );
 
@@ -109,18 +114,20 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
         issues={problems}
         failure={failure}
         notes={draft.notes ?? ''}
-        onNotes={(notes) => onDraft({ ...draft, notes })}
-        onTitle={(title) => onDraft({ ...draft, title })}
-        onBlocks={(blocks) => onDraft(pruneNew({ ...draft, blocks }))}
+        onNotes={(notes) => update({ ...draft, notes })}
+        onTitle={(title) => update({ ...draft, title })}
+        onBlocks={(blocks) => update(pruneNew({ ...draft, blocks }))}
         onSave={onSave}
         onCancel={() => setConfirm(true)}
         cancelLabel="Пересобрать"
         newNames={newNames}
         onOpenNew={setOpen}
         onCreateExercise={(blockId, name) => {
-          onDraft(createExercise(draft, blockId, name));
+          update(createExercise(draft, blockId, name));
           setOpen(name.trim());
         }}
+        marks={draft.marks}
+        saveBlocked={canSave(draft) ? undefined : `Осталось проверить: ${left}`}
         topSlot={top}
         warmupSlot={slot('warmup', draft.warmup)}
         cooldownSlot={slot('cooldown', draft.cooldown)}
@@ -129,16 +136,16 @@ export function BuilderReviewView({ draft, library, routines, saving, problems, 
         exercise={opened}
         onChange={(patch) => {
           if (!opened) return;
-          onDraft(patchNewExercise(draft, opened.name, patch));
+          update(patchNewExercise(draft, opened.name, patch));
           if (patch.name) setOpen(patch.name);
         }}
         onUseSimilar={() => {
           const to = library.find((l) => l.name === opened?.similar);
-          if (opened && to) onDraft(replaceExercise(draft, opened.name, to));
+          if (opened && to) update(replaceExercise(draft, opened.name, to));
           setOpen(null);
         }}
         onRemove={() => {
-          if (opened) onDraft(removeNew(draft, opened.name));
+          if (opened) update(removeNew(draft, opened.name));
           setOpen(null);
         }}
         onClose={() => setOpen(null)}

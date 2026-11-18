@@ -157,6 +157,23 @@ describe('repairAgentWorkout', () => {
     const r = repaired(agent({ blocks: [{ type: 'timed', exercises: [{ exercise_id: 'arm-circles', reps: '20', notes: 'Медленно' }] }] }));
     expect(r.workout.blocks[0]!.exercises[0]).toEqual({ exercise_id: 'arm-circles', time_sec: 30 });
     expect(r.marks).toHaveLength(1);
+    expect(r.marks[0]).not.toMatchObject({ field: 'notes' });
+  });
+
+  it('notes removed from a timed exercise go to unparsed, not to a mark', () => {
+    const r = repaired(agent({ blocks: [{ type: 'timed', exercises: [{ exercise_id: 'arm-circles', time_sec: 30, notes: 'Медленно' }] }] }));
+    expect(r.workout.blocks[0]!.exercises[0]).toEqual({ exercise_id: 'arm-circles', time_sec: 30 });
+    expect(r.marks).toEqual([]);
+    expect(r.unparsed).toHaveLength(1);
+    expect(r.unparsed[0]!.what).toBe('Заметка к «Вращение руками»: Медленно');
+  });
+
+  it('dropped weight is kept in the mark text when the default load is time', () => {
+    const w = agent({ blocks: [{ type: 'sets', exercises: [{ exercise_id: 'arm-circles', sets: 3, time_sec: 'до отказа' as unknown as number, weight_kg: 8 }] }] });
+    const r = repaired(w);
+    expect(r.workout.blocks[0]!.exercises[0]).toEqual({ exercise_id: 'arm-circles', sets: 3, time_sec: 30 });
+    expect(r.marks).toHaveLength(1);
+    expect(r.marks[0]!.wrote).toBe('до отказа, 8 кг');
   });
 
   it('unknown exercise goes to unparsed', () => {

@@ -134,7 +134,7 @@ export function repairAgentWorkout(
   }
 
   const dropEx = new Set<AgentExercise>();
-  const touched = new Map<AgentExercise, { block: number; exercise: number; field: string; wrote: string; message: string }>();
+  const touched = new Map<AgentExercise, { block: number; exercise: number; field: string; wrote: string; message: string; weight?: string }>();
   for (const { issue, at } of located) {
     if (at.at !== 'exercise' || dropBlock.has(at.block)) continue;
     const e = w.blocks[at.block]?.exercises[at.exercise];
@@ -145,8 +145,21 @@ export function repairAgentWorkout(
       continue;
     }
     if (at.field !== undefined && !isField(at.field)) continue;
+    if (at.field === 'notes') {
+      // Заметка не нагрузка: убирается в «Не разобрал» и не блокирует сохранение
+      unparsed.push({ what: `Заметка к «${nameOf(e.exercise_id)}»: ${show(e.notes)}`, message: issue.message });
+      delete e.notes;
+      continue;
+    }
     const wrote = at.field ? show(e[at.field]) : loadText(e);
-    if (!touched.has(e)) touched.set(e, { block: at.block, exercise: at.exercise, field: at.field ?? 'load', wrote, message: issue.message });
+    const field = at.field ?? 'load';
+    const seen = touched.get(e);
+    if (!seen) touched.set(e, { block: at.block, exercise: at.exercise, field, wrote, message: issue.message, ...(field === 'weight_kg' ? { weight: wrote } : {}) });
+    else if (field === 'weight_kg') seen.weight ??= wrote;
+    else if (seen.field === 'weight_kg') {
+      // Пометка про главное: про вес достаточно приписки к ней
+      Object.assign(seen, { field, wrote, message: issue.message });
+    }
     if (at.field) delete e[at.field];
     else if (e.reps !== undefined && e.time_sec !== undefined) {
       // Две нагрузки: остаётся та, что по типу упражнения
@@ -161,9 +174,12 @@ export function repairAgentWorkout(
       if (kindOf(e.exercise_id, w.blocks[t.block]!.type === 'timed') === 'time') e.time_sec = 30;
       else e.reps = '10';
     }
+    // Вес к времени не бывает: он уходит из ответа, но остаётся в тексте пометки
+    const weight = t.weight ?? (e.reps === undefined && e.weight_kg !== undefined ? show(e.weight_kg) : undefined);
+    const wrote = weight !== undefined && t.field !== 'weight_kg' ? `${t.wrote}, ${weight} кг` : t.wrote;
     if (e.reps === undefined) delete e.weight_kg;
     const row = marks[t.block]!;
-    row[t.exercise] ??= { blockIndex: t.block, exerciseIndex: t.exercise, field: t.field, wrote: t.wrote, message: t.message };
+    row[t.exercise] ??= { blockIndex: t.block, exerciseIndex: t.exercise, field: t.field, wrote, message: t.message };
   }
 
   // Удаления: упражнения со ссылкой на убранное новое, опустевшие блоки и наборы

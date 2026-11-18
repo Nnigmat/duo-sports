@@ -124,3 +124,24 @@ export function removeNew(d: BuilderDraft, name: string): BuilderDraft {
     advice: d.advice.filter((a) => a.exercise !== name),
   };
 }
+
+/** Что у упражнения считается нагрузкой: заметка и название сюда не входят */
+const loadKey = (e: Exercise): string => {
+  const x = e as Exercise & { sets?: number; restSec?: number };
+  return JSON.stringify([x.kind, x.target, x.weight, x.sets, x.restSec, x.sides]);
+};
+
+/**
+ * Пометка снимается, когда у упражнения изменилась нагрузка (вид, цель, вес, подходы, отдых, стороны) или оно убрано.
+ * Ключ пометки — id упражнения, поэтому правки других упражнений и перестановки её не задевают.
+ */
+export function clearMarkOnChange(d: BuilderDraft, before: Block[], after: Block[]): BuilderDraft {
+  if (Object.keys(d.marks).length === 0) return d;
+  const was = new Map(before.flatMap((b) => exercisesOf(b).map((e) => [e.id, loadKey(e)] as const)));
+  const now = new Map(after.flatMap((b) => exercisesOf(b).map((e) => [e.id, loadKey(e)] as const)));
+  const kept = Object.entries(d.marks).filter(([id]) => now.has(id) && (!was.has(id) || was.get(id) === now.get(id)));
+  return kept.length === Object.keys(d.marks).length ? d : { ...d, marks: Object.fromEntries(kept) };
+}
+
+/** Сохранять можно, когда не осталось пометок; «Не разобрал» не мешает */
+export const canSave = (d: BuilderDraft): boolean => Object.keys(d.marks).length === 0;

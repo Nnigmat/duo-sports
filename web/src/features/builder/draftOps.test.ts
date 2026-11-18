@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SetsExercise } from '../../../../shared/types';
 import { toLibraryExercise } from '../exercises/api';
 import {
-  applyAdvice, createExercise, dismissAdvice, removeNew, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine, usedNames,
+  applyAdvice, canSave, clearMarkOnChange, createExercise, dismissAdvice, removeNew, moveRoutineItem, patchNewExercise, patchRoutineItem, pruneNew, removeRoutineItem, renameRoutine, replaceExercise, setRoutine, usedNames,
 } from './draftOps';
 import { library as entries } from './testkit';
 import type { BuilderDraft, NewExerciseDraft } from './types';
@@ -166,5 +166,59 @@ describe('правка черновика', () => {
     expect(r.advice.map((a) => a.id)).toEqual(['a1']);
     // Блок без упражнений остаётся: его покажет проверка перед сохранением
     expect(exercisesOf(r.blocks[0]!)).toEqual([]);
+  });
+});
+
+describe('пометки ремонта', () => {
+  const mark = (field = 'reps') => ({ blockIndex: 0, exerciseIndex: 0, field, wrote: 'много', message: 'Не понимаю reps: много' });
+  const marked = (): BuilderDraft => ({ ...base(), marks: { x1: mark(), x2: mark('weight_kg') } });
+  const withBlocks = (d: BuilderDraft, blocks: BuilderDraft['blocks']): BuilderDraft => ({ ...d, blocks });
+  const patchFirst = (d: BuilderDraft, patch: Partial<SetsExercise>) =>
+    withBlocks(d, d.blocks.map((b, i) => (i === 0 && b.mode === 'sets' ? { ...b, exercises: b.exercises.map((e) => ({ ...e, ...patch })) } : b)));
+
+  it('mark cleared when load changed', () => {
+    const d = marked();
+    for (const patch of [{ sets: 5 }, { target: { min: 12, max: 12 } }, { restSec: 30 }, { kind: 'time' as const }, { sides: ['влево', 'вправо'] as [string, string] }]) {
+      const after = patchFirst(d, patch);
+      expect(Object.keys(clearMarkOnChange(after, d.blocks, after.blocks).marks), JSON.stringify(patch)).toEqual(['x2']);
+    }
+  });
+
+  it('mark cleared when weight changed', () => {
+    const d = marked();
+    const after = withBlocks(d, d.blocks.map((b, i) => (i === 1 && b.mode === 'circuit' ? { ...b, exercises: b.exercises.map((e) => ({ ...e, weight: 62.5 })) } : b)));
+    expect(Object.keys(clearMarkOnChange(after, d.blocks, after.blocks).marks)).toEqual(['x1']);
+  });
+
+  it('mark kept when only note changed', () => {
+    const d = marked();
+    const after = patchFirst(d, { note: 'Медленно' });
+    expect(clearMarkOnChange(after, d.blocks, after.blocks)).toBe(after);
+    expect(Object.keys(after.marks)).toEqual(['x1', 'x2']);
+  });
+
+  it('mark cleared when exercise removed, others keep theirs', () => {
+    const d = marked();
+    const gone = withBlocks(d, d.blocks.slice(0, 1));
+    expect(Object.keys(clearMarkOnChange(gone, d.blocks, gone.blocks).marks)).toEqual(['x1']);
+    const other = withBlocks(d, d.blocks.slice(1));
+    expect(Object.keys(clearMarkOnChange(other, d.blocks, other.blocks).marks)).toEqual(['x2']);
+  });
+
+  it('mark kept when a different exercise is removed or blocks move', () => {
+    const d = marked();
+    const moved = withBlocks(d, [...d.blocks].reverse());
+    expect(Object.keys(clearMarkOnChange(moved, d.blocks, moved.blocks).marks)).toEqual(['x1', 'x2']);
+    const extra = patchFirst(d, {});
+    const two = withBlocks(extra, extra.blocks.map((b, i) => (i === 0 && b.mode === 'sets' ? { ...b, exercises: [...b.exercises, { id: 'x9', name: 'Ещё', kind: 'reps' as const, target: { min: 5, max: 5 }, sets: 1 }] } : b)));
+    const before = two.blocks;
+    const removed = withBlocks({ ...two, marks: { x1: mark(), x2: mark() } }, before.map((b, i) => (i === 0 && b.mode === 'sets' ? { ...b, exercises: b.exercises.filter((e) => e.id !== 'x9') } : b)));
+    expect(Object.keys(clearMarkOnChange(removed, before, removed.blocks).marks)).toEqual(['x1', 'x2']);
+  });
+
+  it('save disabled while marks remain', () => {
+    expect(canSave(marked())).toBe(false);
+    expect(canSave({ ...base(), marks: {} })).toBe(true);
+    expect(canSave({ ...base(), unparsed: [{ what: 'bench-pres', message: 'Неизвестный exercise_id' }] })).toBe(true);
   });
 });

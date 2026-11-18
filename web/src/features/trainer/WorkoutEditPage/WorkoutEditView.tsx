@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Block, Exercise, SetsExercise, Workout } from '../../../../../shared/types';
 import { Badge, Button, Card, Checkbox, Chip, IconButton, Notice, ParamStepper, SearchField, SegmentedControl, Sheet, Text, TextArea, TextInput } from '../../../ui';
+import { cx } from '../../../ui/cx';
 import type { ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
 import {
@@ -19,6 +20,9 @@ const VIEWS: Array<{ value: EditView; label: string }> = [
 
 /** Текст режима YAML и то, что в нём не разобралось */
 export type YamlState = { text: string; issues: ParseIssue[]; /** Что изменится после сохранения; показывается над текстом */ warnings?: string[]; onText: (text: string) => void };
+
+/** Пометка упражнения: нагрузку поставила программа, тренер её проверяет */
+export type ExerciseMark = { wrote: string; message: string };
 
 type Props = {
   view?: EditView;
@@ -52,6 +56,10 @@ type Props = {
   cooldownSlot?: ReactNode;
   /** Над формой: заметки агента */
   topSlot?: ReactNode;
+  /** Пометки по id упражнения: текст «Проверьте нагрузку» и что написал агент */
+  marks?: Record<string, ExerciseMark>;
+  /** «Сохранить» недоступна, рядом объяснение (например, «Осталось проверить: 2») */
+  saveBlocked?: string;
   /** По умолчанию «Сохранить» и «Отмена» */
   saveLabel?: string;
   cancelLabel?: string;
@@ -64,7 +72,7 @@ const EXERCISE_MODES = MODES.filter((m): m is { value: ExerciseMode; label: stri
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
 export function WorkoutEditView({
   view = 'form', yaml, onView, title, blocks, routines, library, saving, issues, failure, notes, onNotes, onTitle, onBlocks, onSave, onCancel,
-  mode = 'edit', newNames, onOpenNew, onCreateExercise, warmupSlot, cooldownSlot, topSlot, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
+  mode = 'edit', newNames, onOpenNew, onCreateExercise, warmupSlot, cooldownSlot, topSlot, marks, saveBlocked, saveLabel = 'Сохранить', cancelLabel = 'Отмена',
 }: Props) {
   const create = mode === 'create';
   const [pickFor, setPickFor] = useState<string | null>(null);
@@ -76,9 +84,16 @@ export function WorkoutEditView({
         <Button variant="ghost" compact icon="back" onClick={onCancel}>
           {cancelLabel}
         </Button>
-        <Button compact loading={saving} onClick={onSave}>
-          {saveLabel}
-        </Button>
+        <div className={styles.saveGroup}>
+          {saveBlocked && (
+            <Text variant="caption" className={styles.blocked} id="save-blocked">
+              {saveBlocked}
+            </Text>
+          )}
+          <Button compact loading={saving} disabled={Boolean(saveBlocked)} aria-describedby={saveBlocked ? 'save-blocked' : undefined} onClick={onSave}>
+            {saveLabel}
+          </Button>
+        </div>
       </div>
       <Text variant="h2" tag="h1">
         Состав тренировки
@@ -178,6 +193,7 @@ export function WorkoutEditView({
                 first={j === 0}
                 last={j === b.exercises.length - 1}
                 isNew={newNames?.has(e.name) ?? false}
+                mark={marks?.[e.id]}
                 onOpen={onOpenNew ? () => onOpenNew(e.name) : undefined}
                 onPatch={(patch) => change((x) => patchExercise(x, b.id, e.id, patch))}
                 onTarget={(edge, v) => change((x) => setTarget(x, b.id, e.id, edge, v))}
@@ -266,6 +282,7 @@ type RowProps = {
   last: boolean;
   /** Новое упражнение: пометка текстом и кнопка «Открыть» его поля */
   isNew: boolean;
+  mark?: ExerciseMark;
   onOpen?: () => void;
   onPatch: (patch: Partial<SetsExercise>) => void;
   onTarget: (edge: 'min' | 'max', value: number) => void;
@@ -280,13 +297,20 @@ type RowProps = {
   onRemove: () => void;
 };
 
-function ExerciseRow({ mode, exercise: e, first, last, isNew, onOpen, onPatch, onTarget, onNote, onRest, restDefault, onOpenEnded, onClearSides, onMove, onRemove }: RowProps) {
+function ExerciseRow({ mode, exercise: e, first, last, isNew, mark, onOpen, onPatch, onTarget, onNote, onRest, restDefault, onOpenEnded, onClearSides, onMove, onRemove }: RowProps) {
   const time = e.kind === 'time';
   const canOpen = e.kind !== 'weight' && mode !== 'timed';
   const open = canOpen && e.target.min === 0 && e.target.max === 0;
   const unit = time ? 'с' : 'повт';
   return (
-    <li className={styles.exercise}>
+    <li className={cx(styles.exercise, mark && styles.marked)}>
+      {mark && (
+        <div className={styles.mark} role="note">
+          <strong>Проверьте нагрузку</strong>
+          <span>{`Агент написал: ${mark.wrote}`}</span>
+          <span className={styles.markWhy}>{mark.message}</span>
+        </div>
+      )}
       <div className={styles.exerciseHead}>
         <Text variant="body" className={styles.name}>
           {e.name}
