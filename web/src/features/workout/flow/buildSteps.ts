@@ -24,6 +24,10 @@ export interface Step {
   record: boolean;
   /** Сторона упражнения в две стороны (только timed) */
   side?: { index: 1 | 2; label: string };
+  /** Стороны упражнения в подходах и круге: шаг один, нагрузка «на сторону» (у timed вместо этого side) */
+  sides?: [string, string];
+  /** Заметка к упражнению: показывается под названием */
+  note?: string;
   /** Что стояло в плане, если упражнение заменили по ходу тренировки */
   replaced?: { id: string; name: string };
 }
@@ -50,6 +54,8 @@ function draftsOf(block: Block, blockIndex: number): Draft[] {
     round,
     rounds,
     record: needsRecording(block, round),
+    ...(e.note ? { note: e.note } : {}),
+    ...(e.sides && block.mode !== 'timed' ? { sides: e.sides } : {}),
   });
 
   switch (block.mode) {

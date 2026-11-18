@@ -82,3 +82,15 @@ export const WarmupOnly: Story = {
     await expect(within(canvasElement).getByText('6 упражнений')).toBeVisible();
   },
 };
+
+/** Заметка тренера к тренировке стоит над составом */
+export const StartWithNotes: Story = {
+  args: { notes: 'Сегодня без отжиманий: болит запястье. Выпады делай на 14 повторов, не больше.' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const note = c.getByText(/Сегодня без отжиманий/);
+    await expect(note).toBeVisible();
+    const blocks = c.getByText('По кругу с отдыхом');
+    await expect(note.compareDocumentPosition(blocks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  },
+};

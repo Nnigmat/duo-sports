@@ -102,6 +102,22 @@ describe('buildSteps', () => {
       expect(buildSteps([s])).toHaveLength(5);
       expect(buildSteps([c, s]).every((st) => st.side === undefined)).toBe(true);
     });
+
+    it('в sets и circuit шаг несёт sides, в timed — нет (там сторона в side)', () => {
+      const c: CircuitBlock = { ...circuit, exercises: circuit.exercises.map((e) => ({ ...e, sides })) };
+      expect(buildSteps([c]).every((st) => st.sides === sides)).toBe(true);
+      expect(buildSteps([withSides])[0].sides).toBeUndefined();
+      expect(buildSteps([circuit])[0].sides).toBeUndefined();
+    });
+  });
+
+  describe('заметка упражнения', () => {
+    it('шаг несёт note упражнения; без неё поля нет', () => {
+      const s: SetsBlock = { ...setsBlock, exercises: [{ ...setsBlock.exercises[0], note: 'Локти назад' }, ...setsBlock.exercises.slice(1)] };
+      const steps = buildSteps([s]);
+      expect(steps[0].note).toBe('Локти назад');
+      expect(steps[steps.length - 1].note).toBeUndefined();
+    });
   });
 });
 

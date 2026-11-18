@@ -148,6 +148,7 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
     return (
       <StartScreen
         title={workout.title}
+        notes={workout.notes}
         blocks={workout.blocks}
         dateLabel={dateLabel}
         equipment={equipment}
@@ -523,6 +524,7 @@ function StageView({ session, shown, demoUrl, thinkDemoUrl, idleUrl, restUrl, ca
       progress={{ count: shown.blockSize, current: shown.indexInBlock - 1 }}
       eyebrow={resting ? restEyebrow(shown, restOver) : eyebrow(step)}
       line={stepLine(shown)}
+      exerciseNote={shown.note}
       demoUrl={demoUrl}
       idleUrl={idleUrl}
       restUrl={restUrl}

@@ -15,6 +15,8 @@ import styles from './StartScreen.module.css';
 type Props = {
   /** «Круговая тренировка» */
   title: string;
+  /** Заметка к тренировке: над составом */
+  notes?: string;
   blocks: Block[];
   /** «Пятница, 30 октября» */
   dateLabel: string;
@@ -30,7 +32,7 @@ type Props = {
 };
 
 /** Экран старта: что сегодня в тренировке и кнопка «Начать». */
-export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, exerciseHref, onOpenExercise, onBack, onStart }: Props) {
+export function StartScreen({ title, notes, blocks, dateLabel, equipment, idleUrl, exerciseHref, onOpenExercise, onBack, onStart }: Props) {
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [failed, setFailed] = useState(false);
   const gear = gearList(blocks, equipment ?? {});
@@ -54,6 +56,12 @@ export function StartScreen({ title, blocks, dateLabel, equipment, idleUrl, exer
           )}
         </div>
       </div>
+
+      {notes && (
+        <Text variant="body-sm" tag="p" className={styles.notes}>
+          {notes}
+        </Text>
+      )}
 
       {gear.length > 0 && (
         <Card tone="surface" className={styles.gear}>

@@ -22,8 +22,14 @@ export function formatTarget(kind: ExerciseKind, target: Range): string {
   return kind === 'time' ? range(target.min, target.max, formatTime) : range(target.min, target.max);
 }
 
-/** Строка цели: «18–20 повт», «60 кг × 10», «00:45–01:00»; вес без значения в плане — как повторы */
-export function formatPlan(kind: ExerciseKind, plan: SetPlan): string {
+/** Строка цели: «18–20 повт», «60 кг × 10», «00:45–01:00»; вес без значения в плане — как повторы.
+ * Со сторонами в конце «на сторону»: «10 повт на сторону». */
+export function formatPlan(kind: ExerciseKind, plan: SetPlan, sides?: [string, string]): string {
+  const line = planLine(kind, plan);
+  return sides ? `${line} на сторону` : line;
+}
+
+function planLine(kind: ExerciseKind, plan: SetPlan): string {
   const { min, max } = plan.target;
   switch (kind) {
     case 'reps':
@@ -49,7 +55,7 @@ export function stepTitle(step: Step): string {
 
 /** Строка данных в облачке: «Обратные отжимания · 18–20 повт». У таймерных блоков только название: время показывает кольцо. */
 export function stepLine(step: Step): string {
-  return step.mode === 'timed' ? stepTitle(step) : `${step.exerciseName} · ${formatPlan(step.kind, step.plan)}`;
+  return step.mode === 'timed' ? stepTitle(step) : `${step.exerciseName} · ${formatPlan(step.kind, step.plan, step.sides)}`;
 }
 
 /** Надстрочник облачка: «Подход 4 из 9 · снимаем на видео», «Разминка · 1 из 6» */

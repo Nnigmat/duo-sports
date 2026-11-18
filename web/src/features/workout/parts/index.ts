@@ -8,3 +8,4 @@ export { TimerRing } from './TimerRing/TimerRing';
 export { useStopwatch } from './TimerRing/useStopwatch';
 export { useCountdown } from './TimerRing/useCountdown';
 export { ElapsedSince } from './ElapsedTime/ElapsedTime';
+export { ExerciseNote } from './ExerciseNote/ExerciseNote';

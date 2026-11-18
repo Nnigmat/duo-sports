@@ -39,7 +39,7 @@ export interface BlockItem {
 /** Строки списка упражнений в карточке блока. В sets перед целью стоит число подходов. */
 export function blockItems(block: Block): BlockItem[] {
   return exercisesOf(block).map((e) => {
-    const plan = formatPlan(e.kind, { target: e.target, weight: e.weight });
+    const plan = formatPlan(e.kind, { target: e.target, weight: e.weight }, block.mode === 'timed' ? undefined : e.sides);
     return { name: e.name, target: block.mode === 'sets' && 'sets' in e ? `${e.sets} × ${plan}` : plan };
   });
 }

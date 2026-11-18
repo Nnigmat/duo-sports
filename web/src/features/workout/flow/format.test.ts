@@ -32,6 +32,19 @@ describe('formatPlan', () => {
   });
 });
 
+describe('formatPlan: стороны', () => {
+  const sides: [string, string] = ['левая нога', 'правая нога'];
+  it('суффикс «на сторону» у повторов, веса и времени', () => {
+    expect(formatPlan('reps', { target: { min: 10, max: 10 } }, sides)).toBe('10 повт на сторону');
+    expect(formatPlan('weight', { target: { min: 10, max: 10 }, weight: 12 }, sides)).toBe('12 кг × 10 на сторону');
+    expect(formatPlan('time', { target: { min: 30, max: 30 } }, sides)).toBe('00:30 на сторону');
+    expect(formatPlan('reps', { target: { min: 0, max: 0 } }, sides)).toBe('макс. повт на сторону');
+  });
+  it('без сторон строка прежняя', () => {
+    expect(formatPlan('reps', { target: { min: 10, max: 10 } })).toBe('10 повт');
+  });
+});
+
 describe('formatTarget', () => {
   it('число или диапазон без единицы: подсказка «План: …»', () => {
     expect(formatTarget('reps', { min: 18, max: 20 })).toBe('18–20');
@@ -55,6 +68,13 @@ describe('подписи шага', () => {
     expect(stepLine(c[0])).toBe('Обратные отжимания · 18–20 повт');
     expect(stepLine(s[0])).toBe('Приседания · 12 кг × 12');
     expect(stepLine(s[3])).toBe('Планка · 00:45–01:00');
+  });
+  it('stepLine: у упражнения со сторонами в подходах «на сторону»; в timed строка только название', () => {
+    const sides: [string, string] = ['левая', 'правая'];
+    const sc = buildSteps([{ ...circuit, exercises: circuit.exercises.map((e) => ({ ...e, sides })) }]);
+    expect(stepLine(sc[0])).toBe('Обратные отжимания · 18–20 повт на сторону');
+    const wt = buildSteps([{ ...warmup, exercises: warmup.exercises.map((e) => ({ ...e, sides })) }]);
+    expect(stepLine(wt[0])).toBe('Вращения головой, левая');
   });
   it('eyebrow: подход или упражнение', () => {
     expect(eyebrow(c[0])).toBe('Подход 1 из 9');

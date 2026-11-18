@@ -252,3 +252,32 @@ export const DialogOverBubble: Story = {
     await expectScrimOverBubble(canvasElement);
   },
 };
+
+const LONG_EXERCISE_NOTE =
+  'Стартовая поза: стопы на ширине плеч, носки чуть в стороны. Опускайся до параллели бедра с полом, колени смотрят туда же, куда носки. На подъёме выдыхай, поясницу не округляй, пятки не отрывай от пола.';
+
+/** Заметка упражнения под названием: короткая целиком, без «Ещё» */
+export const NoteUnderExercise: Story = {
+  args: { exerciseNote: 'Колено не заводить внутрь.' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText('Колено не заводить внутрь.')).toBeVisible();
+    await expect(c.queryByRole('button', { name: 'Ещё' })).toBeNull();
+  },
+};
+
+/** Длинная заметка обрезана двумя строками; «Ещё» раскрывает, «Свернуть» возвращает */
+export const LongNoteUnderExercise: Story = {
+  args: { exerciseNote: LONG_EXERCISE_NOTE, line: 'Приседания · 12 кг × 12 на сторону' },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const more = await c.findByRole('button', { name: 'Ещё' });
+    await expect(more.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    const text = c.getByText(LONG_EXERCISE_NOTE);
+    await expect(text.scrollHeight).toBeGreaterThan(text.clientHeight);
+    await userEvent.click(more);
+    await expect(text.scrollHeight).toBeLessThanOrEqual(text.clientHeight + 1);
+    await userEvent.click(c.getByRole('button', { name: 'Свернуть' }));
+    await expect(c.getByRole('button', { name: 'Ещё' })).toBeVisible();
+  },
+};
