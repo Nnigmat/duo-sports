@@ -51,7 +51,8 @@ const isAnswer = (v: unknown): boolean =>
 const isActual = (v: unknown): boolean =>
   isObj(v) && nonNeg(v.value) && (v.weight === undefined || nonNeg(v.weight)) && (v.extraWeight === undefined || v.extraWeight === true);
 
-export type ValidSession = { ok: true; result: SessionResult } | { ok: false; error: string };
+/** stepIndex — номер шага, который не прошёл проверку: по нему сервер пишет сам шаг в лог */
+export type ValidSession = { ok: true; result: SessionResult } | { ok: false; error: string; stepIndex?: number };
 
 export function validateSession(body: unknown): ValidSession {
   if (!isObj(body) || !isDate(body.date)) return { ok: false, error: 'Ждём date вида 2026-11-03' };
@@ -74,7 +75,7 @@ export function validateSession(body: unknown): ValidSession {
       (s.restSec === undefined || (Number.isInteger(s.restSec) && (s.restSec as number) >= 0 && (s.restSec as number) <= MAX_DURATION_SEC)) &&
       ((s.startedAt === undefined && s.endedAt === undefined) || (Number.isInteger(s.startedAt) && Number.isInteger(s.endedAt) && (s.startedAt as number) > 0 && (s.endedAt as number) >= (s.startedAt as number) && (s.endedAt as number) - (s.startedAt as number) <= MAX_DURATION_SEC * 1000)) &&
       (s.videoId === undefined || (typeof s.videoId === 'string' && UUID.test(s.videoId)));
-    if (!ok) return { ok: false, error: `steps[${i}]: неверные поля` };
+    if (!ok) return { ok: false, error: `steps[${i}]: неверные поля`, stepIndex: i };
   }
   const ids = (body.steps as Array<{ videoId?: string }>).flatMap((s) => (s.videoId ? [s.videoId] : []));
   if (new Set(ids).size !== ids.length) return { ok: false, error: 'videoId: одно видео на один подход' };
