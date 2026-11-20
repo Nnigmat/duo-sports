@@ -132,7 +132,7 @@ describe('validateSession', () => {
     expect(bad({ date: 'вчера' })).toMatchObject({ ok: false });
     expect(bad({ videos: -1 })).toMatchObject({ ok: false });
     expect(bad({ steps: [] })).toMatchObject({ ok: false, error: 'steps: список от 1 до 2000' });
-    expect(bad({ steps: [{ ...result().steps[0], kind: 'yoga' }] })).toMatchObject({ ok: false, error: 'steps[0]: неверные поля' });
+    expect(bad({ steps: [{ ...result().steps[0], kind: 'yoga' }] })).toMatchObject({ ok: false, error: 'steps[0]: неверные поля', stepIndex: 0 });
     expect(bad({ steps: [{ ...result().steps[0], completed: 'да' }] })).toMatchObject({ ok: false });
     expect(bad({ steps: [{ ...result().steps[0], plan: { target: { min: -1, max: 2 } } }] })).toMatchObject({ ok: false });
   });
@@ -232,7 +232,7 @@ describe('фактический отдых подхода', () => {
   });
   it('целое число секунд от 0 до суток, в том числе сверх цели', () => {
     for (const ok of [0, 72, 86_400]) expect(withRest(ok).ok).toBe(true);
-    for (const bad of [-1, 1.5, 86_401, '60', null]) expect(withRest(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля' });
+    for (const bad of [-1, 1.5, 86_401, '60', null]) expect(withRest(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля', stepIndex: 0 });
   });
   it('сохраняется в итоге вместе с подходом', () => {
     applyImport(db, me, commit(), clock);
@@ -253,7 +253,7 @@ describe('замена упражнения', () => {
   });
   it('replacedFrom — непустая строка до 200 знаков', () => {
     expect(withReplaced('Обратные отжимания').ok).toBe(true);
-    for (const bad of ['', 'я'.repeat(201), 5, null]) expect(withReplaced(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля' });
+    for (const bad of ['', 'я'.repeat(201), 5, null]) expect(withReplaced(bad)).toMatchObject({ ok: false, error: 'steps[0]: неверные поля', stepIndex: 0 });
   });
   it('сохраняется в итоге вместе с подходом', () => {
     applyImport(db, me, commit(), clock);
