@@ -43,6 +43,7 @@ export function workoutRouter(db: Db) {
       logger.warn({ userId: req.user!.id, workoutId: req.params.id, error: v.error, ...(step === undefined ? {} : { step }) }, 'session rejected');
       return void res.status(400).json({ error: v.error });
     }
+    if (v.droppedVideos) logger.warn({ userId: req.user!.id, workoutId: req.params.id, droppedVideos: v.droppedVideos }, 'session: повторное видео снято');
     const saved = Number.isInteger(id) ? saveSession(db, req.user!.id, id, v.result) : ({ ok: false, error: 'not_found' } as const);
     if (!saved.ok) {
       logger.warn({ userId: req.user!.id, workoutId: req.params.id, error: saved.error }, 'session rejected');

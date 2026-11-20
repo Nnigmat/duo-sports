@@ -20,7 +20,7 @@ type Props = {
   actual?: SetActual | null;
   /** Время из секундомера: подставляется в «Время» вместо плана и прошлого факта, правится как обычно */
   initialSec?: number;
-  /** «Записать»: шторка закрывается сама */
+  /** «Записать»: закрывает шторку вызывающий. onOpenChange(false) здесь не зовётся — он только про закрытие без факта */
   onSave: (actual: SetActual) => void;
 };
 
@@ -46,10 +46,7 @@ export function ResultSheet({ open, onOpenChange, eyebrow, kind, plan, actual, i
         plan={plan}
         actual={actual}
         initialSec={initialSec}
-        onSave={(next) => {
-          onSave(next);
-          onOpenChange(false);
-        }}
+        onSave={onSave}
       />
     </Sheet>
   );
