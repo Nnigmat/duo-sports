@@ -80,10 +80,11 @@ export function aiRouter(db: Db, client: AiClient | null) {
 
     ensureLibrary(db);
     const prompt = buildPrompt({ rules: getAiRules(db).text, routines: promptRoutines(db), library: promptLibrary(db), request, today: localToday() });
+    const started = Date.now();
     try {
       const { json: raw, usage } = await client.draft(prompt, AGENT_WORKOUT_SCHEMA);
-      // Только пользователь и токены: текст ввода и ответа в лог не пишем
-      logger.info({ userId: user.id, athleteId: request.athleteId, usage }, 'ai draft');
+      // Только пользователь, токены и время: текст ввода и ответа в лог не пишем
+      logger.info({ userId: user.id, athleteId: request.athleteId, usage, ms: Date.now() - started }, 'ai draft');
       const json = compactAgentWorkout(raw);
       if (!isAgentWorkout(json)) {
         logger.warn({ userId: user.id }, 'ai draft: ответ не по схеме');
@@ -93,7 +94,7 @@ export function aiRouter(db: Db, client: AiClient | null) {
       res.json(body);
     } catch (e) {
       const status = e instanceof AiError ? e.status : undefined;
-      const log = { userId: user.id, status, message: e instanceof Error ? e.message : 'unknown' };
+      const log = { userId: user.id, status, message: e instanceof Error ? e.message : 'unknown', ms: Date.now() - started };
       // 400 — API отклонил сам запрос (схему, параметры): ошибка у нас, повтор не поможет
       if (status === 400) {
         logger.error(log, 'ai draft rejected');
