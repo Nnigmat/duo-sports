@@ -23,7 +23,16 @@ function Demo({ startOpen = false, eyebrow = 'Подход 1 из 9', ...p }: De
       <Button variant="secondary" compact onClick={() => setOpen(true)}>
         Открыть шторку
       </Button>
-      <ResultSheet open={open} onOpenChange={setOpen} eyebrow={eyebrow} onSave={onSave} {...p} />
+      <ResultSheet
+        open={open}
+        onOpenChange={setOpen}
+        eyebrow={eyebrow}
+        onSave={(a) => {
+          onSave(a);
+          setOpen(false);
+        }}
+        {...p}
+      />
     </>
   );
 }

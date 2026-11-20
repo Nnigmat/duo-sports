@@ -293,12 +293,31 @@ describe('видео подхода', () => {
     expect(saveSession(db, me, workoutId(), withVideo(V2), clock)).toEqual({ ok: false, error: 'bad_video' });
     expect(db.prepare('SELECT COUNT(*) AS n FROM sessions_done').get()).toEqual({ n: 1 });
   });
-  it('validateSession: videoId — uuid, один и тот же на двух подходах нельзя', () => {
+  it('validateSession: videoId — uuid', () => {
     expect(validateSession(withVideo(V1)).ok).toBe(true);
     expect(validateSession(withVideo('../app.db')).ok).toBe(false);
-    const r = withVideo(V1);
+  });
+  it('то же видео на следующем подходе (старый клиент) снимается: видео у первого, счётчик без повтора', () => {
+    const r = { ...withVideo(V1), videos: 2 };
     r.steps[1] = { ...r.steps[1]!, videoId: V1 };
-    expect(validateSession(r)).toMatchObject({ ok: false, error: 'videoId: одно видео на один подход' });
+    const v = validateSession(r);
+    expect(v).toMatchObject({ ok: true, droppedVideos: 1 });
+    if (!v.ok) return;
+    expect(v.result.steps.map((s) => s.videoId)).toEqual([V1, undefined]);
+    expect(v.result.videos).toBe(1);
+    expect('videoId' in v.result.steps[1]!).toBe(false);
+  });
+  it('итог с повтором видео сохраняется, видео привязано к первому подходу', () => {
+    applyImport(db, me, commit(), clock);
+    upload(V1, me);
+    const r = { ...withVideo(V1), videos: 2 };
+    r.steps[1] = { ...r.steps[1]!, videoId: V1 };
+    const v = validateSession(r);
+    if (!v.ok) throw new Error(v.error);
+    const saved = saveSession(db, me, workoutId(), v.result, clock);
+    expect(saved.ok).toBe(true);
+    expect(db.prepare('SELECT step_index FROM videos WHERE id = ?').get(V1)).toEqual({ step_index: 0 });
+    expect(db.prepare('SELECT videos FROM sessions_done').get()).toEqual({ videos: 1 });
   });
 });
 

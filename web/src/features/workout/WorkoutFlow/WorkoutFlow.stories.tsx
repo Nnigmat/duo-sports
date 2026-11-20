@@ -698,3 +698,43 @@ export const WorkoutV2: Story = {
     await expect(steps).toHaveLength(6);
   },
 };
+
+/** Круг с отдыхом только после круга: после записи видео сразу идёт следующее упражнение */
+const ROUND_REST: FlowProps['workout'] = {
+  id: 'round-rest',
+  title: 'Круг без отдыха между упражнениями',
+  blocks: [
+    {
+      id: 'circuit',
+      mode: 'circuit',
+      title: 'По кругу',
+      rounds: 1,
+      restSec: 5,
+      restAfter: 'round',
+      videoRounds: [1],
+      exercises: [
+        { id: 'dips', name: 'Обратные отжимания', kind: 'reps', pose: 'dips', target: { min: 18, max: 20 } },
+        { id: 'scissors', name: 'Ножницы лёжа', kind: 'reps', pose: 'scissors', target: { min: 30, max: 34 } },
+      ],
+    },
+  ],
+};
+
+/** «Записать» после видео засчитывает только свой подход: видео не переезжает на следующее упражнение */
+export const RecordedFactDoesNotCompleteNextStep: Story = {
+  tags: hidden,
+  args: { workout: ROUND_REST, recordingDelaySec: 0, onSessionChange: fn() },
+  play: async ({ args }) => {
+    onUploadVideo.mockImplementation(() => new Promise((r) => setTimeout(() => r('11111111-1111-4111-8111-111111111111'), 300)));
+    await click('Начать тренировку');
+    await recordAndSend();
+    const dialog = within(await screen.findByRole('dialog', { name: 'Сколько повторений сделали?' }, { timeout: 5000 }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Записать' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    const change = args.onSessionChange as ReturnType<typeof fn>;
+    const last = change.mock.calls.at(-1)![0];
+    await expect(last.completed).toEqual([true, false]);
+    await expect(last.videoIds).toEqual(['11111111-1111-4111-8111-111111111111', null]);
+    await expect(last.videos).toBe(1);
+  },
+};

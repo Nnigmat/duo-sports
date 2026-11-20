@@ -323,6 +323,8 @@ export function WorkoutFlow({ workout, dateLabel, techniques, equipment, gender,
         actual={session.actuals[index]}
         initialSec={stoppedSec ?? undefined}
         onSave={(actual) => {
+          // Закрываем сами, а не через onOpenChange: там в замыкании ещё прежний recorded, и подход засчитался бы второй раз — уже следующий
+          setSheet(null);
           if (recorded) dispatch({ type: 'recorded', ...(recorded.videoId ? { videoId: recorded.videoId } : {}), actual, time: timeNow() });
           else dispatch({ type: 'done', actual, time: timeNow() });
           setRecorded(null);
