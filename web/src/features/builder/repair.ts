@@ -54,7 +54,7 @@ export function toAgentPath(path: Array<string | number>, w: AgentWorkout): Agen
 }
 
 /** Поля блока, которые можно просто убрать; без title или text у note блок не спасти */
-const BLOCK_SOFT = ['title', 'rounds', 'rest_sec', 'text'];
+const BLOCK_SOFT = ['title', 'rounds', 'rest_sec', 'rest_after', 'text'];
 const EXERCISE_FIELDS = ['sets', 'reps', 'time_sec', 'weight_kg', 'rest_sec', 'sides', 'notes'] as const;
 type Field = (typeof EXERCISE_FIELDS)[number];
 const isField = (f: string | undefined): f is Field => (EXERCISE_FIELDS as readonly string[]).includes(f ?? '');

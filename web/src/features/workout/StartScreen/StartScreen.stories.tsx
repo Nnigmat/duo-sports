@@ -44,7 +44,7 @@ export const Default: Story = {
     await expect(c.getByText('03:00')).toBeVisible();
     await expect(c.getByText('02:00')).toBeVisible();
     await expect(c.getByText('Круг 2 записываем на видео')).toBeVisible();
-    await expect(c.getByText('Отдых 60 с после каждого подхода')).toBeVisible();
+    await expect(c.getByText('Отдых 60 с после каждого упражнения')).toBeVisible();
     await expect(c.getAllByRole('listitem')).toHaveLength(3);
     await userEvent.click(c.getByRole('button', { name: 'Начать тренировку' }));
     await expect(onStart).toHaveBeenCalledTimes(1);

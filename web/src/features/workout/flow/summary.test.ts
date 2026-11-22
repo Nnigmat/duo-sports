@@ -46,8 +46,8 @@ describe('blockItems', () => {
 });
 
 describe('restLabel', () => {
-  it('circuit: после каждого подхода', () => {
-    expect(restLabel(circuit)).toBe('Отдых 60 с после каждого подхода');
+  it('circuit: после каждого упражнения', () => {
+    expect(restLabel(circuit)).toBe('Отдых 60 с после каждого упражнения');
   });
   it('sets: между подходами', () => {
     expect(restLabel(setsBlock)).toBe('Отдых 90 с между подходами');

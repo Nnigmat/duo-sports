@@ -202,6 +202,27 @@ export const WithNotesAndRest: Story = {
   },
 };
 
+export const CircuitRestAfterExercise: Story = {
+  args: { blocks: [{ ...v2Blocks[1]!, id: 'b1' }] },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('tab', { name: 'После круга' })).toHaveAttribute('aria-selected', 'true');
+    await userEvent.click(c.getByRole('tab', { name: 'После упражнения' }));
+    const next = (args.onBlocks as ReturnType<typeof fn>).mock.calls.at(-1)?.[0] as Block[];
+    await expect(next[0]).toMatchObject({ mode: 'circuit', restSec: 60 });
+    await expect(next[0]).not.toHaveProperty('restAfter');
+  },
+};
+
+export const CircuitRestEachExercise: Story = {
+  args: { blocks: [{ id: 'b1', mode: 'circuit', title: 'По кругу', rounds: 3, restSec: 45, videoRounds: [], exercises: [{ id: 'x4', name: 'Отжимания', kind: 'reps', target: { min: 10, max: 10 } }] }] },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole('tab', { name: 'После упражнения' })).toHaveAttribute('aria-selected', 'true');
+    await expect(c.getByText('Отдых после упражнения')).toBeVisible();
+  },
+};
+
 export const NoteBlock: Story = {
   args: { blocks: [...blocks, { id: 'b2', mode: 'note', title: 'Замер', text: 'Сделайте контрольный замер талии' }] },
   play: async ({ canvasElement, args }) => {

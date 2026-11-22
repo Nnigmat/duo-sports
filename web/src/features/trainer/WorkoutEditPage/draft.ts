@@ -150,6 +150,16 @@ export const setNoteText = (blocks: Block[], blockId: string, text: string): Blo
 
 export const setRest = (blocks: Block[], blockId: string, restSec: number): Block[] => mapBlock(blocks, blockId, (b) => (b.mode === 'timed' || b.mode === 'note' ? b : { ...b, restSec }));
 
+/** Когда отдыхать в круге: после круга или после каждого упражнения (поля restAfter нет) */
+export type CircuitRest = 'round' | 'exercise';
+
+export const setRestAfter = (blocks: Block[], blockId: string, rest: CircuitRest): Block[] =>
+  mapBlock(blocks, blockId, (b) => {
+    if (b.mode !== 'circuit') return b;
+    const { restAfter: _restAfter, ...each } = b;
+    return rest === 'round' ? { ...each, restAfter: 'round' } : each;
+  });
+
 /** Круги убавили — номера кругов для видео больше нового числа пропадают */
 export const setRounds = (blocks: Block[], blockId: string, rounds: number): Block[] =>
   mapBlock(blocks, blockId, (b) => (b.mode === 'circuit' ? { ...b, rounds, videoRounds: b.videoRounds.filter((n) => n <= rounds) } : b));

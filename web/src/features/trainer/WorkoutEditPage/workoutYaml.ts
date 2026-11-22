@@ -49,11 +49,6 @@ function exerciseYaml(e: Exercise, inSets: boolean, b: Block, idOf: IdOf): Recor
   };
 }
 
-/** Старые круги (отдых после каждого упражнения): в v2 такого нет, после сохранения отдых будет после круга */
-export function legacyCircuitWarnings(blocks: Block[]): string[] {
-  return blocks.flatMap((b) => (b.mode === 'circuit' && b.restAfter !== 'round' ? [`Отдых в круге «${b.title}» после сохранения будет после круга, а не после каждого упражнения`] : []));
-}
-
 /** Состав тренировки как YAML (version: 2) для редактирования; подключённые наборы пишутся блоками routine: разминка первой, заминка последней */
 export function workoutToYaml(title: string, blocks: Block[], links: RoutineLinks = {}, library: LibraryExercise[] = [], notes?: string): string {
   const idOf = libraryIds(library);
@@ -65,7 +60,7 @@ export function workoutToYaml(title: string, blocks: Block[], links: RoutineLink
       return { type: 'timed', ...head, ...(b.note ? { text: b.note } : {}), exercises: b.exercises.map((e) => ({ exercise_id: idOf(e.name), time_sec: e.target.max, ...(e.sides ? { sides: e.sides } : {}) })) };
     }
     if (b.mode === 'sets') return { type: 'sets', ...head, exercises: b.exercises.map((e) => exerciseYaml(e, true, b, idOf)) };
-    return { type: 'circuit', ...head, rounds: b.rounds, rest_sec: b.restSec, exercises: b.exercises.map((e) => exerciseYaml(e, false, b, idOf)) };
+    return { type: 'circuit', ...head, rounds: b.rounds, rest_sec: b.restSec, ...(b.restAfter === 'round' ? {} : { rest_after: 'exercise' }), exercises: b.exercises.map((e) => exerciseYaml(e, false, b, idOf)) };
   });
   const all = [...(links.warmup ? [{ type: 'warmup', routine: links.warmup }] : []), ...out, ...(links.cooldown ? [{ type: 'cooldown', routine: links.cooldown }] : [])];
   const doc = { version: 2, workouts: [{ title, ...(notes ? { notes } : {}), blocks: all }] };
