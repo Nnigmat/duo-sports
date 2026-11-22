@@ -84,9 +84,10 @@ describe('схема ответа агента', () => {
 
   it('block requires every field and allows empty exercises for note', () => {
     const block = blockSchema();
-    expect(new Set(Object.keys(block.properties as Node))).toEqual(new Set(['type', 'title', 'rounds', 'rest_sec', 'text', 'exercises']));
+    expect(new Set(Object.keys(block.properties as Node))).toEqual(new Set(['type', 'title', 'rounds', 'rest_sec', 'rest_after', 'text', 'exercises']));
     requiresAll(block);
     expect(prop(block, 'type').enum).toEqual(['sets', 'circuit', 'timed', 'note']);
+    expect(prop(block, 'rest_after').enum).toEqual(['round', 'exercise']);
     expect(prop(block, 'exercises')).not.toHaveProperty('minItems');
   });
 
@@ -159,6 +160,24 @@ describe('isAgentWorkout', () => {
 
 describe('compactAgentWorkout', () => {
   const full = { exercise_id: 'bench-press', sets: 0, reps: '', time_sec: 0, weight_kg: 0, rest_sec: 0, sides: [], notes: '  ' };
+
+  it('drops rest_after round and keeps rest_after exercise', () => {
+    const ex = { exercise_id: 'lunge', reps: '10' };
+    const w = compactAgentWorkout({
+      ...minimal,
+      blocks: [
+        { type: 'circuit', rounds: 3, rest_sec: 60, rest_after: 'round', exercises: [ex] },
+        { type: 'circuit', rounds: 3, rest_sec: 60, rest_after: 'exercise', exercises: [ex] },
+      ],
+    });
+    expect(w).toMatchObject({ blocks: [{ type: 'circuit', rounds: 3, rest_sec: 60, exercises: [ex] }, { rest_after: 'exercise' }] });
+    expect((w as { blocks: object[] }).blocks[0]).not.toHaveProperty('rest_after');
+    expect(isAgentWorkout(w)).toBe(true);
+  });
+
+  it('rejects unknown rest_after', () => {
+    expect(isAgentWorkout({ ...minimal, blocks: [{ type: 'circuit', rest_after: 'set', exercises: [] }] })).toBe(false);
+  });
 
   it('drops empty fields of block exercises: "", blank, 0, []', () => {
     const w = compactAgentWorkout({ ...minimal, blocks: [{ type: 'sets', exercises: [{ ...full, reps: '8' }] }] });

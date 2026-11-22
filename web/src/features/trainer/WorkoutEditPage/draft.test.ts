@@ -3,7 +3,7 @@ import type { Block, SetsBlock, SetsExercise } from '../../../../../shared/types
 import { exercisesOf } from '../../../../../shared/blocks';
 import {
   addBlock, addExercise, changeMode, clearSides, editableBlocks, moveBlock, moveExercise, newBlock, patchExercise, problems, removeBlock, removeExercise, roundsOf, setExerciseNote, setExerciseRest, setNoteText, setOpen,
-  setRounds, setTarget, toggleVideoRound,
+  setRestAfter, setRounds, setTarget, toggleVideoRound,
 } from './draft';
 
 const squat = { name: 'Присед', kind: 'weight' as const, defaults: { reps: 8, weight: 60, seconds: 30 } };
@@ -85,6 +85,13 @@ describe('круги для видео', () => {
     let blocks = changeMode(sets(), 'b1', 'circuit');
     blocks = setRounds(toggleVideoRound(blocks, 'b1', 3), 'b1', 2);
     expect((blocks[0] as { videoRounds: number[] }).videoRounds).toEqual([]);
+  });
+  it('отдых круга после каждого упражнения и обратно после круга', () => {
+    const blocks = changeMode(sets(), 'b1', 'circuit');
+    const each = setRestAfter(blocks, 'b1', 'exercise');
+    expect(each[0]).not.toHaveProperty('restAfter');
+    expect(setRestAfter(each, 'b1', 'round')[0]).toMatchObject({ restAfter: 'round' });
+    expect(setRestAfter(sets(), 'b1', 'exercise')).toEqual(sets());
   });
   it('roundsOf: подходы — максимум по упражнениям', () => {
     expect(roundsOf(patchExercise(sets(), 'b1', 'x1', { sets: 5 })[0])).toBe(5);

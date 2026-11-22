@@ -7,7 +7,7 @@ import type { ParseIssue } from '../../import/parse';
 import type { LibraryExercise } from '../../exercises/types';
 import {
   MODE_LABELS, addBlock, addExercise, changeMode, clearSides, moveBlock, moveExercise, patchExercise, removeBlock, removeExercise, renameBlock, roundsOf, setExerciseNote, setExerciseRest, setNoteText,
-  setOpen, setRest, setRounds, setTarget, toggleVideoRound, type BlockMode, type ExerciseMode,
+  setOpen, setRest, setRestAfter, setRounds, setTarget, toggleVideoRound, type BlockMode, type CircuitRest, type ExerciseMode,
 } from './draft';
 import styles from './WorkoutEditView.module.css';
 
@@ -19,7 +19,7 @@ const VIEWS: Array<{ value: EditView; label: string }> = [
 ];
 
 /** Текст режима YAML и то, что в нём не разобралось */
-export type YamlState = { text: string; issues: ParseIssue[]; /** Что изменится после сохранения; показывается над текстом */ warnings?: string[]; onText: (text: string) => void };
+export type YamlState = { text: string; issues: ParseIssue[]; onText: (text: string) => void };
 
 /** Пометка упражнения: нагрузку поставила программа, тренер её проверяет */
 export type ExerciseMark = { wrote: string; message: string };
@@ -69,6 +69,12 @@ const MODES = (Object.keys(MODE_LABELS) as BlockMode[]).map((value) => ({ value,
 /** Режимы блока с упражнениями: в заметку блок не переключить */
 const EXERCISE_MODES = MODES.filter((m): m is { value: ExerciseMode; label: string } => m.value !== 'note');
 
+/** Когда отдыхать в круге */
+const CIRCUIT_RESTS: Array<{ value: CircuitRest; label: string }> = [
+  { value: 'round', label: 'После круга' },
+  { value: 'exercise', label: 'После упражнения' },
+];
+
 /** Редактор тренировки ученика: название, блоки и упражнения в них. Сохраняет страница. */
 export function WorkoutEditView({
   view = 'form', yaml, onView, title, blocks, routines, library, saving, issues, failure, notes, onNotes, onTitle, onBlocks, onSave, onCancel,
@@ -114,15 +120,6 @@ export function WorkoutEditView({
 
       {view === 'yaml' && yaml ? (
         <>
-          {yaml.warnings && yaml.warnings.length > 0 && (
-            <Notice tone="warn">
-              <ul className={styles.issues}>
-                {yaml.warnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            </Notice>
-          )}
           {yaml.issues.length > 0 && (
             <Notice tone="error">
               <ul className={styles.issues}>
@@ -179,8 +176,11 @@ export function WorkoutEditView({
 
           <SegmentedControl label="Режим блока" options={EXERCISE_MODES} value={b.mode} onChange={(m) => change((x) => changeMode(x, b.id, m))} />
 
+          {b.mode === 'circuit' && (
+            <SegmentedControl label="Когда отдых" options={CIRCUIT_RESTS} value={b.restAfter === 'round' ? 'round' : 'exercise'} onChange={(r) => change((x) => setRestAfter(x, b.id, r))} />
+          )}
           {b.mode !== 'timed' && (
-            <ParamStepper label={b.mode === 'circuit' && b.restAfter === 'round' ? 'Отдых после круга' : 'Отдых'} unit="с" mode="duration" step={15} min={0} max={3600} value={b.restSec} onChange={(v) => change((x) => setRest(x, b.id, v))} />
+            <ParamStepper label={b.mode === 'circuit' ? (b.restAfter === 'round' ? 'Отдых после круга' : 'Отдых после упражнения') : 'Отдых'} unit="с" mode="duration" step={15} min={0} max={3600} value={b.restSec} onChange={(v) => change((x) => setRest(x, b.id, v))} />
           )}
           {b.mode === 'circuit' && <ParamStepper label="Круги" unit="" min={1} max={100} value={b.rounds} onChange={(v) => change((x) => setRounds(x, b.id, v))} />}
 

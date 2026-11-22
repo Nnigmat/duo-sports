@@ -7,7 +7,7 @@ import { plural } from '../workout/flow/ru';
 import { buildBlocks, usesDistance, type Load, type RawBlock, type RawExercise } from './structure';
 import type { PlanSource, PlanWorkout } from './importPlan';
 import {
-  BLOCK_FIELDS, BLOCK_TYPES_V2, knownFields, readBlockExercise, readRestSec, readTimedItem, ROUTINE_BLOCK_HINT, ROUTINE_FIELDS, TOP_FIELDS,
+  BLOCK_FIELDS, BLOCK_TYPES_V2, knownFields, readBlockExercise, readRestAfter, readRestSec, readTimedItem, ROUTINE_BLOCK_HINT, ROUTINE_FIELDS, TOP_FIELDS,
   unknownIdHint, WORKOUT_FIELDS, type BlockTypeV2,
 } from './v2';
 import { dayLabel } from './importPlan';
@@ -654,13 +654,15 @@ export function parseImport(text: string, ctx: ParseContext): ParseResult {
         const rest = v2
           ? b.rest_sec === undefined ? undefined : (readRestSec(b.rest_sec, [...bp, 'rest_sec'], fail) ?? undefined)
           : b.rest === undefined ? exerciseRest : restSec(b.rest, [...bp, 'rest']);
+        // v2: отдых круга после круга, rest_after: exercise — после каждого упражнения
+        const restAfter = v2 && type === 'circuit' ? readRestAfter(b.rest_after, [...bp, 'rest_after'], fail) : null;
         const raw: RawBlock = {
           type: type as RawBlock['type'], ...(ownTitle ? { title: ownTitle } : {}), ...(rounds && rounds > 0 ? { rounds } : {}), ...(rest !== undefined ? { rest } : {}),
-          ...(v2 && type === 'circuit' ? { restAfter: 'round' as const } : {}), exercises,
+          ...(v2 && type === 'circuit' && restAfter === 'round' ? { restAfter: 'round' as const } : {}), exercises,
         };
         raws.push(raw);
         for (const name of usesDistance(raw)) warn([...bp], `«${name}» посчитаем по времени`, 'Расстояния в тренировке пока нет: по умолчанию 5 минут, его можно поменять в «Изменить».');
-        const heading = type === 'sets' ? 'Подходами' : `${type === 'circuit' ? 'Круг' : 'Суперсет'}${rounds && rounds > 0 ? ` · ${rounds} ${roundsWord(rounds)}` : ''}`;
+        const heading = type === 'sets' ? 'Подходами' : `${type === 'circuit' ? 'Круг' : 'Суперсет'}${rounds && rounds > 0 ? ` · ${rounds} ${roundsWord(rounds)}` : ''}${restAfter === 'exercise' ? ' · отдых после каждого упражнения' : ''}`;
         blocks.push({ kind: 'exercises', heading, items });
       });
       // Ссылка главнее встроенного блока того же вида

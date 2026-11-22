@@ -12,7 +12,7 @@ import { toIso } from '../../plan/plan';
 import type { ParseIssue } from '../../import/parse';
 import { editableBlocks, problems } from './draft';
 import { WorkoutEditView, type EditView } from './WorkoutEditView';
-import { type KnownRoutine, legacyCircuitWarnings, readEditorYaml, workoutToYaml } from './workoutYaml';
+import { type KnownRoutine, readEditorYaml, workoutToYaml } from './workoutYaml';
 
 /** Откуда брать тренировку и куда её сохранять: у тренера — ученика, у спортсмена — свою */
 type Source = {
@@ -117,7 +117,6 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
   /** Текст, как он был создан: пока он не изменён, разбирать его не нужно */
   const [generated, setGenerated] = useState('');
   const [yamlIssues, setYamlIssues] = useState<ParseIssue[]>([]);
-  const [yamlWarnings, setYamlWarnings] = useState<string[]>([]);
   const back = () => navigate(search.get('back') ?? source.back);
   const issues = problems(title, blocks);
 
@@ -138,7 +137,6 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
       const made = workoutToYaml(title, blocks, links, library, notes);
       setText(made);
       setGenerated(made);
-      setYamlWarnings(legacyCircuitWarnings(blocks));
       setYamlIssues([]);
       setView('yaml');
       return;
@@ -185,7 +183,7 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
   return (
     <WorkoutEditView
       view={view}
-      yaml={{ text, issues: yamlIssues, warnings: yamlWarnings, onText: setText }}
+      yaml={{ text, issues: yamlIssues, onText: setText }}
       onView={switchView}
       title={title}
       blocks={blocks}

@@ -48,7 +48,7 @@ export function restLabel(block: Block): string | undefined {
   if (block.mode === 'timed' || block.mode === 'note') return undefined;
   if (block.mode === 'circuit') {
     if (block.restSec <= 0) return undefined;
-    return `Отдых ${block.restSec} с ${block.restAfter === 'round' ? 'после круга' : 'после каждого подхода'}`;
+    return `Отдых ${block.restSec} с ${block.restAfter === 'round' ? 'после круга' : 'после каждого упражнения'}`;
   }
   const rests = new Set(block.exercises.map((e) => e.restSec ?? block.restSec));
   if (rests.size > 1) return 'Отдых у упражнений';

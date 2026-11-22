@@ -7,6 +7,8 @@
 /** Единственный список значений: из него тип, enum схемы и проверка ответа */
 export const AGENT_MEASURES = ['reps', 'weight', 'time', 'distance'] as const;
 export const AGENT_BLOCK_TYPES = ['sets', 'circuit', 'timed', 'note'] as const;
+/** Отдых круга: round — после круга (пустое значение, его убирает compactAgentWorkout), exercise — после каждого упражнения */
+export const AGENT_REST_AFTER = ['round', 'exercise'] as const;
 export type AgentMeasure = (typeof AGENT_MEASURES)[number];
 export type AgentBlockType = (typeof AGENT_BLOCK_TYPES)[number];
 
@@ -30,6 +32,7 @@ export interface AgentBlock {
   title?: string;
   rounds?: number;
   rest_sec?: number;
+  rest_after?: (typeof AGENT_REST_AFTER)[number];
   text?: string;
   exercises: AgentExercise[];
 }
@@ -159,11 +162,12 @@ export const AGENT_WORKOUT_SCHEMA: Schema = obj(
           type: { type: 'string', enum: [...AGENT_BLOCK_TYPES] },
           title: str,
           rounds: { type: 'integer', description: 'Только в circuit, в остальных блоках 0' },
-          rest_sec: { type: 'integer', description: 'Только в circuit: отдых после круга; в остальных блоках 0' },
+          rest_sec: { type: 'integer', description: 'Только в circuit: отдых после круга или после каждого упражнения (rest_after); в остальных блоках 0' },
+          rest_after: { type: 'string', enum: [...AGENT_REST_AFTER], description: 'Только в circuit: exercise — отдых после каждого упражнения; иначе round' },
           text: { type: 'string', description: 'Только в timed и note, иначе ""' },
           exercises: { type: 'array', items: exerciseSchema, description: 'У note — []' },
         },
-        ['type', 'title', 'rounds', 'rest_sec', 'text', 'exercises'],
+        ['type', 'title', 'rounds', 'rest_sec', 'rest_after', 'text', 'exercises'],
       ),
     },
     new_exercises: {
@@ -201,6 +205,7 @@ const isNonEmpty = (v: unknown): v is unknown[] => Array.isArray(v) && v.length 
 const isStrs = (v: unknown) => Array.isArray(v) && v.every((s) => typeof s === 'string');
 const optStrs = (v: unknown) => v === undefined || isStrs(v);
 const BLOCK_TYPES = new Set<string>(AGENT_BLOCK_TYPES);
+const REST_AFTER = new Set<string>(AGENT_REST_AFTER);
 const MEASURES = new Set<string>(AGENT_MEASURES);
 
 const isExercise = (e: unknown) =>
@@ -225,6 +230,7 @@ export function compactAgentWorkout(v: unknown): unknown {
   const block = (b: unknown) => {
     if (!isObj(b)) return b;
     const out = dropEmpty(b, ['title', 'rounds', 'rest_sec', 'text']);
+    if (out.rest_after === 'round') delete out.rest_after;
     return 'exercises' in out ? { ...out, exercises: dropEmptyEach(out.exercises) } : out;
   };
   const routine = (r: unknown) => {
@@ -241,7 +247,7 @@ export function compactAgentWorkout(v: unknown): unknown {
 }
 
 const isBlock = (b: unknown) =>
-  isObj(b) && typeof b.type === 'string' && BLOCK_TYPES.has(b.type) && optStr(b.title) && optNum(b.rounds) && optNum(b.rest_sec) && optStr(b.text) &&
+  isObj(b) && typeof b.type === 'string' && BLOCK_TYPES.has(b.type) && optStr(b.title) && optNum(b.rounds) && optNum(b.rest_sec) && (b.rest_after === undefined || (typeof b.rest_after === 'string' && REST_AFTER.has(b.rest_after))) && optStr(b.text) &&
   Array.isArray(b.exercises) && b.exercises.every(isExercise);
 
 const isRoutineItem = (i: unknown) => isObj(i) && typeof i.exercise_id === 'string' && typeof i.time_sec === 'number' && optStrs(i.sides);

@@ -29,7 +29,7 @@ export type BlockTypeV2 = (typeof BLOCK_TYPES_V2)[number];
 /** Поля блока по типу; title и video_rounds читает ещё и YAML-редактор */
 export const BLOCK_FIELDS: Record<BlockTypeV2, string[]> = {
   sets: ['type', 'title', 'exercises', 'video_rounds'],
-  circuit: ['type', 'title', 'rounds', 'rest_sec', 'exercises', 'video_rounds'],
+  circuit: ['type', 'title', 'rounds', 'rest_sec', 'rest_after', 'exercises', 'video_rounds'],
   warmup: ['type', 'routine'],
   cooldown: ['type', 'routine'],
   timed: ['type', 'title', 'text', 'exercises'],
@@ -63,6 +63,17 @@ function readTimeSec(v: unknown, path: Path, fail: Fail, allowMax: boolean): Ran
     `Не понимаю time_sec: ${String(v)}`,
     allowMax ? 'time_sec — целое число секунд больше нуля или max: 45, max.' : 'time_sec — целое число секунд больше нуля, например 30; max здесь нельзя.',
   );
+  return null;
+}
+
+/** Когда отдыхать в круге: round — после круга (по умолчанию), exercise — после каждого упражнения */
+export const REST_AFTER_VALUES = ['round', 'exercise'] as const;
+export type RestAfterV2 = (typeof REST_AFTER_VALUES)[number];
+
+export function readRestAfter(v: unknown, path: Path, fail: Fail): RestAfterV2 | null {
+  if (v === undefined) return 'round';
+  if (v === 'round' || v === 'exercise') return v;
+  fail(path, `Не понимаю rest_after: ${String(v)}`, 'rest_after: round — отдых после круга, exercise — после каждого упражнения.');
   return null;
 }
 

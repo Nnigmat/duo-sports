@@ -155,6 +155,30 @@ describe('формат version: 2', () => {
     expect(first(circuit('exercise_id: lunge, reps: 10'))).toMatchObject({ rounds: 1, restAfter: 'round', restSec: 60 });
   });
 
+  it('circuit rest_after round is rest after round', () => {
+    expect(first(circuit('exercise_id: lunge, reps: 10', '        rest_after: round\n'))).toMatchObject({ restAfter: 'round' });
+  });
+
+  it('circuit rest_after exercise is rest after each exercise', () => {
+    const block = first(circuit('exercise_id: lunge, reps: 10', '        rounds: 3\n        rest_sec: 45\n        rest_after: exercise\n'));
+    expect(block).toMatchObject({ mode: 'circuit', rounds: 3, restSec: 45 });
+    expect(block).not.toHaveProperty('restAfter');
+  });
+
+  it('circuit rest_after exercise is shown in preview heading', () => {
+    const r = ok(parseImport(circuit('exercise_id: lunge, reps: 10', '        rounds: 2\n        rest_after: exercise\n'), ctx));
+    expect(r.workouts[0]!.blocks[0]!.heading).toBe('Круг · 2 раунда · отдых после каждого упражнения');
+  });
+
+  it('circuit rest_after other value is an error', () => {
+    expect(fails(circuit('exercise_id: lunge, reps: 10', '        rest_after: set\n'))[0]).toMatchObject({ path: ['workouts', 0, 'blocks', 0, 'rest_after'] });
+  });
+
+  it('rest_after in sets block is an error', () => {
+    const text = v2('      - type: sets\n        rest_after: exercise\n        exercises:\n          - { exercise_id: pullup, reps: 5 }\n');
+    expect(fails(text).find((e) => e.path?.at(-1) === 'rest_after')).toMatchObject({ message: 'Незнакомое поле: rest_after' });
+  });
+
   it('workout notes parsed', () => {
     const r = ok(parseImport(v2('      - type: sets\n        exercises:\n          - { exercise_id: pullup, reps: 5 }\n', '', '    notes: Рабочих подходов отжиманий сегодня нет\n'), ctx));
     expect(r.workouts[0]!.notes).toBe('Рабочих подходов отжиманий сегодня нет');

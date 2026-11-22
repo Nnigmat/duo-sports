@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '../../../../../shared/types';
 import type { LibraryExercise } from '../../exercises/types';
-import { legacyCircuitWarnings, readEditorYaml, workoutFromYaml, workoutToYaml } from './workoutYaml';
+import { readEditorYaml, workoutFromYaml, workoutToYaml } from './workoutYaml';
 import { exercisesOf } from '../../../../../shared/blocks';
 
 const lib = (name: string, kind: LibraryExercise['kind']): LibraryExercise =>
@@ -333,11 +333,19 @@ describe('version: 2', () => {
     expect(text).toContain('exercise_id: Неведомое');
     expect(workoutFromYaml(text, library, one, TODAY)).toMatchObject({ ok: false, issues: [{ message: 'Неизвестный exercise_id: Неведомое' }] });
   });
-  it('legacy circuit warning text', () => {
-    const old: Block[] = [{ id: 'b0', mode: 'circuit', title: 'Круг', rounds: 2, restSec: 30, videoRounds: [], exercises: [] }];
-    expect(legacyCircuitWarnings(old)).toEqual(['Отдых в круге «Круг» после сохранения будет после круга, а не после каждого упражнения']);
-    expect(legacyCircuitWarnings(full)).toEqual([]);
-    expect(workoutToYaml('Т', old, {}, library)).toContain('rest_sec: 30');
+  it('circuit with rest after each exercise round trips as rest_after: exercise', () => {
+    const each: Block[] = [
+      {
+        id: 'b0', mode: 'circuit', title: 'Круг', rounds: 2, restSec: 30, videoRounds: [],
+        exercises: [{ id: 'b0-e0', name: 'Выпад', kind: 'reps', target: { min: 10, max: 10 } }, { id: 'b0-e1', name: 'Отжимания', kind: 'reps', target: { min: 8, max: 8 } }],
+      },
+    ];
+    const text = workoutToYaml('Т', each, {}, library);
+    expect(text).toContain('rest_after: exercise');
+    expect(workoutFromYaml(text, library, each, TODAY)).toEqual({ ok: true, title: 'Т', blocks: each, links: {} });
+  });
+  it('circuit with rest after round has no rest_after', () => {
+    expect(workoutToYaml('Ноги', full, {}, library)).not.toContain('rest_after');
   });
   it('reads v1 as before', () => {
     const r = workoutFromYaml('version: 1\nworkouts:\n  - title: Т\n    blocks:\n      - type: sets\n        exercises:\n          - { name: Присед, do: 3x8 @ 60 }\n', library, [], TODAY);
