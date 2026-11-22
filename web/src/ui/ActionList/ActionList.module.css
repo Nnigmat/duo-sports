@@ -25,6 +25,14 @@
   outline: none;
   box-shadow: inset var(--focus-ring);
 }
+/* Текст затемнён ink, как у Button danger-text: контраст на белом не ниже 4.5:1 */
+.danger {
+  color: color-mix(in srgb, var(--danger) 85%, var(--ink));
+}
+.row:disabled {
+  color: var(--muted);
+  cursor: default;
+}
 .text {
   display: flex;
   flex: 1;

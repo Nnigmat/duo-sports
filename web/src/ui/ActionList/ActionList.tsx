@@ -7,7 +7,11 @@ export type ActionItem = {
   id: string;
   icon: IconName;
   title: string;
+  /** Если disabled — почему; состояние не только цветом */
   description?: string;
+  /** Необратимое действие: красные иконка и название */
+  danger?: boolean;
+  disabled?: boolean;
   onSelect: () => void;
 };
 
@@ -22,13 +26,13 @@ export function ActionList({ items, className }: Props) {
     <ul className={cx(styles.list, className)}>
       {items.map((it) => (
         <li key={it.id}>
-          <button type="button" className={styles.row} onClick={it.onSelect}>
+          <button type="button" className={cx(styles.row, it.danger && styles.danger)} disabled={it.disabled} onClick={it.onSelect}>
             <Icon name={it.icon} />
             <span className={styles.text}>
               <span className={styles.title}>{it.title}</span>
               {it.description && <span className={styles.description}>{it.description}</span>}
             </span>
-            <Icon name="chevronRight" className={styles.chevron} />
+            {!it.disabled && <Icon name="chevronRight" className={styles.chevron} />}
           </button>
         </li>
       ))}

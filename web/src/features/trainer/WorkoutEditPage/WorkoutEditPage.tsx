@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../../app/auth/AuthProvider';
 import type { Block, RoutineSlugs, Workout } from '../../../../../shared/types';
 import { useExercises } from '../../../data/hooks';
 import { Skeleton } from '../../../shared';
 import { Notice } from '../../../ui';
+import { createExercise } from '../../exercises/api';
+import { canManageExercises, quickDraft } from '../../exercises/library';
 import type { LibraryExercise } from '../../exercises/types';
 import { fetchRoutines } from '../../routines/api';
 import { fetchOwnWorkout, putOwnWorkout } from '../../plan/api';
 import { fetchPlannedWorkout, putWorkout } from '../api';
 import { toIso } from '../../plan/plan';
 import type { ParseIssue } from '../../import/parse';
-import { editableBlocks, problems } from './draft';
+import { addExercise, editableBlocks, problems } from './draft';
 import { WorkoutEditView, type EditView } from './WorkoutEditView';
 import { type KnownRoutine, readEditorYaml, workoutToYaml } from './workoutYaml';
 
@@ -93,8 +96,12 @@ function knownRoutines(list: KnownRoutine[], current: Workout['routines']): Know
   return out;
 }
 
-function Editor({ source, workout, library, routines }: { source: Source; workout: Workout; library: LibraryExercise[]; routines: KnownRoutine[] }) {
+function Editor({ source, workout, library: loaded, routines }: { source: Source; workout: Workout; library: LibraryExercise[]; routines: KnownRoutine[] }) {
   const navigate = useNavigate();
+  const auth = useAuth();
+  const user = auth.status === 'in' ? auth.user : undefined;
+  // Библиотека пополняется упражнениями, созданными прямо из окна выбора
+  const [library, setLibrary] = useState(loaded);
   const [search] = useSearchParams();
   const [title, setTitle] = useState(workout.title);
   const [blocks, setBlocks] = useState<Block[]>(() => editableBlocks(workout.blocks, workout.routines));
@@ -198,6 +205,16 @@ function Editor({ source, workout, library, routines }: { source: Source; workou
       onBlocks={setBlocks}
       onSave={save}
       onCancel={back}
+      gender={user?.gender}
+      onQuickCreate={
+        canManageExercises(user?.role)
+          ? async (blockId, name, kind) => {
+              const ex = await createExercise(quickDraft(name, kind));
+              setLibrary((l) => [...l, ex]);
+              setBlocks((b) => addExercise(b, blockId, ex));
+            }
+          : undefined
+      }
     />
   );
 }

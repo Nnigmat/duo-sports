@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireUser } from './authRouter';
 import type { Db } from './db';
+import { logger } from './logger';
 import { addComment, deleteComment, validateComment } from './comments';
 import { updateWorkout } from './workoutEdit';
 import { saveSession, validateSession, workoutOf, workoutResponse } from './workouts';
@@ -36,9 +37,18 @@ export function workoutRouter(db: Db) {
   r.post('/workouts/:id/sessions', (req, res) => {
     const id = Number(req.params.id);
     const v = validateSession(req.body);
-    if (!v.ok) return void res.status(400).json({ error: v.error });
+    // Итог отклонён, а черновик остался у спортсмена: без причины в логе не понять, что поправить
+    if (!v.ok) {
+      const step = v.stepIndex === undefined ? undefined : (req.body as { steps: unknown[] }).steps[v.stepIndex];
+      logger.warn({ userId: req.user!.id, workoutId: req.params.id, error: v.error, ...(step === undefined ? {} : { step }) }, 'session rejected');
+      return void res.status(400).json({ error: v.error });
+    }
+    if (v.droppedVideos) logger.warn({ userId: req.user!.id, workoutId: req.params.id, droppedVideos: v.droppedVideos }, 'session: повторное видео снято');
     const saved = Number.isInteger(id) ? saveSession(db, req.user!.id, id, v.result) : ({ ok: false, error: 'not_found' } as const);
-    if (!saved.ok) return void res.status(saved.error === 'bad_video' ? 400 : 404).json({ error: saved.error });
+    if (!saved.ok) {
+      logger.warn({ userId: req.user!.id, workoutId: req.params.id, error: saved.error }, 'session rejected');
+      return void res.status(saved.error === 'bad_video' ? 400 : 404).json({ error: saved.error });
+    }
     res.status(saved.duplicate ? 200 : 201).json({ id: saved.id });
   });
 

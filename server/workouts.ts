@@ -51,7 +51,9 @@ const isAnswer = (v: unknown): boolean =>
 const isActual = (v: unknown): boolean =>
   isObj(v) && nonNeg(v.value) && (v.weight === undefined || nonNeg(v.weight)) && (v.extraWeight === undefined || v.extraWeight === true);
 
-export type ValidSession = { ok: true; result: SessionResult } | { ok: false; error: string };
+/** stepIndex — номер шага, который не прошёл проверку: по нему сервер пишет сам шаг в лог */
+/** droppedVideos — сколько повторных videoId снято (старый клиент ставил одно видео и на следующий подход) */
+export type ValidSession = { ok: true; result: SessionResult; droppedVideos?: number } | { ok: false; error: string; stepIndex?: number };
 
 export function validateSession(body: unknown): ValidSession {
   if (!isObj(body) || !isDate(body.date)) return { ok: false, error: 'Ждём date вида 2026-11-03' };
@@ -74,11 +76,25 @@ export function validateSession(body: unknown): ValidSession {
       (s.restSec === undefined || (Number.isInteger(s.restSec) && (s.restSec as number) >= 0 && (s.restSec as number) <= MAX_DURATION_SEC)) &&
       ((s.startedAt === undefined && s.endedAt === undefined) || (Number.isInteger(s.startedAt) && Number.isInteger(s.endedAt) && (s.startedAt as number) > 0 && (s.endedAt as number) >= (s.startedAt as number) && (s.endedAt as number) - (s.startedAt as number) <= MAX_DURATION_SEC * 1000)) &&
       (s.videoId === undefined || (typeof s.videoId === 'string' && UUID.test(s.videoId)));
-    if (!ok) return { ok: false, error: `steps[${i}]: неверные поля` };
+    if (!ok) return { ok: false, error: `steps[${i}]: неверные поля`, stepIndex: i };
   }
-  const ids = (body.steps as Array<{ videoId?: string }>).flatMap((s) => (s.videoId ? [s.videoId] : []));
-  if (new Set(ids).size !== ids.length) return { ok: false, error: 'videoId: одно видео на один подход' };
-  return { ok: true, result: body as unknown as SessionResult };
+  // Одно видео — один подход. Повтор на более позднем подходе — след бага клиента (черновик с ним уже на телефоне):
+  // видео остаётся у первого подхода, повтор снимаем и счётчик видео уменьшаем, итог не теряется
+  const seen = new Set<string>();
+  let dropped = 0;
+  const steps = (body.steps as Array<{ videoId?: string }>).map((s) => {
+    if (!s.videoId) return s;
+    if (!seen.has(s.videoId)) {
+      seen.add(s.videoId);
+      return s;
+    }
+    dropped++;
+    const { videoId: _, ...rest } = s;
+    return rest;
+  });
+  if (dropped === 0) return { ok: true, result: body as unknown as SessionResult };
+  const videos = Math.max(0, (body.videos as number) - dropped);
+  return { ok: true, result: { ...body, steps, videos } as unknown as SessionResult, droppedVideos: dropped };
 }
 
 export type SaveResult = { ok: true; id: number; duplicate?: true } | { ok: false; error: 'not_found' | 'bad_video' };
